@@ -1,6 +1,6 @@
 # 3Reich
 
-A playable recreation of the classic WWII grand-strategy wargame *Third Reich*, built to run in any modern web browser. It is meant to be easy for anyone to pick up: open a link, no install, no CD-ROM.
+A playable recreation of the classic WWII grand-strategy wargame *Third Reich*, built to run in any modern web browser. It is meant to be easy for anyone to pick up: open a link, no install, no CD-ROM. The main mode is one player against the computer, choosing either side.
 
 > **Status: early.** The real combat results, attrition, terrain, cost and modifier tables from the original game are encoded and tested. The map, units on the map and most procedures are not built yet. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
