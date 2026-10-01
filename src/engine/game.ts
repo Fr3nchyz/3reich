@@ -1,24 +1,20 @@
-import type { GameState, PowerId, Season } from "./types";
-
-/** Order in which powers act within a game turn. Adjust to match the original rules. */
-export const TURN_ORDER: PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
-
-export const POWER_NAMES: Record<PowerId, string> = {
-  germany: "Germany",
-  italy: "Italy",
-  ussr: "Soviet Union",
-  britain: "Great Britain",
-  france: "France",
-  usa: "United States",
-};
+import { fall1939Nations } from "./nations";
+import type { GameState, Season, Side } from "./types";
 
 const SEASONS: Season[] = ["spring", "summer", "fall", "winter"];
 
+export function otherSide(side: Side): Side {
+  return side === "axis" ? "allies" : "axis";
+}
+
+/** The Fall 1939 scenario starts with the Allies holding the initiative. */
 export function newGame(seed = Date.now() >>> 0): GameState {
   return {
     year: 1939,
     season: "fall",
-    activePower: TURN_ORDER[0]!,
+    firstSide: "allies",
+    activeSide: "allies",
+    nations: fall1939Nations(),
     regions: {},
     units: {},
     rngState: seed,
@@ -26,11 +22,13 @@ export function newGame(seed = Date.now() >>> 0): GameState {
   };
 }
 
-/** Pass play to the next power; when everyone has acted, advance the season. */
-export function endPowerTurn(state: GameState): GameState {
-  const i = TURN_ORDER.indexOf(state.activePower);
-  if (i < TURN_ORDER.length - 1) {
-    return { ...state, activePower: TURN_ORDER[i + 1]! };
+/**
+ * End the active side's player turn. After the first side, the second side moves;
+ * after the second side, the game turn ends and the next season begins.
+ */
+export function endPlayerTurn(state: GameState): GameState {
+  if (state.activeSide === state.firstSide) {
+    return { ...state, activeSide: otherSide(state.firstSide) };
   }
   const s = SEASONS.indexOf(state.season);
   const wraps = s === SEASONS.length - 1;
@@ -38,7 +36,7 @@ export function endPowerTurn(state: GameState): GameState {
   const year = wraps ? state.year + 1 : state.year;
   return {
     ...state,
-    activePower: TURN_ORDER[0]!,
+    activeSide: state.firstSide,
     season,
     year,
     log: [...state.log, `A new turn begins: ${season} ${year}.`],

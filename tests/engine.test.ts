@@ -1,6 +1,8 @@
+import { HEXSIDE_DEFENSE, TERRAIN_EFFECTS } from "../src/engine/terrain";
 import { describe, expect, it } from "vitest";
 import { oddsColumn, resolveCombat } from "../src/engine/combat";
-import { endPowerTurn, newGame, TURN_ORDER } from "../src/engine/game";
+import { endPlayerTurn, newGame } from "../src/engine/game";
+import { fall1939Nations, sideBRPs, spendingLimit } from "../src/engine/nations";
 import { rollD6 } from "../src/engine/rng";
 
 describe("rng", () => {
@@ -28,15 +30,47 @@ describe("combat", () => {
 });
 
 describe("turn sequence", () => {
-  it("advances season and year after the last power acts", () => {
+  it("gives each side a player turn, then advances the season and year", () => {
     let s = newGame(1);
     expect(s.season).toBe("fall");
-    for (let i = 0; i < TURN_ORDER.length; i++) s = endPowerTurn(s);
+    expect(s.activeSide).toBe("allies");
+    s = endPlayerTurn(s);
+    expect(s.activeSide).toBe("axis");
+    s = endPlayerTurn(s);
     expect(s.season).toBe("winter");
     expect(s.year).toBe(1939);
-    for (let i = 0; i < TURN_ORDER.length; i++) s = endPowerTurn(s);
+    expect(s.activeSide).toBe("allies");
+    s = endPlayerTurn(endPlayerTurn(s));
     expect(s.season).toBe("spring");
     expect(s.year).toBe(1940);
-    expect(s.activePower).toBe(TURN_ORDER[0]);
+  });
+});
+
+describe("Fall 1939 economy (from the PC game's status screen)", () => {
+  const nations = fall1939Nations();
+  it("matches the displayed side totals", () => {
+    expect(sideBRPs(nations, "axis")).toBe(225);
+    expect(sideBRPs(nations, "allies")).toBe(210);
+  });
+  it("matches the displayed spending limits", () => {
+    const limits = Object.fromEntries(Object.values(nations).map((n) => [n.id, spendingLimit(n)]));
+    expect(limits).toEqual({ france: 42, britain: 62, usa: 135, ussr: 45, germany: 75, italy: 37 });
+  });
+});
+
+describe("terrain effects (from the PC game's chart)", () => {
+  it("encodes the defense multipliers", () => {
+    expect(TERRAIN_EFFECTS.fortress.defense).toBe(4);
+    expect(TERRAIN_EFFECTS.mountains.defense).toBe(3);
+    expect(TERRAIN_EFFECTS.swamp.defense).toBe(3);
+    expect(TERRAIN_EFFECTS.plain.defense).toBe(2);
+    expect(TERRAIN_EFFECTS.beach.defense).toBe(2);
+    expect(TERRAIN_EFFECTS.beach.defenseVsSeaborne).toBe(3);
+    expect(HEXSIDE_DEFENSE.river).toBe(3);
+  });
+  it("marks capitals, objectives and ports correctly", () => {
+    expect(TERRAIN_EFFECTS.capital.noAttritionAdvance).toBe(true);
+    expect(TERRAIN_EFFECTS["capital-port"].navalBase).toBe(true);
+    expect(TERRAIN_EFFECTS.city.noAttritionAdvance).toBeUndefined();
   });
 });

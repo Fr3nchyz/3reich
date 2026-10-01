@@ -2,3 +2,4 @@ body { font-family: Georgia, serif; background: #1d1f1a; color: #e8e4d4; margin:
 main { max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
 button { font-size: 1rem; padding: .5rem 1rem; }
 .note { opacity: .7; }
+table { border-collapse: collapse; margin: 1rem 0; } td, th { padding: .25rem .75rem; text-align: left; border-bottom: 1px solid #555; }

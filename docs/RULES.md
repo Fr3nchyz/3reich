@@ -7,7 +7,7 @@ The goal is fidelity to the original game. The original manual is the source of 
 - [ ] Powers, their starting positions, and turn order (code currently assumes Germany, Italy, USSR, Britain, France, USA)
 - [x] Edition: the 1996 Avalon Hill *Third Reich* for Windows, based on the board game *Rise and Decline of the Third Reich*. (Not the 1992 DOS *Computer Third Reich*, a different game.) Still to confirm with the family: the exact box/version, and how the PC game differs from the board game.
 - [ ] Map: regions/hexes, terrain, borders, ports, capitals, resource centers
-- [ ] Unit types, strengths, movement allowances, stacking limits
+- [~] Unit types (known, see below); still need: per-nation unit mixes, stacking limits, movement rules
 - [ ] Combat results table and odds calculation (TODO: code has a placeholder table)
 - [ ] Economy/production system and how units are built
 - [ ] Diplomacy, neutrals/minor countries, and how they join the war
@@ -37,7 +37,7 @@ Full year/turn structure as printed (headings only, our wording):
 
 - **I. Year Start Sequence** (between each Winter and Spring turn): resolve strategic warfare (not at scenario start), calculate initial BRP totals (not at scenario start), construct strategic-warfare factors.
 - **II. Game Turn**: possible Russian-Winter die roll; determine player-turn order; then each player's turn in order: declarations of war; set up forces for newly attacked minors and activate minor allies; select Front options; movement and combat for attacked-but-unconquered minors; voluntary destruction of units; **Movement phase**; **Combat phase**; **Unit construction phase** (free Siberian transfer, construct units, possible Vichy activation/deactivation attempt); **Strategic redeployment phase** (BRP grants, Lend-Lease grants, rail/sea redeployment); **end-of-player-turn phase**. Then the second player's turn repeats.
-- Terrain types listed on the chart: beach, capital, capital-port, city, coastline, crossing arrow, fortress, lake, mountains, objective, ocean, plain, Qattara Depression, river, swamp, plus national and front boundaries. Effects (defense multipliers, movement limits) still need to be read off the chart or manual; I could not read them reliably in the photos.
+- Terrain types listed on the chart: beach, capital, capital-port, city, coastline, crossing arrow, fortress, lake, mountains, objective, ocean, plain, Qattara Depression, river, swamp, plus national and front boundaries. Effects are now recorded below from the in-game chart.
 
 Notes on the chart card (our own wording; boundaries and values marked "verify" were hard to read in the photos):
 
@@ -61,3 +61,46 @@ The map is the biggest piece of game data. We will not copy the printed artwork.
 - **Screens shown on the box:** a hex map with unit counters, colour-coded national territory, a declaration-of-war screen, a mini-map in the corner, and a national flag bar. Good targets for our UI.
 
 The operations manual (how to play the program) and reference manual (the rules) are the two documents we most need photographed.
+
+## From in-game screenshots (MobyGames)
+
+**Interface:** a hex map you scroll with arrow buttons; a bottom bar with Done, Tables, Status, Actions and Exit buttons; a tray showing the active nation's units and remaining air factors; a calendar ("FALL 1939"); the nation's flag; a phase label ("SETUP PHASE"); a mini-map. Map text labels cities, rivers and countries; minor countries show their BRP value (e.g. Netherlands 10, Belgium 15, Luxembourg 5, Hungary 10).
+
+**Unit types:** infantry, armor, replacement, airborne, bridgehead, airbase (ground), fleets, and air units. A counter shows two numbers: for ground units, the attack-and-defense factor (one number for both) then the movement factor (3-4 infantry, 5-6 armor, 3-3 airborne, replacement 1); air units show air factor then movement (e.g. 5-4); fleets show one combat factor (e.g. 9). Counter colours identify nations: Germany black, Italy light grey, USSR dark gold, USA olive, Britain orange, France cyan, neutrals light orange.
+
+**Fall 1939 status screen (the 1939 scenario setup):**
+
+| Nation | Status | BRP base/total | Spending limit | Growth |
+|---|---|---|---|---|
+| France | Allied | 85 | 42 | 30% |
+| Britain | Allied | 125 | 62 | 40% |
+| USA | Neutral | 270 | 135 | 60% |
+| USSR | Neutral | 90 | 45 | 30% |
+| Germany | Axis | 150 | 75 | 50% |
+| Italy | Axis | 75 | 37 | 20% |
+
+Axis total 225, Allied total 210 (neutral powers count for neither). Spending limit is half the total, rounded down. Initiative: Allies. Each of the Eastern, Western and Mediterranean Fronts has an option chosen per side (shown as "Pass" at setup). The game is therefore two sides (Axis vs Allies), not six powers taking turns; the engine was changed to match. Per-nation "allowable builds" (units that can still be built) are also listed on this screen; not transcribed yet.
+
+**Terrain Effects Chart** (from the in-game table):
+
+| Terrain | Combat | Movement |
+|---|---|---|
+| Beach | Defenders tripled against Seaborne Invasion, otherwise doubled | Ground units can be landed by Seaborne Invasion |
+| Capital | Can't be chosen for Attrition advance | Only use is as an air base |
+| Capital-port | Can't be chosen for Attrition advance | Use as an air and naval base |
+| City | None | Can be an air base |
+| Coastline | No attacks or movement between hexes joined only by coastline | same |
+| Crossing arrow | Defenders tripled against attacks across the hexside | Ground units may cross the marked hexsides in both directions |
+| Fortress | Defense quadrupled; can't be taken by Attrition or Isolation | ZOC has no effect on fortress hexes |
+| Front boundary | Units crossing or attacking across must follow the Option chosen on the Front entered | same |
+| Lake | Nothing allowed across all-water hexsides | same |
+| Swamp | Defense tripled | None |
+| Mountains | Defense tripled | None |
+| National boundary line | Can't attack or move across while the country is neutral; a Declaration of War is needed first; no effect if already at war or conquered | same |
+| Objective | Can't be chosen for Attrition advance | Can be used as a base |
+| Ocean | Only special naval and air combat | Crossed only by fleets, and air units that can stage 8 hexes or less over it to another base |
+| Plain | Double defense | None |
+| Qattara Depression | Nothing across completely-Qattara hexsides | same |
+| River | Defense tripled against attacks from across the river | None |
+
+Still unknown: how multiple multipliers combine (river plus mountain, say).
