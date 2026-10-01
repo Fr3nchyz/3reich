@@ -26,3 +26,16 @@ Photograph or scan the manual (or the box contents) and add the images to a priv
 - The PC game's own manual was not found online. The box contents, which the family owns, are the best source.
 
 We encode mechanics (numbers, tables, procedures) as data and tests in our own words. We do not copy manual text or art into this repo.
+
+## Observed from the big-box contents (seller photos)
+
+Box: "Third Reich PC", Avalon Hill, 1996, "Computer Game of World War II Grand Strategy". Contents visible: CD-ROM, a *Reference Manual*, a folded chart/play-aid card, a DOS/Windows 95 install sheet, a registration card, a parts list and an order form. **No board-style map is visible**; the PC game draws its map on screen. A separate player's manual may exist; the photos only show the Reference Manual.
+
+Notes on the chart card (our own wording; boundaries and values marked "verify" were hard to read in the photos):
+
+- **Sequence of play** (partial, from the visible lines): a player turn runs through supply checks and unsupplied-unit elimination, SR (strategic redeployment), Murmansk convoy grants and ASW escorts, fleet/air movement with interception, counter-interception, normal ground/air movement, overstacked-unit elimination, an Eastern Front factor check, then a **Combat phase** (attrition combat; offensive naval/air missions; counter-air; defensive air support (DAS); ground combat), ending with a possible **Russian surrender** check and a save-game prompt. Then the second player's turn repeats the steps.
+- **Interception table** (distance from base -> die results that allow interception): 1 hex -> automatic; 2-10 -> 1-5; 11-18 -> 1-4; 19-24 -> 1-3; 25-30 -> 1-2; over 30 -> 1. (verify the boundaries.)
+- **Naval combat DRM chart**: a naval-advantage modifier by force ratio (about +1 to +5 as the ratio grows from 1:2 up to 4:1 or better; verify) and a nationality modifier (Germany best, then US/Britain/Sweden, then France, with Italy, USSR, Turkey and Spain lowest; Italy depends on the battle's map row; verify exact values).
+- **Air combat DRM chart**: an air-advantage modifier plus a nationality modifier (Germany best, USSR next, all others lowest; verify).
+
+What this tells us: the PC game follows the board game's structure closely (Murmansk Box, bridgeheads, DAS, SR, Eastern Front factors), so the board-game rules are a good starting point for the engine.
