@@ -26,7 +26,7 @@ Requires Node 20+.
 - The original 1996 PC manuals and reference map are the source of truth (links in `docs/SOURCES.md`; keep the files outside the repo). Cite the section in code comments, e.g. `// Ref 12.4`.
 - Never invent a rule. If no source covers it, use a named constant marked `TODO(verify)` and list it in `docs/RULES.md` under Open questions.
 - Never commit scans, screenshots, game files or manual text. Draw original art.
-- The engine stays pure and deterministic (seeded dice, no DOM), and every rule has a test.
+- The engine stays pure and deterministic (seeded dice, no DOM, no clock), and every rule has a test. This is enforced by `tsconfig.engine.json` and `tests/engine-purity.test.ts`. The UI and the computer opponent change the game only through `legalActions` and `applyAction`.
 - Run `npm run typecheck && npm test && npm run build` before pushing. Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
 
 ## Legal

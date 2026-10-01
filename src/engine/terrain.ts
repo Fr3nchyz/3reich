@@ -3,33 +3,23 @@
  * Terrain Effects Chart (see docs/RULES.md).
  */
 
-/** Base terrain of a hex. Cities, ports, beaches etc. are features on top of it. */
-export type TerrainId = "plain" | "mountains" | "swamp" | "qattara-depression" | "ocean" | "lake";
+/**
+ * Land terrain of a hex. A hex may also contain sea (Ref 4.3), which the map records
+ * separately; all-sea hexes have no land terrain.
+ */
+export type LandTerrain = "plain" | "mountains" | "swamp" | "qattara-depression";
 
-export type HexFeature =
-  | "beach"
-  | "city"
-  | "port"
-  | "capital"
-  | "capital-port"
-  | "objective"
-  | "fortress";
-
-export type HexsideFeature =
-  | "river"
-  | "crossing-arrow"
-  /** Hexes touching only along coastline: no movement or combat across. */
-  | "coastline-only"
-  /** All-water (lake/ocean) hexside: no ground movement or combat across. */
-  | "all-water"
-  /** All-Qattara hexside: no movement, combat or supply across. */
-  | "qattara"
-  | "national-boundary"
-  | "front-boundary";
+/**
+ * Static features printed on the map. Fortress status changes during play (Ref 4.8),
+ * so it is tracked in the game state, not here.
+ */
+export type HexFeature = "beach" | "city" | "port" | "capital" | "capital-port" | "objective";
 
 export interface DefenseSituation {
-  terrain: TerrainId;
+  terrain: LandTerrain;
   features?: readonly HexFeature[];
+  /** True when the hex currently has Fortress status (see GameState.fortresses). */
+  fortress?: boolean;
   /**
    * True when the defender is behind a river or crossing arrow and every attacker is on
    * the far side. Any attacking ground unit (including airdropped) on the defender's
@@ -48,20 +38,18 @@ export interface DefenseSituation {
  */
 export function defenseMultiplier(s: DefenseSituation): number {
   const features = s.features ?? [];
-  if (features.includes("fortress")) return 4;
+  if (s.fortress) return 4;
   if (s.terrain === "mountains" || s.terrain === "swamp") return 3;
   if (s.behindRiverOrArrow) return 3;
   if (s.seaborneInvasion && features.includes("beach")) return 3;
   return 2;
 }
 
-/** Hex features that can never be chosen for occupation after Attrition combat. */
-export const NO_ATTRITION_OCCUPATION: readonly HexFeature[] = [
-  "capital",
-  "capital-port",
-  "objective",
-  "fortress",
-];
+/**
+ * Hex features that can never be chosen for occupation after Attrition combat
+ * (Ref 12.4). Fortress and Bridgehead hexes are also excluded; both are dynamic.
+ */
+export const NO_ATTRITION_OCCUPATION: readonly HexFeature[] = ["capital", "capital-port", "objective"];
 
 /** Features that can base air units (every city type, per Reference Manual 4.7). */
 export const AIR_BASE_FEATURES: readonly HexFeature[] = [

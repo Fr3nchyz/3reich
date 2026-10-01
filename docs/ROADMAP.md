@@ -2,20 +2,16 @@
 
 **Primary mode: one player against the computer**, choosing either side. Two players on one screen comes for free once the engine exists, but is not the focus. Saves stay on the device (autosave plus a save file for backups); no online sync is planned.
 
-Because the computer must play by the rules on its own, the engine enforces every rule. It exposes two operations used by both the UI and the AI: **list legal actions** for the current phase, and **apply an action**.
+The engine enforces every rule and exposes one API used by both the UI and the AI: `legalActions(state)` and `applyAction(state, action)`. Phases follow `docs/AUDIT.md`.
 
-1. **Scaffold** (done): TypeScript + Vite project, seeded RNG, two-sided turn flow, tests, CI.
-2. **Rules tables** (done): combat results, attrition, terrain, BRP costs, stacking, interception, naval/air modifiers, minor-country forces, 1939 economy. See `docs/RULES.md`.
-3. **Map data**: digitize the reference-map scan (see `docs/SOURCES.md`) into `src/data/map.json` keyed by hex id (`K21`), with hex math (`src/engine/hex.ts`): terrain per hex, cities/ports/capitals/objectives, rivers, borders, fronts.
-4. **1939 scenario data** from the Operations Manual (BRPs, territory, setup rules, force pools, allowable builds), with Peele's errata.
-5. **Action engine and phases**: the full sequence of play as a phase machine; `legalActions(state)` and `applyAction(state, action)`.
-6. **Economy procedures**: Year Start BRP calculation, spending limits, grants, construction (Ref 9-11).
-7. **Movement, ZOC, stacking, supply** (Ref 4-7, 10).
-8. **Combat procedures**: wire combat to the map; exploitation, attrition hex selection, air and naval combat (Ref 12, 20-21).
-9. **UI**: map with pan/zoom, counters in our own art, unit tray, status and tables menus modelled on the original layout; large and readable, touch and mouse.
-10. **Computer opponent v1**: rule-based, plays either side, with per-front and per-nation goals (see the AI article in The GENERAL, `docs/SOURCES.md`).
-11. **Saving**: autosave every phase, named save slots, save/load to a file.
-12. **First playable release: 1939 scenario vs the computer.**
-13. **1942, 1944 and Campaign scenarios.**
-14. **Stronger AI and difficulty levels.**
-15. **Polish**: undo, tooltips, installable on the iPad home screen and offline (PWA), hosting with a private link.
+| Phase | Goal | Status |
+|---|---|---|
+| **A. Foundations** | Correct hex coordinates (`hex.ts`), action layer with events and replay, Initiative per Ref 11.1, scenario + required seed, headless-engine checks, invariant tests, map data types and validator | Done |
+| **B. Map data** | Digitise the reference-map scan into `src/data/map.json` against `validateMap`; spot-check Ref 4.1-4.9; a read-only map viewer to compare with the scan | Next |
+| **C. 1939 scenario and turn structure** | Full 1939 scenario (territory, setup, force pools, allowable builds) with Peele's errata; the complete sequence of play as phases; Year Start Sequence and economy state (year-start totals, spending, construction) | |
+| **D. Movement, ZOC, stacking, supply, control** | Ref 4-7, 10, through `legalActions` | |
+| **E. Combat procedures** | Offensive and exploitation, attrition hex selection, DoW and minor countries, air and naval combat (Ref 12-13, 20-21) | |
+| **F. Play UI** | Map, counters in our own art, unit tray, status and tables menus modelled on the original; touch and mouse | |
+| **G. Computer opponent v1** | Rule-based, plays either side, only through `legalActions` | |
+| | **First playable release: 1939 scenario vs the computer**, with autosave, save slots and save files | |
+| **H. Fidelity and regression** | Golden games, a regression test for every corrected rule, comparison with the original in DOSBox; 1942, 1944 and Campaign scenarios; stronger AI and difficulty levels; offline install and hosting | |

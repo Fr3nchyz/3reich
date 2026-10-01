@@ -2,6 +2,8 @@
 
 Date: 2026-10-01. Scope: `main` at `75018b6` (about 1,000 lines: 6 engine modules, 1 UI file, 3 test files, 18 tests). No code was changed for this audit.
 
+**Status:** backlog items 1-7 and 11 (and the B1-B4 fixes they cover) were implemented right after this audit; see `docs/ROADMAP.md`. The rest of this document is the audit as written.
+
 Target: a faithful, deterministic recreation of **Third Reich PC (1996)** per `docs/RULES.md`, played mainly **solo against a computer opponent**, in the browser. "Ref" = PC Reference Manual, "Ops" = PC Operations Manual (see `docs/SOURCES.md`).
 
 ---

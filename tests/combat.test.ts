@@ -71,7 +71,8 @@ describe("defence multipliers", () => {
     expect(defenseMultiplier({ terrain: "mountains", behindRiverOrArrow: true })).toBe(3);
     expect(defenseMultiplier({ terrain: "plain", features: ["beach"] })).toBe(2);
     expect(defenseMultiplier({ terrain: "plain", features: ["beach"], seaborneInvasion: true })).toBe(3);
-    expect(defenseMultiplier({ terrain: "mountains", features: ["fortress"] })).toBe(4);
+    expect(defenseMultiplier({ terrain: "mountains", fortress: true })).toBe(4);
+    expect(defenseMultiplier({ terrain: "plain", features: ["city"], fortress: false })).toBe(2);
   });
 });
 

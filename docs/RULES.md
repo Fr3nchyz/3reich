@@ -17,16 +17,20 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | File | Content | Source |
 |---|---|---|
 | `src/engine/combat.ts` | Offensive CRT, odds columns, full CA/CA1-3 counterattack loop, Exchange semantics; Quarterly Attrition table (#C units eliminated, #H hexes vacated) | Ref 12.1-12.2, 12.4; map card |
-| `src/engine/terrain.ts` | Defence multipliers (x2 baseline, x3 mountain/swamp/river/crossing arrow/beach vs seaborne, x4 fortress, not cumulative); attrition-occupation exclusions; basing | Ref 4.5-4.8; terrain chart |
+| `src/engine/terrain.ts` | Land terrain and static hex features; defence multipliers (x2 baseline, x3 mountain/swamp/river/crossing arrow/beach vs seaborne, x4 fortress, not cumulative); attrition-occupation exclusions; basing | Ref 4.5-4.8; terrain chart |
 | `src/engine/tables.ts` | BRP costs (DoW 35/10, Offensive option 15, per-factor build costs), stacking limits, interception table, naval and air DRMs, minor-country forces | Map card; Ref 5.0, 13.0 |
-| `src/engine/nations.ts` | 1939 BRPs and growth rates; spending limit = half total, rounded down | Ops 1939 scenario; status screen |
-| `src/engine/game.ts` | Two sides, seasons, Axis moves first in 1939 | Ops 1939 scenario |
+| `src/engine/hex.ts` | Hex ids (`K21`, `AA25`), axial neighbours, distance, hexside ids (`MM26-NN26`) | Ref 4.1 |
+| `src/engine/map.ts` | Map data model (land/sea per hex, crossability per hexside, fortress kinds) and `validateMap` | Ref 4.1-4.9 |
+| `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
+| `src/engine/actions.ts` | `legalActions`, `applyAction` (returns events), `replay` | (engine API) |
+| `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
+| `src/data/scenario-1939.ts` | 1939 scenario: dates, first side, BRPs, growth rates, statuses (Italy, USSR, USA neutral) | Ops 9.0; status screen |
 
 ## Map
 
 - Hex map of Europe, North Africa and the Near East. Pointy-top hexes in horizontal rows.
-- **Coordinates:** rows are lettered top to bottom `A`-`Z`, then `AA`, `BB`, ... `NN` (40 rows). Columns are numbered and run **diagonally down-left** (a column number stays the same as you step down-left). Row `A` spans columns 24-66; row `NN` spans 10-37. Hexes are named row+column, e.g. `K21` (Plymouth), `AA25` (Brindisi), `U40-U41` (Kerch Strait hexside), `P25` (Maginot hex).
-- This is an axial system: with `q` = column, `r` = row index, the six neighbours of `(q, r)` are `(q±1, r)`, `(q, r-1)`, `(q-1, r-1)`, `(q, r+1)`, `(q+1, r+1)`.
+- **Coordinates (Ref 4.1):** rows are lettered top to bottom `A`-`Z`, then `AA`, `BB`, ... `NN` (40 rows). Numbered hexrows run **diagonally from northwest to southeast**: a hex keeps its number as you step down-right. Row `A` spans numbers 24-66; row `NN` spans 10-37. Hexes are named row+number, e.g. `K21` (Plymouth), `AA25` (Brindisi), `U40-U41` (Kerch Strait hexside), `P25` (Maginot hex). Ref 4.1 examples: Lisbon V8, Marrakech EE2, Dublin H22, Rome Y22, Berlin L31, Helsinki D41, Moscow H47, Perma D61.
+- This is the standard axial system: `q` = hexrow number, `r` = row index (A = 0 ... Z = 25, AA = 26 ... NN = 39). The six neighbours of `(q, r)` are `(q±1, r)`, `(q, r-1)`, `(q+1, r-1)`, `(q-1, r+1)`, `(q, r+1)`. The hexsides the manual names (Qattara, Suez, Kerch) are adjacency tests in `tests/hex.test.ts`. An earlier version of this file said the hexrows run down-left; that was wrong (see `docs/AUDIT.md`, B1).
 - Fronts: Western, Eastern, Mediterranean (front-boundary hexsides drawn in red on the map).
 - Off-map boxes: United States, Murmansk Convoy (Allies / Axis halves), Lend-Lease.
 - Named exceptions in Ref 4.3-4.9: Qattara hexsides (NN25-NN26, NN26-NN27, MM26-NN26, MM27-NN26), crossing arrows (Denmark x3, Scotland, Turkish Straits x2, Kerch, Messina), Brindisi and Plymouth port sides, W52 Caspian peninsula ignored, DD28 islands, Malta and Gibraltar permanent fortresses, Maginot (Metz, Strasbourg, P25) not fortresses in 1942/1944, West Wall (Stuttgart, Frankfurt, Bonn, Essen) fortresses from 1944 if Axis-held, Sevastopol conditional.
@@ -37,7 +41,8 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 
 ## Discrepancies to keep in mind
 
-- The in-game status screen at 1939 setup shows "Initiative - Allies", but the Ops manual says "The Axis moves first" in 1939. The engine follows the manual.
+- The in-game status screen at 1939 setup shows "Initiative - Allies", but the Ops manual says "The Axis moves first" in 1939, and Ref 11.1 agrees (Axis 225 vs Allies 210). The engine follows the manuals.
+- Ref 11.1 totals are not alliance totals: Italy's BRPs always count for the Axis (the status screen's 225 includes neutral Italy), US BRPs count from Summer 1942, Soviet BRPs once the USSR is at war with Germany. The engine approximates "at war with Germany" by the USSR having joined the Allies until declarations of war are modelled.
 - The printed interception table lists "25-30" and "30+"; 30 is treated as 25-30.
 - Odds below 1:1: the manual says "fractions are ignored"; the engine rounds in the defender's favour (board-game convention). Verify in play.
 
@@ -46,4 +51,4 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
 - Force pools and allowable builds per scenario (pictures in the Ops manual; transcribe by eye).
 - Victory conditions (Ref 2.0-2.1).
-- Hex-by-hex map data (roadmap step 3).
+- Hex-by-hex map data (roadmap phase B).
