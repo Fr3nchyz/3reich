@@ -5,7 +5,7 @@ The goal is fidelity to the original game. The original manual is the source of 
 ## Things we need from the manual
 
 - [ ] Powers, their starting positions, and turn order (code currently assumes Germany, Italy, USSR, Britain, France, USA)
-- [ ] Which edition is being matched (the PC release vs. the board game it was based on, and which version)
+- [x] Edition: the 1996 Avalon Hill *Third Reich* for Windows, based on the board game *Rise and Decline of the Third Reich*. (Not the 1992 DOS *Computer Third Reich*, a different game.) Still to confirm with the family: the exact box/version, and how the PC game differs from the board game.
 - [ ] Map: regions/hexes, terrain, borders, ports, capitals, resource centers
 - [ ] Unit types, strengths, movement allowances, stacking limits
 - [ ] Combat results table and odds calculation (TODO: code has a placeholder table)
@@ -18,3 +18,11 @@ The goal is fidelity to the original game. The original manual is the source of 
 ## How to help
 
 Photograph or scan the manual (or the box contents) and add the images to a private folder; we transcribe rules into this file as structured notes, then encode them as data and tests.
+
+## Reference material found online
+
+- Wargame Academy *Third Reich* Amplified 4th Edition rulebook (a fan-maintained board-game rule set, so a close guide but not the PC manual): http://www.wargameacademy.org/3R4/3R4-rulebook-070908.pdf
+- The Gamer's Guide to Third Reich: https://www.wargamer.fr/pdf/the-gamers-guide-to-third-reich-avalon-hill.pdf
+- The PC game's own manual was not found online. The box contents, which the family owns, are the best source.
+
+We encode mechanics (numbers, tables, procedures) as data and tests in our own words. We do not copy manual text or art into this repo.
