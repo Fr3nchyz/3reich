@@ -1,0 +1,4 @@
+body { font-family: Georgia, serif; background: #1d1f1a; color: #e8e4d4; margin: 0; }
+main { max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
+button { font-size: 1rem; padding: .5rem 1rem; }
+.note { opacity: .7; }
