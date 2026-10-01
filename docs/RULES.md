@@ -24,6 +24,8 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
 | `src/engine/actions.ts` | `legalActions`, `applyAction` (returns events), `replay` | (engine API) |
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
+| `src/data/map.json` (+ `map.ts`) | The full map: 1,755 playable hexes (1,320 with land), 5,079 hexsides. Per hex: land terrain, sea, beach/city/port/capital/objective, name, fortress kind, country, front, US Box entry. Per hexside: land/sea crossability, river, crossing arrow, Qattara, Suez Canal, national and front boundaries | Reference map scan via `scripts/map/`; Ref 2.1, 4.1-4.9 |
+| `src/ui/mapView.ts` | Read-only SVG map (pan, zoom, pinch, hover info, front overlay) drawn in our own style | (UI) |
 | `src/data/scenario-1939.ts` | 1939 scenario: dates, first side, BRPs, growth rates, statuses (Italy, USSR, USA neutral) | Ops 9.0; status screen |
 
 ## Map
@@ -34,6 +36,18 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 - Fronts: Western, Eastern, Mediterranean (front-boundary hexsides drawn in red on the map).
 - Off-map boxes: United States, Murmansk Convoy (Allies / Axis halves), Lend-Lease.
 - Named exceptions in Ref 4.3-4.9: Qattara hexsides (NN25-NN26, NN26-NN27, MM26-NN26, MM27-NN26), crossing arrows (Denmark x3, Scotland, Turkish Straits x2, Kerch, Messina), Brindisi and Plymouth port sides, W52 Caspian peninsula ignored, DD28 islands, Malta and Gibraltar permanent fortresses, Maginot (Metz, Strasbourg, P25) not fortresses in 1942/1944, West Wall (Stuttgart, Frankfurt, Bonn, Essen) fortresses from 1944 if Axis-held, Sevastopol conditional.
+
+### How the map data was made
+
+`scripts/map/extract.py` reads the 300 dpi scan of the reference map (not in the repo; see `docs/SOURCES.md`) and writes `src/data/map.json`. It is reproducible: the same scan gives a byte-identical file.
+
+1. **Grid:** a hexagon template is matched across the scan and a cubic lattice fitted to 1,792 detected hex centres (median error 1 px). The 8 Ref 4.1 example cities land on their stated hexes.
+2. **Hexes:** land terrain and sea are measured from the printed colours. Solid black and grey areas are unplayable (Ref 4.2-4.3).
+3. **Hexsides:** colours on both sides decide land and sea crossability; blue lines are rivers; thick black lines are borders; red lines are front boundaries.
+4. **Curated by eye** (`scripts/map/curated.py`): the 197 printed city names and symbols, country seeds, crossing arrows, Qattara, Suez, fortresses, US Box entry hexes, and a few corrections.
+5. **Derived:** countries by flood fill inside borders; fronts per country, split where a red line divides one (East Prussia, Bessarabia are Eastern), with Mediterranean colonies (Gibraltar, Malta, Cyprus, Corsica) on that front; all-sea hexes get the front of their sea.
+
+Checks (`tests/map-data.test.ts`): `validateMap`, one connected map, Ref 4.1 and 4.7 example hexes, the 42 Objectives of Ref 2.1 each on its stated Front, Athens and Stockholm as the only capital-ports, the 8 crossing arrows, Qattara, Suez, fortresses, Switzerland unplayable.
 
 ## Scenarios (Ops 9.0)
 
@@ -51,4 +65,8 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
 - Force pools and allowable builds per scenario (pictures in the Ops manual; transcribe by eye).
 - Victory conditions (Ref 2.0-2.1).
-- Hex-by-hex map data (roadmap phase B).
+- Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
+  - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land.
+  - Beaches (36 detected from the tan coastal strip): the full list should be checked.
+  - Spelling of small-print minor city names (e.g. Ragusa, Mumanis, Kaf).
+  - Fronts of all-sea hexes are inferred from which sea they belong to; enclosed waters (Adriatic, Aegean, Azov, Gulf of Bothnia) take the front of their coasts.

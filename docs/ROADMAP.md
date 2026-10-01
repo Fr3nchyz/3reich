@@ -7,8 +7,8 @@ The engine enforces every rule and exposes one API used by both the UI and the A
 | Phase | Goal | Status |
 |---|---|---|
 | **A. Foundations** | Correct hex coordinates (`hex.ts`), action layer with events and replay, Initiative per Ref 11.1, scenario + required seed, headless-engine checks, invariant tests, map data types and validator | Done |
-| **B. Map data** | Digitise the reference-map scan into `src/data/map.json` against `validateMap`; spot-check Ref 4.1-4.9; a read-only map viewer to compare with the scan | Next |
-| **C. 1939 scenario and turn structure** | Full 1939 scenario (territory, setup, force pools, allowable builds) with Peele's errata; the complete sequence of play as phases; Year Start Sequence and economy state (year-start totals, spending, construction) | |
+| **B. Map data** | Digitise the reference-map scan into `src/data/map.json` against `validateMap`; spot-check Ref 4.1-4.9; a read-only map viewer to compare with the scan | Done (open checks in RULES.md) |
+| **C. 1939 scenario and turn structure** (next) | Full 1939 scenario (territory, setup, force pools, allowable builds) with Peele's errata; the complete sequence of play as phases; Year Start Sequence and economy state (year-start totals, spending, construction) | |
 | **D. Movement, ZOC, stacking, supply, control** | Ref 4-7, 10, through `legalActions` | |
 | **E. Combat procedures** | Offensive and exploitation, attrition hex selection, DoW and minor countries, air and naval combat (Ref 12-13, 20-21) | |
 | **F. Play UI** | Map, counters in our own art, unit tray, status and tables menus modelled on the original; touch and mouse | |

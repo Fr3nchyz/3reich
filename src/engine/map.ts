@@ -22,6 +22,9 @@ export type FortressKind =
   /** Fortress only while the USSR meets the supply conditions of Ref 4.8. */
   | "sevastopol";
 
+/** The three Fronts separated by the red lines on the map (Ref 4.4). */
+export type Front = "western" | "eastern" | "mediterranean";
+
 export interface MapHex {
   id: HexId;
   /** Land terrain, or null for an all-sea hex. */
@@ -31,8 +34,13 @@ export interface MapHex {
   features: readonly HexFeature[];
   /** Set on hexes that can be fortresses; current status lives in GameState.fortresses. */
   fortress?: FortressKind;
-  /** Country the hex belongs to at the start of play (land hexes only), e.g. "france". */
+  /** Country the hex belongs to as printed on the map (land hexes only), e.g. "france". */
   country?: string;
+  /**
+   * Front of the hex. A coastal hex takes the front of its land, because the land
+   * portion of a hex decides which Option applies (Ref 11.21).
+   */
+  front: Front;
   /** City name printed on the map. */
   name?: string;
   /** Green-dot ocean hex usable for fleet movement to and from the US Box (Ref 4.3). */
@@ -58,10 +66,12 @@ export interface MapHexside {
 }
 
 export interface MapData {
+  source?: string;
   hexes: Readonly<Record<HexId, MapHex>>;
   hexsides: Readonly<Record<HexsideId, MapHexside>>;
 }
 
+const FRONTS: readonly Front[] = ["western", "eastern", "mediterranean"];
 const NEEDS_LAND: readonly HexFeature[] = ["beach", "city", "port", "capital", "capital-port", "objective"];
 const NEEDS_SEA: readonly HexFeature[] = ["beach", "port", "capital-port"];
 
@@ -80,6 +90,8 @@ export function validateMap(map: MapData): string[] {
     }
     if (h.fortress && h.land === null) errors.push(`${key}: fortress needs land`);
     if (h.usBoxEntry && !h.sea) errors.push(`${key}: US Box entry needs sea`);
+    if (!FRONTS.includes(h.front)) errors.push(`${key}: no front`);
+    if ((h.land !== null) !== (h.country !== undefined)) errors.push(`${key}: land hexes, and only they, have a country`);
   }
 
   for (const [key, side] of Object.entries(map.hexsides)) {
@@ -100,6 +112,8 @@ export function validateMap(map: MapData): string[] {
     if (side.crossingArrow && (a.land === null || b.land === null)) errors.push(`${key}: crossing arrow needs land on both sides`);
     if (side.qattara && side.land) errors.push(`${key}: Qattara hexside cannot be crossable by land`);
     if (side.river && !side.land) errors.push(`${key}: river hexside must be a land hexside`);
+    if (Boolean(side.frontBoundary) !== (a.front !== b.front)) errors.push(`${key}: front boundary does not match the hexes' fronts`);
+    if (side.nationalBoundary && a.country === b.country) errors.push(`${key}: national boundary inside ${a.country}`);
   }
 
   // Every pair of adjacent playable hexes must have a hexside record.
