@@ -49,7 +49,7 @@ Target: a faithful, deterministic recreation of **Third Reich PC (1996)** per `d
   - `fortress` is a static `HexFeature` (`terrain.ts:16`, `51`).
   - `Unit.at` is a "Region id" (`types.ts:43-44`), and the `Region` placeholder from the first scaffold is still there (`types.ts:47-54`, `65`; `game.ts:18`).
 - **Finding:** Ref 4.3 says a hex can be part land and part sea, and that ground and naval movement are decided **per hexside** ("land area on both sides", "blue on both sides"). Brindisi has two ocean areas (Ref 4.7). Some hexes are unplayable (Switzerland, the black islands). Fortress status changes during play (Ref 4.8): it is lost on enemy occupation, the Maginot Line is not a fortress in 1942/1944, the West Wall becomes one in 1944, and Sevastopol is conditional.
-- **Impact:** Digitising roughly 1,700 hexes into the current model would bake in errors that are expensive to find later.
+- **Impact:** Digitising the whole map into the current model would bake in errors that are expensive to find later.
 - **Recommendation:** Design the map types before digitising:
   - **Hex:** playable, land terrain or none, has sea, static features, country, potential fortress.
   - **Hexside:** land-crossable, sea-crossable, river, crossing arrow, Qattara, national/front boundary.
