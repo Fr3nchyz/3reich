@@ -1,60 +1,79 @@
 /**
- * Terrain effects, transcribed from the PC game's in-game Terrain Effects Chart.
- * Multipliers apply to the defender's strength. How multipliers combine when several
- * apply to one attack (e.g. a river in front of a mountain hex) is not on the chart:
- * TODO confirm in the Reference Manual before implementing combat.
+ * Terrain and its effect on defence. Source: PC Reference Manual 4.5-4.9 and the
+ * Terrain Effects Chart (see docs/RULES.md).
  */
-export type TerrainId =
+
+/** Base terrain of a hex. Cities, ports, beaches etc. are features on top of it. */
+export type TerrainId = "plain" | "mountains" | "swamp" | "qattara-depression" | "ocean" | "lake";
+
+export type HexFeature =
   | "beach"
+  | "city"
+  | "port"
   | "capital"
   | "capital-port"
-  | "city"
-  | "fortress"
-  | "lake"
-  | "mountains"
   | "objective"
-  | "ocean"
-  | "plain"
-  | "swamp"
-  | "qattara-depression";
+  | "fortress";
 
-export interface TerrainEffect {
-  /** Defender strength multiplier. */
-  defense: number;
-  /** Defense multiplier when attacked by Seaborne Invasion (beaches only). */
-  defenseVsSeaborne?: number;
-  /** Cannot be chosen for the attacker's Attrition advance after combat. */
-  noAttritionAdvance?: boolean;
-  /** Cannot be taken by Attrition or Isolation, and ZOC has no effect. */
-  fortress?: boolean;
-  /** Ground units may be landed here by Seaborne Invasion. */
-  seaborneLanding?: boolean;
-  /** Can be used as an air base. */
-  airBase?: boolean;
-  /** Can be used as a naval base. */
-  navalBase?: boolean;
+export type HexsideFeature =
+  | "river"
+  | "crossing-arrow"
+  /** Hexes touching only along coastline: no movement or combat across. */
+  | "coastline-only"
+  /** All-water (lake/ocean) hexside: no ground movement or combat across. */
+  | "all-water"
+  /** All-Qattara hexside: no movement, combat or supply across. */
+  | "qattara"
+  | "national-boundary"
+  | "front-boundary";
+
+export interface DefenseSituation {
+  terrain: TerrainId;
+  features?: readonly HexFeature[];
+  /**
+   * True when the defender is behind a river or crossing arrow and every attacker is on
+   * the far side. Any attacking ground unit (including airdropped) on the defender's
+   * side cancels this.
+   */
+  behindRiverOrArrow?: boolean;
+  /** True when the attack includes a Seaborne Invasion. */
+  seaborneInvasion?: boolean;
 }
 
-export const TERRAIN_EFFECTS: Record<TerrainId, TerrainEffect> = {
-  beach: { defense: 2, defenseVsSeaborne: 3, seaborneLanding: true },
-  capital: { defense: 1, noAttritionAdvance: true, airBase: true },
-  "capital-port": { defense: 1, noAttritionAdvance: true, airBase: true, navalBase: true },
-  city: { defense: 1, airBase: true },
-  fortress: { defense: 4, fortress: true },
-  lake: { defense: 1 },
-  mountains: { defense: 3 },
-  objective: { defense: 1, noAttritionAdvance: true, airBase: true },
-  ocean: { defense: 1 },
-  plain: { defense: 2 },
-  swamp: { defense: 3 },
-  "qattara-depression": { defense: 1 },
-};
+/**
+ * Multiplier applied to each defending ground unit. Defence is at least doubled in any
+ * terrain; tripled in mountains, swamp, behind a river/crossing arrow, or on a beach
+ * against Seaborne Invasion; quadrupled in a fortress. Benefits are not cumulative:
+ * the single best applies (a unit on a mountain behind a river is only tripled).
+ */
+export function defenseMultiplier(s: DefenseSituation): number {
+  const features = s.features ?? [];
+  if (features.includes("fortress")) return 4;
+  if (s.terrain === "mountains" || s.terrain === "swamp") return 3;
+  if (s.behindRiverOrArrow) return 3;
+  if (s.seaborneInvasion && features.includes("beach")) return 3;
+  return 2;
+}
 
-/** Defense multipliers for hexside features, applied to attacks across them. */
-export const HEXSIDE_DEFENSE: Record<"river" | "crossing-arrow", number> = {
-  river: 3,
-  "crossing-arrow": 3,
-};
+/** Hex features that can never be chosen for occupation after Attrition combat. */
+export const NO_ATTRITION_OCCUPATION: readonly HexFeature[] = [
+  "capital",
+  "capital-port",
+  "objective",
+  "fortress",
+];
 
-/** Air units can cross ocean only if they can stage to another base within this many hexes. */
+/** Features that can base air units (every city type, per Reference Manual 4.7). */
+export const AIR_BASE_FEATURES: readonly HexFeature[] = [
+  "city",
+  "port",
+  "capital",
+  "capital-port",
+  "objective",
+];
+
+/** Features that can base fleets. */
+export const NAVAL_BASE_FEATURES: readonly HexFeature[] = ["port", "capital-port"];
+
+/** Air units cross ocean only if they can stage to another base within this many hexes. */
 export const MAX_OCEAN_AIR_STAGE_HEXES = 8;
