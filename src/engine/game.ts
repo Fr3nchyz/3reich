@@ -7,13 +7,13 @@ export function otherSide(side: Side): Side {
   return side === "axis" ? "allies" : "axis";
 }
 
-/** The Fall 1939 scenario starts with the Allies holding the initiative. */
+/** 1939 scenario: "The Axis moves first" (Operations Manual, 1939 scenario). */
 export function newGame(seed = Date.now() >>> 0): GameState {
   return {
     year: 1939,
     season: "fall",
-    firstSide: "allies",
-    activeSide: "allies",
+    firstSide: "axis",
+    activeSide: "axis",
     nations: fall1939Nations(),
     regions: {},
     units: {},

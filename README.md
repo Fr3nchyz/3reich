@@ -2,7 +2,7 @@
 
 A playable recreation of the classic WWII grand-strategy wargame *Third Reich*, built to run in any modern web browser. It is meant to be easy for anyone to pick up: open a link, no install, no CD-ROM.
 
-> **Status: early scaffold.** The turn sequence, a seeded dice engine and a placeholder combat table exist. The map, units and real rules do not yet. See [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: early.** The real combat results, attrition, terrain, cost and modifier tables from the original game are encoded and tested. The map, units on the map and most procedures are not built yet. See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Run it
 
@@ -27,5 +27,7 @@ This is an independent, from-scratch implementation. It contains no code, artwor
 
 ## Docs
 
-- [docs/RULES.md](docs/RULES.md): rules we need to transcribe and verify against the original manual
+- [docs/RULES.md](docs/RULES.md): what is encoded, sources, coordinates, open questions
+- [docs/SOURCES.md](docs/SOURCES.md): where to download the original manuals and map
+- [docs/AGENT_BRIEF.md](docs/AGENT_BRIEF.md): task list for contributors and AI agents
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones
