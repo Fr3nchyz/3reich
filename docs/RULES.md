@@ -46,4 +46,4 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
 - Force pools and allowable builds per scenario (pictures in the Ops manual; transcribe by eye).
 - Victory conditions (Ref 2.0-2.1).
-- Hex-by-hex map data (see AGENT_BRIEF task 1).
+- Hex-by-hex map data (roadmap step 3).
