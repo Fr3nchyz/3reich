@@ -5,6 +5,7 @@
 3. **Map**: region data file, SVG/canvas rendering, pan and zoom.
 4. **Units and movement**: setup, selection, legal-move validation.
 5. **Combat and economy**: real results table, production, replacement.
-6. **Hot-seat play**: full turn flow for two or more humans on one screen, save/load to a file.
-7. **Computer opponent**: simple AI for solo play.
-8. **Polish for real use**: large readable UI, undo, tooltips, installable offline (PWA).
+6. **Scenarios**: 1939, 1942, 1944 and the 1939-1946 Campaign, as data files.
+7. **Hot-seat play**: full turn flow for two or more humans on one screen, save/load to a file.
+8. **Computer opponent**: simple AI for solo play.
+9. **Polish for real use**: large readable UI, undo, tooltips, installable offline (PWA).

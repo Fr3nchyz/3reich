@@ -11,9 +11,9 @@ The goal is fidelity to the original game. The original manual is the source of 
 - [ ] Combat results table and odds calculation (TODO: code has a placeholder table)
 - [ ] Economy/production system and how units are built
 - [ ] Diplomacy, neutrals/minor countries, and how they join the war
-- [ ] Weather/seasonal effects and the game calendar (code currently starts Fall 1939)
-- [ ] Victory conditions and scenarios
-- [ ] Fog of war / AI opponent behaviour (if the PC version had them)
+- [ ] Weather/seasonal effects and the game calendar (code currently starts Fall 1939; the box says the campaign runs from the invasion of Poland to the fall of Berlin, so the real start date needs confirming)
+- [ ] Victory conditions (the four scenarios are listed below)
+- [ ] AI opponent behaviour (the box advertises a "Sophisticated A.I." for solo play; no fog of war mentioned)
 
 ## How to help
 
@@ -51,3 +51,13 @@ What this tells us: the PC game follows the board game's structure closely (Murm
 ## Map plan
 
 The map is the biggest piece of game data. We will not copy the printed artwork. Plan: draw our own map from public-domain geography, laid out on a hex grid that matches the original's structure (hex coordinates, terrain per hex, borders, ports, objectives). The family's physical copy is the check: someone compares our hex grid against the printed map, region by region, and flags differences.
+
+## From the back of the box
+
+- **Scope:** the entire war in Europe, six years, from the invasion of Poland to the fall of Berlin; Portugal to Moscow, Norway to North Africa. All air, ground and sea forces of the historical belligerents **plus Spain and Turkey**. Described as a faithful adaptation of the Avalon Hill board game.
+- **Players:** two humans, or one human against the computer AI.
+- **Four scenarios:** 1939, 1942, 1944, and the full Campaign 1939-1946.
+- **In the box:** a 40-page operations manual, a 48-page reference manual, and a 15" x 22" full-colour reference map of Europe.
+- **Screens shown on the box:** a hex map with unit counters, colour-coded national territory, a declaration-of-war screen, a mini-map in the corner, and a national flag bar. Good targets for our UI.
+
+The operations manual (how to play the program) and reference manual (the rules) are the two documents we most need photographed.
