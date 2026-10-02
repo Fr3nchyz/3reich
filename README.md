@@ -31,7 +31,14 @@ Requires Node 20+.
 
 ## Legal
 
-This is an independent, from-scratch implementation. It contains no code, artwork, map scans or rulebook text from the original Avalon Hill / Atomic Games products. *Third Reich* and *Avalon Hill* are trademarks of their respective owners; this project is not affiliated with or endorsed by them.
+**Unofficial fan project, not affiliated with or endorsed by Avalon Hill or Hasbro.** *Third Reich* and *Avalon Hill* are trademarks of their respective owners. This is a private, non-commercial tribute to the 1996 PC game.
+
+- The code is written from scratch, and the rules are written in our own words from the game's manuals. No scans, screenshots, game files, artwork or manual text are in this repository.
+- The map data (`src/data/map.json`) was measured from the original printed reference map: terrain, borders, city names and positions. It is the one part derived from the original publisher's artwork, so it is the first thing to replace if this project ever goes public.
+- Art is our own. National markers use plain colours and names, with no Nazi symbols.
+- The repository is private and the site is not listed in search engines. If it were ever made public, it should be renamed and the map replaced first.
+
+This is a note about intent, not legal advice.
 
 ## Docs
 
