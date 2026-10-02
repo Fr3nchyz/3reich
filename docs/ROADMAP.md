@@ -11,7 +11,7 @@ The engine enforces every rule and exposes one API used by both the UI and the A
 | **C. 1939 scenario and turn structure** (next) | Full 1939 scenario (territory, setup, force pools, allowable builds) with Peele's errata; the complete sequence of play as phases; Year Start Sequence and economy state (year-start totals, spending, construction) | |
 | **D. Movement, ZOC, stacking, supply, control** | Ref 4-7, 10, through `legalActions` | |
 | **E. Combat procedures** | Offensive and exploitation, attrition hex selection, DoW and minor countries, air and naval combat (Ref 12-13, 20-21) | |
-| **F. Play UI** | Map, counters in our own art, unit tray, status and tables menus modelled on the original; touch and mouse | |
+| **F. Play UI** | Map, counters in our own art, unit tray, status and tables menus modelled on the original; touch and mouse. National markers are plain colours and names, with no Nazi symbols (flags included). Nothing important behind hover or right-click, so an iPad version stays cheap. | |
 | **G. Computer opponent v1** | Rule-based, plays either side, only through `legalActions` | |
 | | **First playable release: 1939 scenario vs the computer**, with autosave, save slots and save files | |
 | **H. Fidelity and regression** | Golden games, a regression test for every corrected rule, comparison with the original in DOSBox; 1942, 1944 and Campaign scenarios; stronger AI and difficulty levels; offline install and hosting | |
