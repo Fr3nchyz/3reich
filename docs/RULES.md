@@ -26,7 +26,7 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
 | `src/data/map.json` (+ `map.ts`) | The full map: 1,755 playable hexes (1,320 with land), 5,079 hexsides. Per hex: land terrain, sea, beach/city/port/capital/objective, name, fortress kind, country, front, US Box entry. Per hexside: land/sea crossability, river, crossing arrow, Qattara, Suez Canal, national and front boundaries | Reference map scan via `scripts/map/`; Ref 2.1, 4.1-4.9 |
 | `src/ui/mapView.ts` | Read-only SVG map (pan, zoom, pinch, hover info, front overlay) drawn in our own style | (UI) |
-| `src/data/scenario-1939.ts` | 1939 scenario: dates, first side, BRPs, growth rates, statuses (Italy, USSR, USA neutral) | Ops 9.0; status screen |
+| `src/data/scenario-1939.ts` | 1939 scenario: dates, first side, BRPs, growth rates, statuses (Italy, USSR, USA neutral); for Poland and the six Major Powers the territory controlled at start, opening setup requirements, force pool and allowable builds (counter by counter); order of deployment; wars at start; the automatic US declaration, the Summer '42 invasion ban and the 1940 growth rule; prose rules not yet applied | Ops 9.0 pp. 20-21; Ref 26.0, 29.0; Peele errata; status screen |
 
 ## Map
 
@@ -51,7 +51,7 @@ Checks (`tests/map-data.test.ts`): `validateMap`, one connected map, Ref 4.1 and
 
 ## Scenarios (Ops 9.0)
 
-Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946). Each lists per nation: BRPs at start, growth rate, territory controlled at start, setup requirements, force pool (counter pictures), allowable builds. 1939: Italy 75/20%, France 85/30%, Britain 125/40%, Germany 150/50%, USSR 90/30%, USA 270/60%. Order of deployment: Poland, Italy, France, Britain, USSR, Germany. USA auto-declares war on Germany in Allied Spring '42. Apply Peele's errata to the 1939 setup text.
+Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946). **Only 1939 is encoded so far.** Each lists per nation: BRPs at start, growth rate, territory controlled at start, setup requirements, force pool (counter pictures), allowable builds. 1939: Italy 75/20%, France 85/30%, Britain 125/40%, Germany 150/50%, USSR 90/30%, USA 270/60%. Order of deployment: Poland, Italy, France, Britain, USSR, Germany. USA auto-declares war on Germany in Allied Spring '42. Apply Peele's errata to the 1939 setup text.
 
 ## Discrepancies to keep in mind
 
@@ -63,7 +63,9 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 ## Open questions
 
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
-- Force pools and allowable builds per scenario (pictures in the Ops manual; transcribe by eye).
+- Force pools, allowable builds and setup rules for the 1942, 1944 and Campaign scenarios (pictures in the Ops manual, pp. 22-27; read them off the page as for 1939).
+- The **Polish Partition Line**: the 1939 and Campaign scenarios draw it in red through Poland, and German units east of it are eliminated at the end of Fall 1939. It is drawn by the program and is not on the printed map card, and the manuals do not name its hexes. A screenshot of the 1939 starting position in the original game would settle it.
+- The USA's setup turn: the 1939 page's text is cut off in the scan ("in Spring ..."); the 1942 page says Spring '42, which matches the automatic declaration. Encoded as Spring '42.
 - Victory conditions (Ref 2.0-2.1).
 - Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
   - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land.
