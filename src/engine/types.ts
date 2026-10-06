@@ -46,24 +46,35 @@ export type OffMapBox = "us-box" | "murmansk-box";
 
 export interface Unit {
   id: string;
-  owner: PowerId;
+  /** Who controls the counter: a Major Power, Minor-Ally or minor country. */
+  owner: ForceOwner;
+  /** Set when the counter belongs to another nation than its owner (the Italian fleet Germany holds in 1944). */
+  nationality?: ForceOwner;
   type: UnitType;
   /**
    * Ground units print "attack-and-defense factor / movement factor" (e.g. 3-4). Air units
    * print "air factor / movement factor"; fleets print a single combat factor.
    */
   strength: number;
-  movement: number;
+  /** Absent for fleets and replacements, which print a single factor. */
+  movement?: number;
   /** Hex id (e.g. "K21") or an off-map box. */
   at: HexId | OffMapBox;
 }
 
 /**
- * Where the game is in the sequence of play. Steps inside a player turn (declarations
- * of war, front options, movement, combat, construction, redeployment) are added with
- * the phase machine; see docs/ROADMAP.md.
+ * Where the game is. "setup" is the opening deployment (Ops 4.0), "player-turn" the sequence
+ * of play (see sequence.ts; the steps inside a player turn are added as their rules are
+ * implemented, see docs/ROADMAP.md), "game-over" the end of the scenario.
  */
-export type Phase = "player-turn" | "game-over";
+export type Phase = "setup" | "player-turn" | "game-over";
+
+/** Opening deployment: each owner sets up in the scenario's order of deployment (Ops 4.1, 7.0). */
+export interface SetupProgress {
+  order: ForceOwner[];
+  /** Index into `order` of the owner now setting up. */
+  index: number;
+}
 
 /**
  * Who owns a force pool: the six Major Powers, Poland (1939 and Campaign), the Free and
@@ -144,8 +155,12 @@ export type SetupRequirement =
   | { kind: "all-in"; types: UnitType[] | "all"; nationality?: ForceOwner | "own"; in: Area[] }
   /** Every counter not placed by another requirement must go in these areas. */
   | { kind: "rest-in"; in: Area[] }
-  /** At least this many ground and/or air factors on a Front (Ref 29.0 for Germany). */
-  | { kind: "min-factors"; front: Front; min: number }
+  /**
+   * At least this many ground and/or air factors on a Front (Ref 29.0 for Germany). Only the
+   * owner's own units count. `alsoCountsAdjacentTo`: for the opening setup, units on the Western
+   * Front next to this country's border count too; `excludeCountries`: units there do not count.
+   */
+  | { kind: "min-factors"; front: Front; min: number; alsoCountsAdjacentTo?: string; excludeCountries?: string[] }
   /** At most this many ground and/or air factors in an area. */
   | { kind: "max-factors"; area: Area; max: number }
   /** At least this many ground factors in or adjacent to any of these hexes. */
@@ -220,7 +235,11 @@ export interface GameState {
   strategicWarfare: Record<PowerId, StrategicWarfare>;
   /** Minor-Allies and whether each is active. */
   minorAllies: MinorAlly[];
+  /** Present while `phase` is "setup"; null once play has begun. */
+  setup: SetupProgress | null;
   units: Record<string, Unit>;
+  /** Next number to use in a unit id ("u1", "u2", ...). */
+  nextUnitId: number;
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
   /** Deterministic RNG state; advanced on every roll. */
