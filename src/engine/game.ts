@@ -28,8 +28,9 @@ export function setupOf(scenario: Scenario, owner: ForceOwner): NationSetup {
 }
 
 /**
- * Start a game. The seed is required so every game can be replayed; the UI chooses it
- * and stores it with the save.
+ * Start a game in the opening setup (Ops 4.0): every owner in the scenario's order of
+ * deployment places its force pool, then the first Player Turn begins. The seed is required
+ * so every game can be replayed; the UI chooses it and stores it with the save.
  */
 export function newGame(scenario: Scenario, seed: number): GameState {
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) throw new Error(`Invalid seed: ${seed}`);
@@ -53,13 +54,15 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     lastTurn: { ...scenario.end },
     firstSide: scenario.firstSide,
     activeSide: scenario.firstSide,
-    phase: "player-turn",
+    phase: "setup",
     nations,
     pools,
     wars: scenario.warsAtStart.map(([a, b]) => [a, b]),
     strategicWarfare,
     minorAllies: scenario.minorAllies.map((m) => ({ ...m })),
+    setup: { order: [...scenario.deploymentOrder], index: 0 },
     units: {},
+    nextUnitId: 1,
     fortresses: {},
     rngState: seed,
   };

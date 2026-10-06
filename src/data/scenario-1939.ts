@@ -134,9 +134,9 @@ export const SCENARIO_1939: Scenario = {
       // East Prussia is part of Germany on the map.
       controlledAtStart: ["germany"],
       setup: [
-        // Ref 29.0. For the opening setup only, Western Front units adjacent to the Polish
-        // border also count toward the 20 factors (checked when setup is implemented).
-        { kind: "min-factors", front: "eastern", min: 20 },
+        // Ref 29.0. Italian and Minor-Ally units, and units in Rumania or Turkey, do not count; for the
+        // opening setup only, Western Front units adjacent to the Polish border also count.
+        { kind: "min-factors", front: "eastern", min: 20, alsoCountsAdjacentTo: "poland", excludeCountries: ["rumania", "turkey"] },
         // Peele's errata: the 20-factor allowance for Finland, Hungary, Rumania and Bulgaria is
         // removed, but no more than 5 factors may set up in Finland.
         { kind: "max-factors", area: { country: "finland" }, max: 5 },

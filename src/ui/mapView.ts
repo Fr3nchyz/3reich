@@ -1,5 +1,6 @@
 import { hex, type Hex } from "../engine/hex";
 import type { Front, MapData, MapHex } from "../engine/map";
+import type { ForceOwner, Unit } from "../engine/types";
 
 /**
  * Read-only SVG map. Drawn in our own style from the map data (no scanned artwork).
@@ -32,6 +33,31 @@ const TERRAIN_FILL: Record<string, string> = {
 };
 const SEA = "#9cc3df";
 const FRONT_TINT: Record<Front, string> = { western: "#d1495b", eastern: "#3d5a98", mediterranean: "#e0a526" };
+
+/** Counter colours follow the printed counters: plain colours and numbers, no emblems. */
+const OWNER_COLOURS: Record<ForceOwner, { fill: string; text: string }> = {
+  germany: { fill: "#3a3340", text: "#f2efe2" },
+  italy: { fill: "#8e99b0", text: "#101418" },
+  france: { fill: "#5b8ad0", text: "#101418" },
+  "vichy-france": { fill: "#5b8ad0", text: "#101418" },
+  "free-france": { fill: "#5b8ad0", text: "#101418" },
+  britain: { fill: "#d9b46a", text: "#101418" },
+  ussr: { fill: "#a0663e", text: "#f2efe2" },
+  usa: { fill: "#7ea642", text: "#101418" },
+  poland: { fill: "#e6c54f", text: "#101418" },
+  finland: { fill: "#b4b0a4", text: "#101418" },
+  rumania: { fill: "#b4b0a4", text: "#101418" },
+  hungary: { fill: "#b4b0a4", text: "#101418" },
+  bulgaria: { fill: "#b4b0a4", text: "#101418" },
+};
+
+const TYPE_MARK: Record<string, string> = { infantry: "", armor: "▭", airborne: "⌃", replacement: "r", air: "✈", fleet: "⚓", airbase: "", bridgehead: "" };
+
+/** One counter's label: "3-4" for ground and air units, "9" for fleets, with a mark for the type. */
+export function counterLabel(u: Pick<Unit, "type" | "strength" | "movement">): string {
+  const mark = TYPE_MARK[u.type] ?? "";
+  return `${mark}${u.strength}${u.movement !== undefined ? `-${u.movement}` : ""}`;
+}
 
 const fmt = (n: number) => n.toFixed(1);
 const points = (pts: [number, number][]) => pts.map(([x, y]) => `${fmt(x)},${fmt(y)}`).join(" ");
@@ -85,7 +111,7 @@ export interface MapViewOptions {
   onHover?: (h: MapHex | null) => void;
 }
 
-export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOptions = {}): { setFronts(on: boolean): void } {
+export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOptions = {}): { setFronts(on: boolean): void; setUnits(units: readonly Unit[]): void } {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   let hexLayer = "", frontLayer = "", cityLayer = "";
   for (const h of Object.values(map.hexes)) {
@@ -128,6 +154,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
       <g class="blocked">${blocked}</g>
       <g class="arrows">${arrows}</g>
       <g class="cities">${cityLayer}</g>
+      <g class="units"></g>
       <polygon class="hover" points="" />
     </svg>`;
   const svg = container.querySelector("svg")!;
@@ -181,5 +208,26 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     }
     opts.onHover?.(h);
   });
-  return { setFronts: (on) => { tint.style.display = on ? "inline" : "none"; } };
+  const unitLayer = svg.querySelector<SVGGElement>("g.units")!;
+  const setUnits = (units: readonly Unit[]) => {
+    const stacks = new Map<string, Unit[]>();
+    for (const u of units) {
+      if (!map.hexes[u.at]) continue; // off-map boxes are listed outside the map
+      (stacks.get(u.at) ?? stacks.set(u.at, []).get(u.at)!).push(u);
+    }
+    let out = "";
+    for (const [at, stack] of stacks) {
+      const [cx, cy] = hexCenter(hex(at));
+      // Draw the stack bottom to top, each counter a little up and to the right of the one below it.
+      stack.slice(-4).forEach((u, i) => {
+        const c = OWNER_COLOURS[u.owner];
+        const x = cx - 4.6 + i * 1.3, y = cy - 2.6 - i * 1.3;
+        out += `<g><rect x="${fmt(x)}" y="${fmt(y)}" width="9.2" height="6" rx=".8" fill="${c.fill}" stroke="#101418" stroke-width=".5"/>` +
+          `<text x="${fmt(x + 4.6)}" y="${fmt(y + 4.3)}" fill="${c.text}">${escape(counterLabel(u))}</text></g>`;
+      });
+      if (stack.length > 4) out += `<text class="more" x="${fmt(cx + 6)}" y="${fmt(cy + 6)}">+${stack.length - 4}</text>`;
+    }
+    unitLayer.innerHTML = out;
+  };
+  return { setFronts: (on) => { tint.style.display = on ? "inline" : "none"; }, setUnits };
 }

@@ -24,6 +24,9 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
 | `src/engine/actions.ts` | `legalActions`, `applyAction` (returns events), `replay` | (engine API) |
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
+| `src/engine/context.ts` | `GameContext` (map + scenario), passed with the state to `legalActions`, `applyAction` and `replay` so the engine imports no data | (engine API) |
+| `src/engine/setup.ts`, `autosetup.ts` | Opening setup phase: owners deploy in the scenario's order; placement legality (territory, base suitability, stacking, Anglo-French rule, factor limits), requirement checks before Done, setup status per scenario; a placeholder automatic setup | Ops 4.0, 4.1, 7.0; Ref 5.0, 17.3, 26.0, 29.0 |
+| `src/engine/sequence.ts` | The Sequence of Play as typed data: Year Start Sequence, Game Turn steps, the ten Player Turn steps and their sub-steps, with Ops section ids | Map card; Ops 5.0 |
 | `src/data/map.json` (+ `map.ts`) | The full map: 1,755 playable hexes (1,320 with land), 5,079 hexsides. Per hex: land terrain, sea, beach/city/port/capital/objective, name, fortress kind, country, front, US Box entry. Per hexside: land/sea crossability, river, crossing arrow, Qattara, Suez Canal, national and front boundaries | Reference map scan via `scripts/map/`; Ref 2.1, 4.1-4.9 |
 | `src/ui/mapView.ts` | Read-only SVG map (pan, zoom, pinch, hover info, front overlay) drawn in our own style | (UI) |
 | `src/data/scenario-1939.ts`, `scenario-1942.ts`, `scenario-1944.ts`, `scenario-campaign.ts` | The four scenarios: dates, first side, BRPs, growth rates, statuses; per owner the territory controlled at start, opening setup requirements, force pool and allowable builds (counter by counter, with "in/after" build dates); order of deployment; wars and Minor-Allies at start; Year Start Sequence and Strategic Warfare at start; machine-readable scenario rules; prose rules not yet applied | Ops 9.0 pp. 20-27; Ref 17.3, 26.0, 29.0, 35.0; Peele errata; status screen |
@@ -77,6 +80,27 @@ All four are encoded as data: 1939, 1942, 1944 and Campaign. Each lists per owne
 
 Several pages name territory that the printed map does not draw: the "scenario start line" (the U.S.S.R. east/west, Libya east/west of Tobruk, Italy north/south in 1944), the Polish Partition Line, the Vichy France hexes, and a few regions. They are `zones` in each scenario, with `hexes: null` until known. `tests/scenario-data.test.ts` lists exactly which zones are unresolved, so the open questions below cannot drift. Islands (Corsica, Sicily, Sardinia, Rhodes) and mainland France are read off the digitised map.
 
+## Opening setup and the sequence of play
+
+**Setup** (Ops 4.0-4.1, 7.0). A new game starts in the `setup` phase. Each owner in the scenario's order of deployment places its Force Pool one counter at a time (`SETUP_PLACE`), may take counters back (`SETUP_REMOVE`), and presses Done (`SETUP_DONE`); after the last owner the first Player Turn begins. A placement is legal if:
+
+- the hex is in the owner's territory (countries and zones controlled at start, plus the "may also set up in" permissions such as Germany's Finland, Hungary, Rumania and Bulgaria); counters named by an all-in requirement (Poland: all in Poland; Italy: fleets in Mediterranean ports; the U.S. Box) are confined to its areas;
+- it suits the counter: ground units on land, air units on a city, port or capital, fleets in a port (Ref 4.7);
+- stacking holds (Ref 5.0): two ground units per hex (three in London if all British; airborne never count), 5 air factors per base, 36 naval factors per port; before 1942 British and French units do not share a hex (Ref 26.0);
+- a maximum such as Peele's five factors in Finland is not exceeded.
+
+Done is legal when every counter is placed and every requirement is met: the units the page names ("at least", Ops 4.1), the 20 German factors on the Eastern Front (Western Front hexes next to Poland count for the opening setup; units in Rumania or Turkey do not), the Soviet cities, and so on. `setupStatus` says whether a scenario can be set up yet: 1939 and Campaign can; 1942 and 1944 wait on the zones in "Open questions". `autoSetup` produces a legal, not sensible, setup so the game can start before the setup screen and the computer opponent exist.
+
+**Sequence of play** (`sequence.ts`, from the map card, with the Ops 5.0 section for each step). The engine plays only the steps whose rules are implemented; the rest follow as their rules are written:
+
+| Step | Status |
+|---|---|
+| Year Start Sequence (A strategic warfare, B BRP totals, C SW construction) | Hook only; not run |
+| II.B Determination of Player-Turn Order (Ref 11.1) | Done |
+| II.A Russian-Winter roll; Player Turn steps 1-10 and their sub-steps | Not yet; a Player Turn is one End Turn action |
+
+The U.S. units that set up in the U.S. Box in Spring '42 (1939 and Campaign) are not placed yet: that belongs with the Declaration of War rules.
+
 ## Discrepancies to keep in mind
 
 - The in-game status screen at 1939 setup shows "Initiative - Allies", but the Ops manual says "The Axis moves first" in 1939, and Ref 11.1 agrees (Axis 225 vs Allies 210). The engine follows the manuals.
@@ -95,6 +119,7 @@ Several pages name territory that the printed map does not draw: the "scenario s
 - The Britain "Controlled at start" lists in 1942 and 1944 leave out Egypt, but the setup text places British units there (1942) and Egypt is British in 1939. Egypt is encoded as British in all four scenarios.
 - The 1942 USSR setup: "at least six ground factors must set up in and/or adjacent to Leningrad and Moscow". Encoded as one total across both; the page does not say whether it applies to each city.
 - Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers (see below).
+- Setup assumptions to check against the original: a nation must place every Force Pool counter at setup (the manual does not say it may hold some back); partial air units at setup (Ops 4.11) are not offered; "double city" air stacking (10 and 15 factors) is not on the map data, so every base holds 5; Germany's ban on setting up in Bessarabia in Fall 1939 (Ref 29.0) is not enforced because Bessarabia's hexes are not marked; Axis Minor-Allies' "Axis-controlled hexes only" (Ref 17.3) is carried in the data but not yet checked.
 - Victory conditions (Ref 2.0-2.1).
 - Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
   - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land. DD19 (Sicily's west tip) looks like another.

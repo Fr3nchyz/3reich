@@ -26,6 +26,10 @@ export const BUILD_COST_PER_FACTOR = {
 export const STACKING_LIMIT = 2;
 export const STACKING_LIMIT_LONDON_BRITISH = 3;
 export const STACKING_LIMIT_BRIDGEHEAD = 5;
+/** Ref 5.0: at most 5 air factors on each airbase or city (double cities are not marked on the map yet). */
+export const AIR_FACTOR_STACKING_LIMIT = 5;
+/** Ref 5.0: up to 36 naval factors in one port. */
+export const NAVAL_FACTOR_STACKING_LIMIT = 36;
 
 /**
  * Interception table: die rolls (1-6) that allow interception, by distance from the
