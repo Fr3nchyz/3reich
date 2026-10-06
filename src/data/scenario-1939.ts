@@ -1,20 +1,5 @@
-import type { ForceEntry, Nation, NationStatus, PowerId, Scenario } from "../engine/types";
-
-const nation = (id: PowerId, status: NationStatus, brp: number, growthRate: number): Nation => ({
-  id,
-  status,
-  brpBase: brp,
-  brpTotal: brp,
-  growthRate,
-});
-
-// Counter stacks as printed on the scenario pages: "3-4 infantry x3" is inf(3, 4, 3).
-const inf = (strength: number, movement: number, count: number): ForceEntry => ({ type: "infantry", strength, movement, count });
-const armor = (strength: number, movement: number, count: number): ForceEntry => ({ type: "armor", strength, movement, count });
-const airborne = (strength: number, movement: number, count: number): ForceEntry => ({ type: "airborne", strength, movement, count });
-const air = (strength: number, movement: number, count: number): ForceEntry => ({ type: "air", strength, movement, count });
-const fleet = (strength: number, count: number): ForceEntry => ({ type: "fleet", strength, count });
-const replacement = (count: number): ForceEntry => ({ type: "replacement", strength: 1, count });
+import type { Scenario } from "../engine/types";
+import { air, airborne, armor, fleet, inf, nation, nationSetup, replacement } from "./counters";
 
 /**
  * 1939 scenario. Source: Ops 9.0 "1939 SCENARIO" (pp. 20-21), the in-game status screen
@@ -50,6 +35,21 @@ export const SCENARIO_1939: Scenario = {
     ["germany", "france"],
     ["germany", "britain"],
   ],
+  minorAllies: [],
+
+  zones: {
+    // Ref 29.0: a red line the program draws through Poland. It is not on the printed map card
+    // and no manual lists its hexes, so they are unknown until we see the original's setup screen.
+    "poland-east-of-partition-line": {
+      countries: ["poland"],
+      description: "Poland east of the Polish Partition Line (Ref 29.0)",
+      hexes: null,
+    },
+  },
+
+  // "Year Start Sequence: None in 1939."
+  startingYss: "none",
+  startingStrategicWarfare: {},
 
   rules: [
     // "The U.S.A. automatically spends 35 BRPs for a DoW vs. Germany in the Allied Spring '42 turn."
@@ -58,17 +58,19 @@ export const SCENARIO_1939: Scenario = {
     { kind: "no-seaborne-invasion", side: "allies", turn: { year: 1942, season: "summer" } },
     // "No BRP Base growth in the 1940 YSS." (There is no Year Start Sequence in 1939.)
     { kind: "no-brp-growth", year: 1940 },
+    // Ref 29.0: German units east of the Partition Line at the end of the Axis Fall '39 turn are eliminated.
+    { kind: "eliminate-in-zone", zone: "poland-east-of-partition-line", side: "axis", turn: { year: 1939, season: "fall" } },
   ],
 
   forces: {
-    poland: {
+    poland: nationSetup({
       controlledAtStart: ["poland"],
       setup: [{ kind: "all-in", types: "all", in: [{ country: "poland" }] }],
       forcePool: [inf(2, 3, 3), inf(1, 3, 7), air(1, 4, 2)],
       allowableBuilds: [],
-    },
+    }),
 
-    italy: {
+    italy: nationSetup({
       // Sicily, Sardinia and Rhodes are part of Italy on the map; Albania and Libya are their own countries.
       controlledAtStart: ["italy", "albania", "libya"],
       setup: [
@@ -78,9 +80,9 @@ export const SCENARIO_1939: Scenario = {
       ],
       forcePool: [inf(3, 3, 2), inf(1, 3, 6), armor(2, 5, 1), fleet(9, 4), air(5, 4, 2)],
       allowableBuilds: [inf(2, 3, 4), armor(2, 5, 1), fleet(9, 1), replacement(6)],
-    },
+    }),
 
-    france: {
+    france: nationSetup({
       // Corsica is part of France on the map.
       controlledAtStart: ["france", "algeria", "morocco", "tunisia", "lebanon-syria"],
       setup: [
@@ -92,9 +94,9 @@ export const SCENARIO_1939: Scenario = {
       ],
       forcePool: [inf(2, 3, 12), armor(3, 5, 1), fleet(9, 3), air(5, 4, 2), replacement(2)],
       allowableBuilds: [inf(2, 3, 4), armor(3, 5, 2), replacement(2)],
-    },
+    }),
 
-    britain: {
+    britain: nationSetup({
       // Cyprus, Gibraltar and Malta are part of Britain on the map.
       controlledAtStart: ["britain", "egypt", "iraq", "palestine", "transjordan"],
       setup: [
@@ -113,9 +115,9 @@ export const SCENARIO_1939: Scenario = {
       ],
       forcePool: [inf(3, 4, 3), inf(1, 3, 3), armor(4, 5, 1), armor(2, 5, 1), fleet(9, 6), air(5, 4, 2), air(1, 4, 4)],
       allowableBuilds: [inf(3, 4, 3), armor(4, 5, 2), fleet(9, 3), air(5, 4, 1), air(1, 4, 1), replacement(6)],
-    },
+    }),
 
-    ussr: {
+    ussr: nationSetup({
       controlledAtStart: ["ussr"],
       setup: [
         { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ hex: "D44" }] }, // Leningrad
@@ -126,9 +128,9 @@ export const SCENARIO_1939: Scenario = {
       ],
       forcePool: [inf(1, 3, 12), inf(2, 3, 5), armor(3, 5, 3), fleet(9, 3), air(5, 4, 2)],
       allowableBuilds: [inf(1, 3, 3), inf(2, 3, 5), inf(3, 3, 5), armor(3, 5, 3), air(5, 4, 1)],
-    },
+    }),
 
-    germany: {
+    germany: nationSetup({
       // East Prussia is part of Germany on the map.
       controlledAtStart: ["germany"],
       setup: [
@@ -139,18 +141,20 @@ export const SCENARIO_1939: Scenario = {
         // removed, but no more than 5 factors may set up in Finland.
         { kind: "max-factors", area: { country: "finland" }, max: 5 },
       ],
+      // "May place ... in Finland (five maximum), Hungary, Rumania and/or Bulgaria."
+      mayAlsoSetUpIn: [{ areas: [{ country: "finland" }, { country: "hungary" }, { country: "rumania" }, { country: "bulgaria" }] }],
       forcePool: [inf(3, 3, 8), armor(4, 6, 4), fleet(9, 2), air(5, 4, 4)],
       allowableBuilds: [inf(3, 3, 20), armor(4, 6, 8), airborne(3, 3, 1), fleet(9, 2), air(5, 4, 2), replacement(8)],
-    },
+    }),
 
-    usa: {
+    usa: nationSetup({
       controlledAtStart: ["usa"],
       // All U.S. units set up in the U.S. Box in Spring '42 (the 1942 page spells out the turn;
       // the 1939 page's text is cut off in the scan).
       setup: [{ kind: "all-in", types: "all", in: [{ box: "us-box" }] }],
       forcePool: [inf(3, 4, 10), armor(5, 6, 1), fleet(9, 4), air(5, 4, 2)],
       allowableBuilds: [], // "none (other than losses)"
-    },
+    }),
   },
 
   notes: [

@@ -26,7 +26,8 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
 | `src/data/map.json` (+ `map.ts`) | The full map: 1,755 playable hexes (1,320 with land), 5,079 hexsides. Per hex: land terrain, sea, beach/city/port/capital/objective, name, fortress kind, country, front, US Box entry. Per hexside: land/sea crossability, river, crossing arrow, Qattara, Suez Canal, national and front boundaries | Reference map scan via `scripts/map/`; Ref 2.1, 4.1-4.9 |
 | `src/ui/mapView.ts` | Read-only SVG map (pan, zoom, pinch, hover info, front overlay) drawn in our own style | (UI) |
-| `src/data/scenario-1939.ts` | 1939 scenario: dates, first side, BRPs, growth rates, statuses (Italy, USSR, USA neutral); for Poland and the six Major Powers the territory controlled at start, opening setup requirements, force pool and allowable builds (counter by counter); order of deployment; wars at start; the automatic US declaration, the Summer '42 invasion ban and the 1940 growth rule; prose rules not yet applied | Ops 9.0 pp. 20-21; Ref 26.0, 29.0; Peele errata; status screen |
+| `src/data/scenario-1939.ts`, `scenario-1942.ts`, `scenario-1944.ts`, `scenario-campaign.ts` | The four scenarios: dates, first side, BRPs, growth rates, statuses; per owner the territory controlled at start, opening setup requirements, force pool and allowable builds (counter by counter, with "in/after" build dates); order of deployment; wars and Minor-Allies at start; Year Start Sequence and Strategic Warfare at start; machine-readable scenario rules; prose rules not yet applied | Ops 9.0 pp. 20-27; Ref 17.3, 26.0, 29.0, 35.0; Peele errata; status screen |
+| `src/data/counters.ts`, `axis-minors.ts`, `zones.ts` | Shared shorthand for counters, the Axis Minor-Allies' pools and setup areas, and the zones the map card does not outline (islands, mainland France, unplaced regions) | Ops 9.0; Ref 17.3 |
 
 ## Map
 
@@ -51,7 +52,30 @@ Checks (`tests/map-data.test.ts`): `validateMap`, one connected map, Ref 4.1 and
 
 ## Scenarios (Ops 9.0)
 
-Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946). **Only 1939 is encoded so far.** Each lists per nation: BRPs at start, growth rate, territory controlled at start, setup requirements, force pool (counter pictures), allowable builds. 1939: Italy 75/20%, France 85/30%, Britain 125/40%, Germany 150/50%, USSR 90/30%, USA 270/60%. Order of deployment: Poland, Italy, France, Britain, USSR, Germany. USA auto-declares war on Germany in Allied Spring '42. Apply Peele's errata to the 1939 setup text.
+All four are encoded as data: 1939, 1942, 1944 and Campaign. Each lists per owner the territory controlled at start, setup requirements, force pool (counter pictures on the page) and allowable builds, read off the manual pages counter by counter.
+
+| | 1939 | 1942 | 1944 | Campaign |
+|---|---|---|---|---|
+| Duration | Fall '39 - Summer '42 (12 turns) | Spring '42 - Winter '44 (12) | Spring '44 - Spring '46 (9) | Fall '39 - Summer '45 (24) |
+| Moves first | Axis | Axis | Allies | Axis |
+| Germany BRPs / growth | 150 / 50% | 290 (245 + 45 for Minor-Allies) / 50% | 370 (325 + 45) / 50% | 150 / 50% |
+| Britain | 125 / 40% | 160 / 40% | 220 / 40% | 125 / 40% |
+| USSR | 90 / 30% (neutral) | 110 / 30% | 130 / 30% | 90 / 30% (neutral) |
+| USA | 270 / 60% (neutral) | 270 / 60% | 400 / 60% | 270 / 60% (neutral) |
+| Italy | 75 / 20% (neutral) | 90 / 20% | out of the game | 75 / 20% (neutral) |
+| France | 85 / 30% | Vichy, inactive German Minor-Ally | out | 85 / 30% |
+| Victory conditions | Ref 2.0-2.1 | Ref 2.0, 2.2 | Ref 2.0, 2.3 | Ref 2.0, 2.4 |
+
+- **Order of deployment.** 1939 and Campaign: Poland, Italy, France, Britain, USSR, Germany. 1942: USA, Britain, Free France, USSR, Italy, Germany, Finland, Rumania, Bulgaria, Hungary, Vichy France. 1944: USA, Britain, Free France, USSR, Germany, Finland, Rumania, Bulgaria, Hungary.
+- **Build dates.** The Campaign, 1942 and 1944 pages star some builds ("in/after 1942", "in/after Summer '42", "in/after 1943", "in/after 1944"); these are `from` on the counter. The 1939 page has none.
+- **Cross-checks between pages.** The 1942 Italian and Soviet pools plus builds equal the Campaign's pools plus builds with its dated builds included, counter for counter; the 1942 US pool and builds equal the Campaign's; the Minor-Allies' pools equal the Minor Country Forces chart; Poland's pool does too.
+- **Scenario rules by machine.** US automatic declaration (35 BRPs, Allied Spring '42; 1939 and Campaign), no Allied Seaborne Invasion in Summer '42 (1939 only), no BRP growth in the 1940 YSS (1939 and Campaign), no war on a country neutral at the start (1944), units east of the Polish Partition Line eliminated after the Axis Fall '39 turn.
+- **Year Start Sequence at the start.** None in 1939 and Campaign. 1942 and 1944: only Strategic Warfare construction; Germany starts with 6 submarine factors (1942); the USA with 2 ASW and 3 SAC and Britain with 2 ASW and 2 SAC (1944).
+- Peele's errata applied to the German 1939 setup text: no 20-factor allowance for Finland, Hungary, Rumania and Bulgaria, but no more than 5 factors in Finland.
+
+### Zones: territory the map card does not outline
+
+Several pages name territory that the printed map does not draw: the "scenario start line" (the U.S.S.R. east/west, Libya east/west of Tobruk, Italy north/south in 1944), the Polish Partition Line, the Vichy France hexes, and a few regions. They are `zones` in each scenario, with `hexes: null` until known. `tests/scenario-data.test.ts` lists exactly which zones are unresolved, so the open questions below cannot drift. Islands (Corsica, Sicily, Sardinia, Rhodes) and mainland France are read off the digitised map.
 
 ## Discrepancies to keep in mind
 
@@ -63,12 +87,18 @@ Four: 1939 (Fall '39-Summer '42, 12 turns max), 1942, 1944, Campaign (1939-1946)
 ## Open questions
 
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
-- Force pools, allowable builds and setup rules for the 1942, 1944 and Campaign scenarios (pictures in the Ops manual, pp. 22-27; read them off the page as for 1939).
-- The **Polish Partition Line**: the 1939 and Campaign scenarios draw it in red through Poland, and German units east of it are eliminated at the end of Fall 1939. It is drawn by the program and is not on the printed map card, and the manuals do not name its hexes. A screenshot of the 1939 starting position in the original game would settle it.
-- The USA's setup turn: the 1939 page's text is cut off in the scan ("in Spring ..."); the 1942 page says Spring '42, which matches the automatic declaration. Encoded as Spring '42.
+- **Zones whose hexes are unknown** (they are drawn by the original program and are not on the printed map card). A screenshot of each setup screen with the red lines visible would settle them:
+  - 1939 / Campaign: the **Polish Partition Line** (German units east of it are eliminated at the end of Fall 1939).
+  - 1942: the **scenario start line** (U.S.S.R. east/west; Libya at Tobruk, with Tobruk and east British, west Italian), and the **Vichy France** hexes of European France (Ref 35.0), which also fix the German-held rest of France.
+  - 1944: the **scenario start line** (U.S.S.R. east/west; Italy north/south).
+  - 1942 and 1944: **European Turkey** (Bulgarian setup, Ref 17.3), the extent of **Eastern Europe** (Hungarian and Rumanian setup), and which ports count as **Baltic, North Sea and Atlantic** ports for German fleets. The map data does not tag ports by sea.
+- The Britain "Controlled at start" lists in 1942 and 1944 leave out Egypt, but the setup text places British units there (1942) and Egypt is British in 1939. Egypt is encoded as British in all four scenarios.
+- The 1942 USSR setup: "at least six ground factors must set up in and/or adjacent to Leningrad and Moscow". Encoded as one total across both; the page does not say whether it applies to each city.
+- Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers (see below).
 - Victory conditions (Ref 2.0-2.1).
 - Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
-  - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land.
+  - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land. DD19 (Sicily's west tip) looks like another.
+  - The Strait of Messina: DD21 (Messina) and DD22 touch, and the map marks Sicily's hexes as joined to the mainland by hex adjacency, while many hexsides between hexes of one island are marked "coastline only" (not crossable by land). Check how the original treats Sicily and Sardinia before writing movement.
   - Beaches (36 detected from the tan coastal strip): the full list should be checked.
   - Spelling of small-print minor city names (e.g. Ragusa, Mumanis, Kaf).
   - Fronts of all-sea hexes are inferred from which sea they belong to; enclosed waters (Adriatic, Aegean, Azov, Gulf of Bothnia) take the front of their coasts.
