@@ -109,9 +109,20 @@ function citySymbol(h: MapHex, cx: number, cy: number): string {
 export interface MapViewOptions {
   showFronts?: boolean;
   onHover?: (h: MapHex | null) => void;
+  /** A tap or click on a hex (not the end of a drag or pinch). */
+  onHexClick?: (h: MapHex) => void;
 }
 
-export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOptions = {}): { setFronts(on: boolean): void; setUnits(units: readonly Unit[]): void } {
+export interface MapView {
+  setFronts(on: boolean): void;
+  setUnits(units: readonly Unit[]): void;
+  /** Outline these hexes (places where the selected counter may go). */
+  setHighlights(ids: Iterable<string>): void;
+  /** Zoom and pan to fit these hexes; with none, show the whole map. */
+  focus(ids: Iterable<string>): void;
+}
+
+export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOptions = {}): MapView {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   let hexLayer = "", frontLayer = "", cityLayer = "";
   for (const h of Object.values(map.hexes)) {
@@ -154,6 +165,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
       <g class="blocked">${blocked}</g>
       <g class="arrows">${arrows}</g>
       <g class="cities">${cityLayer}</g>
+      <g class="highlights"></g>
       <g class="units"></g>
       <polygon class="hover" points="" />
     </svg>`;
@@ -178,13 +190,29 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   svg.addEventListener("wheel", (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY > 0 ? 1.15 : 1 / 1.15); }, { passive: false });
   const pointers = new Map<number, { x: number; y: number }>();
   let pinch = 0;
-  svg.addEventListener("pointerdown", (e) => { svg.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); });
-  const end = (e: PointerEvent) => { pointers.delete(e.pointerId); pinch = 0; };
+  // A tap is a single pointer that went down and up without travelling or joining a pinch.
+  let tap: { id: number; x: number; y: number; ok: boolean } | null = null;
+  svg.addEventListener("pointerdown", (e) => {
+    svg.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    tap = pointers.size === 1 ? { id: e.pointerId, x: e.clientX, y: e.clientY, ok: true } : null;
+  });
+  const end = (e: PointerEvent) => {
+    pointers.delete(e.pointerId);
+    pinch = 0;
+    if (tap && tap.id === e.pointerId && tap.ok && e.type === "pointerup" && opts.onHexClick) {
+      const id = document.elementFromPoint(e.clientX, e.clientY)?.getAttribute?.("data-id");
+      const h = id ? map.hexes[id] : undefined;
+      if (h) opts.onHexClick(h);
+    }
+    tap = null;
+  };
   svg.addEventListener("pointerup", end);
   svg.addEventListener("pointercancel", end);
   svg.addEventListener("pointermove", (e) => {
     const prev = pointers.get(e.pointerId);
     if (!prev) return;
+    if (tap && (pointers.size > 1 || Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 6)) tap.ok = false;
     if (pointers.size === 1) {
       const r = svg.getBoundingClientRect();
       vb.x -= ((e.clientX - prev.x) / r.width) * vb.w;
@@ -229,5 +257,34 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     }
     unitLayer.innerHTML = out;
   };
-  return { setFronts: (on) => { tint.style.display = on ? "inline" : "none"; }, setUnits };
+  const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
+  const setHighlights = (ids: Iterable<string>) => {
+    let out = "";
+    for (const id of ids) {
+      if (!map.hexes[id]) continue;
+      const [cx, cy] = hexCenter(hex(id));
+      out += `<polygon data-hl="${id}" points="${points([0, 1, 2, 3, 4, 5].map((k) => corner(cx, cy, k)))}"/>`;
+    }
+    highlightLayer.innerHTML = out;
+  };
+  const focus = (ids: Iterable<string>) => {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const id of ids) {
+      if (!map.hexes[id]) continue;
+      const [cx, cy] = hexCenter(hex(id));
+      x0 = Math.min(x0, cx); x1 = Math.max(x1, cx); y0 = Math.min(y0, cy); y1 = Math.max(y1, cy);
+    }
+    if (x0 === Infinity) {
+      Object.assign(vb, view);
+    } else {
+      // Fit the box with a margin, in the shape of the screen so nothing is letterboxed.
+      const r = svg.getBoundingClientRect();
+      const aspect = r.width > 0 && r.height > 0 ? r.width / r.height : view.w / view.h;
+      const pad = SIZE * 3;
+      const w = Math.max(x1 - x0 + 2 * pad, (y1 - y0 + 2 * pad) * aspect);
+      vb.w = w; vb.h = w / aspect; vb.x = (x0 + x1) / 2 - w / 2; vb.y = (y0 + y1) / 2 - vb.h / 2;
+    }
+    apply();
+  };
+  return { setFronts: (on) => { tint.style.display = on ? "inline" : "none"; }, setUnits, setHighlights, focus };
 }

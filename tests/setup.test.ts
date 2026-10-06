@@ -4,7 +4,7 @@ import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
-import { autoSetup } from "../src/engine/autosetup";
+import { autoSetup, autoSetupOwner } from "../src/engine/autosetup";
 import { newGame, setupOf } from "../src/engine/game";
 import { currentSetupOwner, setupProblems, setupStatus, sideOfOwner } from "../src/engine/setup";
 import type { ForceOwner, GameState, Scenario } from "../src/engine/types";
@@ -355,6 +355,57 @@ describe("opening setup: finishing", () => {
     const frozen = JSON.parse(JSON.stringify(initial));
     replay(ctx, initial, autoSetup(ctx, initial));
     expect(initial).toStrictEqual(frozen);
+  });
+});
+
+describe("opening setup: finishing one nation for the player", () => {
+  it("sets up only the nation now up, and ends with its Done", () => {
+    const initial = newGame(SCENARIO_1939, 1);
+    const actions = autoSetupOwner(CTX, initial);
+    expect(actions.at(-1)).toEqual({ type: "SETUP_DONE", owner: "poland" });
+    expect(actions.every((a) => (a.type === "SETUP_PLACE" || a.type === "SETUP_DONE") && a.owner === "poland")).toBe(true);
+    const { state } = replay(CTX, initial, actions);
+    expect(currentSetupOwner(state)).toBe("italy");
+    expect(state.phase).toBe("setup");
+  });
+
+  it("keeps what the player already placed, and tops up the named placements", () => {
+    // The player puts one Polish 2-3 in Warsaw by hand; the rest is filled in around it.
+    const initial = newGame(SCENARIO_1939, 1);
+    const warsaw = Object.values(CTX.map.hexes).find((h) => h.name === "Warsaw")!.id;
+    let s = step(initial, place("poland", "infantry", 2, warsaw));
+    const actions = autoSetupOwner(CTX, s);
+    expect(actions.some((a) => a.type === "SETUP_REMOVE")).toBe(false);
+    s = replay(CTX, s, actions).state;
+    expect(Object.values(s.units).filter((u) => u.owner === "poland")).toHaveLength(12);
+    expect(Object.values(s.units).find((u) => u.id === "u1")!.at).toBe(warsaw);
+    // Italy's page asks for a 1-3 in Albania. If the player already put one where the automatic setup
+    // would, the finished setup is the same as the fully automatic one: the named placement is
+    // counted, not repeated.
+    let t = newGame(SCENARIO_1939, 1);
+    for (const a of autoSetupOwner(CTX, t)) t = step(t, a); // Poland done; Italy is next
+    const tirane = Object.values(CTX.map.hexes).find((h) => h.name === "Tirane")!.id;
+    const italy = (state: GameState) =>
+      Object.values(state.units).filter((u) => u.owner === "italy").map((u) => `${u.type}:${u.strength}@${u.at}`).sort();
+    const automatic = replay(CTX, t, autoSetupOwner(CTX, t)).state;
+    const byHand = step(t, place("italy", "infantry", 1, tirane));
+    const mixed = replay(CTX, byHand, autoSetupOwner(CTX, byHand)).state;
+    expect(italy(mixed)).toEqual(italy(automatic));
+    expect(mixed.setup!.index).toBe(2);
+
+    // The page asks for two 1-3 in Libya. If the player already placed both, none is added there.
+    const tripoli = Object.values(CTX.map.hexes).find((h) => h.name === "Tripoli")!.id;
+    let two = step(t, place("italy", "infantry", 1, tripoli));
+    two = step(two, place("italy", "infantry", 1, tripoli));
+    const done = replay(CTX, two, autoSetupOwner(CTX, two)).state;
+    const libyan = Object.values(done.units).filter((u) => u.owner === "italy" && u.type === "infantry" && u.strength === 1 && CTX.map.hexes[u.at]!.country === "libya");
+    expect(libyan).toHaveLength(2);
+    expect(Object.values(done.units).filter((u) => u.owner === "italy" && u.type === "infantry" && u.strength === 1)).toHaveLength(6);
+  });
+
+  it("refuses when the game is not in setup, or the scenario cannot be set up yet", () => {
+    expect(() => autoSetupOwner(CTX, { ...newGame(SCENARIO_1939, 1), phase: "player-turn", setup: null })).toThrow(/not in the setup phase/);
+    expect(() => autoSetupOwner(ctxFor(SCENARIO_1942), newGame(SCENARIO_1942, 1))).toThrow(/cannot be set up yet/);
   });
 });
 
