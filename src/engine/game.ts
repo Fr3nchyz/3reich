@@ -27,6 +27,12 @@ export function newGame(scenario: Scenario, seed: number): GameState {
   const nations = Object.fromEntries(
     Object.entries(scenario.nations).map(([id, n]) => [id, { ...n }]),
   ) as GameState["nations"];
+  const pools = Object.fromEntries(
+    Object.entries(scenario.forces).map(([owner, f]) => [
+      owner,
+      { forcePool: f.forcePool.map((e) => ({ ...e })), allowableBuilds: f.allowableBuilds.map((e) => ({ ...e })) },
+    ]),
+  ) as GameState["pools"];
   return {
     scenarioId: scenario.id,
     year: scenario.start.year,
@@ -36,6 +42,8 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     activeSide: scenario.firstSide,
     phase: "player-turn",
     nations,
+    pools,
+    wars: scenario.warsAtStart.map(([a, b]) => [a, b]),
     units: {},
     fortresses: {},
     rngState: seed,
