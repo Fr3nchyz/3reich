@@ -1,7 +1,7 @@
 """
 Build src/data/map.json from the 300 dpi reference-map scan.
 
-    python3 -m venv .venv && .venv/bin/pip install -r scripts/map/requirements.txt
+    python3 -m venv .venv && .venv/bin/pip install -r scripts/map/python-deps.txt
     pdfimages -j -f 1 -l 1 Third-Reich_Map_DOS_EN.pdf /tmp/map     # -> /tmp/map-000.jpg
     .venv/bin/python scripts/map/extract.py /tmp/map-000.jpg
 
