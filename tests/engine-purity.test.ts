@@ -29,8 +29,8 @@ describe("engine purity", () => {
     it(`${path} imports only from the engine`, () => {
       // Static imports and re-exports, including bare side-effect imports (import "x").
       const imports = [...text.matchAll(/(?:^|\n)\s*(?:import|export)\s+(?:[^"';]*?\sfrom\s+)?["']([^"']+)["']/g)].map((m) => m[1]!);
-      // Engine modules import each other; data modules import engine types and their own JSON.
-      const allowed = path.includes("/src/engine/") ? /^\.\/[\w-]+$/ : /^(\.\.\/engine\/[\w-]+|\.\/[\w-]+\.json)$/;
+      // Engine modules import each other; data modules import engine types, their own JSON and sibling data modules.
+      const allowed = path.includes("/src/engine/") ? /^\.\/[\w-]+$/ : /^(\.\.\/engine\/[\w-]+|\.\/[\w-]+(\.json)?)$/;
       for (const spec of imports) expect(spec, `${path} imports ${spec}`).toMatch(allowed);
     });
   }

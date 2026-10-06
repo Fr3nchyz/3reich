@@ -1,4 +1,4 @@
-import type { GameState, GameTurn, Scenario, Season, Side } from "./types";
+import type { ForceOwner, ForcePools, GameState, GameTurn, NationSetup, PowerId, Scenario, Season, Side, StrategicWarfare } from "./types";
 
 export const SEASONS: readonly Season[] = ["spring", "summer", "fall", "winter"];
 
@@ -18,6 +18,15 @@ export function nextTurn(t: GameTurn): GameTurn {
     : { year: t.year, season: SEASONS[i + 1]! };
 }
 
+const POWERS: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
+
+/** The setup data of an owner that the scenario defines; throws for an owner it does not. */
+export function setupOf(scenario: Scenario, owner: ForceOwner): NationSetup {
+  const setup = scenario.forces[owner];
+  if (!setup) throw new Error(`Scenario ${scenario.id} has no forces for ${owner}`);
+  return setup;
+}
+
 /**
  * Start a game. The seed is required so every game can be replayed; the UI chooses it
  * and stores it with the save.
@@ -27,12 +36,16 @@ export function newGame(scenario: Scenario, seed: number): GameState {
   const nations = Object.fromEntries(
     Object.entries(scenario.nations).map(([id, n]) => [id, { ...n }]),
   ) as GameState["nations"];
+  const copyEntries = (entries: ForcePools["forcePool"]) => entries.map((e) => ({ ...e, ...(e.from ? { from: { ...e.from } } : {}) }));
   const pools = Object.fromEntries(
     Object.entries(scenario.forces).map(([owner, f]) => [
       owner,
-      { forcePool: f.forcePool.map((e) => ({ ...e })), allowableBuilds: f.allowableBuilds.map((e) => ({ ...e })) },
+      { forcePool: copyEntries(f.forcePool), allowableBuilds: copyEntries(f.allowableBuilds) },
     ]),
   ) as GameState["pools"];
+  const strategicWarfare = Object.fromEntries(
+    POWERS.map((id) => [id, { submarines: 0, asw: 0, sac: 0, ...scenario.startingStrategicWarfare[id] } satisfies StrategicWarfare]),
+  ) as GameState["strategicWarfare"];
   return {
     scenarioId: scenario.id,
     year: scenario.start.year,
@@ -44,6 +57,8 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     nations,
     pools,
     wars: scenario.warsAtStart.map(([a, b]) => [a, b]),
+    strategicWarfare,
+    minorAllies: scenario.minorAllies.map((m) => ({ ...m })),
     units: {},
     fortresses: {},
     rngState: seed,
