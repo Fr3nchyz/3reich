@@ -15,3 +15,4 @@ The engine enforces every rule and exposes one API used by both the UI and the A
 | **G. Computer opponent v1** | Rule-based, plays either side, only through `legalActions` | |
 | | **First playable release: 1939 scenario vs the computer**, with autosave, save slots and save files | |
 | **H. Fidelity and regression** | Golden games, a regression test for every corrected rule, comparison with the original in DOSBox; 1942, 1944 and Campaign scenarios; stronger AI and difficulty levels; offline install and hosting | |
+| | **French interface (a later version; the English one comes first, and the player is a French speaker)**: all on-screen text from one translation table with a language switch, French names for nations, unit types and well-known cities with the English game terms kept in brackets (BRP), and the engine's messages as data (an id plus values) rather than English sentences, so they can be shown in either language | |
