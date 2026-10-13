@@ -1,9 +1,8 @@
 import type { Action } from "../engine/actions";
 import { initiativeTotals } from "../engine/game";
 import { POWER_NAMES, spendingLimit } from "../engine/nations";
-import type { ForceOwner } from "../engine/types";
 import { cap, sideName } from "./format";
-import type { Session } from "./session";
+import type { Session, SetupView } from "./session";
 import { setupPanel } from "./setupView";
 
 /** The status area under the map: HTML text for each part, from the session. */
@@ -35,13 +34,13 @@ function turnButtons(actions: Action[]): string {
 
 const logList = (s: Session) => `<ol class="log">${s.log.map((l) => `<li>${l}</li>`).join("")}</ol>`;
 
-/** The whole status area. `mine` is the nation of yours that is setting up, or null. */
-export function statusHtml(s: Session, mine: ForceOwner | null, actions: Action[]): string {
+/** The whole status area. `setup` is set while a nation of yours is setting up. */
+export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
   const totals = initiativeTotals(s.state);
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
-      ${mine ? setupPanel(s, mine) : ""}
+      ${setup ? setupPanel(s, setup) : ""}
       <p class="toast" role="status">${s.toast}</p>
       ${s.state.phase === "player-turn" ? `<p class="note">The computer opponent does not play yet, so you take both sides' turns for now.</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>

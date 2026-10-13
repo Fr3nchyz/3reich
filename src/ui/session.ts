@@ -14,6 +14,9 @@ import { cap, sideName } from "./format";
  * helpers that work on it. No DOM here; the rules themselves stay in src/engine.
  */
 
+/** A safety stop for the computer's setup loop: more nations than any scenario has. */
+const MAX_SETUP_OWNERS = 20;
+
 /** What a tap on the map does during your setup: put the chosen counter down, or pick one up. */
 export type TapMode = "place" | "remove";
 
@@ -87,17 +90,11 @@ export function run(s: Session, ...actions: Action[]): boolean {
 
 /** The computer sets up its nations (a placeholder for its own choices) until a nation of yours is up. */
 export function computerSetup(s: Session): void {
-  for (let guard = 0; guard < 20 && s.state.phase === "setup"; guard++) {
+  for (let guard = 0; guard < MAX_SETUP_OWNERS && s.state.phase === "setup"; guard++) {
     const owner = currentSetupOwner(s.state)!;
     if (sideOfOwner(owner) === s.humanSide) break;
     run(s, ...autoSetupOwner(s.ctx, s.state));
   }
-}
-
-/** The setup owner if it is one of yours, else null: the only time the setup panel and map highlights show. */
-export function yourSetupOwner(s: Session): ForceOwner | null {
-  const owner = currentSetupOwner(s.state);
-  return owner !== null && sideOfOwner(owner) === s.humanSide ? owner : null;
 }
 
 export const specKey = (s: Pick<UnitSpec, "type" | "strength" | "nationality">) => `${s.type}:${s.strength}:${s.nationality ?? ""}`;
@@ -106,4 +103,16 @@ export const specKey = (s: Pick<UnitSpec, "type" | "strength" | "nationality">) 
 export function currentSpec(s: Session, owner: ForceOwner): PoolSpec | null {
   const specs = poolSpecs(s.state, owner);
   return specs.find((p) => s.selected && specKey(p) === specKey(s.selected)) ?? specs[0] ?? null;
+}
+
+/** Your nation that is setting up, and the counter that would be placed next. */
+export interface SetupView {
+  owner: ForceOwner;
+  spec: PoolSpec | null;
+}
+
+/** The setup view, computed once per draw and shared by the HTML, the click handlers and the map; null unless a nation of yours is setting up. */
+export function setupView(s: Session): SetupView | null {
+  const owner = currentSetupOwner(s.state);
+  return owner !== null && sideOfOwner(owner) === s.humanSide ? { owner, spec: currentSpec(s, owner) } : null;
 }

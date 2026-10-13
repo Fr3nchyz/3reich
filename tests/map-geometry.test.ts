@@ -1,13 +1,28 @@
 import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { hex } from "../src/engine/hex";
-import { BAY_DEPTH, SIZE, baysBetweenLand, cornersOf, hexCenter, hexCorners, midpoint, sideSegment } from "../src/ui/mapGeometry";
+import { BAY_DEPTH, FORTRESS_INSET, SIZE, baysBetweenLand, cornersOf, hexCenter, hexCorners, midpoint, sideSegment } from "../src/ui/mapGeometry";
 import { highlightsMarkup, unitsMarkup } from "../src/ui/mapCounters";
+import { citySymbol } from "../src/ui/mapCities";
 import { counterLabel } from "../src/ui/mapStyle";
 import { buildBays, buildHexLayers, buildSideLayers } from "../src/ui/mapLayers";
 import type { Unit } from "../src/engine/types";
 
 describe("hex geometry", () => {
+  // Fixed numbers worked out by hand from the formulas the map has always used (size 10, x = 10 * sqrt(3) * (q + r / 2), y = 15 * r),
+  // so a change to the geometry cannot slip through by moving everything together.
+  it("places hexes at known positions", () => {
+    expect(SIZE).toBe(10);
+    expect(BAY_DEPTH).toBe(0.62);
+    expect(FORTRESS_INSET).toBe(0.78);
+    const [x, y] = hexCenter(hex("L23")); // q = 23, r = 11
+    expect(x).toBeCloseTo(493.63448, 4);
+    expect(y).toBe(165);
+    const [x2, y2] = hexCenter(hex("AA25")); // q = 25, r = 26
+    expect(x2).toBeCloseTo(658.17931, 4);
+    expect(y2).toBe(390);
+  });
+
   it("puts the six corners one hex size from the centre, the first straight above it", () => {
     const [cx, cy] = hexCenter(hex("L23"));
     const corners = hexCorners(cx, cy);
@@ -38,6 +53,23 @@ describe("hex geometry", () => {
     expect(reach / full).toBeCloseTo(BAY_DEPTH, 9);
     const [half, full2] = tipDistance(0.5);
     expect(half / full2).toBeCloseTo(0.5, 9);
+  });
+});
+
+describe("city symbols", () => {
+  const fortress = { id: "L23", land: "plain", sea: false, features: [], fortress: "permanent", front: "western" } as const;
+
+  it("draws a fortress outline 78 percent of the way to the corners", () => {
+    const out = citySymbol(fortress, 100, 100);
+    // The first corner is straight above the centre: 10 * 0.78 = 7.8 above it.
+    expect(out).toContain('points="100.0,92.2 ');
+    expect(out).toContain('stroke-dasharray="1.2 1"');
+  });
+
+  it("draws the name below the centre and marks an objective", () => {
+    const out = citySymbol({ ...fortress, fortress: undefined, name: "Calais", features: ["city", "objective"] }, 100, 100);
+    expect(out).toContain('<text x="100.0" y="107.2" class="city objective">Calais</text>');
+    expect(out).toContain('r="1.8" fill="#b3202a"');
   });
 });
 

@@ -1,87 +1,79 @@
 import { describe, expect, it } from "vitest";
-import { TAP_SLOP_PX, createTapTracker, movedTooFar } from "../src/ui/tap";
-import { MAX_ZOOM_IN, MAX_ZOOM_OUT, fitBox, padBox, panBox, zoomBox, type Box } from "../src/ui/viewport";
+import { ZOOM_STEP, attachGestures } from "../src/ui/gestures";
+import type { Viewport } from "../src/ui/viewport";
 
-describe("tap detection", () => {
-  it("allows a wobble of up to the slop and no more", () => {
-    expect(TAP_SLOP_PX).toBe(6);
-    expect(movedTooFar(100, 100, 100, 100)).toBe(false);
-    expect(movedTooFar(100, 100, 106, 100)).toBe(false); // exactly 6 px is still a tap
-    expect(movedTooFar(100, 100, 106.1, 100)).toBe(true);
-    expect(movedTooFar(100, 100, 104, 104)).toBe(false); // 5.7 px diagonally
-    expect(movedTooFar(100, 100, 105, 105)).toBe(true); // 7.1 px diagonally
+/** An svg stand-in that records its listeners; the gesture code only uses addEventListener and setPointerCapture. */
+function fakeSvg() {
+  const handlers = new Map<string, (e: unknown) => void>();
+  const svg = { addEventListener: (type: string, h: (e: unknown) => void) => handlers.set(type, h), setPointerCapture: () => undefined };
+  const fire = (type: string, e: object) => handlers.get(type)!({ preventDefault: () => undefined, ...e });
+  return { svg: svg as unknown as SVGSVGElement, fire };
+}
+
+function setup() {
+  const { svg, fire } = fakeSvg();
+  const calls: string[] = [];
+  const taps: [number, number][] = [];
+  const viewport: Viewport = {
+    zoomAt: (x, y, f) => calls.push(`zoom ${x},${y} x${f.toFixed(3)}`),
+    panBy: (dx, dy) => calls.push(`pan ${dx},${dy}`),
+    focus: () => undefined,
+  };
+  attachGestures(svg, viewport, (x, y) => taps.push([x, y]));
+  const ptr = (type: string, id: number, x: number, y: number) => fire(type, { type, pointerId: id, clientX: x, clientY: y });
+  return { fire, calls, taps, ptr };
+}
+
+describe("gestures on the map", () => {
+  it("zooms out for a downward wheel notch and in for an upward one, by one step", () => {
+    expect(ZOOM_STEP).toBe(1.15);
+    const { fire, calls } = setup();
+    fire("wheel", { clientX: 5, clientY: 6, deltaY: 100 });
+    fire("wheel", { clientX: 5, clientY: 6, deltaY: -100 });
+    expect(calls).toEqual(["zoom 5,6 x1.150", "zoom 5,6 x0.870"]);
   });
 
-  it("counts a single pointer that goes down and up in place as a tap", () => {
-    const t = createTapTracker();
-    t.down(1, 10, 10, 1);
-    t.move(12, 11, 1);
-    expect(t.end(1, true)).toBe(true);
+  it("reports a tap that stayed within the slop, even with some jitter", () => {
+    const { ptr, taps, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointermove", 1, 103, 104); // 5 px of jitter
+    ptr("pointerup", 1, 103, 104);
+    expect(taps).toEqual([[103, 104]]);
+    expect(calls).toEqual(["pan 3,4"]);
   });
 
-  it("is not a tap after a drag, even one that comes back to where it started", () => {
-    const t = createTapTracker();
-    t.down(1, 10, 10, 1);
-    t.move(40, 10, 1);
-    t.move(10, 10, 1);
-    expect(t.end(1, true)).toBe(false);
+  it("does not report a drag as a tap, and pans by what the pointer moved", () => {
+    const { ptr, taps, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointermove", 1, 150, 100);
+    ptr("pointermove", 1, 160, 120);
+    ptr("pointerup", 1, 160, 120);
+    expect(taps).toEqual([]);
+    expect(calls).toEqual(["pan 50,0", "pan 10,20"]);
   });
 
-  it("is not a tap when a second pointer joins, when cancelled, or for another pointer", () => {
-    const t = createTapTracker();
-    t.down(1, 10, 10, 1);
-    t.down(2, 50, 50, 2);
-    expect(t.end(2, true)).toBe(false);
-    expect(t.end(1, true)).toBe(false);
-    t.down(3, 10, 10, 1);
-    expect(t.end(3, false)).toBe(false); // pointercancel
-    t.down(4, 10, 10, 1);
-    expect(t.end(5, true)).toBe(false);
-    expect(t.end(4, true)).toBe(false); // the other pointer's end cleared the tap
+  it("does not report a cancelled pointer as a tap", () => {
+    const { ptr, taps } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointercancel", 1, 100, 100);
+    expect(taps).toEqual([]);
   });
 
-  it("is not a tap when the move was made with two pointers down", () => {
-    const t = createTapTracker();
-    t.down(1, 10, 10, 1);
-    t.move(10, 10, 2);
-    expect(t.end(1, true)).toBe(false);
-  });
-});
-
-describe("viewport boxes", () => {
-  const whole: Box = padBox({ x: 0, y: 0, w: 1000, h: 500 }, 10);
-
-  it("pads on every side", () => {
-    expect(whole).toEqual({ x: -10, y: -10, w: 1020, h: 520 });
+  it("pinches: two pointers zoom about their midpoint by the change in distance and never tap", () => {
+    const { ptr, taps, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointerdown", 2, 200, 100);
+    ptr("pointermove", 1, 100, 100); // first reading of the distance (100): no zoom yet
+    ptr("pointermove", 2, 300, 100); // distance 200: the map content doubles, the view halves
+    ptr("pointerup", 2, 300, 100);
+    ptr("pointerup", 1, 100, 100);
+    expect(calls.filter((c) => c.startsWith("zoom"))).toEqual(["zoom 200,100 x0.500"]);
+    expect(taps).toEqual([]);
   });
 
-  it("keeps the point under the pointer fixed when zooming", () => {
-    const vb = zoomBox(whole, whole, 300, 200, 0.5);
-    expect(vb.w).toBeCloseTo(510, 9);
-    expect(vb.h).toBeCloseTo(260, 9);
-    // The map point (300, 200) sits at the same share of the box as before.
-    expect((300 - vb.x) / vb.w).toBeCloseTo((300 - whole.x) / whole.w, 9);
-    expect((200 - vb.y) / vb.h).toBeCloseTo((200 - whole.y) / whole.h, 9);
-  });
-
-  it("stops zooming at the limits", () => {
-    expect(zoomBox(whole, whole, 0, 0, 100).w).toBeCloseTo(whole.w * MAX_ZOOM_OUT, 9);
-    expect(zoomBox(whole, whole, 0, 0, 0.0001).w).toBeCloseTo(whole.w / MAX_ZOOM_IN, 9);
-  });
-
-  it("pans by the share of the box the pointer travelled", () => {
-    const vb = panBox(whole, 100, -50, 1000, 500);
-    expect(vb.x).toBeCloseTo(whole.x - 0.1 * whole.w, 9);
-    expect(vb.y).toBeCloseTo(whole.y + 0.1 * whole.h, 9);
-    expect(vb.w).toBe(whole.w);
-  });
-
-  it("fits hexes with a margin in the shape of the screen", () => {
-    const vb = fitBox([[0, 0], [100, 40]], 2, 30);
-    expect(vb.w / vb.h).toBeCloseTo(2, 9);
-    expect(vb.x + vb.w / 2).toBeCloseTo(50, 9);
-    expect(vb.y + vb.h / 2).toBeCloseTo(20, 9);
-    expect(vb.w).toBeGreaterThanOrEqual(160); // 100 wide plus a margin each side
-    expect(vb.h).toBeGreaterThanOrEqual(100);
+  it("ignores moves of a pointer that is not down", () => {
+    const { ptr, calls } = setup();
+    ptr("pointermove", 9, 10, 10);
+    expect(calls).toEqual([]);
   });
 });

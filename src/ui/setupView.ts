@@ -4,7 +4,7 @@ import { setupProblems } from "../engine/requirements";
 import { poolSpecs } from "../engine/setup";
 import type { ForceOwner } from "../engine/types";
 import { counterLabel } from "./mapStyle";
-import { currentSpec, specKey, type PoolSpec, type Session } from "./session";
+import { specKey, type PoolSpec, type Session, type SetupView } from "./session";
 
 /** The setup panel: HTML text for the pieces, from the session. The element ids, classes and texts are what the browser test and the player rely on. */
 
@@ -28,7 +28,7 @@ function counterChips(specs: PoolSpec[], chosen: PoolSpec | null): string {
 }
 
 /** Buttons for the places off the map (the U.S. Box and the like) the chosen counter may go. */
-function boxButtons(s: Session, owner: ForceOwner, spec: PoolSpec | null): string {
+function boxButtons(s: Session, { owner, spec }: SetupView): string {
   const boxes = spec ? placementPlaces(s.ctx, s.state, owner, spec).filter((p) => !s.ctx.map.hexes[p]) : [];
   if (!boxes.length) return "";
   return `<div class="actions">${boxes.map((b) => `<button data-box="${b}">Place in the ${b === "us-box" ? "U.S. Box" : b}</button>`).join("")}</div>`;
@@ -42,9 +42,9 @@ function actionButtons(owner: ForceOwner, placed: number, problems: number): str
       </div>`;
 }
 
-export function setupPanel(s: Session, owner: ForceOwner): string {
+export function setupPanel(s: Session, setup: SetupView): string {
+  const { owner, spec } = setup;
   const specs = poolSpecs(s.state, owner);
-  const spec = currentSpec(s, owner);
   const problems = setupProblems(s.ctx, s.state, owner);
   const placed = Object.values(s.state.units).filter((u) => u.owner === owner);
   return `
@@ -53,7 +53,7 @@ export function setupPanel(s: Session, owner: ForceOwner): string {
       ${modeSwitch(s, placed.length)}
       <p>${hint(s, specs)}</p>
       ${counterChips(specs, spec)}
-      ${boxButtons(s, owner, spec)}
+      ${boxButtons(s, setup)}
       <p>On the map: ${placed.length}</p>
       <ul class="problems">${problems.map((p) => `<li>${p}</li>`).join("")}</ul>
       ${actionButtons(owner, placed.length, problems.length)}

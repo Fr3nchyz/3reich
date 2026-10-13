@@ -1,9 +1,8 @@
 import { hex } from "../engine/hex";
 import type { MapData } from "../engine/map";
 import { citySymbol } from "./mapCities";
-import { baysBetweenLand, fmt, hexCenter, hexCorners, midpoint, points, sideSegment, type Point } from "./mapGeometry";
+import { baysBetweenLand, fmt, hexCenter, hexCorners, midpoint, points, sideSegment, type Box, type Point } from "./mapGeometry";
 import { FRONT_TINT, SEA, TERRAIN_FILL } from "./mapStyle";
-import type { Box } from "./viewport";
 
 /** The SVG text of each layer of the map, built once from the map data. */
 

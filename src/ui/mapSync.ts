@@ -1,17 +1,17 @@
 import { territoryOf } from "../engine/areas";
 import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
-import { currentSpec, type Session } from "./session";
+import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
 
 /** Brings the map in line with the session after each change: counters, zoom and highlights. */
 
 /** The hexes to outline: your own counters when taking back, else where the chosen counter may go. */
-function highlightedHexes(s: Session, mine: ForceOwner | null): string[] {
-  if (!mine) return [];
+function highlightedHexes(s: Session, setup: SetupView | null): string[] {
+  if (!setup) return [];
+  const { owner: mine, spec } = setup;
   const onMap = (id: string) => s.ctx.map.hexes[id] !== undefined;
   if (s.mode === "remove") return Object.values(s.state.units).filter((u) => u.owner === mine && onMap(u.at)).map((u) => u.at);
-  const spec = currentSpec(s, mine);
   return spec ? placementPlaces(s.ctx, s.state, mine, spec).filter(onMap) : [];
 }
 
@@ -26,8 +26,8 @@ function followSetup(view: MapView, s: Session, mine: ForceOwner | null): void {
   }
 }
 
-export function syncMap(view: MapView, s: Session, mine: ForceOwner | null): void {
+export function syncMap(view: MapView, s: Session, setup: SetupView | null): void {
   view.setUnits(Object.values(s.state.units));
-  followSetup(view, s, mine);
-  view.setHighlights(highlightedHexes(s, mine));
+  followSetup(view, s, setup?.owner ?? null);
+  view.setHighlights(highlightedHexes(s, setup));
 }

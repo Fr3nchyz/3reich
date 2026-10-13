@@ -1,16 +1,9 @@
-import { SIZE, type Point } from "./mapGeometry";
+import { SIZE, type Box, type Point } from "./mapGeometry";
 
 /**
  * Pan and zoom by rewriting the SVG viewBox. The box maths is pure (and unit tested); createViewport
  * holds the current box and writes it to the <svg>.
  */
-
-export interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
 
 /** The map can be shown this much wider than the whole map (zoomed out) ... */
 export const MAX_ZOOM_OUT = 1.2;

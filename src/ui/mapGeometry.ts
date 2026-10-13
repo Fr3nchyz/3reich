@@ -16,6 +16,14 @@ export const FORTRESS_INSET = 0.78;
 
 export type Point = [number, number];
 
+/** A rectangle in map units: the SVG viewBox. */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
 export function hexCenter(h: Hex): Point {
   return [SIZE * SQRT3 * (h.q + h.r / 2), SIZE * 1.5 * h.r];
 }

@@ -13,6 +13,7 @@ import { createViewport, padBox, MAP_MARGIN } from "./viewport";
  * holds pan and zoom, gestures turns pointer events into pans, zooms and taps.
  */
 
+// Re-exported so that callers (main.ts, tests/map-view.test.ts) keep importing everything map-related from here.
 export { baysBetweenLand, hexCenter, type Bay } from "./mapGeometry";
 export { counterLabel } from "./mapStyle";
 

@@ -10,13 +10,16 @@ import type { Scenario, Side } from "./engine/types";
 import { describeHex } from "./ui/format";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
-import { createSession, yourSetupOwner, type Session } from "./ui/session";
+import { createSession, setupView, type Session } from "./ui/session";
 import { normaliseMode, tapHex } from "./ui/sessionActions";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
+
+/** The one game being played; start() replaces it. */
+let session: Session;
 
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
@@ -33,9 +36,6 @@ shell.scenario.innerHTML = SCENARIOS.map((s) => {
 }).join("");
 shell.newGame.addEventListener("click", () => start(SCENARIOS.find((s) => s.id === shell.scenario.value)!, shell.side.value as Side));
 
-/** The one game being played; start() replaces it. */
-let session: Session;
-
 // The UI owns the only nondeterministic choice: the seed. Everything after it is replayable.
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0]!;
 
@@ -49,11 +49,11 @@ function start(scenario: Scenario, side: Side): void {
 
 function render(): void {
   normaliseMode(session);
-  const mine = yourSetupOwner(session);
+  const setup = setupView(session);
   const actions = session.state.phase === "player-turn" ? legalActions(session.ctx, session.state) : [];
-  shell.status.innerHTML = statusHtml(session, mine, actions);
-  syncMap(view, session, mine);
-  bindStatus(shell.status, session, actions, render);
+  shell.status.innerHTML = statusHtml(session, setup, actions);
+  syncMap(view, session, setup);
+  bindStatus(shell.status, session, setup, actions, render);
 }
 
 start(SCENARIO_1939, "axis");

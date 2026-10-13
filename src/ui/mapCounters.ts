@@ -18,6 +18,8 @@ const COUNTER_BASELINE = 4.3;
 const STACK_STEP = 1.3;
 /** At most this many counters of a stack are drawn; the rest show as "+n". */
 const STACK_SHOWN = 4;
+/** The "+n" for hidden counters sits this far right of and below the hex centre. */
+const MORE_OFFSET = 6;
 
 /** Counters grouped by the map hex they stand in; off-map boxes are listed outside the map. */
 function stacksOnMap(map: MapData, units: readonly Unit[]): Map<string, Unit[]> {
@@ -43,7 +45,7 @@ export function unitsMarkup(map: MapData, units: readonly Unit[]): string {
     stack.slice(-STACK_SHOWN).forEach((u, i) => {
       out += counterMarkup(u, at, cx - COUNTER_LEFT + i * STACK_STEP, cy - COUNTER_ABOVE - i * STACK_STEP);
     });
-    if (stack.length > STACK_SHOWN) out += `<text class="more" x="${fmt(cx + 6)}" y="${fmt(cy + 6)}">+${stack.length - STACK_SHOWN}</text>`;
+    if (stack.length > STACK_SHOWN) out += `<text class="more" x="${fmt(cx + MORE_OFFSET)}" y="${fmt(cy + MORE_OFFSET)}">+${stack.length - STACK_SHOWN}</text>`;
   }
   return out;
 }

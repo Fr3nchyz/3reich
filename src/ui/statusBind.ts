@@ -1,13 +1,13 @@
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
-import { currentSpec, type Session, type TapMode, yourSetupOwner } from "./session";
+import type { Session, SetupView, TapMode } from "./session";
 import { fillRest, finishOwner, pickSpec, placeInBox, setMode, takeAction, undoLast } from "./sessionActions";
 
 /** Click handlers for the buttons statusView draws. Each one changes the session, then calls `redraw`. */
 
-export function bindStatus(root: HTMLElement, s: Session, actions: Action[], redraw: () => void): void {
-  const owner = yourSetupOwner(s);
-  const spec = owner ? currentSpec(s, owner) : null;
+export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | null, actions: Action[], redraw: () => void): void {
+  const owner = setup?.owner;
+  const spec = setup?.spec ?? null;
   const on = <T extends HTMLElement>(selector: string, handler: (el: T) => void) =>
     root.querySelectorAll<T>(selector).forEach((el) => el.addEventListener("click", () => { handler(el); redraw(); }));
 
