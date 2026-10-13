@@ -1,5 +1,6 @@
 import type { Scenario } from "../engine/types";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, replacement } from "./counters";
+import { POLAND_EAST_OF_PARTITION_LINE } from "./zones";
 
 /**
  * 1939 scenario. Source: Ops 9.0 "1939 SCENARIO" (pp. 20-21), the in-game status screen
@@ -38,13 +39,9 @@ export const SCENARIO_1939: Scenario = {
   minorAllies: [],
 
   zones: {
-    // Ref 29.0: a red line the program draws through Poland. It is not on the printed map card
-    // and no manual lists its hexes, so they are unknown until we see the original's setup screen.
-    "poland-east-of-partition-line": {
-      countries: ["poland"],
-      description: "Poland east of the Polish Partition Line (Ref 29.0)",
-      hexes: null,
-    },
+    // Ref 29.0: a red line the program draws through Poland. It is not on the printed map card;
+    // the original game's files give its hexes (see zones.ts).
+    "poland-east-of-partition-line": POLAND_EAST_OF_PARTITION_LINE,
   },
 
   // "Year Start Sequence: None in 1939."
@@ -162,7 +159,7 @@ export const SCENARIO_1939: Scenario = {
     "Until Germany and the USSR are at war, Germany must have at least 20 ground/air factors in Eastern Front hexes at the end of each Axis Movement Phase and Axis Player Turn. Italian and Axis Minor-Ally units, and units in Rumania or Turkey, do not count. Failing this releases the USSR from the ban on declaring war before Fall 1941 (Ref 29.0). For the opening setup only, Western Front units adjacent to the Polish border count (Ref 29.0).",
     "The USSR may not declare war on Germany or Italy, or do anything that automatically causes it, before the Fall 1941 turn (Ops 9.0), unless Germany breaks the 20-factor rule above (Ref 13.1, 29.0).",
     "Germany may not set up in Bessarabia in Fall 1939 (Ref 29.0).",
-    "The red Polish Partition Line runs north-south through Poland at the start of this scenario. German units east of it are eliminated if still there at the end of the Axis Fall 1939 turn. At that point Eastern Europe is created: the Baltic States, Poland east of the line, and Bessarabia, worth 25 BRPs. The line is drawn by the program and is not on the printed map card, so its hexes are not yet known (Ref 29.0).",
+    "The red Polish Partition Line runs north-south through Poland at the start of this scenario. German units east of it are eliminated if still there at the end of the Axis Fall 1939 turn. At that point Eastern Europe is created: the Baltic States, Poland east of the line, and Bessarabia, worth 25 BRPs. The line is drawn by the program and is not on the printed map card; its hexes come from the original game's files (Ref 29.0).",
     "Before 1942, British and French units may not stack together, and British units may not stop in the Maginot Line, Paris, Marseilles or Vichy until France falls (Ref 26.0).",
     "There is no Year Start Sequence in 1939. Victory conditions are in Ref 2.0-2.1 and are not encoded yet.",
   ],

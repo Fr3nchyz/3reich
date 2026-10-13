@@ -405,36 +405,50 @@ describe("opening setup: finishing one nation for the player", () => {
     expect(Object.values(done.units).filter((u) => u.owner === "italy" && u.type === "infantry" && u.strength === 1)).toHaveLength(6);
   });
 
-  it("refuses when the game is not in setup, or the scenario cannot be set up yet", () => {
+  it("refuses when the game is not in setup", () => {
     expect(() => autoSetupOwner(CTX, { ...newGame(SCENARIO_1939, 1), phase: "player-turn", setup: null })).toThrow(/not in the setup phase/);
-    expect(() => autoSetupOwner(ctxFor(SCENARIO_1942), newGame(SCENARIO_1942, 1))).toThrow(/cannot be set up yet/);
   });
 });
 
-describe("opening setup: scenarios whose territory is not known yet", () => {
-  it("1939 and the Campaign can be set up", () => {
-    expect(setupStatus(CTX)).toEqual({ startable: true, unresolved: [] });
-    expect(setupStatus(ctxFor(SCENARIO_CAMPAIGN))).toEqual({ startable: true, unresolved: [] });
+describe("opening setup: which scenarios can be set up", () => {
+  it("all four can be set up: every zone they name has known hexes", () => {
+    for (const s of [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944]) {
+      expect(setupStatus(ctxFor(s)), s.id).toEqual({ startable: true, unresolved: [] });
+    }
   });
 
-  it("1942 and 1944 name exactly the zones they are waiting for", () => {
-    expect(setupStatus(ctxFor(SCENARIO_1942))).toEqual({
-      startable: false,
-      unresolved: [
-        "baltic-north-atlantic-ports", "eastern-europe", "european-turkey", "libya-east-of-start-line", "libya-west-of-start-line",
-        "occupied-france", "ussr-east-of-start-line", "ussr-west-of-start-line", "vichy-france",
-      ],
+  // A scenario whose zone has no hexes yet: 1942 with the Soviet start line taken away.
+  const withoutStartLine: Scenario = {
+    ...SCENARIO_1942,
+    zones: { ...SCENARIO_1942.zones, "ussr-east-of-start-line": { ...SCENARIO_1942.zones["ussr-east-of-start-line"]!, hexes: null } },
+  };
+
+  it("names exactly the zones a scenario is waiting for", () => {
+    expect(setupStatus(ctxFor(withoutStartLine))).toEqual({ startable: false, unresolved: ["ussr-east-of-start-line"] });
+  });
+
+  it("refuses to make up a setup for a scenario that is waiting for a zone", () => {
+    expect(() => autoSetup(ctxFor(withoutStartLine), newGame(withoutStartLine, 1))).toThrow(/cannot be set up yet.*ussr-east-of-start-line/);
+    expect(() => autoSetupOwner(ctxFor(withoutStartLine), newGame(withoutStartLine, 1))).toThrow(/cannot be set up yet/);
+  });
+
+  for (const s of [SCENARIO_1942, SCENARIO_1944]) {
+    it(`sets up the ${s.id} scenario legally, every owner in order, then starts the first Player Turn`, () => {
+      const c = ctxFor(s);
+      const initial = newGame(s, 5);
+      let state = initial;
+      for (const a of autoSetup(c, initial)) {
+        if (a.type === "SETUP_DONE") expect(setupProblems(c, state, a.owner), a.owner).toEqual([]);
+        state = step(state, a, c);
+      }
+      expect(state.phase).toBe("player-turn");
+      expect(state.activeSide).toBe(s.firstSide);
+      for (const o of s.deploymentOrder) {
+        const placed = Object.values(state.units).filter((u) => u.owner === o).length;
+        expect(placed, o).toBe(setupOf(s, o).forcePool.reduce((n, e) => n + e.count, 0));
+      }
     });
-    expect(setupStatus(ctxFor(SCENARIO_1944)).unresolved).toEqual([
-      "baltic-north-atlantic-ports", "eastern-europe", "european-turkey", "italy-north-of-start-line", "italy-south-of-start-line",
-      "ussr-east-of-start-line", "ussr-west-of-start-line",
-    ]);
-  });
-
-  it("refuses to make up a setup for them", () => {
-    expect(() => autoSetup(ctxFor(SCENARIO_1942), newGame(SCENARIO_1942, 1))).toThrow(/cannot be set up yet/);
-    expect(() => autoSetup(ctxFor(SCENARIO_1944), newGame(SCENARIO_1944, 1))).toThrow(/ussr-east-of-start-line/);
-  });
+  }
 });
 
 describe("opening setup: ground factors in or next to named hexes (the 1942 Soviet rule)", () => {

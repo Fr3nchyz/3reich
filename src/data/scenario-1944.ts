@@ -1,7 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, ofNation, replacement } from "./counters";
-import { FRANCE_MAINLAND, ISLANDS, UNPLACED_REGIONS } from "./zones";
+import { FRANCE_MAINLAND, fromBitmap, ISLANDS, REGIONS } from "./zones";
 
 /**
  * 1944 scenario. Source: Ops 9.0 "1944 SCENARIO" (pp. 24-26), with Ref 17.3 for the Minor-Allies'
@@ -45,15 +45,24 @@ export const SCENARIO_1944: Scenario = {
     sardinia: ISLANDS.sardinia,
     rhodes: ISLANDS.rhodes,
     "france-mainland": FRANCE_MAINLAND,
-    "european-turkey": UNPLACED_REGIONS["european-turkey"],
-    "eastern-europe": UNPLACED_REGIONS["eastern-europe"],
-    "baltic-north-atlantic-ports": UNPLACED_REGIONS["baltic-north-atlantic-ports"],
-    // The "scenario start line" for 1944. The program draws it at setup; it is not on the printed
-    // map card and the manuals do not list its hexes.
-    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1944 scenario start line", hexes: null },
-    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1944 scenario start line", hexes: null },
-    "italy-north-of-start-line": { countries: ["italy"], description: "Italy north of the 1944 scenario start line", hexes: null },
-    "italy-south-of-start-line": { countries: ["italy"], description: "Italy south of the 1944 scenario start line", hexes: null },
+    "european-turkey": REGIONS["european-turkey"],
+    "eastern-europe": REGIONS["eastern-europe"],
+    "baltic-north-atlantic-ports": REGIONS["baltic-north-atlantic-ports"],
+    // The "scenario start line" for 1944. It is not on the printed map card; the game's control
+    // bitmaps for 1944 give each side's hexes, and 1944LINE.BIN runs exactly along the border between
+    // them (tests/gamedata.test.ts). Rhodes, Sicily and Sardinia are zones of their own.
+    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1944 scenario start line (USSR44.CON)", hexes: fromBitmap("USSR44", "ussr") },
+    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1944 scenario start line (GERM44.CON)", hexes: fromBitmap("GERM44", "ussr") },
+    "italy-north-of-start-line": {
+      countries: ["italy"],
+      description: "Italy north of the 1944 scenario start line, without Rhodes (GERM44.CON)",
+      hexes: fromBitmap("GERM44", "italy", ISLANDS.rhodes.hexes),
+    },
+    "italy-south-of-start-line": {
+      countries: ["italy"],
+      description: "Mainland Italy south of the 1944 scenario start line (BRIT44.CON, without Sicily and Sardinia)",
+      hexes: fromBitmap("BRIT44", "italy", [...ISLANDS.sicily.hexes, ...ISLANDS.sardinia.hexes]),
+    },
   },
 
   // "Only SW Construction is allowed in the 1944 YSS. The U.S.A. begins with 2 ASW and 3 SAC factors,
@@ -97,6 +106,9 @@ export const SCENARIO_1944: Scenario = {
 
     "free-france": nationSetup({
       controlledAtStart: [],
+      // Free French units function as British in all respects (Ref 35.0), so they set up in
+      // British-controlled territory, within the area the page names.
+      mayAlsoSetUpIn: [{ areas: [{ controlledBy: "britain" }] }],
       setup: [{ kind: "all-in", types: "all", in: [{ front: "mediterranean" }] }],
       forcePool: [inf(2, 3, 2)],
       allowableBuilds: [],
@@ -133,8 +145,8 @@ export const SCENARIO_1944: Scenario = {
 
   notes: [
     "The Allies move first. Neither side may declare war on a country that is neutral when the scenario starts.",
-    "The 'scenario start line' divides the U.S.S.R. between Germany (west) and the Soviets (east), and Italy between Germany (north) and Britain (south). The program draws it at setup; it is not on the printed map card, so its hexes are not yet known.",
-    "The printed 'Controlled at start' list for Britain leaves out Egypt; it is encoded as British (see the 1942 scenario).",
+    "The 'scenario start line' divides the U.S.S.R. between Germany (west) and the Soviets (east), and Italy between Germany (north) and Britain (south). The program draws it at setup; it is not on the printed map card. Its hexes come from the original game's 1944 control bitmaps.",
+    "The printed 'Controlled at start' list for Britain leaves out Egypt; it is encoded as British (see the 1942 scenario), and the original game's BRIT44.CON marks all of Egypt as British.",
     "Britain's Free French (2-3 infantry x2) set up on the Mediterranean Front. Free French units function as British in all respects (Ref 35.0).",
     "The light-blue 6-factor fleet in Germany's pool is the Italian fleet, which must start in a German-controlled Mediterranean port.",
     "Germany's 370 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1944 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.3 and are not encoded yet.",

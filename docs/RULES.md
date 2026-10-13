@@ -30,7 +30,8 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/data/map.json` (+ `map.ts`) | The full map: 1,755 playable hexes (1,320 with land), 5,079 hexsides. Per hex: land terrain, sea, beach/city/port/capital/objective, name, fortress kind, country, front, US Box entry. Per hexside: land/sea crossability, river, crossing arrow, Qattara, Suez Canal, national and front boundaries | Reference map scan via `scripts/map/`; Ref 2.1, 4.1-4.9 |
 | `src/ui/mapView.ts` | Read-only SVG map (pan, zoom, pinch, hover info, front overlay) drawn in our own style | (UI) |
 | `src/data/scenario-1939.ts`, `scenario-1942.ts`, `scenario-1944.ts`, `scenario-campaign.ts` | The four scenarios: dates, first side, BRPs, growth rates, statuses; per owner the territory controlled at start, opening setup requirements, force pool and allowable builds (counter by counter, with "in/after" build dates); order of deployment; wars and Minor-Allies at start; Year Start Sequence and Strategic Warfare at start; machine-readable scenario rules; prose rules not yet applied | Ops 9.0 pp. 20-27; Ref 17.3, 26.0, 29.0, 35.0; Peele errata; status screen |
-| `src/data/counters.ts`, `axis-minors.ts`, `zones.ts` | Shared shorthand for counters, the Axis Minor-Allies' pools and setup areas, and the zones the map card does not outline (islands, mainland France, unplaced regions) | Ops 9.0; Ref 17.3 |
+| `src/data/counters.ts`, `axis-minors.ts`, `zones.ts` | Shared shorthand for counters, the Axis Minor-Allies' pools and setup areas, and the zones the map card does not outline (islands, mainland France, the Polish Partition Line, Eastern Europe, European Turkey, the Baltic, North Sea and Atlantic ports) | Ops 9.0; Ref 17.3, 29.0; original game files |
+| `src/data/gamedata.ts` | Facts decoded from the original game's files by `scripts/gamedata/extract.ts`: the hexes each control bitmap marks and the hexsides each line runs along. Generated; never edited by hand | `*.CON`, `NSPPLINE.BIN`, `1942LINE.BIN`, `1944LINE.BIN` (see [GAME_DATA.md](GAME_DATA.md)) |
 
 ## Map
 
@@ -78,7 +79,22 @@ All four are encoded as data: 1939, 1942, 1944 and Campaign. Each lists per owne
 
 ### Zones: territory the map card does not outline
 
-Several pages name territory that the printed map does not draw: the "scenario start line" (the U.S.S.R. east/west, Libya east/west of Tobruk, Italy north/south in 1944), the Polish Partition Line, the Vichy France hexes, and a few regions. They are `zones` in each scenario, with `hexes: null` until known. `tests/scenario-data.test.ts` lists exactly which zones are unresolved, so the open questions below cannot drift. Islands (Corsica, Sicily, Sardinia, Rhodes) and mainland France are read off the digitised map.
+Several pages name territory that the printed map does not draw: the "scenario start line" (the U.S.S.R. east/west, Libya east/west of Tobruk, Italy north/south in 1944), the Polish Partition Line, the Vichy France hexes, and a few regions. They are `zones` in each scenario. Every zone now has hexes; `tests/scenario-data.test.ts` fails if one goes back to `hexes: null`. Where each comes from:
+
+| Zone | Source | Hexes |
+|---|---|---|
+| Islands (Corsica, Sicily, Sardinia, Rhodes), mainland France | Our digitised map | 1, 6, 5, 1; 57 |
+| 1942 U.S.S.R. east / west of the start line | `USSR42.CON` / `GERM42.CON` (the Soviet land hexes each marks) | 389 / 92 |
+| 1942 Libya east of Tobruk (inclusive) / west | `BRIT42.CON` / `ITALY42.CON` | 8 / 53 |
+| 1942 Vichy France (without Corsica) / German-held France | `VICHY42.CON` / `GERM42.CON` less Vichy | 17 / 40 |
+| 1944 U.S.S.R. east / west of the start line | `USSR44.CON` / `GERM44.CON` | 443 / 37 |
+| 1944 Italy south (mainland) / north (without Rhodes) | `BRIT44.CON` less Sicily and Sardinia / `GERM44.CON` less Rhodes | 10 / 26 |
+| Eastern Europe (Baltic States, Poland east of the line, Bessarabia) | `EASTEURP.CON` | 18 + 11 + 5 |
+| Poland east of the Polish Partition Line (1939, Campaign) | `EASTEURP.CON` (its Polish hexes) | 11 |
+| European Turkey | Our map: Turkish land reached from Istanbul without taking the two Straits crossing arrows | 3 (Z32, Z33, AA31) |
+| Baltic, North Sea and Atlantic ports | Our map: ports on waters reached from the open Atlantic without entering a Mediterranean-Front hex (so not the Mediterranean, Black Sea, Azov or Caspian) | 30 |
+
+The line files are the cross-check (`tests/gamedata.test.ts`): inside each country, every hexside of `1942LINE.BIN`, `1944LINE.BIN` and `NSPPLINE.BIN` lies exactly between the two sides' bitmaps, and every land-crossable hexside between the two sides is on the line. The bitmaps were used for the hexes because they give each side directly; a flood fill across the lines agrees except where our map has a coast the original does not. The control bitmaps also match each owner's "controlled at start" list hex for hex, apart from the differences listed under "Discrepancies".
 
 ## Opening setup and the sequence of play
 
@@ -89,7 +105,7 @@ Several pages name territory that the printed map does not draw: the "scenario s
 - stacking holds (Ref 5.0): two ground units per hex (three in London if all British; airborne never count), 5 air factors per base, 36 naval factors per port; before 1942 British and French units do not share a hex (Ref 26.0);
 - a maximum such as Peele's five factors in Finland is not exceeded.
 
-Done is legal when every counter is placed and every requirement is met: the units the page names ("at least", Ops 4.1), the 20 German factors on the Eastern Front (Western Front hexes next to Poland count for the opening setup; units in Rumania or Turkey do not), the Soviet cities, and so on. `setupStatus` says whether a scenario can be set up yet: 1939 and Campaign can; 1942 and 1944 wait on the zones in "Open questions". `autoSetup` (and `autoSetupOwner`, which finishes one nation and keeps counters already placed) produces a legal, not sensible, setup. In the app you set up your own nations by tapping (pick a counter, tap a yellow hex; a Place / Take back switch; or let the game place the rest) and the computer sets up the other side with that placeholder until it chooses its own.
+Done is legal when every counter is placed and every requirement is met: the units the page names ("at least", Ops 4.1), the 20 German factors on the Eastern Front (Western Front hexes next to Poland count for the opening setup; units in Rumania or Turkey do not), the Soviet cities, and so on. `setupStatus` says whether a scenario can be set up yet: all four can, now that every zone has hexes. `autoSetup` (and `autoSetupOwner`, which finishes one nation and keeps counters already placed) produces a legal, not sensible, setup: named placements first, then the rest in the areas a "rest-in" requirement names, then in the owner's own territory (so Germany does not fill Helsinki, Finland's only air base), then anywhere allowed. In the app you set up your own nations by tapping (pick a counter, tap a yellow hex; a Place / Take back switch; or let the game place the rest) and the computer sets up the other side with that placeholder until it chooses its own.
 
 **Sequence of play** (`sequence.ts`, from the map card, with the Ops 5.0 section for each step). The engine plays only the steps whose rules are implemented; the rest follow as their rules are written:
 
@@ -107,19 +123,22 @@ The U.S. units that set up in the U.S. Box in Spring '42 (1939 and Campaign) are
 - Ref 11.1 totals are not alliance totals: Italy's BRPs always count for the Axis (the status screen's 225 includes neutral Italy), US BRPs count from Summer 1942, Soviet BRPs once the USSR is at war with Germany. The engine approximates "at war with Germany" by the USSR having joined the Allies until declarations of war are modelled.
 - The printed interception table lists "25-30" and "30+"; 30 is treated as 25-30.
 - Odds below 1:1: the manual says "fractions are ignored"; the engine rounds in the defender's favour (board-game convention). Verify in play.
+- The original game's control bitmaps against the scenario pages and our map (`tests/gamedata.test.ts` pins each):
+  - `BRIT42.CON` and `BRIT44.CON` mark all of Egypt British, which settles the Egypt question: the printed "Controlled at start" lists leave Egypt out, but Britain holds it.
+  - `GERM42.CON` marks all of mainland France, the 17 Vichy hexes included, while `VICHY42.CON` marks those same hexes Vichy. The data gives them to Vichy (the page and Ref 35.0), and German-held France is `GERM42.CON`'s France less Vichy's.
+  - `GERM42.CON` and `GERM44.CON` mark CC30, an Aegean hex our map gives to Turkey; in the original it is evidently Greek. Left for the map work (ticket T04).
+  - D43 (next to Leningrad) is in neither side's bitmap in either year, and V39 (in the Crimea) in neither in 1944. Both are U.S.S.R. land on our map; D43 is probably water in the original. Neither is in a start-line zone, so nobody sets up there.
+  - Hexes the bitmaps mark that our map calls sea (coastal slivers, for ticket T04): H23, I22 (Britain); W21 (Vichy France); Z18, BB25, LL20 (Italy); G38, H37 (Baltic States); B33, G31, DD29 (Germany's Norway, Denmark and Greece); T40 (Sea of Azov coast); U49, W52, Z48 (Caspian coast).
+  - In 1944 the original leaves Minsk, Kiev, Dnepropetrovsk and Odessa German and Smolensk, Kharkov and the Crimea Soviet.
 
 ## Open questions
 
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
-- **Zones whose hexes are unknown** (they are drawn by the original program and are not on the printed map card). A screenshot of each setup screen with the red lines visible would settle them:
-  - 1939 / Campaign: the **Polish Partition Line** (German units east of it are eliminated at the end of Fall 1939).
-  - 1942: the **scenario start line** (U.S.S.R. east/west; Libya at Tobruk, with Tobruk and east British, west Italian), and the **Vichy France** hexes of European France (Ref 35.0), which also fix the German-held rest of France.
-  - 1944: the **scenario start line** (U.S.S.R. east/west; Italy north/south).
-  - 1942 and 1944: **European Turkey** (Bulgarian setup, Ref 17.3), the extent of **Eastern Europe** (Hungarian and Rumanian setup), and which ports count as **Baltic, North Sea and Atlantic** ports for German fleets. The map data does not tag ports by sea.
-- The Britain "Controlled at start" lists in 1942 and 1944 leave out Egypt, but the setup text places British units there (1942) and Egypt is British in 1939. Egypt is encoded as British in all four scenarios.
+- Zones still to confirm: whether Gibraltar (on the strait) counts as an Atlantic port (it does in the data; no German fleet can start there), and whether the original tags any other port to a different sea than our map's fronts suggest (`BINMAP*.BIN` is not decoded yet).
+- Two setup permissions read from the pages rather than stated outright: Free French units set up in British-controlled territory within the area the page names, because they "function as British in all respects" (Ref 35.0); and the German armor and infantry the 1942 page puts in Libya west of the line may be joined there by more German ground units, since every named placement is a minimum (Ops 4.1).
 - The 1942 USSR setup: "at least six ground factors must set up in and/or adjacent to Leningrad and Moscow". Encoded as one total across both; the page does not say whether it applies to each city.
-- Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers (see below).
-- Setup assumptions to check against the original: a nation must place every Force Pool counter at setup (the manual does not say it may hold some back); partial air units at setup (Ops 4.11) are not offered; "double city" air stacking (10 and 15 factors) is not on the map data, so every base holds 5; Germany's ban on setting up in Bessarabia in Fall 1939 (Ref 29.0) is not enforced because Bessarabia's hexes are not marked; Axis Minor-Allies' "Axis-controlled hexes only" (Ref 17.3) is carried in the data but not yet checked.
+- Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers (see below). `BRIT44.CON` marks both, which suggests the original treats them as land too.
+- Setup assumptions to check against the original: a nation must place every Force Pool counter at setup (the manual does not say it may hold some back); partial air units at setup (Ops 4.11) are not offered; "double city" air stacking (10 and 15 factors) is not on the map data, so every base holds 5; Germany's ban on setting up in Bessarabia in Fall 1939 (Ref 29.0) is not enforced yet, though Bessarabia's hexes are now known (the five Rumanian hexes of `EASTEURP.CON`, east of the Partition Line); Axis Minor-Allies' "Axis-controlled hexes only" (Ref 17.3) is carried in the data but not yet checked.
 - Victory conditions (Ref 2.0-2.1).
 - Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
   - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land. DD19 (Sicily's west tip) looks like another.
