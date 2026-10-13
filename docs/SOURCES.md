@@ -14,7 +14,7 @@ None of these files are stored in this repo (copyright). Download them into a lo
 | Loading-instructions card | https://www.myabandonware.com/download/mbl8-third-reich | `Third-Reich_RefCard_DOS_EN.pdf`, install instructions only. |
 | ReplacementDocs scans of both manuals | https://replacementdocs.com/download.php?view.8789 and `view.8790` | Possibly better image quality. |
 | v1.38 patch and PATCH.TXT (version history and fixes) | https://archive.org/download/3R138 | |
-| Game files listing (scenario `.BIN`, text resources, `FULLMAP.JSF`) | https://archive.org/download/msdos_Third_Reich_1996/Third_Reich_1996.zip/ | Do not ship or decode game assets into the repo. |
+| Game files listing (scenario `.BIN`, text resources, `FULLMAP.JSF`) | https://archive.org/download/msdos_Third_Reich_1996/Third_Reich_1996.zip/ | Game files stay outside the repo. We read them and record facts (hex lists, table values) in our own data; we never commit the files, their text or their art. See docs/GAME_DATA.md. |
 | Original CD image | https://archive.org/details/third-reich | Playable in DOSBox; use it to check behaviour. |
 | In-game screenshots | https://www.mobygames.com/game/2446/third-reich/screenshots/dos/ | Status screen, unit types, terrain chart, map legend. |
 | Video of the Campaign game (38 min) | https://www.youtube.com/watch?v=5Ynu72MHBBA | 05:43 campaign setup, 07:11 Polish setup, 09:17 Italian setup, 18:01 movement, 22:14 exploitation, 29:35 Allied turn and attrition. |

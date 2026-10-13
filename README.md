@@ -44,4 +44,6 @@ This is a note about intent, not legal advice.
 
 - [docs/RULES.md](docs/RULES.md): what is encoded, sources, coordinates, open questions
 - [docs/SOURCES.md](docs/SOURCES.md): where to download the original manuals and map
-- [docs/ROADMAP.md](docs/ROADMAP.md): milestones
+- [docs/ROADMAP.md](docs/ROADMAP.md): milestones and the plan
+- [docs/AUDIT_REPORT.md](docs/AUDIT_REPORT.md): technical audit of the code (2026-10-13)
+- [docs/GAME_DATA.md](docs/GAME_DATA.md): what the original game files contain and what has been decoded

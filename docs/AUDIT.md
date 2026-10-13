@@ -1,4 +1,6 @@
-# Architecture and progress audit
+# Architecture and progress audit (historical, 2026-10-01)
+
+> Superseded by [AUDIT_REPORT.md](AUDIT_REPORT.md). Kept for the record.
 
 Date: 2026-10-01. Scope: `main` at `75018b6` (about 1,000 lines: 6 engine modules, 1 UI file, 3 test files, 18 tests). No code was changed for this audit.
 
