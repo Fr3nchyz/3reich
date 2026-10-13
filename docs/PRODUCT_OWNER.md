@@ -21,8 +21,8 @@ If you or your dad own the Third Reich manuals or the board game, these are the 
 - In 1942, must the Soviets put six ground factors next to Leningrad and six next to Moscow, or six in total?
 - May Germany start with more than one armor and one infantry in Libya (1942)?
 - Why is the Crimea hex V39 left out in 1944?
-- Do Vichy and Free French fleets get the same combat modifier as France?
-- Two manual rules are cited from memory and need to be checked against the page: Ref 21.51 (naval advantage) and Ref 20.44 (mixed air forces).
+
+(Web research already settled: the manual citations Ref 21.51 and 20.44, and that Vichy and Free French fleets get the same naval modifier as France. See `docs/RULES.md`, "Web research".)
 Even "I can't find it" is useful to know.
 
 ## 4. Photos and screenshots that settle things
