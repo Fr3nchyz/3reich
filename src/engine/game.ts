@@ -55,6 +55,7 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     firstSide: scenario.firstSide,
     activeSide: scenario.firstSide,
     phase: "setup",
+    position: null,
     nations,
     pools,
     wars: scenario.warsAtStart.map(([a, b]) => [a, b]),

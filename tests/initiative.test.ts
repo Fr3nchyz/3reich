@@ -37,7 +37,7 @@ describe("initiative (Ref 11.1)", () => {
 
   it("reports the comparison as an event", () => {
     const r = applyAction(CTX, alliedTurnFall1939(), { type: "END_PLAYER_TURN", side: "allies" });
-    expect(r.ok && r.events[0]).toEqual({
+    expect(r.ok && r.events.find((e) => e.type === "INITIATIVE_DETERMINED")).toEqual({
       type: "INITIATIVE_DETERMINED", year: 1939, season: "winter", firstSide: "axis", axis: 225, allies: 210,
     });
   });

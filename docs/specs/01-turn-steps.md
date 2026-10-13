@@ -1,6 +1,6 @@
 # 01. Turn steps: the engine knows where in the Sequence of Play it is
 
-Status: **draft for review. Nothing is built until you say "let's go".**
+Status: **built** (T07, after "proceed with development"). Decisions made while building are in "As built" at the end.
 
 ## Goal
 
@@ -107,3 +107,12 @@ Within 6, 7, 8, 9 and 10 the sub-steps run in the order printed on the card; wit
 6. The Year Start Sequence runs between Winter and Spring only, the Russian-Winter roll only in winter (II.A), and the Initiative is determined in II.B, each at its own step.
 7. The UI shows the current step and passes the existing smoke test and the manual setup flow; nothing in the setup phase changes.
 8. A mutation check: skipping a step, repeating a step, and allowing an action one step early each make a test fail.
+
+## As built
+
+- `GameState.position` is null during setup and otherwise one of `year-start`, `russian-winter`, `turn-order` or `player-turn` (turn 1 or 2, and the step id). Engine code is `src/engine/turn.ts`; the list of steps with rules built is `IMPLEMENTED_STEPS` in `src/engine/sequence.ts`, and a test context can widen it (`GameContext.implementedSteps`).
+- Today the engine waits only at **10b**, where `END_PLAYER_TURN` ends the turn as before; II.B (the Initiative) runs but never waits. Every other step, including the Year Start Sequence (YSS) and the Russian-Winter roll (II.A), is passed automatically and recorded in a `STEPS_PASSED` event.
+- `END_STEP { side, step }` is the move-on action at every other waiting step. It names the step being left so a repeated or late action is refused.
+- The browser's log does not print `STEPS_PASSED` (about 90 lines a turn would bury everything else); the status line shows the current step instead.
+- A state with no position (an old saved game) is refused with a message; there is no saved-game loader yet.
+- Proposal taken for the open questions: the printed card's order is followed, and `legalActions` lists only actions.

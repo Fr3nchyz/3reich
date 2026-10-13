@@ -66,6 +66,8 @@ function describeEvent(e: GameEvent): string | null {
       return `${cap(e.season)} ${e.year}: ${cap(e.firstSide)} take the initiative (Axis ${e.axis} BRPs, Allies ${e.allies}).`;
     case "PLAYER_TURN_STARTED":
       return `${sideName(e.side)} player turn begins.`;
+    case "STEPS_PASSED":
+      return null;
     case "GAME_OVER":
       return `The scenario ends after ${cap(e.season)} ${e.year}.`;
   }

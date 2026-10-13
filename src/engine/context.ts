@@ -9,4 +9,6 @@ import type { Scenario } from "./types";
 export interface GameContext {
   map: MapData;
   scenario: Scenario;
+  /** Steps whose rules are built (default: IMPLEMENTED_STEPS in sequence.ts). A test may widen it. */
+  implementedSteps?: ReadonlySet<string>;
 }

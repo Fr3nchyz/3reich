@@ -24,7 +24,7 @@ The game can be opened in a browser, any of the four scenarios (1939, Campaign, 
 |---|---|
 | 1 Housekeeping | Done |
 | 2 Read the original game's data | 2.1, 2.2, 2.3, 2.4, 2.8 done. **Not done:** 2.5 compare scenario files, 2.6 write up the PC-vs-board-game rule differences, 2.7 read the AI resources |
-| 3 Engine refactors | 3.2 setup split, 3.4 test gaps, 3.5 tooling, 3.6 UI split done; 3.3 partly (tagged `Area` union not done). **3.1 turn-step cursor not started** (spec 01 waits for your go-ahead) |
+| 3 Engine refactors | 3.2 setup split, 3.4 test gaps, 3.5 tooling, 3.6 UI split done; 3.3 partly (tagged `Area` union not done). 3.1 turn-step cursor done (spec 01 built; see `docs/specs/01-turn-steps.md`, "As built") |
 | 4 Economy and turn skeleton | Spec written (02); not built |
 | 5 Movement, ZOC, supply | Spec written (03); not built |
 | 6 Combat, air, naval | Tables and resolvers exist and are verified; spec written (04); not wired to actions |
@@ -36,7 +36,7 @@ Roughly: the data, map, scenarios, setup and checking tools are done; the game r
 
 ## Known gaps and risks
 
-- **A bug on `main`:** placing some counters by hand and then pressing "Place the rest for me" can fail with no message. A fix was started (ticket T08) but not finished; the unfinished work is saved on a local branch only.
+- **"Place the rest for me" bug:** fixed in a separate pull request (T08), waiting for your merge.
 - **Review coverage was uneven.** #19, #20, #21 and #23 each got an independent adversarial review and their findings were fixed; **#22 (the map corrections) was merged without its review finishing** (a usage limit interrupted it). The map changes were checked by their author against the game data and the scan, and CI is green, but no second pair of eyes finished the job. Reviews were done by a fresh instance of the same model, not a stronger one.
 - **Unverified manual citations:** two Reference Manual rules (21.51 naval, 20.44 air) are cited in the docs from a reviewer's text; the manual is not in this environment. Check them against the manual.
 - **Legal and policy:** PR #21 (merged) includes code that reads the rules out of the game's program file. The repo contains no game code, text or art, but the README's legal note still says the rules come from the manuals; that line needs your decision and an update.
