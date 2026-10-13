@@ -82,7 +82,7 @@ Each is a small PR, in this order.
 | 3.3 | **Tagged `Area` union**, one `resolveAreas` helper, one shared `unitMatches`; fix the cache key in `resolveArea`; remove the `!` assertions in `applySetupAction` | Removes five-fold duplication and a latent bug |
 | 3.4 | **Close the test gaps**: `min-ground-factors-near`, `BRP_COSTS`, `STACKING_LIMIT_BRIDGEHEAD`, `NO_ATTRITION_OCCUPATION`, `MAX_OCEAN_AIR_STAGE_HEXES` | Makes the 98% engine coverage honest |
 | 3.5 | **Tooling in CI**: ESLint with `max-lines` 300, a formatter, a coverage floor for `src/engine`, a Playwright smoke test (tap a hex, place a counter). **Partly done:** ESLint, the coverage floor and the smoke test (mouse and touch) run in CI; the formatter is deliberately left out for now | Turns conventions into checks; protects the UI |
-| 3.6 | **UI cleanup**: split `renderMap` (177 lines) into layer, viewport and gesture modules; replace `render()` string building with small view functions; wrap the `main.ts` globals in one session object | After 3.5, so the smoke test protects it |
+| 3.6 | **UI cleanup**: `src/ui/mapView.ts` is still debt: 337 raw lines, over the 300 limit, and only passes the lint rule because `max-lines` skips blank lines and comments (290 counted). Split `renderMap` (177 lines) into layer, viewport and gesture modules; replace `render()` string building with small view functions; wrap the `main.ts` globals in one session object | After 3.5, so the smoke test protects it |
 
 **Exit criteria:** every audit "refactor" item closed; CI enforces size and coverage; nothing in `src/engine` over 300 lines.
 

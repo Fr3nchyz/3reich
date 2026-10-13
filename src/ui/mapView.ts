@@ -297,7 +297,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
       stack.slice(-4).forEach((u, i) => {
         const c = OWNER_COLOURS[u.owner];
         const x = cx - 4.6 + i * 1.3, y = cy - 2.6 - i * 1.3;
-        out += `<g><rect x="${fmt(x)}" y="${fmt(y)}" width="9.2" height="6" rx=".8" fill="${c.fill}" stroke="#101418" stroke-width=".5"/>` +
+        out += `<g data-at="${at}"><rect x="${fmt(x)}" y="${fmt(y)}" width="9.2" height="6" rx=".8" fill="${c.fill}" stroke="#101418" stroke-width=".5"/>` +
           `<text x="${fmt(x + 4.6)}" y="${fmt(y + 4.3)}" fill="${c.text}">${escape(counterLabel(u))}</text></g>`;
       });
       if (stack.length > 4) out += `<text class="more" x="${fmt(cx + 6)}" y="${fmt(cy + 6)}">+${stack.length - 4}</text>`;

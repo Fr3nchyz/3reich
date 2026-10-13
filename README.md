@@ -24,7 +24,7 @@ npm run e2e        # builds, then a Playwright smoke test against `vite preview`
 
 `npm run e2e` needs a Chromium: run `npx playwright install chromium` once, or set `PW_CHROMIUM_PATH` to an installed one.
 
-Requires Node 20+.
+Requires Node `^20.19 || ^22.13 || >=24` (set in `engines`; CI uses Node 22).
 
 ## Approach
 

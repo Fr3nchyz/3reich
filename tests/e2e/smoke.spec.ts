@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-/** Centre of the first highlighted hex that is fully inside the part of the map the viewport shows. */
-async function visibleHighlightCentre(page: Page): Promise<{ x: number; y: number }> {
+/** The first highlighted hex that is fully inside the part of the map the viewport shows: its id and centre. */
+async function visibleHighlight(page: Page): Promise<{ id: string; x: number; y: number }> {
   // Clicking a chip below the map can scroll the map out of view.
   await page.evaluate(() => window.scrollTo(0, 0));
   const centre = await page.locator("svg.map").evaluate((svg) => {
@@ -10,11 +10,11 @@ async function visibleHighlightCentre(page: Page): Promise<{ x: number; y: numbe
     for (const hl of svg.querySelectorAll("g.highlights polygon")) {
       const r = hl.getBoundingClientRect();
       const inside = r.left > area.left + 8 && r.right < area.right - 8 && r.top > area.top + 8 && r.bottom < area.bottom - 8;
-      if (inside) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+      if (inside) return { id: hl.getAttribute("data-hl") ?? "", x: r.left + r.width / 2, y: r.top + r.height / 2 };
     }
     return null;
   });
-  if (!centre) throw new Error("no highlighted hex is visible on the map");
+  if (!centre?.id) throw new Error("no highlighted hex is visible on the map");
   return centre;
 }
 
@@ -40,12 +40,15 @@ test("1939 scenario, Axis: pick a counter, tap a highlighted hex, the counter is
 
   const before = await poolCount(chip);
   const markersBefore = await page.locator("g.units > g").count();
-  const { x, y } = await visibleHighlightCentre(page);
+  const { id, x, y } = await visibleHighlight(page);
+  const inTappedHex = page.locator(`g.units > g[data-at="${id}"]`);
+  const inTappedHexBefore = await inTappedHex.count();
   if (hasTouch) await page.touchscreen.tap(x, y);
   else await page.mouse.click(x, y);
 
   // A unit marker appears on the map and the pool count drops (the chip disappears with the last counter).
   await expect(page.locator("g.units > g")).toHaveCount(markersBefore + 1);
+  await expect(inTappedHex, `the counter should be in the tapped hex ${id}`).toHaveCount(inTappedHexBefore + 1);
   const same = page.locator(`.setup button[data-spec="${key}"]`);
   if (before > 1) await expect(same).toContainText(`${before - 1} ×`);
   else await expect(same).toHaveCount(0);

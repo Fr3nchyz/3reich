@@ -3,16 +3,19 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
+# Superseded pull request runs are cancelled; pushes to main always finish.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -22,10 +25,10 @@ jobs:
       # Unit tests with the coverage floor for src/engine (thresholds in vite.config.ts).
       - run: npm run coverage
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps --only-shell chromium
       # Browser smoke test against `vite preview` on the build from the step above.
       - run: npx playwright test
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: playwright-traces
