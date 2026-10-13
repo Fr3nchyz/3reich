@@ -118,12 +118,14 @@ The U.S. units that set up in the U.S. Box in Spring '42 (1939 and Campaign) are
   - 1942 and 1944: **European Turkey** (Bulgarian setup, Ref 17.3), the extent of **Eastern Europe** (Hungarian and Rumanian setup), and which ports count as **Baltic, North Sea and Atlantic** ports for German fleets. The map data does not tag ports by sea.
 - The Britain "Controlled at start" lists in 1942 and 1944 leave out Egypt, but the setup text places British units there (1942) and Egypt is British in 1939. Egypt is encoded as British in all four scenarios.
 - The 1942 USSR setup: "at least six ground factors must set up in and/or adjacent to Leningrad and Moscow". Encoded as one total across both; the page does not say whether it applies to each city.
-- Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers (see below).
+- Sicily's hexes (DD19, DD20, DD21, EE19, EE20, EE21) are the Italian land hexes there; DD19 and EE19 are coastal slivers, land in the original game too (see below).
 - Setup assumptions to check against the original: a nation must place every Force Pool counter at setup (the manual does not say it may hold some back); partial air units at setup (Ops 4.11) are not offered; "double city" air stacking (10 and 15 factors) is not on the map data, so every base holds 5; Germany's ban on setting up in Bessarabia in Fall 1939 (Ref 29.0) is not enforced because Bessarabia's hexes are not marked; Axis Minor-Allies' "Axis-controlled hexes only" (Ref 17.3) is carried in the data but not yet checked.
 - Victory conditions (Ref 2.0-2.1).
-- Map details to confirm against the original game (DOSBox) or a clean copy of the printed map:
-  - Coastal "sliver" hexes where a coastline only clips a corner (S42, V39, H26, J29, EE19, KK25, CC28): currently land. DD19 (Sicily's west tip) looks like another.
-  - The Strait of Messina: DD21 (Messina) and DD22 touch, and the map marks Sicily's hexes as joined to the mainland by hex adjacency, while many hexsides between hexes of one island are marked "coastline only" (not crossable by land). Check how the original treats Sicily and Sardinia before writing movement.
-  - Beaches (36 detected from the tan coastal strip): the full list should be checked.
-  - Spelling of small-print minor city names (e.g. Ragusa, Mumanis, Kaf).
-  - Fronts of all-sea hexes are inferred from which sea they belong to; enclosed waters (Adriatic, Aegean, Azov, Gulf of Bothnia) take the front of their coasts.
+- Map details, now checked against the original game's own map data (`BINMAP.BIN`; full report in [MAP_COMPARISON.md](MAP_COMPARISON.md)):
+  - Verified: the land or sea status of every hex except W21 and Z18. The coastal slivers S42, V39, H26, J29, EE19, KK25, CC28, DD19 and K25 are land in the game too; 17 more slivers the 4% threshold had made sea are now land with the game's country. The threshold no longer decides any hex.
+  - Verified: the front of every hex, all-sea hexes included; the country of every land hex (D43 is Finnish, CC30 Greek, both corrected); the Objectives, fortresses, swamps, crossing arrows and the Qattara hexsides.
+  - Verified: Sicily is joined by land inside (DD20-DD21, DD19-EE19 and EE19-EE20 corrected) and to the mainland only by the Messina crossing arrow DD21-DD22.
+  - Open: W21 (Corsica) and Z18 (Sardinia) are land in the game; making them land changes the `corsica` and `sardinia` zones, so it waits for the zone work.
+  - Open: 25 hexsides where the coast reaches only one end are crossable by land in the game but not on our map, and K32-K33 the reverse. Whether Ref 4.3's "land on both sides" means anywhere along the hexside needs a decision before movement is written.
+  - Open: 9 beaches the game has and we do not (D35, K30, V35, W43, CC26, DD3, GG36, KK33, LL19); 55 land hexes the game gives water hexsides but our map does not call coastal; what the game's water hexsides mean for fleets (306 more than our sea hexsides); 45 rivers on our map and 7 in the game that the other lacks; Tirane is a city in the game, not a capital; three Persian edge hexes (CC47, EE46, GG45) are playable in the game but missing from our map.
+  - Spelling of small-print minor city names (e.g. Ragusa, Mumanis, Kaf): the game files hold no city names, so this stays open.
