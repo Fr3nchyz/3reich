@@ -10,7 +10,7 @@ export default defineConfig(
   tseslint.configs.recommended,
   // Type-aware rules (they need the TypeScript program) only where tsconfig.json covers the files.
   {
-    files: ["src/**/*.ts", "tests/**/*.ts"],
+    files: ["src/**/*.ts", "tests/**/*.ts", "scripts/gamedata/**/*.ts"],
     extends: [tseslint.configs.recommendedTypeChecked],
     languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname } },
   },
@@ -42,5 +42,5 @@ export default defineConfig(
     rules: { "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }] },
   },
   { files: ["src/**/*.ts"], languageOptions: { globals: globals.browser } },
-  { files: ["eslint.config.js", "scripts/**/*.mjs", "tests/e2e/**/*.ts", "playwright.config.ts", "vite.config.ts"], languageOptions: { globals: globals.node } },
+  { files: ["eslint.config.js", "scripts/**/*.mjs", "scripts/gamedata/**/*.ts", "tests/e2e/**/*.ts", "playwright.config.ts", "vite.config.ts"], languageOptions: { globals: globals.node } },
 );
