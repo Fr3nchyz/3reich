@@ -56,6 +56,8 @@ This is a note about intent, not legal advice.
 - [docs/RULES.md](docs/RULES.md): what is encoded, sources, coordinates, open questions
 - [docs/SOURCES.md](docs/SOURCES.md): where to download the original manuals and map
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones and the plan
+- [docs/PROGRESS.md](docs/PROGRESS.md): where the project stands, measured against the plan (2026-10-13)
+- [docs/PRODUCT_OWNER.md](docs/PRODUCT_OWNER.md): how a non-technical product owner can help and decide
 - [docs/AUDIT_REPORT.md](docs/AUDIT_REPORT.md): technical audit of the code (2026-10-13)
 - [docs/GAME_DATA.md](docs/GAME_DATA.md): what the original game files contain and what has been decoded
 - [docs/MAP_COMPARISON.md](docs/MAP_COMPARISON.md): our map against the original game's map data
