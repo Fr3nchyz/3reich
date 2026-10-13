@@ -1,7 +1,7 @@
 import { applyAction, type Action } from "./actions";
 import type { GameContext } from "./context";
 import { setupOf } from "./game";
-import { resolveAreas, type Place } from "./areas";
+import { resolveAreas, territoryOf, type Place } from "./areas";
 import { FACTOR_TYPES, factorsOf, placementPlaces, unitsOf, type UnitSpec } from "./placement";
 import { countsForMinFactors, setupStatus, unitMatches } from "./requirements";
 import { currentSetupOwner, poolSpecs } from "./setup";
@@ -53,10 +53,15 @@ export function autoSetupOwner(ctx: GameContext, initial: GameState): Action[] {
       if (!placed) throw new Error(`autoSetup: cannot reach ${r.min} factors on the ${r.front} front for ${owner}`);
     }
   }
-  // 3. Everything else, wherever it is allowed.
+  // 3. Everything else: in the areas a "rest-in" requirement names, if any; then in the owner's own
+  // territory, so that a Major Power does not fill the few bases of a Minor-Ally it may also set up
+  // in; then wherever it is allowed.
+  const rest = f.setup.flatMap((r) => (r.kind === "rest-in" ? [resolveAreas(ctx, r.in).places] : []))[0];
+  const own = territoryOf(ctx, owner).places;
   for (const s of poolSpecs(state, owner)) {
     for (let i = 0; i < s.count; i++) {
-      if (!placeFirst({ type: s.type, strength: s.strength, ...(s.nationality ? { nationality: s.nationality } : {}) })) {
+      const spec: UnitSpec = { type: s.type, strength: s.strength, ...(s.nationality ? { nationality: s.nationality } : {}) };
+      if (!(rest && placeFirst(spec, (p) => rest.has(p))) && !placeFirst(spec, (p) => own.has(p)) && !placeFirst(spec)) {
         throw new Error(`autoSetup: no legal hex for ${owner}'s ${s.strength}-factor ${s.type}`);
       }
     }

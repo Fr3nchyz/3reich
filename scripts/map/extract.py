@@ -342,8 +342,19 @@ def main():
             hexes[h]["sea"] = True
     for h, t in C.TERRAIN_OVERRIDES.items():
         hexes[h]["land"] = t
+    # Corrections checked against the original game's map data (see curated.py).
+    for h in C.GAME_LAND_HEXES:
+        hexes[h]["land"] = hexes[h]["land"] or "plain"
+    for h in C.GAME_NOT_COASTAL:
+        hexes[h]["sea"] = False
+    for h in C.GAME_COASTAL:
+        hexes[h]["sea"] = True
 
     sides = classify_hexsides(img, hexes)
+    for s, fields in C.HEXSIDE_OVERRIDES.items():
+        sides[s].update(fields)
+        if not sides[s]["land"]:
+            sides[s].pop("river", None)
     border_coverage(img, sides)
     red_coverage(img, sides)
     for s in C.QATTARA_HEXSIDES:
@@ -425,6 +436,11 @@ def main():
             front[h] = sea_front[h]
 
     beach = beaches(img, hexes)
+    for h, on in C.BEACH_OVERRIDES.items():
+        if on:
+            beach.add(h)
+        else:
+            beach.discard(h)
 
     out_hexes = {}
     for h in sorted(hexes, key=lambda k: (parse(k)[1], parse(k)[0])):

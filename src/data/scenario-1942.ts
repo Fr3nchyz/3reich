@@ -1,7 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, from, inf, nation, nationSetup, replacement } from "./counters";
-import { ISLANDS, UNPLACED_REGIONS } from "./zones";
+import { fromOriginal, ISLANDS, REGIONS } from "./zones";
 
 /**
  * 1942 scenario. Source: Ops 9.0 "1942 SCENARIO" (pp. 22-24), with Ref 17.3 for the Minor-Allies'
@@ -52,18 +52,29 @@ export const SCENARIO_1942: Scenario = {
 
   zones: {
     corsica: ISLANDS.corsica,
-    "european-turkey": UNPLACED_REGIONS["european-turkey"],
-    "eastern-europe": UNPLACED_REGIONS["eastern-europe"],
-    "baltic-north-atlantic-ports": UNPLACED_REGIONS["baltic-north-atlantic-ports"],
-    // The "scenario start line": a line the program draws at setup. It is not on the printed map
-    // card and the manuals do not list its hexes.
-    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1942 scenario start line", hexes: null },
-    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1942 scenario start line", hexes: null },
-    "libya-east-of-start-line": { countries: ["libya"], description: "Libya east of Tobruk (inclusive)", hexes: null },
-    "libya-west-of-start-line": { countries: ["libya"], description: "Libya west of Tobruk", hexes: null },
-    // Ref 35.0: Vichy France is the part of European France the program marks as Vichy.
-    "vichy-france": { countries: ["france"], description: "European Vichy France (without Corsica)", hexes: null },
-    "occupied-france": { countries: ["france"], description: "European France outside Vichy France, under German control", hexes: null },
+    "european-turkey": REGIONS["european-turkey"],
+    "eastern-europe": REGIONS["eastern-europe"],
+    "baltic-north-atlantic-ports": REGIONS["baltic-north-atlantic-ports"],
+    // The "scenario start line" the program draws at setup. It is not on the printed map card; the
+    // game's control bitmaps for 1942 give each side's hexes, and 1942LINE.BIN runs exactly along the
+    // border between them (tests/gamedata.test.ts).
+    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1942 scenario start line (USSR42.CON)", hexes: fromOriginal("1942/ussr-east-of-start-line", ["ussr"]) },
+    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1942 scenario start line (GERM42.CON)", hexes: fromOriginal("1942/ussr-west-of-start-line", ["ussr"]) },
+    "libya-east-of-start-line": { countries: ["libya"], description: "Libya east of Tobruk, inclusive (BRIT42.CON)", hexes: fromOriginal("1942/libya-east-of-start-line", ["libya"]) },
+    "libya-west-of-start-line": { countries: ["libya"], description: "Libya west of Tobruk (ITALY42.CON)", hexes: fromOriginal("1942/libya-west-of-start-line", ["libya"]) },
+    // Ref 35.0: Vichy France is the part of European France the program marks as Vichy. VICHY42.CON
+    // marks it with Corsica, which is its own zone here. GERM42.CON marks all of mainland France,
+    // Vichy included, so German-held France is GERM42's France less Vichy's.
+    "vichy-france": {
+      countries: ["france"],
+      description: "European Vichy France without Corsica (VICHY42.CON)",
+      hexes: fromOriginal("1942/vichy-france", ["france"]),
+    },
+    "occupied-france": {
+      countries: ["france"],
+      description: "European France outside Vichy France, under German control (GERM42.CON less VICHY42.CON)",
+      hexes: fromOriginal("1942/occupied-france", ["france"]),
+    },
   },
 
   // "Only SW Construction is allowed in the 1942 YSS. Germany begins with 6 SW Submarine factors already built."
@@ -109,6 +120,9 @@ export const SCENARIO_1942: Scenario = {
 
     "free-france": nationSetup({
       controlledAtStart: [],
+      // Free French units function as British in all respects (Ref 35.0), so they set up in
+      // British-controlled territory, within the area the page names.
+      mayAlsoSetUpIn: [{ areas: [{ controlledBy: "britain" }] }],
       setup: [{ kind: "all-in", types: "all", in: [{ country: "lebanon-syria" }] }],
       forcePool: [inf(2, 3, 2)],
       allowableBuilds: [],
@@ -143,10 +157,17 @@ export const SCENARIO_1942: Scenario = {
         { kind: "all-in", types: ["fleet"], in: [{ zone: "baltic-north-atlantic-ports" }, { box: "murmansk-box" }] },
         { kind: "place", type: "armor", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
         { kind: "place", type: "infantry", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
+        // TODO(verify): the page names one armor and one infantry unit for Libya, so Germany is held
+        // to their 7 factors there (4-6 armor plus 3-3 infantry), the literal reading. Whether the
+        // original lets more German units start in Libya is not known (docs/RULES.md).
+        { kind: "max-factors", area: { zone: "libya-west-of-start-line" }, max: 7 },
       ],
       mayAlsoSetUpIn: [
         { areas: [{ country: "bulgaria" }, { country: "finland" }, { country: "hungary" }, { country: "rumania" }] },
         { areas: [{ box: "murmansk-box" }], types: ["fleet", "air"] },
+        // The page sets up a German armor and infantry unit in Libya west of the start line, which is
+        // Italian; the max-factors requirement above limits how much may go there.
+        { areas: [{ zone: "libya-west-of-start-line" }], types: ["armor", "infantry"] },
       ],
       forcePool: [inf(3, 3, 28), armor(4, 6, 8), fleet(9, 3), air(5, 4, 4)],
       allowableBuilds: [airborne(3, 3, 1), armor(4, 6, 4), air(5, 4, 2), replacement(8), from(armor(5, 6, 2), 1943)],
@@ -167,10 +188,10 @@ export const SCENARIO_1942: Scenario = {
   },
 
   notes: [
-    "The Axis moves first. The 'scenario start line' divides the U.S.S.R. between Germany (west) and the Soviets (east), and Libya at Tobruk between Britain (east, inclusive) and Italy (west). The program draws it at setup; it is not on the printed map card, so its hexes are not yet known.",
-    "The printed 'Controlled at start' list for Britain leaves out Egypt, but Britain's setup places units there, so Egypt is encoded as British.",
+    "The Axis moves first. The 'scenario start line' divides the U.S.S.R. between Germany (west) and the Soviets (east), and Libya at Tobruk between Britain (east, inclusive) and Italy (west). The program draws it at setup; it is not on the printed map card. Its hexes come from the original game's 1942 control bitmaps.",
+    "The printed 'Controlled at start' list for Britain leaves out Egypt, but Britain's setup places units there, so Egypt is encoded as British. The original game's BRIT42.CON marks all of Egypt as British too.",
     "Britain's Free French (2-3 infantry x2) are set up by the Allied player in Lebanon-Syria. Free French units function as British in all respects (Ref 35.0).",
-    "Vichy France is an inactive German Minor-Ally. Its European hexes are chosen by the program (Ref 35.0) and are not on the printed map. Vichy may build only to replace losses that occur while it is active.",
+    "Vichy France is an inactive German Minor-Ally. Its European hexes are chosen by the program (Ref 35.0) and are not on the printed map; they come from the original game's VICHY42.CON. Vichy may build only to replace losses that occur while it is active.",
     "At least six Soviet ground factors must set up in and/or adjacent to Leningrad and Moscow. The page does not say whether the six are counted across both cities together; this encodes them as a single total.",
     "Germany may place units in the Murmansk Convoy Box (fleets and air units only), and its fleets must start in Baltic Sea, North Sea or Atlantic ports (Ops 4.12).",
     "Germany's 290 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1942 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.2 and are not encoded yet.",
