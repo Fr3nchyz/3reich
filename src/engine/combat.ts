@@ -53,7 +53,7 @@ export function oddsColumn(attack: number, defense: number): OddsColumn | null {
  * Fixed columns forced by CA1/CA2/CA3 for the defender's counterattack. The original
  * program uses the same three columns (its combat routine in 3R2.EXE; GAME_DATA.md).
  */
-const FORCED_COUNTERATTACK_COLUMN: Partial<Record<CrtResult, OddsColumn>> = {
+export const FORCED_COUNTERATTACK_COLUMN: Partial<Record<CrtResult, OddsColumn>> = {
   CA1: "1-1",
   CA2: "1-2",
   CA3: "1-3",
