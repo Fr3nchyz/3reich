@@ -7,9 +7,9 @@ const command = JSON.parse(raw || '{}').tool_input?.command ?? ''
 
 if (/\bgit\s+push\b/.test(command)) {
   try {
-    execSync('npm run typecheck && npm test && npm run build', { stdio: ['ignore', 2, 2] })
+    execSync('npm run lint && npm run typecheck && npm test && npm run build', { stdio: ['ignore', 2, 2] })
   } catch {
-    console.error('Blocked: typecheck, tests or build failed. Fix them, then push again.')
+    console.error('Blocked: lint, typecheck, tests or build failed. Fix them, then push again.')
     process.exit(2)
   }
 }

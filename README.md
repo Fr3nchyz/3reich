@@ -9,9 +9,20 @@ A playable recreation of the classic WWII grand-strategy wargame *Third Reich*, 
 ```sh
 npm install
 npm run dev      # play locally at http://localhost:5173
-npm test         # engine unit tests
+npm test         # unit tests
 npm run build    # static build in dist/ — works from any folder or web host
 ```
+
+Checks that CI also runs:
+
+```sh
+npm run lint       # ESLint (flat config); src/ files stay at or under 300 lines of code
+npm run typecheck  # app, engine (no DOM, no Node) and e2e configs
+npm run coverage   # unit tests plus the coverage floor for src/engine
+npm run e2e        # builds, then a Playwright smoke test against `vite preview` (mouse and touch)
+```
+
+`npm run e2e` needs a Chromium: run `npx playwright install chromium` once, or set `PW_CHROMIUM_PATH` to an installed one.
 
 Requires Node 20+.
 
@@ -26,8 +37,8 @@ Requires Node 20+.
 - The original 1996 PC manuals and reference map are the source of truth (links in `docs/SOURCES.md`; keep the files outside the repo). Cite the section in code comments, e.g. `// Ref 12.4`.
 - Never invent a rule. If no source covers it, use a named constant marked `TODO(verify)` and list it in `docs/RULES.md` under Open questions.
 - Never commit scans, screenshots, game files or manual text. Draw original art.
-- The engine stays pure and deterministic (seeded dice, no DOM, no clock), and every rule has a test. This is enforced by `tsconfig.engine.json` and `tests/engine-purity.test.ts`. The UI and the computer opponent change the game only through `legalActions` and `applyAction`.
-- Run `npm run typecheck && npm test && npm run build` before pushing. Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
+- The engine stays pure and deterministic (seeded dice, no DOM, no clock), and every rule has a test. This is enforced by `tsconfig.engine.json` and `tests/engine-purity.test.ts`. Files under `src/` stay at or under 300 lines of code, enforced by ESLint `max-lines`. The UI and the computer opponent change the game only through `legalActions` and `applyAction`.
+- Run `npm run lint && npm run typecheck && npm test && npm run build` before pushing; CI also enforces the engine coverage floor and the browser smoke test (`npm run e2e`). Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
 
 ## Legal
 
