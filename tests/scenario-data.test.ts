@@ -283,22 +283,10 @@ describe("the zones the printed map does not show", () => {
       .map(([id]) => id)
       .sort();
 
-  // If this fails because a zone gained hexes, update docs/RULES.md "Open questions" in the same change.
+  // Every zone now has hexes (from the map or the original game's files; see tests/gamedata.test.ts).
+  // If a zone ever goes back to null, list it here and in docs/RULES.md "Open questions".
   it("lists exactly what is still unknown, per scenario", () => {
-    expect(unresolved(SCENARIO_1939)).toEqual(["poland-east-of-partition-line"]);
-    expect(unresolved(SCENARIO_CAMPAIGN)).toEqual(["poland-east-of-partition-line"]);
-    expect(unresolved(SCENARIO_1942)).toEqual(
-      [
-        "baltic-north-atlantic-ports", "eastern-europe", "european-turkey", "libya-east-of-start-line", "libya-west-of-start-line",
-        "occupied-france", "ussr-east-of-start-line", "ussr-west-of-start-line", "vichy-france",
-      ].sort(),
-    );
-    expect(unresolved(SCENARIO_1944)).toEqual(
-      [
-        "baltic-north-atlantic-ports", "eastern-europe", "european-turkey", "italy-north-of-start-line", "italy-south-of-start-line",
-        "ussr-east-of-start-line", "ussr-west-of-start-line",
-      ].sort(),
-    );
+    for (const { s } of ALL) expect(unresolved(s), s.id).toEqual([]);
   });
 
   it("reads the islands and mainland France off the map", () => {

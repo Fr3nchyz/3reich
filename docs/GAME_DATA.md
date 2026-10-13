@@ -20,7 +20,22 @@ The player supplied the original 1996 PC game files (a DOS game; 405 files, abou
 
 **Control bitmaps (`*.CON`, 280 bytes each).** 40 rows (A to NN), 7 bytes per row, most significant bit first. A set bit marks a hex. For row index `r` and bit position `col` (0 to 55): `q = col - floor(r / 2) + 16`. Checked against our map: `VICHY.CON` has 19 hexes and 18 are French land hexes; `EASTEURP.CON` has 36 and 34 fall in Poland, the Baltic States or Rumania. The misses were coastal sliver hexes that our map called sea; since the map comparison (2.4) all 36 East Europe hexes are Polish, Baltic or Rumanian land, and the one Vichy miss left is W21 (a proposal in [MAP_COMPARISON.md](MAP_COMPARISON.md)).
 
-**Line files (`NSPPLINE.BIN`, `1942LINE.BIN`, `1944LINE.BIN`).** Byte 0 is the entry count, byte 1 is zero, then one 3-byte entry per hex: bitmap column (same layout as above), row index, and a 6-bit mask of the hexsides of that hex which the line runs along. Mask bit to direction (our axial directions): bit 0 north-east, 1 east, 2 south-east, 3 south-west, 4 west, 5 north-west (bits 3 and 4 cannot be told apart by contiguity alone). The Polish Partition Line decodes to a single unbroken path of 28 hexsides, which is the strongest check that the layout is right. The 1942 and 1944 lines decode to several segments.
+What each one marks (land hexes on our map):
+
+| File | Marks |
+|---|---|
+| `GERM42.CON` | German control at the start of 1942: Germany, the Baltic States, Belgium, Denmark, the Netherlands, Norway, Luxembourg, Poland, Yugoslavia, Greece, all of mainland France (Vichy included) and 92 Soviet hexes |
+| `ITALY42.CON` | Italy, Albania and Libya west of Tobruk |
+| `BRIT42.CON` | Britain (with Gibraltar, Malta, Cyprus), Egypt, Iraq, Lebanon-Syria, Palestine, Transjordan and Libya from Tobruk east (8 hexes) |
+| `USSR42.CON` | The Soviet side of the 1942 start line (389 hexes) |
+| `VICHY42.CON` | Vichy France at the start of 1942: 17 hexes of southern France, Corsica, Morocco, Algeria, Tunisia |
+| `VICHY.CON` | The same 18 European hexes (Vichy France when France falls) |
+| `GERM44.CON` | As `GERM42.CON` with Albania, Italy north of the line (with Rhodes) and 37 Soviet hexes |
+| `BRIT44.CON` | Britain's 1942 lands plus all of Libya, French North Africa, Corsica, Sicily, Sardinia and Italy south of the line |
+| `USSR44.CON` | The Soviet side of the 1944 start line (443 hexes) |
+| `EASTEURP.CON` | Eastern Europe (Ref 29.0): the Baltic States, Poland east of the Partition Line, Bessarabia |
+
+**Line files (`NSPPLINE.BIN`, `1942LINE.BIN`, `1944LINE.BIN`).** Byte 0 is the entry count, byte 1 is zero, then one 3-byte entry per hex: bitmap column (same layout as above), row index, and a 6-bit mask of the hexsides of that hex which the line runs along. Mask bit to direction (our axial directions): bit 0 north-east, 1 east, 2 south-east, 3 south-west, 4 west, 5 north-west (bits 3 and 4 cannot be told apart by contiguity alone). The Polish Partition Line decodes to a single unbroken path of 28 hexsides, which is the strongest check that the layout is right. The 1942 line decodes to 49 hexsides in pieces (14 loose ends) and the 1944 line to 43 (8 loose ends): they stop at coasts and at the Finnish border. The second check is that inside each country every line hexside lies exactly between the two sides' control bitmaps (U.S.S.R. and Libya in 1942, U.S.S.R. and Italy in 1944, Poland and Rumania for the Partition Line): 110 hexsides, none off the border. It also settles the bit order. Of all 720 ways to map the six mask bits to the six directions, only north-east, east, south-east, south-west, west, north-west puts every one of them on a border (`tests/gamedata.test.ts` tries them all). Contiguity alone cannot tell bits 3 and 4 apart, and the Polish line uses neither. Read the other way round, the 1942 line runs off the bottom of the map at NN22 and leaves hexsides off the border at Tobruk and in the Crimea.
 
 **Map (`BINMAP.BIN`, 44,880 bytes).** The only map file the program loads (its name is in `3R2.EXE`; the `AREA*` files and the other `BINMAP` files are not). One 22-byte record per hex, 2,040 records stored **column by column**: 51 bitmap columns of 40 rows, so record `i` is column `floor(i / 40)` and row `i mod 40`, and the hex is `q = column - floor(row / 2) + 16`, the same layout as the control bitmaps. Fields (bytes numbered from 0; little-endian words):
 
@@ -48,8 +63,20 @@ Hexside bit order, in all masks: bit 0 north-east, 1 east, 2 south-east, 3 south
 
 ## Not decoded yet
 
-`AREAADJ.BIN`, `AREADIST.BIN` (see above), the `TABLE*.TAB` files, and the scenario `.BIN` files.
+`AREAADJ.BIN`, `AREADIST.BIN` (see above), the `TABLE*.TAB` files, and the scenario `.BIN` files. The game's files hold no bitmap for European Turkey or for which sea a port is on, so those two zones are read off our map (see RULES.md "Zones").
 
 ## Reproducing the checks
 
-`npx vite-node scripts/gamedata/map.ts <game-folder>` decodes `BINMAP.BIN` (decoder in `scripts/gamedata/binmap.ts`, tested on made-up bytes in `tests/binmap.test.ts`) and prints every difference with our map as Markdown; `docs/MAP_COMPARISON.md` holds the result. The other decoders used so far were throwaway scripts kept outside the repo. When phase 2 turns them into code, they go in `scripts/gamedata/`, take the game folder as an argument, and write only derived facts (hex lists) into `src/data/`.
+```sh
+npx vite-node scripts/gamedata/extract.ts <game-folder>
+```
+
+`scripts/gamedata/formats.ts` holds the decoders (bytes in, hex ids out; tested on made-up bytes in `tests/gamedata.test.ts`) and `scripts/gamedata/checks.ts` the border check shared with the tests. `scripts/gamedata/extract.ts` reads the bitmaps and line files from the game folder, prints a short report (hexes per country, hexes our map calls sea, loose ends of each line), runs the cross-checks that need the whole bitmaps, rewrites `src/data/gamedata.ts`, and then checks each owner's "controlled at start" against its bitmap. It exits with status 1 if a check fails. Running it again on the same files gives a byte-identical file. The tests use only the committed `gamedata.ts`.
+
+### What is committed and what is not
+
+Committed, in `src/data/gamedata.ts`: the hexes of the 11 zones the scenarios use (the start-line halves, Vichy and German-held France, Eastern Europe), as hex ids, plus the three lines as hex ids with the hexsides the line runs along. A zone's list holds the land hexes of its country that the bitmap marks, plus the few marked hexes next to them that our map calls sea; the islands that are zones of their own are left out.
+
+Not committed: the control bitmaps themselves, or any list that rebuilds them. That means no per-owner lists, no `VICHY.CON` list, and no list of the other marked sea hexes. The checks that need them (no hex on two sides, `VICHY.CON` against `VICHY42.CON`, each owner's territory against its bitmap) run in the extractor.
+
+The map decoder is separate: `npx vite-node scripts/gamedata/map.ts <game-folder>` decodes `BINMAP.BIN` (decoder in `scripts/gamedata/binmap.ts`, tested on made-up bytes in `tests/binmap.test.ts`) and prints every difference with our map as Markdown; `docs/MAP_COMPARISON.md` holds the result.
