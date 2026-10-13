@@ -48,6 +48,8 @@ describe("reference-map charts", () => {
   // single-precision ratio with exactly those decimals. So 5:3 (1.666...) is +1, not +2, and
   // exactly 1.67:1 is +1 too (1.67 in single precision is just below 1.67). This changed: the
   // engine used to read the chart as 4/3 and 5/3, which gave +2 at 5:3.
+  // Ref 21.51 says only "at least a third more" for +1; the game's 1.33 differs from that only from
+  // 133 against 100 (+1 here, 0 by a strict third more).
   it("naval advantage at the game's thresholds", () => {
     expect(navalAdvantageDrm(9, 9)).toBe(0);
     expect(navalAdvantageDrm(11, 9)).toBe(0);
@@ -103,7 +105,8 @@ describe("reference-map charts", () => {
       air: 3, airborne: 3, armor: 2, asw: 3, infantry: 1, interceptorFlak: 2, naval: 3, replacement: 1, sac: 3, submarine: 2,
     });
   });
-  // Every row of the game's Minor Country Forces chart screen (TABLE9.TAB), in counters.
+  // Change detector: a second copy of the constant, checked against the game's Minor Country Forces
+  // chart picture (TABLE9.TAB); not independent evidence. Entries are counters.
   // Columns: 1-3 inf, 2-3 inf, 2-5 armor, 1-4 air, 2-4 air, 2 fleet.
   it("minor country forces, every row", () => {
     const CHART = `

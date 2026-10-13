@@ -59,9 +59,15 @@ export function interceptionRolls(distance: number): number[] | "automatic" {
  * routine in 3R2.EXE compares the single-precision ratio with the decimals 1.33 and 1.67,
  * not with 4/3 and 5/3. So 5 factors against 3 (1.666...) is only +1. And because 1.67 in
  * single precision is just below 1.67, exactly 1.67:1 (167 against 100) is also +1. The
- * integer tests below give the game's result for any factor totals under 100,000.
- * Evidence: the game's naval chart screen (TABLE10.TAB) prints 1.33:1 and 1.67:1, and the
- * routine uses those decimals (docs/GAME_DATA.md, "Rule tables").
+ * integer tests below give the game's result for any factor totals under 400,000 (checked
+ * by a sweep of every enemy total with the friendly totals around each threshold).
+ *
+ * Ref 21.51 gives the larger force the DRM "if it has at least a third more naval factors"
+ * and does not mention 1.67. The game's 1.33 differs from "a third more" (4/3) only for a
+ * ratio from 1.33 up to 4/3, which needs at least 100 enemy factors (first case: 133
+ * against 100, +1 in the game, 0 by Ref 21.51). Evidence for the game's values: its naval
+ * chart screen (TABLE10.TAB) prints 1.33:1 and 1.67:1, the routine uses those decimals,
+ * and scripts/gamedata/tables.ts reproduces this (docs/GAME_DATA.md, "Rule tables").
  */
 export function navalAdvantageDrm(friendly: number, enemy: number): number {
   if (enemy <= 0) return 5;
@@ -79,8 +85,9 @@ export type NavalNation = PowerId | "sweden" | "turkey" | "spain" | "vichy-franc
  * Naval nationality DRM. Italy is -1 for battles in or south of map row N, -2 north
  * of it. Every nation that can own a fleet is on the chart: the Minor Country Forces
  * chart gives fleets only to Spain, Sweden and Turkey. The game's naval routine
- * (3R2.EXE) gives the same values, with -2 for any nation it does not name, and tests
- * the battle's row against N the same way (GAME_DATA.md, "Rule tables").
+ * (3R2.EXE) gives the same values, with -2 for any nation it does not name, and for Italy
+ * compares its second argument with row N's index (GAME_DATA.md, "Rule tables"; that this
+ * argument is the battle's row was read by hand, not reproduced by the script).
  *
  * TODO(verify) Vichy and Free French fleets: the chart (TABLE10.TAB and the map card)
  * gives them 0, the same as France, but the routine names only nation

@@ -53,9 +53,10 @@ describe("odds", () => {
 });
 
 describe("offensive CRT", () => {
-  // Every cell, transcribed by die roll from the game's own chart screen (TABLE5.TAB) and from the
-  // table its combat code reads in 3R2.EXE, which is also stored by die roll (docs/GAME_DATA.md).
-  // Columns: 1-4 1-3 1-2 1-1 2-1 3-1 4-1 5-1.
+  // Change detector: a second copy of the constant, laid out by die roll, so an edit to OFFENSIVE_CRT
+  // cannot pass unnoticed. It is not independent evidence; it was checked against the game's chart
+  // picture (TABLE5.TAB), and scripts/gamedata/tables.ts compares the constant with the program's
+  // own table (docs/GAME_DATA.md). Columns: 1-4 1-3 1-2 1-1 2-1 3-1 4-1 5-1.
   const BY_ROLL = [
     "Ex Ex  Ex  Ex Ex  Ex  Ex  Ex",
     "A  Ex  Ex  CA CA2 CA2 CA3 D",
@@ -151,8 +152,9 @@ describe("attrition", () => {
     expect(ATTRITION_TABLE["61+"][5]).toEqual([4, 2]);
     expect(ATTRITION_TABLE["11-20"][5]).toEqual([0, 0]);
   });
-  // Every cell, by die roll, from the game's own chart screen (TABLE2.TAB) and the two tables its
-  // attrition code reads in 3R2.EXE (units and hexes, each stored by die roll; GAME_DATA.md).
+  // Change detector: a second copy of the constant, by die roll. Not independent evidence; it was
+  // checked against the game's chart picture (TABLE2.TAB), and scripts/gamedata/tables.ts compares
+  // the constant with the program's own tables (GAME_DATA.md).
   // Columns: 1-10 11-20 21-30 31-40 41-50 51-60 61+. "3/1" = 3 units eliminated, 1 hex vacated.
   it("matches the game's chart and data tables in every cell", () => {
     const BY_ROLL = [
@@ -177,7 +179,8 @@ describe("attrition", () => {
       }
     });
   });
-  // The game picks the column as (factors - 1) / 10 rounded down, capped at the last column.
+  // The game picks the column as (factors - 1) / 10 rounded down, capped at the last column (read by
+  // hand from the program, not reproduced by the script).
   it("uses the game's column bands", () => {
     for (let n = 1; n <= 100; n++) expect(attritionColumn(n)).toBe(ATTRITION_COLUMNS[Math.min(6, Math.floor((n - 1) / 10))]);
   });
