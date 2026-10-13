@@ -9,6 +9,7 @@ import { newGame, setupOf } from "../src/engine/game";
 import { hex, hexId as hexIdOf, neighbors } from "../src/engine/hex";
 import { setupProblems, setupStatus } from "../src/engine/requirements";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../src/engine/setup";
+import { placementPlaces } from "../src/engine/placement";
 import type { ForceOwner, GameState, Scenario } from "../src/engine/types";
 import { CTX, ctxFor } from "./helpers";
 
@@ -449,6 +450,26 @@ describe("opening setup: which scenarios can be set up", () => {
       }
     });
   }
+});
+
+describe("opening setup: Germany in Libya (1942)", () => {
+  it("holds Germany to the 7 factors the page names west of the start line: one 4-6 armor and one 3-3 infantry", () => {
+    const c = ctxFor(SCENARIO_1942);
+    let s = newGame(SCENARIO_1942, 1);
+    while (currentSetupOwner(s) !== "germany") for (const a of autoSetupOwner(c, s)) s = step(s, a, c);
+    const libya = new Set(SCENARIO_1942.zones["libya-west-of-start-line"]!.hexes);
+    const free = (type: "infantry" | "armor", strength: number) =>
+      placementPlaces(c, s, "germany", { type, strength }).find((p) => libya.has(p) && !Object.values(s.units).some((u) => u.at === p));
+    s = step(s, place("germany", "armor", 4, free("armor", 4)!), c);
+    s = step(s, place("germany", "infantry", 3, free("infantry", 3)!), c);
+    // A second counter of either kind would go past the limit, so no Libyan hex is offered for it.
+    expect(free("infantry", 3)).toBeUndefined();
+    expect(placementPlaces(c, s, "germany", { type: "infantry", strength: 3 }).some((p) => libya.has(p))).toBe(false);
+    const elsewhere = [...libya].find((p) => !Object.values(s.units).some((u) => u.at === p))!;
+    const r = applyAction(c, s, place("germany", "infantry", 3, elsewhere));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.error).toMatch(/at most 7 factors/);
+  });
 });
 
 describe("opening setup: ground factors in or next to named hexes (the 1942 Soviet rule)", () => {

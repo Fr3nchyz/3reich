@@ -1,7 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, from, inf, nation, nationSetup, replacement } from "./counters";
-import { fromBitmap, ISLANDS, REGIONS } from "./zones";
+import { fromOriginal, ISLANDS, REGIONS } from "./zones";
 
 /**
  * 1942 scenario. Source: Ops 9.0 "1942 SCENARIO" (pp. 22-24), with Ref 17.3 for the Minor-Allies'
@@ -58,22 +58,22 @@ export const SCENARIO_1942: Scenario = {
     // The "scenario start line" the program draws at setup. It is not on the printed map card; the
     // game's control bitmaps for 1942 give each side's hexes, and 1942LINE.BIN runs exactly along the
     // border between them (tests/gamedata.test.ts).
-    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1942 scenario start line (USSR42.CON)", hexes: fromBitmap("USSR42", "ussr") },
-    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1942 scenario start line (GERM42.CON)", hexes: fromBitmap("GERM42", "ussr") },
-    "libya-east-of-start-line": { countries: ["libya"], description: "Libya east of Tobruk, inclusive (BRIT42.CON)", hexes: fromBitmap("BRIT42", "libya") },
-    "libya-west-of-start-line": { countries: ["libya"], description: "Libya west of Tobruk (ITALY42.CON)", hexes: fromBitmap("ITALY42", "libya") },
+    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1942 scenario start line (USSR42.CON)", hexes: fromOriginal("1942/ussr-east-of-start-line", ["ussr"]) },
+    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1942 scenario start line (GERM42.CON)", hexes: fromOriginal("1942/ussr-west-of-start-line", ["ussr"]) },
+    "libya-east-of-start-line": { countries: ["libya"], description: "Libya east of Tobruk, inclusive (BRIT42.CON)", hexes: fromOriginal("1942/libya-east-of-start-line", ["libya"]) },
+    "libya-west-of-start-line": { countries: ["libya"], description: "Libya west of Tobruk (ITALY42.CON)", hexes: fromOriginal("1942/libya-west-of-start-line", ["libya"]) },
     // Ref 35.0: Vichy France is the part of European France the program marks as Vichy. VICHY42.CON
     // marks it with Corsica, which is its own zone here. GERM42.CON marks all of mainland France,
     // Vichy included, so German-held France is GERM42's France less Vichy's.
     "vichy-france": {
       countries: ["france"],
       description: "European Vichy France without Corsica (VICHY42.CON)",
-      hexes: fromBitmap("VICHY42", "france", ISLANDS.corsica.hexes),
+      hexes: fromOriginal("1942/vichy-france", ["france"]),
     },
     "occupied-france": {
       countries: ["france"],
       description: "European France outside Vichy France, under German control (GERM42.CON less VICHY42.CON)",
-      hexes: fromBitmap("GERM42", "france", fromBitmap("VICHY42", "france")),
+      hexes: fromOriginal("1942/occupied-france", ["france"]),
     },
   },
 
@@ -157,12 +157,16 @@ export const SCENARIO_1942: Scenario = {
         { kind: "all-in", types: ["fleet"], in: [{ zone: "baltic-north-atlantic-ports" }, { box: "murmansk-box" }] },
         { kind: "place", type: "armor", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
         { kind: "place", type: "infantry", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
+        // TODO(verify): the page names one armor and one infantry unit for Libya, so Germany is held
+        // to their 7 factors there (4-6 armor plus 3-3 infantry), the literal reading. Whether the
+        // original lets more German units start in Libya is not known (docs/RULES.md).
+        { kind: "max-factors", area: { zone: "libya-west-of-start-line" }, max: 7 },
       ],
       mayAlsoSetUpIn: [
         { areas: [{ country: "bulgaria" }, { country: "finland" }, { country: "hungary" }, { country: "rumania" }] },
         { areas: [{ box: "murmansk-box" }], types: ["fleet", "air"] },
         // The page sets up a German armor and infantry unit in Libya west of the start line, which is
-        // Italian. Like every named placement it is a minimum (Ops 4.1), so more may go there.
+        // Italian; the max-factors requirement above limits how much may go there.
         { areas: [{ zone: "libya-west-of-start-line" }], types: ["armor", "infantry"] },
       ],
       forcePool: [inf(3, 3, 28), armor(4, 6, 8), fleet(9, 3), air(5, 4, 4)],

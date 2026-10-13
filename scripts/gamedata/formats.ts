@@ -37,17 +37,17 @@ export function decodeBitmap(bytes: Uint8Array): HexId[] {
 }
 
 /**
- * Hexside mask bit to direction. Bits 0-5 go clockwise from north-east. Bits 3 and 4 (south-west,
- * west) cannot be told apart by the contiguity of the lines alone (the Polish Partition Line uses
- * neither). This order is the one under which every line hexside inside a country lies exactly on
- * the border between the two sides' control bitmaps (tests/gamedata.test.ts); swapped, the 1942
- * line at Tobruk and in the Crimea would cut through one side's territory.
+ * Hexside mask bit to direction. Bits 0-5 go clockwise from north-east. Contiguity alone cannot
+ * tell bits 3 and 4 (south-west, west) apart, and the Polish Partition Line uses neither. Of all
+ * 720 ways to map the six bits to directions, this is the only one under which every line hexside
+ * inside a country lies on the border between the two sides' zones (tests/gamedata.test.ts).
  */
 export const MASK_DIRECTIONS: readonly Direction[] = ["NE", "E", "SE", "SW", "W", "NW"];
 
 export interface LineEntry {
   hex: HexId;
-  directions: Direction[];
+  /** The hexsides of this hex the line runs along. */
+  sides: readonly Direction[];
 }
 
 /**
@@ -61,20 +61,35 @@ export function decodeLine(bytes: Uint8Array): LineEntry[] {
   for (let i = 0; i < count; i++) {
     const [column, r, mask] = [bytes[2 + 3 * i]!, bytes[3 + 3 * i]!, bytes[4 + 3 * i]!];
     if (mask >> 6) throw new Error(`entry ${i}: mask ${mask} uses more than six hexsides`);
-    out.push({ hex: hexId(hexAt(column, r)), directions: MASK_DIRECTIONS.filter((_, bit) => (mask >> bit) & 1) });
+    out.push({ hex: hexId(hexAt(column, r)), sides: MASK_DIRECTIONS.filter((_, bit) => (mask >> bit) & 1) });
   }
   return out;
 }
 
-/** The hexsides a decoded line runs along, as canonical ids, sorted and without repeats. */
-export function lineHexsides(entries: readonly LineEntry[]): HexsideId[] {
+/**
+ * The hexsides a decoded line runs along, as canonical ids, sorted and without repeats. `reading`
+ * maps each stored side to the direction actually used, to try another bit order. Throws a clear
+ * error if a side leads off the map, which only a wrong reading can do.
+ */
+export function lineHexsides(entries: readonly LineEntry[], reading: (d: Direction) => Direction = (d) => d): HexsideId[] {
   const out = new Set<HexsideId>();
   for (const e of entries) {
     const h = hex(e.hex);
-    for (const d of e.directions) out.add(hexsideId(h, neighbor(h, d)));
+    for (const side of e.sides) {
+      const d = reading(side);
+      const n = neighbor(h, d);
+      if (n.q < 0 || n.r < 0 || n.r >= ROW_COUNT) throw new Error(`line entry ${e.hex}: its ${d} side leads off the map`);
+      out.add(hexsideId(h, n));
+    }
   }
   return [...out].sort();
 }
+
+/** Read mask bit i as `order[i]` instead of `MASK_DIRECTIONS[i]`. */
+export const readingFor =
+  (order: readonly Direction[]) =>
+  (d: Direction): Direction =>
+    order[MASK_DIRECTIONS.indexOf(d)]!;
 
 /**
  * The loose ends of a set of hexsides: corners where exactly one of the hexsides meets. An unbroken

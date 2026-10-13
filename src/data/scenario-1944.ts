@@ -1,7 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, ofNation, replacement } from "./counters";
-import { FRANCE_MAINLAND, fromBitmap, ISLANDS, REGIONS } from "./zones";
+import { FRANCE_MAINLAND, fromOriginal, ISLANDS, REGIONS } from "./zones";
 
 /**
  * 1944 scenario. Source: Ops 9.0 "1944 SCENARIO" (pp. 24-26), with Ref 17.3 for the Minor-Allies'
@@ -51,17 +51,17 @@ export const SCENARIO_1944: Scenario = {
     // The "scenario start line" for 1944. It is not on the printed map card; the game's control
     // bitmaps for 1944 give each side's hexes, and 1944LINE.BIN runs exactly along the border between
     // them (tests/gamedata.test.ts). Rhodes, Sicily and Sardinia are zones of their own.
-    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1944 scenario start line (USSR44.CON)", hexes: fromBitmap("USSR44", "ussr") },
-    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1944 scenario start line (GERM44.CON)", hexes: fromBitmap("GERM44", "ussr") },
+    "ussr-east-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. east of the 1944 scenario start line (USSR44.CON)", hexes: fromOriginal("1944/ussr-east-of-start-line", ["ussr"]) },
+    "ussr-west-of-start-line": { countries: ["ussr"], description: "The U.S.S.R. west of the 1944 scenario start line (GERM44.CON)", hexes: fromOriginal("1944/ussr-west-of-start-line", ["ussr"]) },
     "italy-north-of-start-line": {
       countries: ["italy"],
       description: "Italy north of the 1944 scenario start line, without Rhodes (GERM44.CON)",
-      hexes: fromBitmap("GERM44", "italy", ISLANDS.rhodes.hexes),
+      hexes: fromOriginal("1944/italy-north-of-start-line", ["italy"]),
     },
     "italy-south-of-start-line": {
       countries: ["italy"],
       description: "Mainland Italy south of the 1944 scenario start line (BRIT44.CON, without Sicily and Sardinia)",
-      hexes: fromBitmap("BRIT44", "italy", [...ISLANDS.sicily.hexes, ...ISLANDS.sardinia.hexes]),
+      hexes: fromOriginal("1944/italy-south-of-start-line", ["italy"]),
     },
   },
 
