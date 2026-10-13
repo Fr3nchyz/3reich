@@ -35,6 +35,8 @@ export interface DefenseSituation {
  * terrain; tripled in mountains, swamp, behind a river/crossing arrow, or on a beach
  * against Seaborne Invasion; quadrupled in a fortress. Benefits are not cumulative:
  * the single best applies (a unit on a mountain behind a river is only tripled).
+ * The multipliers match the game's own terrain effects chart screen (TABLE11.TAB); the
+ * chart does not mention cumulation, which comes from the Reference Manual.
  */
 export function defenseMultiplier(s: DefenseSituation): number {
   const features = s.features ?? [];

@@ -1,14 +1,19 @@
 import type { PowerId } from "./types";
 
-/** Charts from the PC reference map and Reference Manual. See docs/RULES.md. */
+/**
+ * Charts from the PC reference map and Reference Manual. See docs/RULES.md. Each chart
+ * here was also checked against the game's own chart screens (TABLE*.TAB) and, where the
+ * executable holds the rule, against 3R2.EXE; see docs/GAME_DATA.md, "Rule tables".
+ */
 
+/** Matches the game's BRP costs chart screen (TABLE3.TAB). */
 export const BRP_COSTS = {
   declareWarOnMajorPower: 35,
   declareWarOnMinorCountry: 10,
   offensiveOption: 15,
 } as const;
 
-/** BRPs per factor built. */
+/** BRPs per factor built. Matches the game's BRP costs chart screen (TABLE3.TAB). */
 export const BUILD_COST_PER_FACTOR = {
   air: 3,
   airborne: 3,
@@ -33,8 +38,9 @@ export const NAVAL_FACTOR_STACKING_LIMIT = 36;
 
 /**
  * Interception table: die rolls (1-6) that allow interception, by distance from the
- * intercepting fleet's base. Distance 1 is automatic. The printed table shows "25-30"
- * and "30+"; 30 is treated as 25-30 here. TODO(verify) the 30-hex boundary.
+ * intercepting fleet's base. Distance 1 is automatic. The printed table (and the game's
+ * own chart screen, TABLE7.TAB) shows "25-30" and "30+"; the game's interception routine
+ * in 3R2.EXE settles it: 30 hexes still succeeds on 1 or 2, and only 31 or more needs a 1.
  */
 export function interceptionRolls(distance: number): number[] | "automatic" {
   if (distance <= 1) return "automatic";
@@ -45,15 +51,25 @@ export function interceptionRolls(distance: number): number[] | "automatic" {
   return [1];
 }
 
-/** Naval advantage DRM from the ratio of friendly to enemy naval factors. */
+/**
+ * Naval advantage DRM from the ratio of friendly to enemy naval factors: +1 from 1.33:1,
+ * +2 from 1.67:1, +3 from 2:1, +4 from 3:1, +5 from 4:1 (the side with fewer factors gets 0).
+ *
+ * The chart's 1.33 and 1.67 are taken literally, as the game does: its naval combat
+ * routine in 3R2.EXE compares the single-precision ratio with the decimals 1.33 and 1.67,
+ * not with 4/3 and 5/3. So 5 factors against 3 (1.666...) is only +1. And because 1.67 in
+ * single precision is just below 1.67, exactly 1.67:1 (167 against 100) is also +1. The
+ * integer tests below give the game's result for any factor totals under 100,000.
+ * Evidence: the game's naval chart screen (TABLE10.TAB) prints 1.33:1 and 1.67:1, and the
+ * routine uses those decimals (docs/GAME_DATA.md, "Rule tables").
+ */
 export function navalAdvantageDrm(friendly: number, enemy: number): number {
   if (enemy <= 0) return 5;
-  // Integer comparisons avoid floating-point error at the 1.33:1 and 1.67:1 boundaries.
   if (friendly >= 4 * enemy) return 5;
   if (friendly >= 3 * enemy) return 4;
   if (friendly >= 2 * enemy) return 3;
-  if (3 * friendly >= 5 * enemy) return 2;
-  if (3 * friendly >= 4 * enemy) return 1;
+  if (100 * friendly > 167 * enemy) return 2;
+  if (100 * friendly >= 133 * enemy) return 1;
   return 0;
 }
 
@@ -61,7 +77,16 @@ export type NavalNation = PowerId | "sweden" | "turkey" | "spain" | "vichy-franc
 
 /**
  * Naval nationality DRM. Italy is -1 for battles in or south of map row N, -2 north
- * of it. Nations not listed on the chart get -2. TODO(verify) unlisted nations.
+ * of it. Every nation that can own a fleet is on the chart: the Minor Country Forces
+ * chart gives fleets only to Spain, Sweden and Turkey. The game's naval routine
+ * (3R2.EXE) gives the same values, with -2 for any nation it does not name, and tests
+ * the battle's row against N the same way (GAME_DATA.md, "Rule tables").
+ *
+ * TODO(verify) Vichy and Free French fleets: the chart (TABLE10.TAB and the map card)
+ * says 0, "France (including Vichy & Free French)", but the routine names only nation
+ * number 1 (France), so a fleet carrying Vichy's or Free France's own nation numbers
+ * (40, 41) would get -2. Which number those fleets carry is not known yet; the chart
+ * value is kept.
  */
 export function navalNationalityDrm(nation: NavalNation, battleNorthOfRowN = false): number {
   switch (nation) {
@@ -77,17 +102,25 @@ export function navalNationalityDrm(nation: NavalNation, battleNorthOfRowN = fal
       return 0;
     case "italy":
       return battleNorthOfRowN ? -2 : -1;
-    default:
+    case "ussr":
+    case "turkey":
+    case "spain":
       return -2;
   }
 }
 
-/** Air advantage: the side with more air factors gets +1 per factor of excess. */
+/**
+ * Air advantage: the side with more air factors gets +1 per factor of excess. Matches the
+ * game's air chart screen (TABLE1.TAB).
+ */
 export function airAdvantageDrm(friendly: number, enemy: number): number {
   return Math.max(0, friendly - enemy);
 }
 
-/** Air force nationality DRM: 0 Germany/USA/Britain, -1 USSR/Italy/France, -2 others. */
+/**
+ * Air force nationality DRM: 0 Germany/USA/Britain, -1 USSR/Italy/France, -2 all others.
+ * Matches the game's air chart screen (TABLE1.TAB) and its air routine in 3R2.EXE.
+ */
 export function airNationalityDrm(nation: PowerId | "other"): number {
   if (nation === "germany" || nation === "usa" || nation === "britain") return 0;
   if (nation === "ussr" || nation === "italy" || nation === "france") return -1;
@@ -103,7 +136,13 @@ export type MinorCountry =
  * Minor Country Forces: number of counters of each type when a minor is attacked or
  * activated. Keys are counter values: inf1_3 = 1-3 infantry, inf2_3 = 2-3 infantry,
  * arm2_5 = 2-5 armor, air1_4 / air2_4 = air units, fleet2 = 2-factor fleet.
- * TODO(verify) that entries count counters rather than factors.
+ *
+ * The entries count counters, not factors: on the game's chart screen (TABLE9.TAB) each
+ * column is headed by a counter picture, and several entries are odd numbers in columns
+ * of 2-factor counters (one 2-5 armor for Spain, one 2-3 infantry for Belgium), which
+ * could not be factor totals. The scenario pages' Minor-Ally and Polish force pools,
+ * read counter by counter, also equal these rows (tests/scenario-data.test.ts). All 114
+ * entries match the chart screen.
  */
 export interface MinorForces {
   inf1_3: number;
