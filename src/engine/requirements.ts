@@ -2,7 +2,7 @@ import { describeAreas, isBox, resolveArea, resolveAreas, territoryOf, type Reso
 import type { GameContext } from "./context";
 import { setupOf } from "./game";
 import { hex, hexId, neighbors } from "./hex";
-import { FACTOR_TYPES, GROUND_FOR_STACKING, factorsOf, matchesSpec, unitsOf } from "./placement";
+import { GROUND_FOR_STACKING, factorsOf, matchesSpec, unitsOf } from "./placement";
 import type { Area, ForceOwner, GameState, SetupRequirement, Unit, UnitType } from "./types";
 
 /** Whether a nation's setup meets what the scenario page requires, in plain words. */

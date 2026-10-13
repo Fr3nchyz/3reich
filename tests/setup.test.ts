@@ -441,7 +441,7 @@ describe("opening setup: ground factors in or next to named hexes (the 1942 Sovi
   // Berlin (L31) stands in for Leningrad and Moscow; the check only needs hexes that exist.
   const around = (hexId: string) => {
     const h = hex(hexId);
-    return neighbors(h).map(hexIdOf).filter((id) => CTX.map.hexes[id]?.land && CTX.map.hexes[id]!.country === "germany");
+    return neighbors(h).map(hexIdOf).filter((id) => CTX.map.hexes[id]?.land && CTX.map.hexes[id].country === "germany");
   };
   const scenarioWith = (min: number): Scenario => {
     const g = setupOf(SCENARIO_1939, "germany");
