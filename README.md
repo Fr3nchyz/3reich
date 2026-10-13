@@ -47,3 +47,4 @@ This is a note about intent, not legal advice.
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones and the plan
 - [docs/AUDIT_REPORT.md](docs/AUDIT_REPORT.md): technical audit of the code (2026-10-13)
 - [docs/GAME_DATA.md](docs/GAME_DATA.md): what the original game files contain and what has been decoded
+- [docs/MAP_COMPARISON.md](docs/MAP_COMPARISON.md): our map against the original game's map data
