@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { MAP } from "../../src/data/map";
-import { compareMaps, decodeBinmap, hasLand, isPlayableRecord, NATIONS, SIDE_BITS, type GameHex } from "./binmap";
+import { compareMaps, decodeBinmap, hasLand, isPlayableRecord, NATIONS, SIDE_BITS } from "./binmap";
 
 const folder = process.argv[2];
 if (!folder) {
@@ -48,7 +48,8 @@ for (const g of playable) {
     const back = 1 << ((k + 3) % 6);
     const here = Boolean(g.landSides & (1 << k));
     const there = Boolean(n.landSides & back);
-    if (here || there) here === there ? symmetric++ : asymmetric++;
+    if (here && there) symmetric++;
+    else if (here || there) asymmetric++;
   });
 }
 
@@ -113,5 +114,3 @@ const diffs = [...new Set([...totals.keys(), ...oursTotals.keys()])].sort().filt
 out.push(`Country totals that differ (game/ours, hexes on our map): ${diffs.map((k) => `${k} ${totals.get(k) ?? 0}/${oursTotals.get(k) ?? 0}`).join(", ") || "none"}.`, "");
 
 console.log(out.join("\n"));
-
-export type { GameHex };

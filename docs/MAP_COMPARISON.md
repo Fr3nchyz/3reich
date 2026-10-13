@@ -75,14 +75,15 @@ Effect on `map.json`: 57 hexes and 61 hexsides change; 17 more land hexes (1,337
 - **Rivers**: 45 of ours are not rivers in the game and 7 of the game's are not on ours. Many of ours lie on coasts, lakes or the Suez Canal; not checked one by one.
 - **Water hexsides**: the game marks 306 more hexsides as water than our map's sea hexsides, most of them between coastal hexes, and marks 53 from one side only. Our sea hexside means "blue on both sides, fleets may cross"; what the game's water bit means for fleets is not settled, so nothing was changed. The four sea hexsides the game does not have (B44-C44, F41-F42, G41-H41, EE30-EE31) are lake or narrow-water sides.
 
-## Effect on T01's zone work (PR #20, branch `t01-zones`)
+## Impact on PR #20
 
-Run with this `map.json`, `tests/gamedata.test.ts` on that branch fails in 7 places, all because the map now agrees with the game where it used to differ:
-- "mark a few hexes our map calls sea": only W21 and Z18 remain (BRIT44 W21, Z18; ITALY42 Z18; VICHY and VICHY42 W21); every other list is empty.
-- "leave only D43 and V39 of the U.S.S.R. to neither side": D43 is now Finnish, so 1942 leaves none and 1944 only V39.
-- "agree with the 1942 and 1944 data on what Germany controls (GERM42, GERM44)": CC30 is now Greek, so its special case goes, and EE27 (new Greek land) is in Greece but not in either German bitmap.
-- Baltic, North Sea and Atlantic ports: Bilbao (S15) is no longer a port.
-- U.S.S.R. zone sizes: 1942 east/west become 392/93 (from 389/92); 1944 east becomes 447 (from 443). New Italian (BB25) and Libyan (LL20) land may also need the Italy and Libya zone lists.
+PR #20 (branch `t01-zones`, at commit 007e8f2) passes all 270 of its tests with the old `map.json`. With this branch's `map.json` copied in, the full suite gives 267 passed and 3 failed, all in `tests/gamedata.test.ts`, all because the map now agrees with the game where it used to differ. Whoever merges second updates them as follows:
+
+1. **"zones from the original game's files > marks a few hexes our map calls sea".** It expects zone hexes that are not land on our map: LL20 (1942 Libya west), U49, W52, Z48 (1942 U.S.S.R. east), T40 (1942 U.S.S.R. west), BB25 (1944 Italy south), T40, U49, W52, Z48 (1944 U.S.S.R. east), G38 and H37 (Eastern Europe). All of these are now land with the matching country, so the list is empty: expect `{}` (or drop the test).
+2. **"zones from the original game's files > leave only D43 (both years) and V39 (1944) of the U.S.S.R. outside both start-line zones".** D43 is now Finnish (BINMAP.BIN nation 10, and west of the drawn border on the scan), so it is no longer U.S.S.R. land: expect `[]` for 1942 and `["V39"]` for 1944, and rename the test.
+3. **"zones read off the map > the Baltic, North Sea and Atlantic ports are those on waters reached from the Atlantic without a Mediterranean hex".** Bilbao (S15) is now a city, not a port (black dot on the scan, city in the game), so `baltic-north-atlantic-ports` in `src/data/zones.ts` must drop S15.
+
+Nothing else on that branch fails: the zone sizes and the territory checks there now follow the map, and the new land hexes fall inside the zones the game's bitmaps give.
 
 ## Full lists after this change
 

@@ -162,8 +162,8 @@ export function pairOf(a: GameHex, b: GameHex, mask: (h: GameHex) => number): Pa
   return x && y ? "both" : x || y ? "one" : "none";
 }
 
-const frontName = (bits: number) =>
-  (Object.entries(FRONT_BITS).find(([, v]) => (bits & 7) === v)?.[0] ?? `bits ${bits}`) as string;
+const frontName = (bits: number): string =>
+  Object.entries(FRONT_BITS).find(([, v]) => (bits & 7) === v)?.[0] ?? `bits ${bits}`;
 
 export interface Comparison {
   /** Game records that name their own hex but are not on our map. */
