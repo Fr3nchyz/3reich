@@ -6,7 +6,9 @@ import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
 import { autoSetup, autoSetupOwner } from "../src/engine/autosetup";
 import { newGame, setupOf } from "../src/engine/game";
-import { currentSetupOwner, setupProblems, setupStatus, sideOfOwner } from "../src/engine/setup";
+import { hex, hexId as hexIdOf, neighbors } from "../src/engine/hex";
+import { setupProblems, setupStatus } from "../src/engine/requirements";
+import { currentSetupOwner, poolSpecs, sideOfOwner } from "../src/engine/setup";
 import type { ForceOwner, GameState, Scenario } from "../src/engine/types";
 import { CTX, ctxFor } from "./helpers";
 
@@ -432,5 +434,50 @@ describe("opening setup: scenarios whose territory is not known yet", () => {
   it("refuses to make up a setup for them", () => {
     expect(() => autoSetup(ctxFor(SCENARIO_1942), newGame(SCENARIO_1942, 1))).toThrow(/cannot be set up yet/);
     expect(() => autoSetup(ctxFor(SCENARIO_1944), newGame(SCENARIO_1944, 1))).toThrow(/ussr-east-of-start-line/);
+  });
+});
+
+describe("opening setup: ground factors in or next to named hexes (the 1942 Soviet rule)", () => {
+  // Berlin (L31) stands in for Leningrad and Moscow; the check only needs hexes that exist.
+  const around = (hexId: string) => {
+    const h = hex(hexId);
+    return neighbors(h).map(hexIdOf).filter((id) => CTX.map.hexes[id]?.land && CTX.map.hexes[id]!.country === "germany");
+  };
+  const scenarioWith = (min: number): Scenario => {
+    const g = setupOf(SCENARIO_1939, "germany");
+    return {
+      ...SCENARIO_1939,
+      deploymentOrder: ["germany"],
+      forces: { ...SCENARIO_1939.forces, germany: { ...g, setup: [{ kind: "min-ground-factors-near", hexes: ["L31"], min }] } },
+    };
+  };
+  const needs = (s: GameState, ctx: ReturnType<typeof ctxFor>) => setupProblems(ctx, s, "germany").filter((p) => /ground factors in or next to/.test(p));
+
+  it("counts ground factors in the hex and next to it, and nothing farther away", () => {
+    const scenario = scenarioWith(6);
+    const ctx = ctxFor(scenario);
+    let s = newGame(scenario, 1);
+    expect(needs(s, ctx)).toEqual(["Needs at least 6 ground factors in or next to L31; has 0."]);
+
+    const infantry = poolSpecs(s, "germany").find((u) => u.type === "infantry" && u.strength === 3)!;
+    const unit = { type: "infantry" as const, strength: infantry.strength };
+    // A 3-factor counter far from Berlin does not count.
+    const far = Object.values(CTX.map.hexes).find((h) => h.land && h.country === "germany" && !neighbors(hex("L31")).map(hexIdOf).includes(h.id) && h.id !== "L31")!.id;
+    s = step(s, { type: "SETUP_PLACE", owner: "germany", unit, at: far }, ctx);
+    expect(needs(s, ctx)[0]).toMatch(/has 0\./);
+    // One in Berlin and one next to it: 6 factors, requirement met.
+    s = step(s, { type: "SETUP_PLACE", owner: "germany", unit, at: "L31" }, ctx);
+    expect(needs(s, ctx)[0]).toMatch(/has 3\./);
+    s = step(s, { type: "SETUP_PLACE", owner: "germany", unit, at: around("L31")[0]! }, ctx);
+    expect(needs(s, ctx)).toEqual([]);
+  });
+
+  it("does not count air counters", () => {
+    const scenario = scenarioWith(1);
+    const ctx = ctxFor(scenario);
+    let s = newGame(scenario, 1);
+    const air = { type: "air" as const, strength: poolSpecs(s, "germany").find((u) => u.type === "air")!.strength };
+    s = step(s, { type: "SETUP_PLACE", owner: "germany", unit: air, at: "L31" }, ctx);
+    expect(needs(s, ctx)).toHaveLength(1);
   });
 });

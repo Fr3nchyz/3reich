@@ -10,7 +10,10 @@ import type { GameContext } from "./engine/context";
 import { initiativeTotals, newGame } from "./engine/game";
 import type { MapHex } from "./engine/map";
 import { OWNER_NAMES, POWER_NAMES, spendingLimit } from "./engine/nations";
-import { currentSetupOwner, placementPlaces, poolSpecs, setupProblems, setupStatus, sideOfOwner, territoryOf, type UnitSpec } from "./engine/setup";
+import { territoryOf } from "./engine/areas";
+import { placementPlaces, type UnitSpec } from "./engine/placement";
+import { setupProblems, setupStatus } from "./engine/requirements";
+import { currentSetupOwner, poolSpecs, sideOfOwner } from "./engine/setup";
 import type { GameState, OffMapBox, Scenario, Side } from "./engine/types";
 import { counterLabel, renderMap } from "./ui/mapView";
 

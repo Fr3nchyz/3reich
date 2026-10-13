@@ -1,21 +1,10 @@
 import { applyAction, type Action } from "./actions";
 import type { GameContext } from "./context";
 import { setupOf } from "./game";
-import {
-  EMPTY,
-  FACTOR_TYPES,
-  countsForMinFactors,
-  currentSetupOwner,
-  factorsOf,
-  placementPlaces,
-  poolSpecs,
-  resolveArea,
-  setupStatus,
-  union,
-  unitsOf,
-  type Place,
-  type UnitSpec,
-} from "./setup";
+import { resolveAreas, type Place } from "./areas";
+import { FACTOR_TYPES, factorsOf, placementPlaces, unitsOf, type UnitSpec } from "./placement";
+import { countsForMinFactors, setupStatus, unitMatches } from "./requirements";
+import { currentSetupOwner, poolSpecs } from "./setup";
 import type { GameState } from "./types";
 
 /**
@@ -47,10 +36,10 @@ export function autoSetupOwner(ctx: GameContext, initial: GameState): Action[] {
   // 1. The placements the page names, less what is already there.
   for (const r of f.setup) {
     if (r.kind !== "place") continue;
-    const places = r.in.reduce((acc, a) => union(acc, resolveArea(ctx, a)), EMPTY).places;
-    const have = unitsOf(state, owner).filter((u) => u.type === r.type && (r.strength === undefined || u.strength === r.strength) && !u.nationality && places.has(u.at)).length;
+    const places = resolveAreas(ctx, r.in).places;
+    const have = unitsOf(state, owner).filter((u) => unitMatches(u, r) && places.has(u.at)).length;
     for (let i = have; i < r.count; i++) {
-      const spec = poolSpecs(state, owner).find((s) => s.type === r.type && (r.strength === undefined || s.strength === r.strength) && !s.nationality);
+      const spec = poolSpecs(state, owner).find((s) => unitMatches(s, r));
       if (!spec || !placeFirst(spec, (p) => places.has(p))) throw new Error(`autoSetup: cannot place ${r.type} for ${owner}`);
     }
   }
