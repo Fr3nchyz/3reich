@@ -74,6 +74,42 @@ function sideSegment(id: string): [number, number, number, number] {
   return [x1, y1, x2, y2];
 }
 
+/** Water drawn into a land hex along one of its sides. */
+export interface Bay {
+  hex: string;
+  /** The land hex on the other side of the water. */
+  toward: string;
+  points: [number, number][];
+}
+
+/**
+ * The original map draws its coastlines inside the hexes, so where two land hexes meet across
+ * the sea (Britain and France, Denmark and Sweden, the Danish islands) the water lies inside both
+ * hexes and the hexes themselves touch. Painting those hexes solid green would join the coasts, so
+ * each such side gets a notch of water cut into the hex on both sides of it. `depth` is how far
+ * the notch reaches toward the hex centre (0 = none, 1 = all the way).
+ */
+export function baysBetweenLand(map: MapData, depth = 0.62): Bay[] {
+  const out: Bay[] = [];
+  for (const s of Object.values(map.hexsides)) {
+    if (!s.sea || s.land) continue; // only sides that are ocean and nothing else
+    const [aId, bId] = s.id.split("-") as [string, string];
+    if (!map.hexes[aId]?.land || !map.hexes[bId]?.land) continue;
+    for (const [from, to] of [[aId, bId], [bId, aId]] as const) {
+      const f = hex(from);
+      const t = hex(to);
+      const [cx, cy] = hexCenter(f);
+      const [k1, k2] = SIDE_CORNERS[`${t.q - f.q},${t.r - f.r}`]!;
+      const p1 = corner(cx, cy, k1);
+      const p2 = corner(cx, cy, k2);
+      const mx = (p1[0] + p2[0]) / 2;
+      const my = (p1[1] + p2[1]) / 2;
+      out.push({ hex: from, toward: to, points: [p1, p2, [mx + (cx - mx) * depth, my + (cy - my) * depth]] });
+    }
+  }
+  return out;
+}
+
 function star(cx: number, cy: number, r: number): string {
   const pts: [number, number][] = [];
   for (let i = 0; i < 10; i++) {
@@ -140,6 +176,16 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     frontLayer += `<polygon points="${points(pts)}" fill="${FRONT_TINT[h.front]}"/>`;
     cityLayer += citySymbol(h, cx, cy);
   }
+  let bays = "";
+  for (const b of baysBetweenLand(map)) {
+    // A rounded scoop rather than a triangle: a quadratic curve whose control point is as far beyond the
+    // notch's tip as the tip is from the side, so the curve itself reaches the tip.
+    const [p1, p2, tip] = b.points as [[number, number], [number, number], [number, number]];
+    const mx = (p1[0] + p2[0]) / 2, my = (p1[1] + p2[1]) / 2;
+    bays += `<path d="M${fmt(p1[0])},${fmt(p1[1])} Q${fmt(mx + 2 * (tip[0] - mx))},${fmt(my + 2 * (tip[1] - my))} ${fmt(p2[0])},${fmt(p2[1])} Z"/>`;
+  }
+  // The grid line along each such side stays visible on top of the water.
+  for (const b of baysBetweenLand(map)) bays += `<line x1="${fmt(b.points[0]![0])}" y1="${fmt(b.points[0]![1])}" x2="${fmt(b.points[1]![0])}" y2="${fmt(b.points[1]![1])}"/>`;
   let rivers = "", borders = "", fronts = "", arrows = "", blocked = "";
   for (const s of Object.values(map.hexsides)) {
     const [x1, y1, x2, y2] = sideSegment(s.id);
@@ -158,6 +204,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   container.innerHTML = `
     <svg class="map" viewBox="${view.x} ${view.y} ${view.w} ${view.h}" role="img" aria-label="Map of Europe">
       <g class="hexes">${hexLayer}</g>
+      <g class="bays">${bays}</g>
       <g class="front-tint" style="display:${opts.showFronts ? "inline" : "none"}">${frontLayer}</g>
       <g class="rivers">${rivers}</g>
       <g class="borders">${borders}</g>
