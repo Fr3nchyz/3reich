@@ -94,6 +94,7 @@ Within 6, 7, 8, 9 and 10 the sub-steps run in the order printed on the card; wit
 - Does the original let a player skip the whole Combat phase with one click, or does it walk through each sub-step? The spec assumes steps with nothing to do for a side pass silently; check against the original (roadmap phase 9).
 - Is Voluntary Destruction (step 5) a real action in the PC game, or only a prompt? (Ops 5.44 and the PC README errata on 5.44.)
 - Which side acts at 8a (Free Siberian Transfer) and 8c (Vichy attempt) when it has nothing to do: confirm these never block the turn.
+- The original program's own internal list of phases (found in the game files, not the manual) differs from the printed card in places. For example it checks supply after ground and air movement rather than before it, and its combat phase is a run of air missions, defensive air support, counter-air rounds, ground combat, exploitation, attrition and airborne drops in a different order from 7a to 7p. Which order do we follow: the printed card (the manual is the source of truth) or the program's? Proposal: the card, and record every difference in docs/RULES.md for the fidelity phase.
 - Should the engine expose "what the active side must still decide at this step" (for the UI's prompts), or only the legal actions? Proposal: only legal actions; the UI derives prompts.
 
 ## Done when
