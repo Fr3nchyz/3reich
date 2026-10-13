@@ -147,3 +147,24 @@ describe("the setup buttons", () => {
     expect(s.state.phase).toBe("player-turn");
   });
 });
+
+describe("'Place the rest for me' after counters were placed by hand", () => {
+  it("takes back the counters in the way and tells the player, instead of failing silently", () => {
+    const s = createSession(SCENARIO_1939, "axis", 1);
+    // Advance to Italy: it is the nation whose named placements five hand-placed 1-3s can crowd out.
+    for (let i = 0; i < 20 && setupView(s)?.owner !== "italy"; i++) {
+      fillRest(s);
+      finishOwner(s, setupView(s)!.owner);
+    }
+    expect(setupView(s)?.owner).toBe("italy");
+    const mainland = Object.values(MAP.hexes).filter((h) => h.land && h.country === "italy").map((h) => h.id);
+    for (const at of [mainland[0]!, mainland[0]!, mainland[1]!, mainland[1]!, mainland[2]!]) {
+      s.selected = { type: "infantry", strength: 1 };
+      tapHex(s, hexAt(at));
+    }
+    expect(mine(s, "italy")).toHaveLength(5);
+    fillRest(s);
+    expect(s.toast).toMatch(/taken back and set down somewhere else/);
+    expect(setupView(s)?.owner).not.toBe("italy");
+  });
+});

@@ -1,10 +1,9 @@
 import type { Action } from "../engine/actions";
-import { autoSetupOwner } from "../engine/autosetup";
 import type { MapHex } from "../engine/map";
 import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
-import { computerSetup, currentSpec, run, type Session, type TapMode } from "./session";
+import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
 /**
  * What each tap or click does to the session. The caller draws again afterwards. No DOM here, and
@@ -80,8 +79,10 @@ function nextCounter(s: Session): void {
 /** "Place the rest for me". */
 export function fillRest(s: Session): void {
   s.toast = "";
-  run(s, ...autoSetupOwner(s.ctx, s.state));
+  placeTheRest(s);
+  const toast = s.toast;
   nextCounter(s);
+  s.toast = toast;
 }
 
 /** "Done with <nation>": hand over to the next nation if the rules accept this setup. */
