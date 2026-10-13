@@ -83,7 +83,7 @@ export type NavalNation = PowerId | "sweden" | "turkey" | "spain" | "vichy-franc
  * the battle's row against N the same way (GAME_DATA.md, "Rule tables").
  *
  * TODO(verify) Vichy and Free French fleets: the chart (TABLE10.TAB and the map card)
- * says 0, "France (including Vichy & Free French)", but the routine names only nation
+ * gives them 0, the same as France, but the routine names only nation
  * number 1 (France), so a fleet carrying Vichy's or Free France's own nation numbers
  * (40, 41) would get -2. Which number those fleets carry is not known yet; the chart
  * value is kept.

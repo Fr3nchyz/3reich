@@ -16,9 +16,9 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 
 | File | Content | Source |
 |---|---|---|
-| `src/engine/combat.ts` | Offensive CRT, odds columns, full CA/CA1-3 counterattack loop, Exchange semantics; Quarterly Attrition table (#C units eliminated, #H hexes vacated) | Ref 12.1-12.2, 12.4; map card |
-| `src/engine/terrain.ts` | Land terrain and static hex features; defence multipliers (x2 baseline, x3 mountain/swamp/river/crossing arrow/beach vs seaborne, x4 fortress, not cumulative); attrition-occupation exclusions; basing | Ref 4.5-4.8; terrain chart |
-| `src/engine/tables.ts` | BRP costs (DoW 35/10, Offensive option 15, per-factor build costs), stacking limits, interception table, naval and air DRMs, minor-country forces | Map card; Ref 5.0, 13.0 |
+| `src/engine/combat.ts` | Offensive CRT, odds columns, full CA/CA1-3 counterattack loop, Exchange semantics; Quarterly Attrition table (#C units eliminated, #H hexes vacated) | Ref 12.1-12.2, 12.4; map card; verified against the game's data (`GAME_DATA.md`, "Rule tables") |
+| `src/engine/terrain.ts` | Land terrain and static hex features; defence multipliers (x2 baseline, x3 mountain/swamp/river/crossing arrow/beach vs seaborne, x4 fortress, not cumulative); attrition-occupation exclusions; basing | Ref 4.5-4.8; terrain chart; the game's terrain chart screen |
+| `src/engine/tables.ts` | BRP costs (DoW 35/10, Offensive option 15, per-factor build costs), stacking limits, interception table, naval and air DRMs, minor-country forces | Map card; Ref 5.0, 13.0; verified against the game's data (`GAME_DATA.md`, "Rule tables") |
 | `src/engine/hex.ts` | Hex ids (`K21`, `AA25`), axial neighbours, distance, hexside ids (`MM26-NN26`) | Ref 4.1 |
 | `src/engine/map.ts` | Map data model (land/sea per hex, crossability per hexside, fortress kinds) and `validateMap` | Ref 4.1-4.9 |
 | `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
@@ -105,11 +105,15 @@ The U.S. units that set up in the U.S. Box in Spring '42 (1939 and Campaign) are
 
 - The in-game status screen at 1939 setup shows "Initiative - Allies", but the Ops manual says "The Axis moves first" in 1939, and Ref 11.1 agrees (Axis 225 vs Allies 210). The engine follows the manuals.
 - Ref 11.1 totals are not alliance totals: Italy's BRPs always count for the Axis (the status screen's 225 includes neutral Italy), US BRPs count from Summer 1942, Soviet BRPs once the USSR is at war with Germany. The engine approximates "at war with Germany" by the USSR having joined the Allies until declarations of war are modelled.
-- The printed interception table lists "25-30" and "30+"; 30 is treated as 25-30.
-- Odds below 1:1: the manual says "fractions are ignored"; the engine rounds in the defender's favour (board-game convention). Verify in play.
+- The printed interception table lists "25-30" and "30+". The game's own interception routine puts 30 in the 25-30 band, as the engine does (`GAME_DATA.md`, "Rule tables").
+- Odds below 1:1: the manual says only "fractions are ignored". The game's own odds routine rounds in the defender's favour (1-4 from a ratio of 1/4, 1-3 from 1/3, 1-2 from 1/2), as the engine does.
+- Naval advantage: the chart's "1.33:1" and "1.67:1" are decimals in the game, not 4/3 and 5/3. The game compares the fleet ratio with 1.33 and 1.67, so 5 factors against 3 is +1, not +2, and exactly 1.67:1 is also +1. The engine used to read them as 4/3 and 5/3; it now follows the game (changed in roadmap 2.3, evidence: the game's naval chart screen and its naval routine).
+- The Minor Country Forces chart counts counters, not factors (its columns are counter pictures, and some entries are odd numbers of 2-factor counters).
 
 ## Open questions
 
+- **Vichy and Free French naval nationality DRM.** The chart gives them 0, the same as France, but the game's naval routine gives 0 only to France's nation number; a fleet carrying Vichy's or Free France's own number (40, 41 in `FORMAT.TXT`) would get -2. The engine keeps the chart's 0 (`TODO(verify)` on `navalNationalityDrm`). A naval battle with a Vichy or Free French fleet in the original would settle it.
+- **For the naval and air rules, when they are written:** the game's nationality routines give a group of several nations the lowest DRM among its units. The chart screens do not say so; check against Ref 20-21 before encoding.
 - Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
 - **Zones whose hexes are unknown** (they are drawn by the original program and are not on the printed map card). A screenshot of each setup screen with the red lines visible would settle them:
   - 1939 / Campaign: the **Polish Partition Line** (German units east of it are eliminated at the end of Fall 1939).
