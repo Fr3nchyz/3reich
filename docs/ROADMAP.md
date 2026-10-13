@@ -2,7 +2,7 @@
 
 Updated 2026-10-13, after the first technical audit ([AUDIT_REPORT.md](AUDIT_REPORT.md)) and the arrival of the original game's data files ([GAME_DATA.md](GAME_DATA.md)).
 
-**Where we are.** The foundation is sound: a pure, deterministic engine, a verified hex grid, the digitised map, four scenarios as data, the opening setup phase, a tap-to-place setup screen and 225 passing tests. About 15% of a game exists. You cannot yet move, fight, supply, spend BRPs or play against a computer.
+**Where we are** (measured status in [PROGRESS.md](PROGRESS.md)): The foundation is sound: a pure, deterministic engine, a verified hex grid, the digitised map, four scenarios as data, the opening setup phase, a tap-to-place setup screen and 225 passing tests. About 15% of a game exists. You cannot yet move, fight, supply, spend BRPs or play against a computer.
 
 **Primary mode:** one player against the computer, either side, on a PC or an iPad. English first; a French interface is a later version. Saves stay on the device (autosave plus a save file); no online sync.
 
