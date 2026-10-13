@@ -150,26 +150,20 @@ describe("the lines of the original game", () => {
 
 describe("zones from the original game's files", () => {
   /**
-   * Hexes the original marks for a zone that our map calls sea: coastal slivers for the map work
-   * (ticket T04). They are committed with the zone and join it as soon as our map makes them land of
-   * the zone's country. When T04 makes one land, this test fails: take it off the list. Nothing else
-   * here should need changing, because the counts below are counts of the committed lists.
+   * Hexes the original marks for a zone that our map calls sea. Since the map was corrected from the
+   * game's own map data (docs/MAP_COMPARISON.md) there are none: every committed zone hex is land.
+   * (W21 and Z18, the two hexes the game calls land and our map still calls sea, belong to the island
+   * zones Corsica and Sardinia, which are not committed here.) If a future map change makes this list
+   * non-empty, the hex is a coastal sliver: it joins its zone once it is land of the zone's country.
    */
-  it("marks a few hexes our map calls sea", () => {
+  it("marks no hex that our map calls sea", () => {
     const sea = Object.fromEntries(
       Object.entries(ORIGINAL_ZONES).flatMap(([k, ids]) => {
         const notLand = ids.filter((id) => !H[id]?.land);
         return notLand.length ? [[k, notLand]] : [];
       }),
     );
-    expect(sea).toEqual({
-      "1942/ussr-east-of-start-line": ["U49", "W52", "Z48"],
-      "1942/ussr-west-of-start-line": ["T40"],
-      "1942/libya-west-of-start-line": ["LL20"],
-      "1944/ussr-east-of-start-line": ["T40", "U49", "W52", "Z48"],
-      "1944/italy-south-of-start-line": ["BB25"],
-      "eastern-europe": ["G38", "H37"],
-    });
+    expect(sea).toEqual({});
   });
 
   it("holds as many hexes per zone as the original marks (counts of the committed lists, whatever our map says)", () => {
@@ -209,12 +203,14 @@ describe("zones from the original game's files", () => {
     expect(sorted(italy)).toEqual(sorted(countryLand("italy")));
   });
 
-  // TODO(verify): D43 is joined by land only to Finland on our map, so it may be Finnish in the
-  // original (no Finland bitmap) or water. V39 is in the Crimea. See docs/RULES.md "Open questions".
-  it("leave only D43 (both years) and V39 (1944) of the U.S.S.R. outside both start-line zones", () => {
+  // D43 (next to Leningrad) is in neither side's bitmap: the game's map file gives it to Finland, and so
+  // does the printed map (it lies west of the drawn border), so it is no longer U.S.S.R. land here.
+  // V39 (in the Crimea) is German in 1942 but in neither bitmap in 1944: why is not known (docs/RULES.md).
+  it("leave only V39 (1944) of the U.S.S.R. outside both start-line zones", () => {
     const left = (z: typeof z42) => sorted([...countryLand("ussr")].filter((id) => !hexesOf(z, "ussr-east-of-start-line", "ussr-west-of-start-line").has(id)));
-    expect(left(z42)).toEqual(["D43"]);
-    expect(left(z44)).toEqual(["D43", "V39"]);
+    expect(left(z42)).toEqual([]);
+    expect(left(z44)).toEqual(["V39"]);
+    expect(H["D43"]!.country).toBe("finland");
   });
 
   it("make Vichy France southern France, Marseilles included, and the rest of mainland France German (1942)", () => {

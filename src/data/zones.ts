@@ -52,13 +52,13 @@ export const REGIONS = {
     countries: ["baltic-states", "belgium", "britain", "france", "germany", "norway", "poland", "spain", "sweden", "ussr"],
     // Ports on waters reached from the open Atlantic without passing through a Mediterranean-Front
     // hex, so the Mediterranean, the Black Sea, the Sea of Azov and the Caspian are out. Read off
-    // our map's fronts (tests/gamedata.test.ts repeats the derivation); the game's files that might
-    // tag ports by sea (BINMAP*.BIN) are not decoded yet. TODO(verify): Gibraltar (AA7), on the
+    // our map's fronts (tests/gamedata.test.ts repeats the derivation); the game's map file (BINMAP.BIN)
+    // holds no sea tag for ports. Bilbao (S15) is a city, not a port, on the corrected map. TODO(verify): Gibraltar (AA7), on the
     // strait itself, counts here; no German fleet can start there, so it does not matter yet.
     description: "Ports on the Baltic Sea, the North Sea and the Atlantic (Ops 4.12)",
     hexes: [
       "B29", "C33", "D44", "E38", "F24", "F26", "F40", "J30", "J32", "J35", "J36", "K21", "K24", "K25", "K28", "K29", "K32", "L22",
-      "L24", "L25", "M21", "N18", "N19", "O19", "Q18", "R12", "S11", "S15", "Z7", "AA7",
+      "L24", "L25", "M21", "N18", "N19", "O19", "Q18", "R12", "S11", "Z7", "AA7",
     ],
   },
 } satisfies Record<string, Zone>;

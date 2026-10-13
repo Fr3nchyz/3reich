@@ -175,18 +175,19 @@ const { SCENARIO_1944 } = await import("../../src/data/scenario-1944");
 const { territoryOf } = await import("../../src/engine/areas");
 /** Each owner's "controlled at start" against its bitmap, apart from named differences. */
 const owners: [Scenario, ForceOwner, Bitmap, HexId[]][] = [
-  // GERM42 also marks mainland Vichy France; CC30 is an Aegean hex our map gives to Turkey.
-  [SCENARIO_1942, "germany", "GERM42", ["CC30", ...germanVichy]],
+  // GERM42 also marks mainland Vichy France. EE27 (Greek land since the map correction) is in neither
+  // German bitmap, though our data gives all of Greece to Germany: a known difference, see docs/RULES.md.
+  [SCENARIO_1942, "germany", "GERM42", ["EE27", ...germanVichy]],
   [SCENARIO_1942, "italy", "ITALY42", []],
   [SCENARIO_1942, "britain", "BRIT42", []],
   [SCENARIO_1942, "ussr", "USSR42", []],
   [SCENARIO_1942, "vichy-france", "VICHY42", []],
-  [SCENARIO_1944, "germany", "GERM44", ["CC30"]],
+  [SCENARIO_1944, "germany", "GERM44", ["EE27"]],
   [SCENARIO_1944, "britain", "BRIT44", []],
   [SCENARIO_1944, "ussr", "USSR44", []],
 ];
 for (const [s, owner, b, extra] of owners) {
-  const encoded = [...territoryOf({ map: MAP, scenario: s }, owner).places].sort();
+  const encoded = [...territoryOf({ map: MAP, scenario: s }, owner).places].filter((id) => !extra.includes(id)).sort();
   const marked = bitmaps[b].filter((id) => isLand(id) && !extra.includes(id)).sort();
   const diff = [...encoded.filter((x) => !marked.includes(x)).map((x) => `+${x}`), ...marked.filter((x) => !encoded.includes(x)).map((x) => `-${x}`)];
   check(diff.length === 0, `${s.id} ${owner} controls at start what ${b}.CON marks${diff.length ? `: ${diff.join(" ")}` : ""}`);

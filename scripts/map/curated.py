@@ -28,6 +28,11 @@ OFF_MAP = [
 # kind: city (black dot), port (open circle), capital (star), objective (red name),
 # combinations as printed. Objectives match the 42 listed in Ref 2.1. Names of minor
 # cities are read from small print and may be misspelled.
+# Checked against the original game's own map data (BINMAP.BIN, see docs/MAP_COMPARISON.md),
+# each confirmed by the symbol on the scan: Oslo carries a capital star as well as its red
+# name; Rostov and Bilbao are black dots (cities), not port circles;
+# the Tangiers and Buerat positions are their dots, not their labels (BB6 and KK18); Izmit
+# (AA33, port) and Kars (Z43, city) were missing.
 CITIES = [
     ("Scapa Flow", "port", 1225, 367), ("Belfast", "port", 968, 619), ("Rosyth", "port", 1154, 614),
     ("Glasgow", "city", 1082, 628), ("Dublin", "capital", 904, 759), ("Bergen", "port", 1623, 409),
@@ -43,7 +48,7 @@ CITIES = [
     ("Paris", "capital-objective", 1205, 1293), ("Sedan", "city", 1345, 1300), ("Frankfurt", "city", 1571, 1288),
     ("Metz", "city", 1402, 1369), ("Strasbourg", "city", 1417, 1451), ("Stuttgart", "city", 1582, 1407),
     ("La Rochelle", "port", 972, 1449), ("Bordeaux", "city", 967, 1526), ("Vichy", "city", 1162, 1508),
-    ("Oslo", "objective", 1798, 456), ("Stockholm", "capital-port-objective", 2110, 552), ("Helsinki", "capital", 2350, 488),
+    ("Oslo", "capital-objective", 1798, 456), ("Stockholm", "capital-port-objective", 2110, 552), ("Helsinki", "capital", 2350, 488),
     ("Leningrad", "objective-port", 2600, 495), ("Tallinn", "city", 2365, 572), ("Parnu", "port", 2332, 645),
     ("Riga", "objective", 2367, 802), ("Copenhagen", "capital", 1785, 865), ("Kiel", "port", 1659, 911),
     ("Hamburg", "port", 1681, 970), ("Rostock", "port", 1852, 968), ("Stettin", "port", 1859, 989),
@@ -62,8 +67,8 @@ CITIES = [
     ("Tula", "city", 2996, 924), ("Bryansk", "city", 2868, 1075), ("Orel", "city", 2968, 1080),
     ("Kursk", "city", 2969, 1163), ("Stalingrad", "objective", 3477, 1257), ("Kiev", "city", 2662, 1295),
     ("Kharkov", "objective", 2960, 1322), ("Dnepropetrovsk", "objective", 2908, 1484), ("Stalino", "city", 3038, 1463),
-    ("Elista", "city", 3394, 1448), ("Rostov", "port", 3173, 1526), ("Uralsk", "city", 3859, 1105),
-    ("Orsk", "city", 4125, 1052), ("Astrakhan", "objective", 3677, 1528), ("Bilbao", "port", 754, 1583),
+    ("Elista", "city", 3394, 1448), ("Rostov", "city", 3173, 1526), ("Uralsk", "city", 3859, 1105),
+    ("Orsk", "city", 4125, 1052), ("Astrakhan", "objective", 3677, 1528), ("Bilbao", "city", 754, 1583),
     ("Santander", "city", 700, 1618), ("Toulouse", "city", 971, 1687), ("Lyons", "objective", 1288, 1593),
     ("Turin", "city", 1397, 1660), ("Milan", "objective", 1505, 1650), ("Genoa", "objective-port", 1460, 1736),
     ("Marseilles", "objective-port", 1258, 1818), ("Spezia", "port", 1525, 1816), ("Florence", "city", 1586, 1812),
@@ -87,34 +92,43 @@ CITIES = [
     ("Antioch", "port", 3148, 2485), ("Aleppo", "city", 3219, 2462), ("Mosul", "objective", 3545, 2467),
     ("Famagusta", "port", 2995, 2614), ("Beirut", "port", 3105, 2718), ("Damascus", "capital", 3197, 2688),
     ("Mumanis", "city", 3422, 2688), ("Tabriz", "city", 3731, 2328), ("Bengasi", "city", 2044, 2919),
-    ("Tobruk", "port", 2279, 2952), ("Buerat", "city", 1763, 2975), ("Alexandria", "objective-port", 2779, 3018),
+    ("Tobruk", "port", 2279, 2952), ("Buerat", "city", 1808, 2963), ("Alexandria", "objective-port", 2779, 3018),
     ("Cairo", "capital", 2829, 3079), ("Suez", "objective-port", 2926, 3099), ("Port Said", "port", 2923, 3005),
     ("Haifa", "port", 3093, 2848), ("Jerusalem", "capital", 3124, 2931), ("Amman", "capital", 3212, 2938),
     ("Kaf", "city", 3322, 2938), ("La Coruna", "port", 475, 1508), ("Vigo", "port", 440, 1631),
     ("Lisbon", "capital", 319, 1792), ("Madrid", "capital-objective", 638, 1804), ("Sevilla", "city", 465, 2055),
     ("Cordoba", "city", 545, 2048), ("Cadiz", "port", 431, 2102), ("Granada", "city", 581, 2108),
-    ("Gibraltar", "objective-port", 450, 2175), ("Tangiers", "city", 468, 2250), ("Casablanca", "city", 265, 2395),
+    ("Izmit", "port", 2642, 2204), ("Kars", "city", 3445, 2130),
+    ("Gibraltar", "objective-port", 450, 2175), ("Tangiers", "city", 397, 2255), ("Casablanca", "city", 265, 2395),
     ("Marrakech", "city", 191, 2488), ("Oran", "port", 698, 2344),
 ]
 
 # Country seeds for the flood fill (one hex per separate landmass). Countries are as
-# printed on the map at the start of play; colonies keep their own name.
+# printed on the map at the start of play; colonies keep their own name. The fill does not
+# cross a hexside drawn with a thick line, and coastlines are thick lines, so the sliver
+# hexes of GAME_LAND_HEXES, and pieces cut off by the lake hexsides of HEXSIDE_OVERRIDES,
+# carry their own seed (their country as given by BINMAP.BIN).
 COUNTRY_SEEDS = {
-    "britain": ["K23", "B29", "E24", "F24", "K25", "AA7", "GG19", "GG34"], "ireland": ["H22"], "france": ["O22", "X20"],
+    "britain": ["K23", "B29", "E24", "F24", "K25", "AA7", "GG19", "GG34", "I22"], "ireland": ["H22"], "france": ["O22", "X20"],
     "spain": ["V12", "Y15", "Y16", "Z7", "BB7", "BB6"], "portugal": ["V8"],
     "belgium": ["M25"], "netherlands": ["K26"], "luxembourg": ["O25"], "germany": ["L31", "K36"],
-    "denmark": ["I32", "I31", "G32", "F33", "I30"], "norway": ["C35"], "sweden": ["E37", "H36"], "finland": ["D41", "A45", "A46", "B45"],
-    "baltic-states": ["H39", "F39"], "poland": ["M35"], "ussr": ["H47", "D43"],
+    "denmark": ["I32", "I31", "G32", "F33", "I30", "H31", "G31"], "norway": ["C35"], "sweden": ["E37", "H36"],
+    "finland": ["D41", "A45", "A46", "B45", "C44"],
+    "baltic-states": ["H39", "F39"], "poland": ["M35"], "ussr": ["H47", "W52"],
     "hungary": ["S30"], "rumania": ["V32", "W35"], "bulgaria": ["Y30"], "yugoslavia": ["V29"], "albania": ["Z27"],
-    "greece": ["DD27", "DD28", "EE28", "GG26", "GG27", "AA30"], "turkey": ["AA36", "Z33"], "italy": ["Y22", "Z19", "AA19", "DD20", "FF30"],
+    "greece": ["DD27", "DD28", "EE28", "GG26", "GG27", "AA30", "CC30", "DD29", "EE27"], "turkey": ["AA36", "Z33"], "italy": ["Y22", "Z19", "AA19", "DD20", "FF30", "BB25"],
     "morocco": ["DD5"], "algeria": ["DD10"], "tunisia": ["FF15"], "libya": ["LL22"],
     "egypt": ["MM29", "NN26"], "palestine": ["KK34"], "transjordan": ["KK35"], "lebanon-syria": ["HH36"], "iraq": ["DD42"],
-    "arabia": ["LL37"], "persia": ["DD45", "AA53", "BB52"],
+    "arabia": ["LL37"], "persia": ["DD45", "AA53", "BB52", "BB48"],
 }
 # Borders that run through lakes, estuaries or gulfs, where no line is drawn on the hexside.
 # (The vertical fold crease of the scan near x = 2230 px looks like a border to the line
 # detector at P33-P34, R32-R33 and X29-X30; those are not borders.)
-EXTRA_BORDERS = {"G42-H41", "F41-F42", "K26-L25", "JJ34-JJ35", "LL33-LL34", "NN32-NN33", "D42-D43", "C43-D43", "I37-J36"}
+# D43 is Finnish, not Soviet (BINMAP.BIN gives it nation 10; on the scan its strip of north
+# shore lies west of the drawn Finland-USSR border), so D42-D43 and C43-D43 are not borders.
+# G42-H41, K26-L25, I37-J36, JJ34-JJ35, LL33-LL34 and NN32-NN33 are no longer land hexsides
+# (see HEXSIDE_OVERRIDES). Z48-AA47 (USSR-Persia) became a land hexside with Z48.
+EXTRA_BORDERS = {"F41-F42", "Z48-AA47"}
 
 # Front of each country's land (Ref 4.4, cross-checked with the Objectives by Front in
 # Ref 2.1). East Prussia and Bessarabia are split off by the red front line (see FRONT_SPLITS).
@@ -139,7 +153,9 @@ FRONT_OVERRIDES = {"AA7": "mediterranean", "GG19": "mediterranean", "GG34": "med
 # Ref 11.21). The red front lines run along the coasts: Atlantic and North Sea are
 # Western; Baltic, Black Sea and Caspian are Eastern.
 SEA_FRONT_SEEDS = {"western": ["J26", "P15"], "eastern": ["F37", "W38", "T51"], "mediterranean": ["FF22"]}
-SEA_FRONT_OVERRIDES = {}
+# The southern Baltic pocket (I35, I36, J33, J34) is cut off from the open Baltic once I34
+# counts as land, and its coasts lie on two fronts; it is Eastern in BINMAP.BIN.
+SEA_FRONT_OVERRIDES = {"I35": "eastern"}
 
 # Crossing arrows (Ref 4.6): Denmark x3, Scotland, Turkish Straits x2, Kerch, Messina.
 CROSSING_ARROWS = ["I30-I31", "I31-I32", "F33-G32", "B29-C28", "Z33-Z34", "AA31-BB31", "U40-U41", "DD21-DD22"]
@@ -167,8 +183,71 @@ FORTRESSES = {
 # Land terrain corrections where colour sampling is misled. Solid-black land (e.g. the
 # islands east of Athens in CC28/DD28, Ref 4.3) is never counted as land by extract.py.
 # The Athens symbol sits on the tip of Attica just inside DD28 on the scan.
-TERRAIN_OVERRIDES = {"NN26": "qattara-depression", "MM26": "plain"}
+TERRAIN_OVERRIDES = {"NN26": "qattara-depression", "MM26": "plain",
+                     # Mountains in BINMAP.BIN, and the mountain shading covers most of the hex on
+                     # the scan; the texture test in extract.py missed them.
+                     "Q35": "mountains", "S34": "mountains", "Y30": "mountains"}
 
 # Hexes where only a thin sliver of coastline crosses a hex corner; kept as land as
-# measured, but to be checked against the original game.
-SLIVERS = ["S42", "V39", "H26", "J29", "EE19", "KK25", "CC28"]
+# measured. All of them, with DD19 and K25, are land in the original game's map data too
+# (BINMAP.BIN; docs/MAP_COMPARISON.md).
+SLIVERS = ["S42", "V39", "H26", "J29", "EE19", "KK25", "CC28", "DD19", "K25"]
+
+# --- Corrections from the original game's own map data ---------------------------------
+# BINMAP.BIN in the 1996 game folder holds one record per hex (decoded by
+# scripts/gamedata/map.ts; format in docs/GAME_DATA.md, every difference in
+# docs/MAP_COMPARISON.md). A correction is made here only when a second signal agrees:
+# the scan measurement or what the scan visibly shows.
+
+# Sliver hexes the game treats as land, with a country, though less than 4% of the hex is
+# land on the scan (0.4% to 4.0%; a sliver of coast is visible in each). Across the whole
+# map the game's land hexes are exactly the hexes with any land on the scan: every
+# game-land hex measures at least 0.4% land and every game all-sea hex at most 0.3%.
+# W21 (Corsica) and Z18 (Sardinia) are land in the game too, but they would change the
+# corsica and sardinia zones of src/data/zones.ts, so they are proposed in
+# docs/MAP_COMPARISON.md instead of made here.
+GAME_LAND_HEXES = ["B33", "G31", "G38", "H23", "H37", "I22", "I34", "T40", "U49", "W52", "Z48", "BB25",
+                   "BB48", "DD29", "EE27", "FF32", "LL20"]
+
+# Inland hexes where blue river lines (and river-name labels) pushed the scan's water share
+# over 4%. The game gives them no water hexside; the scan shows rivers only.
+GAME_NOT_COASTAL = ["E55", "F51", "G53", "I41", "L32", "M35", "N26", "O22", "O26", "O34", "T20", "U28",
+                    "W32", "W34"]
+
+# Coastal hexes the game marks as beaches with water hexsides, where the scan shows a little
+# water (0.7% to 2.6%) and the tan beach strip (see BEACH_OVERRIDES). R44 (Rostov) has water
+# hexsides in the game and the Sea of Azov reaches its corner on the scan; it was coastal
+# only through its port symbol, which is a city dot (see CITIES).
+GAME_COASTAL = ["H34", "U19", "EE32", "R44"]
+
+# Hexside corrections. land=True: the game lets ground units cross and land continues across
+# the hexside on the scan (the sides of the sliver hexes above that join land of the same
+# country, and the three Sicilian sides the scan's dark print hid: Sicily is one island).
+# These never carry a river: where the scan's river test fired on them it saw the sea.
+# land=False: the game blocks the hexside and the scan shows a lake, estuary, gulf or
+# strait covering it (Ref 4.3: ground units need land on both sides); extract.py had read
+# that water as a river.
+HEXSIDE_OVERRIDES = {
+    **{s: {"land": True, "river": False} for s in [
+        "B33-B34", "G31-H31", "G38-G39", "G38-H38", "H23-H24", "H23-I23", "H34-I34", "H35-I34", "H37-H38",
+        "H37-I37", "I22-J22", "S40-T40", "S41-T40", "T49-U49", "U48-U49", "U49-V48", "W52-X52",
+        "Y48-Z48", "Z47-Z48", "Z48-AA47", "AA25-BB25", "BB47-BB48", "DD27-EE27",
+        "EE32-FF32", "FF31-FF32", "KK21-LL20", "LL20-LL21",
+        "DD20-DD21", "DD19-EE19", "EE19-EE20",
+    ]},
+    **{s: {"land": False} for s in [
+        "A45-B45", "B44-C44", "C41-C42", "C42-C43", "C43-C44",   # Finnish lakes
+        "D26-E26", "D34-D35", "D38-E37", "E35-F35", "F35-F36",   # Firth, Oslofjord, Malaren, Swedish lakes
+        "G21-H20", "G42-H41", "H31-I31", "I37-J36", "J30-K29",   # Irish estuary, Lake Peipus, Little Belt, lagoon, Elbe
+        "K26-L25", "M23-N22", "R17-R18", "BB31-CC30",            # Scheldt, Seine, Gironde, Lesbos strait
+        "BB42-BB43", "CC44-CC45", "JJ34-JJ35", "LL33-LL34",      # Lakes Van and Urmia, Galilee, Dead Sea
+        "MM31-NN30", "NN30-NN31", "NN32-NN33",                   # Gulfs of Suez and Aqaba
+    ]},
+}
+
+# Beaches: True where the game marks a beach and the scan shows the tan strip on a coast
+# the detector in extract.py missed; False where the detector fired but the game has no
+# beach and the scan shows no tan strip.
+BEACH_OVERRIDES = {**{h: True for h in ["F40", "H34", "L21", "L22", "T10", "U19", "Y38", "Y39", "EE21",
+                                         "EE32", "LL18"]},
+                   "JJ23": False}
