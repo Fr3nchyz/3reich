@@ -309,7 +309,10 @@ describe("advance after combat (TODO(verify): the rule text is not in the repo)"
     const r = ok(applyAction(CTX, s, { type: "ADVANCE", side: "axis", units: ["g1", "g2"], to: "M33" }));
     expect(r.state.units.g1!.at).toBe("M33");
     expect(r.state.units.g2!.at).toBe("M33");
-    expect(r.events).toEqual([{ type: "UNITS_ADVANCED", units: ["g1", "g2"], from: ["M32", "N32"], to: "M33" }]);
+    expect(r.events[0]).toEqual({ type: "UNITS_ADVANCED", units: ["g1", "g2"], from: ["M32", "N32"], to: "M33" });
+    // Entering an enemy-controlled hex takes its control (Ref 7.0; control.ts), once.
+    expect(r.events.slice(1)).toEqual([{ type: "HEX_CONTROL_CHANGED", hex: "M33", from: "poland", to: "germany", unitId: "g1" }]);
+    expect(r.state.control.M33).toBe("germany");
     expect(legalActions(CTX, r.state).some((a) => a.type === "ADVANCE")).toBe(false);
     expect(applyAction(CTX, r.state, { type: "ADVANCE", side: "axis", units: ["g1"], to: "M33" })).toMatchObject({ ok: false });
   });

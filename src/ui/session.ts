@@ -34,6 +34,8 @@ export interface Session {
   ctx: GameContext;
   state: GameState;
   humanSide: Side;
+  /** The game's seed; the computer's tie-breaks use it too, so a game replays the same. */
+  seed: number;
   log: string[];
   /** The counter chosen to place next, if any. */
   selected: UnitSpec | null;
@@ -54,6 +56,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     ctx: { map: MAP, scenario },
     state: newGame(scenario, seed),
     humanSide: side,
+    seed,
     log: [`${scenario.name} started. You play the ${sideName(side)} side; the computer sets up the other.`],
     selected: null,
     mode: "place",
@@ -83,6 +86,8 @@ function describeEvent(e: GameEvent): string | null {
       return null;
     case "UNIT_BUILT":
       return `${POWER_NAMES[e.owner]} builds a ${e.strength}-factor ${e.unitType} at ${e.at} (${e.cost} BRPs).`;
+    case "FRONT_OPTION_SELECTED":
+      return `${sideName(e.side)} choose the ${cap(e.option)} Option on the ${cap(e.front)} Front${e.cost > 0 ? ` (${e.cost} BRPs)` : ""}.`;
     case "BRPS_GRANTED":
       return `${POWER_NAMES[e.from]} grants ${e.amount} BRPs to ${POWER_NAMES[e.to]}.`;
     case "BRPS_CHANGED":
@@ -97,6 +102,10 @@ function describeEvent(e: GameEvent): string | null {
       return `${sideName(e.side)} chooses losses: ${e.units.join(", ")}.`;
     case "UNITS_ADVANCED":
       return `${e.units.join(", ")} advance into ${e.to}.`;
+    case "HEX_CONTROL_CHANGED":
+      return `${nameOf(e.to)} takes control of ${e.hex}.`;
+    case "OVERSTACK_ELIMINATED":
+      return `${nameOf(e.owner)} loses a unit at ${e.at} to overstacking.`;
     case "GAME_OVER":
       return `The scenario ends after ${cap(e.season)} ${e.year}.`;
   }

@@ -1,8 +1,9 @@
-import type { Action, ActionResult } from "./action-types";
+import type { Action, ActionResult, GameEvent } from "./action-types";
 import { applyOutcome, legalAllocations } from "./attack-losses";
 import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { combatOf } from "./combat-record";
+import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { stackingProblem } from "./placement";
@@ -133,5 +134,14 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
   const units = { ...state.units };
   for (const id of ids) units[id] = { ...units[id]!, at: action.to };
   const advances = rec.advances.filter((a) => a !== chance);
-  return { ok: true, state: { ...state, units, combat: { ...rec, advances } }, events: [{ type: "UNITS_ADVANCED", units: [...ids], from, to: action.to }] };
+  // Entering the hex can change its control (Ref 7.0; control.ts). TODO(verify): the rules text on whether an
+  // advance after combat takes control the way movement does is not in the repo; this applies the same rule.
+  let next: GameState = { ...state, units, combat: { ...rec, advances } };
+  const events: GameEvent[] = [{ type: "UNITS_ADVANCED", units: [...ids], from, to: action.to }];
+  for (const id of ids) {
+    const entered = enterHexes(ctx, next, next.units[id]!, [action.to]);
+    next = entered.state;
+    events.push(...entered.events);
+  }
+  return { ok: true, state: next, events };
 }

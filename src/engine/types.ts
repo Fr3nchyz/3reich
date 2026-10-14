@@ -40,7 +40,7 @@ export interface GameTurn {
 export interface Nation {
   id: PowerId;
   status: NationStatus;
-  /** Base Resource Points (BRPs) at the start of the scenario. */
+  /** Base Resource Points (BRPs): the printed Base at the start of the scenario, grown by each Year Start Sequence (Ref 9.2). */
   brpBase: number;
   /** Current BRP total. */
   brpTotal: number;
@@ -225,7 +225,21 @@ export type ScenarioRule =
   /** Neither side may declare war on a country that is neutral at the start of the scenario. */
   | { kind: "no-war-on-neutrals" }
   /** Units of `side` still in the zone are eliminated at the end of that side's player turn. */
-  | { kind: "eliminate-in-zone"; zone: ZoneId; side: Side; turn: GameTurn };
+  | { kind: "eliminate-in-zone"; zone: ZoneId; side: Side; turn: GameTurn }
+  /** `side` may choose this Option on this Front on that turn without paying (Ref 29.0 for Germany's opening Eastern Front Offensive Option). */
+  | { kind: "free-front-option"; side: Side; front: Front; option: FrontOption; turn: GameTurn };
+
+/**
+ * What a side may do on a Front in its Player Turn (Ref 11.21): the Offensive Option costs BRPs
+ * (BRP_COSTS.offensiveOption), the Attrition and Defensive Options cost nothing (spec 02).
+ */
+export type FrontOption = "offensive" | "attrition" | "defensive";
+
+/** A Front Option chosen for the Player Turn in progress; `paidBy` is the Major Power that paid for an Offensive Option. */
+export interface FrontChoice {
+  option: FrontOption;
+  paidBy?: PowerId;
+}
 
 /** Strategic Warfare factors a nation has already built (Ref 9.0, 11.5). */
 export interface StrategicWarfare {
@@ -275,10 +289,17 @@ export interface GameState {
   grants: { from: PowerId; to: PowerId; amount: number }[];
   /** [giver, receiver] pairs that may not grant: whoever received a grant may not grant back to the giver (Ref 11.71). */
   noGrants: [PowerId, PowerId][];
+  /** Front Options the side to move has chosen this Player Turn (Ref 11.21); cleared when a Player Turn begins. A Front not listed has no choice yet. */
+  frontOptions: Partial<Record<Front, FrontChoice>>;
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
   /** Ground combat so far in the current Player Turn (step 7h); absent until the first attack. */
   combat?: CombatRecord;
+  /**
+   * Hexes whose controller differs from the scenario's "controlled at start" territory (Ref 7.0;
+   * see control.ts). Empty at the start: read control through `controllerOf`, not this record.
+   */
+  control: Record<HexId, ForceOwner>;
   /** Deterministic RNG state; advanced on every roll. */
   rngState: number;
 }
