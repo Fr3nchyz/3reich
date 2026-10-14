@@ -168,3 +168,6 @@ main { margin-top: .75rem; }
   body.watching .map-wrap { height: 36vh; height: 36dvh; }
   .watch-status { font-size: .75rem; }
 }
+/* The mode menu stays as narrow as "Axis" / "Allies" were, so the header keeps its height; it opens up to show "Watch the computer play both sides" once that is chosen. */
+#side { width: 7.5rem; }
+#side.wide { width: auto; max-width: 100%; }

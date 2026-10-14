@@ -29,6 +29,7 @@ export interface WatchMenu {
 export function watchMenu(shell: Shell, newSeed: () => number): WatchMenu {
   const refresh = (): void => {
     shell.watchOpts.hidden = shell.side.value !== "watch";
+    shell.side.classList.toggle("wide", !shell.watchOpts.hidden);
     if (!shell.watchOpts.hidden && parseSeed(shell.seed.value) === null) shell.seed.value = String(newSeed());
   };
   shell.side.addEventListener("change", refresh);
