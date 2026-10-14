@@ -1,6 +1,7 @@
 import type { HexId } from "./hex";
 import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
+import type { MoveRecord } from "./move-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -295,6 +296,8 @@ export interface GameState {
   fortresses: Record<HexId, boolean>;
   /** Ground combat so far in the current Player Turn (step 7h); absent until the first attack. */
   combat?: CombatRecord;
+  /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
+  moves?: MoveRecord;
   /**
    * Hexes whose controller differs from the scenario's "controlled at start" territory (Ref 7.0;
    * see control.ts). Empty at the start: read control through `controllerOf`, not this record.

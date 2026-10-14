@@ -27,6 +27,8 @@ export type Action =
   | { type: "ALLOCATE_LOSSES"; side: Side; units: string[] }
   /** Step 7h: attackers advance into the hex the defenders left (TODO(verify) in attack.ts). */
   | { type: "ADVANCE"; side: Side; units: string[]; to: HexId }
+  /** Step 6f: a unit, or units standing together, move along a path of adjacent hexes (start excluded; Ref 5.45f). */
+  | { type: "MOVE"; side: Side; units: string[]; path: HexId[] }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -58,6 +60,8 @@ export type GameEvent =
   | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange" }
   | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId }
   | { type: "LOSSES_CHOSEN"; side: Side; units: string[] }
+  /** Step 6f: units moved along a path (the hexes entered, in order). */
+  | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
   | { type: "GAME_OVER"; year: number; season: Season };
 

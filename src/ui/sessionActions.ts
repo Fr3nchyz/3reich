@@ -4,6 +4,7 @@ import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
 import { computerToMove } from "./computerPlay";
+import { tapToMove } from "./moveTap";
 import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
@@ -42,7 +43,10 @@ export function buildInBox(s: Session, box: OffMapBox): void {
 /** A tap on a map hex during setup: place the chosen counter there, or take the top one back. */
 export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
-  if (s.state.phase === "player-turn") return computerToMove(s) ? undefined : tapToBuild(s, h);
+  if (s.state.phase === "player-turn") {
+    if (!computerToMove(s) && !tapToMove(s, h)) tapToBuild(s, h);
+    return;
+  }
   const owner = currentSetupOwner(s.state);
   if (!owner || sideOfOwner(owner) !== s.humanSide) return;
   if (s.mode === "remove") {
@@ -76,6 +80,7 @@ export function takeAction(s: Session, action: Action): void {
   s.toast = "";
   s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
+  s.moveFrom = null;
   run(s, action);
 }
 

@@ -114,8 +114,9 @@ describe("steps without rules are passed, and the passing is recorded", () => {
     // Allies (Britain to France) waited at it.
     const without = (waited: string[]) => STEPS.slice(1, -1).filter((id) => !waited.includes(id));
     expect(passed).toEqual([...without(["3", "8b"]), ...without(["3", "8b", "9a"]), "II.A"]);
+    // Nobody has a counter on the map here, so ground movement (6f) found nothing to do and was passed.
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
-    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "7h", "8b", "9a"].includes(id)).toBe(true);
+    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "6f", "7h", "8b", "9a"].includes(id)).toBe(true);
   });
 
   it("records step 1 as passed when a side has nothing to declare", () => {

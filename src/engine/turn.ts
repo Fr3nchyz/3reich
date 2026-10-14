@@ -8,6 +8,7 @@ import { hasCombatWork } from "./attack";
 import { legalBuilds } from "./construction";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { hasMoveWork } from "./move-action";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 
@@ -106,6 +107,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
   switch (id) {
     case FIRST_STEP:
       return legalDeclarations(ctx, state).length > 0;
+    case "6f":
+      return hasMoveWork(ctx, state);
     case "7h":
       return hasCombatWork(ctx, state);
     case "3":

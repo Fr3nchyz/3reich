@@ -73,7 +73,7 @@ describe("the status area in play", () => {
 
   it("shows only the move-on button once the steps with something to do are done", () => {
     const s = inPlay();
-    for (const step of ["1", "3", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
+    for (const step of ["1", "3", "6f", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
     expect(html).toContain("step 10b (Save-Game prompt)");
     expect(html).not.toContain("Declare war");

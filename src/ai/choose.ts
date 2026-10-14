@@ -1,4 +1,4 @@
-import { legalActions, type Action } from "../engine/actions";
+import { legalActions, moveOnAction, type Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
 import { FIRST_STEP, LAST_STEP } from "../engine/sequence";
 import type { GameState } from "../engine/types";
@@ -14,9 +14,10 @@ import type { AiConfig, Decision } from "./types";
  */
 export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig): Decision | null {
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
-  const legal = legalActions(ctx, state);
-  if (legal.length === 0) return null;
   const step = state.position.step;
+  // The computer does not move yet: at 6f only the way on is needed, not the (long) list of moves.
+  const legal = step === "6f" ? moveOnAction(state) : legalActions(ctx, state);
+  if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
@@ -51,6 +52,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "No Front Option chosen: with no combat rules yet every Front stays on the default (defensive) Option.",
+    "6f": "The computer does not move its ground units yet.",
     "7h": "The computer makes no ground attacks yet.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",

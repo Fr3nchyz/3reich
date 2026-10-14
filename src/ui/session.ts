@@ -48,6 +48,8 @@ export interface Session {
   foldOpen: boolean;
   /** The counter chosen to build at step 8b (its places are outlined on the map), or null. */
   build: BuildPick | null;
+  /** The hex of the stack chosen to move at step 6f (its destinations are outlined), or null. */
+  moveFrom?: string | null;
 }
 
 /** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
@@ -100,6 +102,8 @@ function describeEvent(e: GameEvent): string | null {
       return `${OWNER_NAMES[e.owner]} unit ${e.unitId} at ${e.at} is eliminated.`;
     case "LOSSES_CHOSEN":
       return `${sideName(e.side)} chooses losses: ${e.units.join(", ")}.`;
+    case "UNITS_MOVED":
+      return `${e.units.join(", ")} move from ${e.from} to ${e.to}.`;
     case "UNITS_ADVANCED":
       return `${e.units.join(", ")} advance into ${e.to}.`;
     case "HEX_CONTROL_CHANGED":
