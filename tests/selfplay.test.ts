@@ -1,9 +1,15 @@
+import { mkdirSync, mkdtempSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { replay, type Action } from "../src/engine/actions";
+import { applyAction, replay, type Action, type GameEvent } from "../src/engine/actions";
+import { controllerOf, sideInWar } from "../src/engine/control";
+import { sideOfOwner } from "../src/engine/setup";
 import { chooseAction } from "../src/ai";
 import { newGame } from "../src/engine/game";
 import type { GameState } from "../src/engine/types";
-import { parseArgs, recording } from "../scripts/selfplay/args";
+import { MAX_SEED, parseArgs, recording } from "../scripts/selfplay/args";
+import { prepareOut } from "../scripts/selfplay/out";
 import { comparison, gameReport } from "../scripts/selfplay/report";
 import { auditState, runGame } from "../scripts/selfplay/runner";
 import { SCENARIOS, SCENARIO_KEYS } from "../scripts/selfplay/scenarios";
@@ -70,6 +76,53 @@ describe("self-play report", () => {
     expect(sum((t) => t.hexChanges)).toBeGreaterThan(0);
   });
 
+  it("the figures equal a recount from the replayed game: spending, losses in units and factors, holdings, forces", () => {
+    const one = runGame({ scenario: "1939", seed: 2, turns: 3 });
+    const t = one.turns[one.turns.length - 1]!;
+    const sumT = (f: (x: typeof t) => number) => one.turns.reduce((n, x) => n + f(x), 0);
+    // Replay all but the action that crossed into the next Game Turn: the state the figures were read from.
+    let state = one.initial;
+    const events: GameEvent[] = [];
+    const lost = { axis: 0, allies: 0 };
+    const lostFactors = { axis: 0, allies: 0 };
+    let spent = 0;
+    for (const a of one.actions.slice(0, -1)) {
+      const r = applyAction(one.ctx, state, a);
+      if (!r.ok) throw new Error(r.error);
+      for (const e of r.events) {
+        events.push(e);
+        if (e.type === "BRPS_CHANGED" && e.delta < 0) spent -= e.delta;
+        if (e.type === "UNIT_ELIMINATED") {
+          const u = state.units[e.unitId]!;
+          lost[sideOfOwner(u.owner)]++;
+          lostFactors[sideOfOwner(u.owner)] += u.strength;
+        }
+      }
+      state = r.state;
+    }
+    expect(sumT((x) => Object.values(x.spent).reduce((a, b) => a + b, 0))).toBe(spent);
+    expect(spent).toBeGreaterThan(0);
+    expect({ axis: sumT((x) => x.lost.axis), allies: sumT((x) => x.lost.allies) }).toEqual(lost);
+    expect({ axis: sumT((x) => x.lostFactors.axis), allies: sumT((x) => x.lostFactors.allies) }).toEqual(lostFactors);
+    expect(lost.axis + lost.allies).toBeGreaterThan(0);
+    expect(lostFactors.axis + lostFactors.allies).toBeGreaterThan(lost.axis + lost.allies); // factors are not unit counts
+    const held = { axis: 0, allies: 0, neutral: 0 };
+    for (const [id, h] of Object.entries(one.ctx.map.hexes)) {
+      const owner = h.land ? controllerOf(one.ctx, state, id) : null;
+      if (owner !== null) held[sideInWar(state, owner) ?? "neutral"]++;
+    }
+    expect(t.hexes).toEqual(held);
+    const units = { axis: 0, allies: 0 };
+    for (const u of Object.values(state.units)) units[sideOfOwner(u.owner)]++;
+    expect(t.units).toEqual(units);
+    for (const n of Object.keys(t.brp) as (keyof typeof t.brp)[]) expect(t.brp[n]).toBe(state.nations[n].brpTotal);
+    const md = gameReport(one);
+    expect(md).toContain(`${held.axis} / ${held.allies} / ${held.neutral}`);
+    expect(md).toContain(`${t.lostFactors.axis} / ${t.lostFactors.allies}`);
+    expect(md).toContain(`BRPs spent: ${spent}`);
+    expect(sumT((x) => x.attacks.axis + x.attacks.allies)).toBe(events.filter((e) => e.type === "COMBAT_RESOLVED").length);
+  }, 60_000);
+
   it("the comparison has a row per game and the runtime", () => {
     const page = comparison([r, runGame({ scenario: "campaign", seed: 1, turns: 1 })]);
     expect(page.match(/^\| (1939|campaign) \|/gm)).toHaveLength(2);
@@ -118,6 +171,31 @@ describe("self-play anomalies are detected, not looped on", () => {
     expect(r.anomalies.map((a) => a.kind)).toEqual(expect.arrayContaining(["illegal-choice", "refused"]));
   });
 
+  it("overstacks are looked for when a Player Turn ends, not before", () => {
+    const plant = (st: GameState): GameState => {
+      const units = { ...st.units };
+      for (let i = 0; i < 8; i++) units[`x${i}`] = { id: `x${i}`, owner: "germany", type: "replacement", strength: 3, at: "L32" };
+      return { ...st, units };
+    };
+    const r = runGame({ scenario: "1939", seed: 1, turns: 1 }, { prepare: plant });
+    const over = r.anomalies.filter((a) => a.kind === "overstack");
+    expect(over.length).toBeGreaterThan(0);
+    // Planted before play: the first check is after the first Player Turn, so it names the second side's turn, not the first.
+    expect(over[0]!.at).toContain(r.initial.firstSide === "axis" ? "allies" : "axis");
+    expect(over[0]!.at).not.toContain(`${r.initial.firstSide}, step`);
+  });
+
+  it("a setup that leaves the game in the setup phase is an anomaly, not a silent stop", () => {
+    const r = runGame({ scenario: "1939", seed: 1, turns: 1 }, { setup: () => [] });
+    expect(r.anomalies.map((a) => a.kind)).toEqual(["setup"]);
+    expect(r.ended).toBe("stopped");
+  });
+
+  it("refuses a seed the engine cannot take, with a clear error", () => {
+    expect(() => runGame({ scenario: "1939", seed: MAX_SEED + 1, turns: 1 })).toThrow(/Invalid seed/);
+    expect(() => runGame({ scenario: "1939", seed: -1, turns: 1 })).toThrow(/Invalid seed/);
+  });
+
   it("auditState finds negative BRPs and overstacked hexes, and checks stacking only when a Player Turn has ended", () => {
     const s = at6f([inf("a", "germany", "L32"), inf("b", "germany", "L32"), inf("c", "germany", "L32"), inf("d", "germany", "L32"), inf("e", "germany", "L32")]);
     expect(auditState(CTX, s, true).some((p) => p.kind === "overstack" && /L32/.test(p.detail))).toBe(true);
@@ -137,5 +215,33 @@ describe("self-play command line", () => {
 
   it("refuses what it does not understand", () => {
     for (const bad of [["--scenario", "1941"], ["--turns", "0"], ["--turns", "x"], ["--seed", "-1"], ["--games", "0"], ["--bogus"], ["--out"]]) expect(() => parseArgs(bad), bad.join(" ")).toThrow(/usage/);
+  });
+
+  it("checks the seed: whole, not empty, and within what the engine takes, games included", () => {
+    expect(parseArgs(["--seed", String(MAX_SEED)]).seed).toBe(MAX_SEED);
+    for (const bad of [[String(MAX_SEED + 1)], [""], [" "], ["1.5"], ["1e3"], ["0x10"], ["abc"]]) expect(() => parseArgs(["--seed", ...bad]), bad.join()).toThrow(/--seed needs a whole number/);
+    expect(() => parseArgs(["--seed", String(MAX_SEED), "--games", "2"])).toThrow(/largest seed/);
+    expect(parseArgs(["--seed", String(MAX_SEED - 1), "--games", "2"]).games).toBe(2);
+  });
+
+  it("checks --out: a folder name inside the repository, never a flag, the repository itself, or a path outside", () => {
+    const root = "/repo";
+    expect(parseArgs(["--out", "selfplay-out/ten"], root).out).toBe("selfplay-out/ten");
+    for (const bad of ["--no-verify", ".", "./", "..", "../x", "/etc", "a/../..", "/repo"]) expect(() => parseArgs(["--out", bad], root), bad).toThrow(/--out/);
+    expect(() => parseArgs(["--out", "--no-verify"], root)).toThrow(/needs a folder name/);
+  });
+
+  it("prepares the output folder: refuses a file, keeps reports out of git, says when it holds files", () => {
+    const root = mkdtempSync(join(tmpdir(), "selfplay-"));
+    writeFileSync(join(root, "a-file"), "x");
+    expect(() => prepareOut(root, "a-file")).toThrow(/is a file/);
+    const first = prepareOut(root, "reports/one");
+    expect(first.existing).toBe(false);
+    expect(readFileSync(join(first.dir, ".gitignore"), "utf8")).toBe("*\n");
+    writeFileSync(join(first.dir, "x.md"), "old");
+    expect(prepareOut(root, "reports/one").existing).toBe(true);
+    mkdirSync(join(root, "empty"));
+    expect(prepareOut(root, "empty").existing).toBe(false);
+    expect(existsSync(join(root, "--no-verify"))).toBe(false);
   });
 });

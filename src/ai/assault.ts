@@ -11,11 +11,15 @@ import type { AiConfig, Decision } from "./types";
 /**
  * Step 7h, ground attacks. COMPUTER POLICY, not rules (spec 05; every number is TODO(verify), to be tuned by play-testing).
  * Of the ATTACK actions the engine lists it makes the best one whose odds (the column the engine's own `attackNumbers`
- * gives, terrain included) are at least ATTACK_MIN_COLUMN and whose Exchange is acceptable: an Exchange costs the attackers
+ * gives, terrain included) are at least ATTACK_MIN_COLUMN (ATTACK_MIN_COLUMN_SUPERIOR where the attackers hold ATTACK_SUPERIORITY
+ * times the defenders' printed factors over the whole hex) and whose Exchange is acceptable: an Exchange costs the attackers
  * at least the defender's multiplied factors (Ref 12.2), and that may be at most ATTACK_MAX_EXCHANGE_FACTORS. Better odds first, then an attack on a capital or objective, then the bigger force. After a battle that left a
  * hex empty it advances with as many survivors as the hex takes. When nothing qualifies it ends the step.
  */
 export const ATTACK_MIN_COLUMN: OddsColumn = "2-1";
+/** Where the attackers hold at least ATTACK_SUPERIORITY times the defenders' printed factors (before terrain), the least column falls to this. */
+export const ATTACK_SUPERIORITY = 3;
+export const ATTACK_MIN_COLUMN_SUPERIOR: OddsColumn = "1-1";
 export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
 export const ATTACK_MAX_PER_TURN = 40;
 
@@ -25,13 +29,14 @@ type Advance = Extract<Action, { type: "ADVANCE" }>;
 export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig): Decision | undefined {
   if (combatOf(state).targets.length >= ATTACK_MAX_PER_TURN) return undefined;
   const floor = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN);
+  const floorSuperior = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN_SUPERIOR);
   const scored = new Map<Attack, number>();
   for (const a of legal) {
     if (a.type !== "ATTACK") continue;
     const units = a.units.map((id) => state.units[id]!);
     const n = attackNumbers(ctx, state, units, defendersAt(state, units, a.target), a.target);
     const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
-    if (column < floor || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
+    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
     scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
   }
   const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);

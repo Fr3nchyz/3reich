@@ -43,7 +43,7 @@ export class TurnTally {
   constructor(readonly label: string) {
     this.t = {
       label, brp: zero(() => 0), spent: zero(() => 0), spentOn: { war: 0, build: 0, grant: 0, option: 0, other: 0 }, wars: [], built: 0, builtList: [], grants: 0, grantAmount: 0,
-      moves: 0, unitsMoved: 0, combats: { total: 0, attackerEliminated: 0, defenderEliminated: 0, exchange: 0 }, lost: { axis: 0, allies: 0 }, lostFactors: { axis: 0, allies: 0 },
+      moves: 0, unitsMoved: 0, combats: { total: 0, attackerEliminated: 0, defenderEliminated: 0, exchange: 0 }, attacks: { axis: 0, allies: 0 }, lost: { axis: 0, allies: 0 }, lostFactors: { axis: 0, allies: 0 },
       hexChanges: 0, hexes: { axis: 0, allies: 0, neutral: 0 }, objectives: { axis: 0, allies: 0, neutral: 0 }, units: { axis: 0, allies: 0 }, factors: { axis: 0, allies: 0 }, frontOptions: [], actions: 0, partial: false,
     };
   }
@@ -71,6 +71,7 @@ export class TurnTally {
         case "UNITS_MOVED": t.moves++; t.unitsMoved += e.units.length; break;
         case "COMBAT_RESOLVED":
           t.combats.total++;
+          t.attacks[e.side]++;
           if (e.outcome === "exchange") t.combats.exchange++;
           else if (e.outcome === "attacker-eliminated") t.combats.attackerEliminated++;
           else t.combats.defenderEliminated++;

@@ -13,7 +13,7 @@ import { autoSetup } from "../src/engine/autosetup";
 import { chooseAction } from "../src/ai";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
-const GAME_TURNS = 1;
+const GAME_TURNS = 2;
 const MAX_ACTIONS = 3000;
 
 /** A computer plays both sides through `GAME_TURNS` Game Turns; every action is checked against legalActions first. */

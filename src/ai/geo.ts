@@ -38,31 +38,53 @@ function closedTo(ctx: GameContext, state: GameState, owner: ForceOwner, hex: He
   return country !== undefined && Object.hasOwn(MINOR_COUNTRY_FORCES, country) && !atWar(state, owner, country as ForceOwner);
 }
 
-/**
- * Hexes of the enemy of `side` that are objectives or capitals and that it controls now, and for every hex a
- * unit of `owner` could reach on foot, the number of hexes to the nearest of them. A hex missing from the map
- * cannot reach any (a sea, an island, or land cut off by neutral country).
- */
-export function distanceToEnemyObjective(ctx: GameContext, state: GameState, owner: ForceOwner, side: Side): Map<HexId, number> {
+/** Hexes of the enemy of `side` that are objectives or capitals and that it controls now, in hex order. */
+export function enemyObjectives(ctx: GameContext, state: GameState, side: Side): HexId[] {
+  return objectiveHexes(ctx).filter((h) => {
+    const holder = controllingSide(ctx, state, h);
+    return holder !== null && holder !== side;
+  });
+}
+
+const crossings = new WeakMap<GameContext, Map<HexId, readonly HexId[]>>();
+
+/** The hexes a ground unit could cross into from this one: fixed by the map, so worked out once per hex. */
+function crossable(ctx: GameContext, here: HexId): readonly HexId[] {
+  let map = crossings.get(ctx);
+  if (!map) crossings.set(ctx, (map = new Map<HexId, readonly HexId[]>()));
+  let hit = map.get(here);
+  if (!hit) map.set(here, (hit = adjacentHexes(ctx, here).filter((n) => canCross(ctx, here, n))));
+  return hit;
+}
+
+/** Breadth-first ground distance from the `sources` to every hex a unit of `owner` could reach on foot; with `from`, also the source each hex is nearest to (the first in the list on a tie). */
+export function groundDistances(ctx: GameContext, state: GameState, owner: ForceOwner, sources: readonly HexId[], from?: Map<HexId, HexId>): Map<HexId, number> {
   const dist = new Map<HexId, number>();
   let frontier: HexId[] = [];
-  for (const h of objectiveHexes(ctx)) {
-    const holder = controllingSide(ctx, state, h);
-    if (holder !== null && holder !== side) {
-      dist.set(h, 0);
-      frontier.push(h);
-    }
+  for (const h of sources) {
+    dist.set(h, 0);
+    from?.set(h, h);
+    frontier.push(h);
   }
   for (let d = 1; frontier.length > 0; d++) {
     const next: HexId[] = [];
     for (const here of frontier) {
-      for (const n of adjacentHexes(ctx, here)) {
-        if (dist.has(n) || !canCross(ctx, here, n) || closedTo(ctx, state, owner, n)) continue;
+      for (const n of crossable(ctx, here)) {
+        if (dist.has(n) || closedTo(ctx, state, owner, n)) continue;
         dist.set(n, d);
+        from?.set(n, from.get(here)!);
         next.push(n);
       }
     }
     frontier = next;
   }
   return dist;
+}
+
+/**
+ * For every hex a unit of `owner` could reach on foot, the number of hexes to the nearest enemy-held objective or capital
+ * (and, with `from`, which one). A hex missing from the map cannot reach any (a sea, an island, or land cut off by neutral country).
+ */
+export function distanceToEnemyObjective(ctx: GameContext, state: GameState, owner: ForceOwner, side: Side, from?: Map<HexId, HexId>): Map<HexId, number> {
+  return groundDistances(ctx, state, owner, enemyObjectives(ctx, state, side), from);
 }

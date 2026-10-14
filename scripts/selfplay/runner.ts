@@ -1,5 +1,6 @@
 import { applyAction, legalActions, type Action, type GameEvent } from "../../src/engine/actions";
 import { chooseAction } from "../../src/ai";
+import { createMemory } from "../../src/ai/memory";
 import { autoSetup } from "../../src/engine/autosetup";
 import type { GameContext } from "../../src/engine/context";
 import { newGame, turnIndex } from "../../src/engine/game";
@@ -33,6 +34,10 @@ export type Chooser = typeof chooseAction;
 export interface Hooks {
   choose?: Chooser;
   scenario?: Scenario;
+  /** Setup actions in place of the engine's automatic setup (to provoke a setup that does not finish). */
+  setup?: (ctx: GameContext, initial: GameState) => Action[];
+  /** Changes the state setup produced before play begins (to plant an overstack the engine would never allow). */
+  prepare?: (state: GameState) => GameState;
 }
 
 /**
@@ -44,9 +49,11 @@ export interface Hooks {
  */
 export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   const choose = hooks.choose ?? chooseAction;
+  const memory = createMemory();
   const opt = { verify: true, stepLimit: STEP_LIMIT, turnLimit: TURN_LIMIT, ...options };
   const started = performance.now();
   const ctx: GameContext = { map: MAP, scenario: hooks.scenario ?? SCENARIOS[opt.scenario] };
+  if (!Number.isInteger(opt.seed) || opt.seed < 0 || opt.seed > 0xffffffff) throw new RangeError(`Invalid seed ${opt.seed}: a whole number from 0 to 4294967295.`);
   const initial = newGame(ctx.scenario, opt.seed);
   const anomalies: Anomaly[] = [];
   const actions: Action[] = [];
@@ -61,13 +68,15 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   let state = initial;
   let setupActions = 0;
   try {
-    for (const a of autoSetup(ctx, state)) {
+    for (const a of (hooks.setup ?? autoSetup)(ctx, state)) {
       const r = applyAction(ctx, state, a);
       if (!r.ok) throw new Error(`setup action ${JSON.stringify(a)} refused: ${r.error}`);
       actions.push(a);
       state = r.state;
     }
     setupActions = actions.length;
+    if (hooks.prepare) state = hooks.prepare(state);
+    if (state.phase !== "player-turn") note("setup", state, `setup finished but the game is in phase "${state.phase}", not in play`);
   } catch (e) {
     note("exception", state, `setup failed: ${(e as Error).message}`);
   }
@@ -85,7 +94,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     let next: GameState;
     let action: Action;
     try {
-      const decision = choose(ctx, state, { seed: opt.seed });
+      const decision = choose(ctx, state, { seed: opt.seed, memory });
       if (!decision) { note("stuck", state, "the computer has no action to take"); break; }
       action = decision.action;
       if (opt.verify && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);

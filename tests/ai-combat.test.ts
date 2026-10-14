@@ -76,11 +76,11 @@ describe("self-play with attacks made at step 7h", () => {
   const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
   const made: number[] = [];
   for (const scenario of SCENARIOS) {
-    it(`${scenario.name}: whoever is up attacks whenever it can, the computer settles Exchanges, no illegal action in 1 Game Turn`, () => {
+    it(`${scenario.name}: whoever is up attacks whenever it can, the computer settles Exchanges, no illegal action in 2 Game Turns`, () => {
       const ctx: GameContext = { map: MAP, scenario };
       let state = newGame(scenario, 5);
       for (const a of autoSetup(ctx, state)) state = ok(applyAction(ctx, state, a));
-      const stop = turnIndex(state) + 1;
+      const stop = turnIndex(state) + 2;
       let attacks = 0;
       for (let n = 0; state.phase === "player-turn" && turnIndex(state) < stop; n++) {
         expect(n, "no stall").toBeLessThan(5000);

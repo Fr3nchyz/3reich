@@ -16,7 +16,7 @@ export interface RunOptions {
   turnLimit?: number;
 }
 
-export type AnomalyKind = "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack";
+export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack";
 
 export interface Anomaly {
   kind: AnomalyKind;
@@ -41,6 +41,8 @@ export interface TurnStats {
   moves: number;
   unitsMoved: number;
   combats: { total: number; attackerEliminated: number; defenderEliminated: number; exchange: number };
+  /** Attacks made by each side. */
+  attacks: { axis: number; allies: number };
   lost: { axis: number; allies: number };
   lostFactors: { axis: number; allies: number };
   hexChanges: number;

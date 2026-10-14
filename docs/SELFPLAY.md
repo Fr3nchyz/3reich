@@ -17,7 +17,7 @@ npm run selfplay -- --scenario <1939|campaign|1942|1944|all> --turns <N|end> --s
 | `--out` | Output folder (git-ignored) | `selfplay-out/` |
 | `--no-verify` | Skip checking each chosen action against `legalActions` (faster; the engine still refuses illegal ones) | checks |
 
-The same seed always gives the same game (the runtime is the only thing that varies). The exit code is 1 when any game had an anomaly, 2 for a bad command line.
+The same seed always gives the same game (the runtime is the only thing that varies). The exit code is 1 when any game had an anomaly, 2 for a bad command line (a `--seed` outside 0 to 4294967295, an empty value, an `--out` that is a file, a flag, the repository itself or outside it), 3 if the run itself crashed. `--out` folders get a `.gitignore` of their own, and a folder that already holds files is overwritten file by file after a warning.
 
 Examples: `npm run selfplay -- --scenario 1942 --turns end --seed 1` (about 25 s); `npm run selfplay -- --scenario all --turns end --seed 1 --games 10 --no-verify` (the four scenarios, ten seeds each).
 
@@ -38,6 +38,7 @@ A run never loops and never throws. It stops the game and lists the problem when
 | `stuck` | the computer has no action to take while the game waits |
 | `refused` | the engine refused the action the computer chose |
 | `illegal-choice` | the chosen action is not on the `legalActions` list (checked unless `--no-verify`) |
+| `setup` | setup finished but the game did not start |
 | `exception` | the computer or setup threw |
 | `no-progress` | more than 1000 actions at one step |
 | `turn-budget` | more than 8000 actions in one Game Turn |

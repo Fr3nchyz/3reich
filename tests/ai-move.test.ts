@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { chooseAction } from "../src/ai";
 import { distanceToEnemyObjective, isObjective, objectiveHexes } from "../src/ai/geo";
+import { createMemory } from "../src/ai/memory";
 import { MOVE_MAX_UNITS_PER_TURN } from "../src/ai/move";
+import { turnIndex } from "../src/engine/game";
+import { movesOf } from "../src/engine/move-record";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { turnKey } from "../src/engine/combat-record";
 import { adjacentHexes } from "../src/engine/zoc";
@@ -56,7 +59,7 @@ describe("step 6f: movement toward the nearest enemy objective", () => {
     const legal = legalActions(CTX, s).filter((a): a is Move => a.type === "MOVE");
     expect(f.get(dest(d.action as Move))).toBe(Math.min(...legal.map((m) => f.get(dest(m)) ?? 99)));
     expect(f.get(dest(d.action as Move))!).toBeLessThan(f.get("L32")!);
-    expect(d.why).toMatch(/closer to the nearest enemy-held objective/);
+    expect(d.why).toMatch(/closer to the enemy-held objective M35/);
   });
 
   it("moves a stack together rather than its units one by one, when they reach the same hex", () => {
@@ -114,5 +117,63 @@ describe("step 6f: movement toward the nearest enemy objective", () => {
     }
     expect(s.position).toMatchObject({ step: expect.not.stringMatching(/^6f$/) });
     expect(Object.values(s.units).every((u) => u.at !== "L32" && u.at !== "M31" && u.at !== "N32")).toBe(true);
+  });
+});
+
+describe("step 6f: a unit keeps its target and does not go back (computer memory)", () => {
+  const why = (s: GameState, mem = createMemory()) => chooseAction(CTX, s, { seed: 1, memory: mem })!.why;
+
+  it("without memory the nearest objective is chosen; with a remembered one it is kept while the enemy holds it", () => {
+    const s = at6f([inf("u1", "germany", "M34", 3, 3)]);
+    expect(why(s)).toContain("M35");
+    const mem = createMemory();
+    mem.targets.set("u1", "O22"); // Paris is far: Warsaw is next door
+    expect(why(s, mem)).toContain("O22");
+  });
+
+  it("drops the target once the enemy has lost it, and remembers the one chosen", () => {
+    const base = at6f([inf("u1", "germany", "M34", 3, 3)]);
+    const mem = createMemory();
+    mem.targets.set("u1", "O22");
+    const taken: GameState = { ...base, control: { ...base.control, O22: "germany" } };
+    expect(why(taken, mem)).toContain("M35");
+    expect(mem.targets.get("u1")).toBe("M35");
+  });
+
+  it("does not move back to a hex it left this or last Game Turn, but may after that", () => {
+    const s = at6f([inf("u1", "germany", "L32", 3, 3)]);
+    const first = chooseAction(CTX, s, { seed: 1 })!.action as Move;
+    const mem = createMemory();
+    mem.left.set("u1", [{ hex: dest(first), turn: turnIndex(s) }]);
+    const again = chooseAction(CTX, s, { seed: 1, memory: mem })!.action;
+    expect(again.type === "MOVE" ? dest(again) : "").not.toBe(dest(first));
+    mem.left.set("u1", [{ hex: dest(first), turn: turnIndex(s) - 2 }]);
+    expect(chooseAction(CTX, s, { seed: 1, memory: mem })!.action).toEqual(first);
+  });
+
+  it("records where the unit has been, so a second Game Turn cannot undo the first", () => {
+    const mem = createMemory();
+    const s = at6f([inf("u1", "germany", "L32", 3, 3)]);
+    const d = chooseAction(CTX, s, { seed: 1, memory: mem })!;
+    expect(mem.left.get("u1")).toEqual([{ hex: "L32", turn: turnIndex(s) }]);
+    expect(mem.targets.get("u1")).toBeDefined();
+    expect(d.action.type).toBe("MOVE");
+  });
+
+  it("the unit cap holds over a whole step: 45 units that can all advance move 40", () => {
+    const hexes = Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany" && h.id !== "L31").map((h) => h.id).sort().slice(0, 45);
+    let s = at6f(hexes.map((h, i) => inf(`u${i + 1}`, "germany", h, 1, 3)));
+    const mem = createMemory();
+    let moves = 0;
+    for (let i = 0; i < 100; i++) {
+      const d = chooseAction(CTX, s, { seed: 1, memory: mem })!;
+      if (d.action.type !== "MOVE") break;
+      const r = applyAction(CTX, s, d.action);
+      if (!r.ok) throw new Error(r.error);
+      s = r.state;
+      moves += d.action.units.length;
+    }
+    expect(moves).toBe(MOVE_MAX_UNITS_PER_TURN);
+    expect(movesOf(s).moved).toHaveLength(MOVE_MAX_UNITS_PER_TURN);
   });
 });

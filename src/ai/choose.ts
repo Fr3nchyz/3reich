@@ -1,4 +1,4 @@
-import { legalActions, type Action } from "../engine/actions";
+import { legalActions, moveOnAction, type Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
 import { FIRST_STEP, LAST_STEP } from "../engine/sequence";
 import type { GameState } from "../engine/types";
@@ -17,14 +17,14 @@ import type { AiConfig, Decision } from "./types";
 export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig): Decision | null {
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
-  // The move list at 6f is the longest the engine builds (about 15-40 ms); it is cached per state, so asking again costs nothing.
-  const legal = legalActions(ctx, state);
+  // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
+  const legal = step === "6f" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
-    : step === "6f" ? chooseMove(ctx, state, legal, cfg)
+    : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "7h" ? chooseLosses(legal) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
@@ -54,7 +54,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   if (!action) return null;
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
-    "3": "No Front Option chosen: with no combat rules yet every Front stays on the default (defensive) Option.",
+    "3": "The computer does not choose Front Options yet: every Front stays on the default (defensive) Option.",
     "6f": "No ground move brings a stack closer to an enemy objective.",
     "7h": "No ground attack is worth making at the odds on offer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",

@@ -28,10 +28,24 @@ describe("step 7h: which attacks the computer makes (Ref 12.1)", () => {
     expect(d.why).toMatch(/odds 5-1/);
   });
 
-  it("needs odds of 2-1 after the doubling: 6 against 2x2 is 1-1 and is not attacked", () => {
-    const s = at7h([u("g1", "germany", 6, "M32"), u("p1", "poland", 2, "M33")]);
+  it("needs odds of 2-1 after the doubling: 5 against 2x2 is 1-1 and is not attacked", () => {
+    const s = at7h([u("g1", "germany", 5, "M32"), u("p1", "poland", 2, "M33")]);
     expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(true);
     expect(decide(s).action).toEqual(END);
+  });
+
+  it("where the attackers hold three times the printed factors of the whole hex, 1-1 is enough (6 against 2, x2); 5 against 2 is not", () => {
+    const d = decide(at7h([u("g1", "germany", 6, "M32"), u("p1", "poland", 2, "M33")]));
+    expect(d.action.type).toBe("ATTACK");
+    expect(d.why).toMatch(/odds 1-1/);
+    expect(decide(at7h([u("g1", "germany", 5, "M32"), u("p1", "poland", 2, "M33")])).action).toEqual(END);
+    // The hex group counts, not one unit: 6 against 2+2 is only 3:2, and 12 against 2+2 is 3:1.
+    expect(decide(at7h([u("g1", "germany", 6, "M32"), u("p1", "poland", 2, "M33"), u("p2", "poland", 2, "M33")])).action).toEqual(END);
+    expect(decide(at7h([u("g1", "germany", 12, "M32"), u("p1", "poland", 2, "M33"), u("p2", "poland", 2, "M33")])).action.type).toBe("ATTACK");
+  });
+
+  it("superiority does not lift the Exchange limit: 36 against 12x2 stays home", () => {
+    expect(decide(at7h([u("g1", "germany", 36, "M32"), u("p1", "poland", 12, "M33")])).action).toEqual(END);
   });
 
   it("also needs an acceptable Exchange: 25 against 5x2 is 2-1 but could cost 10 factors; 25 against 4x2 could cost 8", () => {
@@ -39,11 +53,14 @@ describe("step 7h: which attacks the computer makes (Ref 12.1)", () => {
     expect(decide(at7h([u("g1", "germany", 25, "M32"), u("p1", "poland", 4, "M33")])).action.type).toBe("ATTACK");
   });
 
-  it("counts the defender's terrain: 9 against 2 on a mountain (x3) is 1-1 and is not attacked; 16 is", () => {
-    const s = at7h([u("g1", "germany", 9, "Q33"), u("p1", "poland", 2, "Q34")]);
+  it("counts the defender's terrain: 5 against 2 on a mountain (x3) is 1-2 and is not attacked; 12 is attacked at 2-1, where plain would give 3-1", () => {
+    const s = at7h([u("g1", "germany", 5, "Q33"), u("p1", "poland", 2, "Q34")]);
     expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(true);
     expect(decide(s).action).toEqual(END);
-    expect(decide(at7h([u("g1", "germany", 16, "Q33"), u("p1", "poland", 2, "Q34")])).action.type).toBe("ATTACK");
+    const strong = decide(at7h([u("g1", "germany", 12, "Q33"), u("p1", "poland", 2, "Q34")]));
+    expect(strong.action.type).toBe("ATTACK");
+    expect(strong.why).toMatch(/x3\), odds 2-1/);
+    expect(decide(at7h([u("g1", "germany", 12, "M32"), u("p1", "poland", 2, "M33")])).why).toMatch(/odds 3-1/);
   });
 
   it("prefers a capital or objective to another attack of the same odds, and better odds to both", () => {
