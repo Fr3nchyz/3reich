@@ -43,6 +43,7 @@ shell.newGame.addEventListener("click", () => start(SCENARIOS.find((s) => s.id =
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0]!;
 
 function start(scenario: Scenario, side: Side): void {
+  computer.reset();
   session = createSession(scenario, side, newSeed());
   shell.scenario.value = scenario.id;
   shell.side.value = side;

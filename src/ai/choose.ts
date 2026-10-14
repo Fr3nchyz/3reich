@@ -27,12 +27,19 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
 
 const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLAYER_TURN" }> => a.type === "END_STEP" || a.type === "END_PLAYER_TURN";
 
+/**
+ * Ending the step is the fallback for every step the computer has no chooser for, including steps
+ * that gain rules later (front options, ground combat): it relies only on the engine always listing
+ * the move-on action for the step the game waits at, and picks the one that names this step, so a new
+ * kind of action at a step never leaves the computer stuck. If the engine ever lists none, the
+ * caller gets null and stops (the browser loop does not retry from the same place).
+ */
 function endTheStep(legal: readonly Action[], step: string): Decision | null {
-  const action = legal.find(isMoveOn);
+  const action = legal.find((a) => isMoveOn(a) && (a.type === "END_PLAYER_TURN" || a.step === step));
   if (!action) return null;
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
-    "8b": "Nothing more it wants to build within its limit.",
+    "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",
   };

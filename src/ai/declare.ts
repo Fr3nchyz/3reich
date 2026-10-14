@@ -1,5 +1,7 @@
 import type { Action } from "../engine/actions";
 import { turnIndex } from "../engine/game";
+import { BRP_COSTS } from "../engine/tables";
+import { atWar, sideOfPower } from "../engine/war";
 import { combatantName, POWER_NAMES } from "../engine/nations";
 import type { GameState, GameTurn, PowerId } from "../engine/types";
 import type { Decision } from "./types";
@@ -32,4 +34,16 @@ export function chooseDeclaration(state: GameState, legal: readonly Action[]): D
     if (action) return { action, why: `${POWER_NAMES[plan.by]} declares on ${combatantName(plan.on)}: ${plan.why}` };
   }
   return undefined;
+}
+
+/**
+ * BRPs a nation keeps back from construction so that its planned declarations stay affordable:
+ * the price of every plan of its own still waiting (target not yet at war with it), while the
+ * nation can declare at all (it has a side) and each declaration fits its spending limit. Without
+ * this the computer spends everything on builds and no plan could ever fire.
+ */
+export function plannedReserve(state: GameState, by: PowerId): number {
+  const me = state.nations[by];
+  if (!me || sideOfPower(me) === null || BRP_COSTS.declareWarOnMajorPower > me.spendLimit) return 0;
+  return DECLARATION_PLANS.filter((p) => p.by === by && !atWar(state, by, p.on)).length * BRP_COSTS.declareWarOnMajorPower;
 }

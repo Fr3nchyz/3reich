@@ -31,6 +31,48 @@ describe("step 1: declarations of war (Ref 13.0)", () => {
   });
 });
 
+describe("step 1 for Italy: the plans of a nation that is at war on the Axis side", () => {
+  const ctx = ctxFor(SCENARIO_1939);
+  const italyAt = (year: number, season: "spring" | "summer"): GameState => ({ ...withNation(atStart(SCENARIO_1939, 1), "italy", { status: "axis" }), year, season });
+
+  it("declares on France and then on Britain from Summer 1940, and not in Spring 1940", () => {
+    expect(chooseAction(ctx, italyAt(1940, "spring"), cfg)!.action.type).toBe("END_STEP");
+    let s = italyAt(1940, "summer");
+    const first = chooseAction(ctx, s, cfg)!;
+    expect(first.action).toEqual({ type: "DECLARE_WAR", by: "italy", on: "france" });
+    const r = applyAction(ctx, s, first.action);
+    if (!r.ok) throw new Error(r.error);
+    s = r.state;
+    // Italy's limit (half of 75) leaves 2 BRPs after the first declaration, so Britain waits for the next Player Turn.
+    expect(chooseAction(ctx, s, cfg)!.action.type).toBe("END_STEP");
+    s = { ...s, nations: { ...s.nations, italy: { ...s.nations.italy, spent: 0 } } };
+    expect(chooseAction(ctx, s, cfg)!.action).toEqual({ type: "DECLARE_WAR", by: "italy", on: "britain" });
+  });
+});
+
+describe("BRPs kept back for a planned declaration (spec 05)", () => {
+  it("a nation with a pending plan does not build into the price of the declaration; one without a plan does", () => {
+    const ctx = ctxFor(SCENARIO_1942);
+    const s0 = atStart(SCENARIO_1942, 1);
+    const at8b = (patch: Partial<GameState["nations"]["germany"]>, wars: GameState["wars"]): GameState => {
+      // Only Germany has anything to spend: the others have used their limit.
+      const others = Object.fromEntries(Object.entries(s0.nations).map(([id, n]) => [id, { ...n, spent: n.spendLimit }])) as GameState["nations"];
+      return withNation({ ...s0, nations: others, wars, position: { part: "player-turn" as const, turn: 1 as const, step: "8b" } }, "germany", patch);
+    };
+    const noWar = s0.wars.filter(([a, b]) => ![a, b].includes("ussr"));
+    const rich = at8b({ brpTotal: 200, spent: 0, spendLimit: 100 }, noWar);
+    const builtGermany = (s: GameState) => { const d = chooseAction(ctx, s, cfg)!; return d.action.type === "BUILD" && d.action.owner === "germany"; };
+    expect(builtGermany(rich)).toBe(true);
+    // 35 BRPs are all that is left and the plan against the Soviet Union costs 35: any build would dip into it.
+    const tight = at8b({ brpTotal: 35, spent: 0, spendLimit: 100 }, noWar);
+    expect(builtGermany(tight)).toBe(false);
+    // With the war already declared there is no plan waiting, and the same BRPs may be built with.
+    const declared = at8b({ brpTotal: 35, spent: 0, spendLimit: 100 }, s0.wars);
+    expect(s0.wars.some((w) => w.includes("germany") && w.includes("ussr"))).toBe(true);
+    expect(builtGermany(declared)).toBe(true);
+  });
+});
+
 describe("step 8b: construction within the spending limit (Ref 10.0, 11.6)", () => {
   const atBuild = (): GameState => {
     const s = atStart(SCENARIO_1942, 1);

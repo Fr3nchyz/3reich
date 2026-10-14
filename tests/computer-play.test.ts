@@ -4,7 +4,7 @@ import { applyAction, legalActions } from "../src/engine/actions";
 import type { Side } from "../src/engine/types";
 import { computerSide, computerTick, computerToMove } from "../src/ui/computerPlay";
 import { createSession, setupView, type Session } from "../src/ui/session";
-import { fillRest, finishOwner, tapHex } from "../src/ui/sessionActions";
+import { builds, fillRest, finishOwner, pickBuild, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import { MAP } from "../src/data/map";
 
@@ -43,7 +43,7 @@ describe("the computer's turns in the browser", () => {
       expect(html).not.toContain("data-action");
       const logBefore = s.log.length;
       let ticks = 0;
-      for (; computerToMove(s) && ticks < 20; ticks++) expect(computerTick(s)).toBe(true);
+      for (; computerToMove(s) && ticks < 20; ticks++) expect(computerTick(s, 1e9)).not.toBe("stuck");
       expect(computerToMove(s)).toBe(false);
       expect(ticks).toBeGreaterThan(0);
       expect(s.toast).toBe("");
@@ -52,12 +52,32 @@ describe("the computer's turns in the browser", () => {
     });
   }
 
-  it("a tap on the map during the computer's turn changes nothing", () => {
+  it("a tap on the map during the computer's turn builds nothing, even with a build chosen", () => {
     const s = inPlay("allies");
     expect(computerToMove(s)).toBe(true);
+    // Bring the computer's turn to its construction step and choose a build, as a tap would need.
+    expect(computerTick(s, 1e9)).toBe("done");
+    expect(s.state.position).toMatchObject({ step: "8b" });
+    pickBuild(s, "germany:infantry:3");
+    const target = builds(s).find((a) => a.owner === "germany" && a.unit.type === "infantry" && a.unit.strength === 3)!;
+    expect(target, "an unguarded tap here would build").toBeDefined();
     const before = JSON.stringify(s.state);
-    for (const h of Object.values(MAP.hexes).slice(0, 50)) tapHex(s, h);
+    tapHex(s, MAP.hexes[target.at]!);
     expect(JSON.stringify(s.state)).toBe(before);
+  });
+
+  it("a tick yields when its time budget is spent and the next one carries on", () => {
+    const s = inPlay("allies");
+    let clock = 0;
+    const slow = () => (clock += 100);
+    let result = computerTick(s, 50, slow);
+    expect(result).toBe("done"); // step 1 is a single action
+    result = computerTick(s, 50, slow);
+    expect(result).toBe("more"); // construction needs many actions
+    const builtAfterFirst = Object.keys(s.state.units).length;
+    for (let i = 0; i < 200 && computerToMove(s); i++) computerTick(s, 50, slow);
+    expect(Object.keys(s.state.units).length).toBeGreaterThan(builtAfterFirst);
+    expect(computerToMove(s)).toBe(false);
   });
 });
 
