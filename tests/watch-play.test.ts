@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { runGame } from "../scripts/selfplay/runner";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { replay } from "../src/engine/actions";
@@ -96,10 +97,18 @@ describe("the end of a game and the saved record", () => {
     expect(JSON.stringify(again.state)).toBe(JSON.stringify(s.state));
   }, 60_000);
 
+  it("is the same game as the self-play runner plays for the same scenario and seed", () => {
+    const s = fresh(1, "turbo");
+    for (let i = 0; i < 1000 && shouldRun(w(s), s.state); i++) watchSlice(s);
+    const headless = runGame({ scenario: "1939", seed: 7, turns: 1 });
+    expect(s.record).toEqual(headless.actions);
+  }, 60_000);
+
   it("is the same game for the same seed, and a different one for another seed", () => {
     const play = (seed: number) => {
       const s = newWatchSession(SCENARIO_1939, seed, "turbo", null);
-      for (let i = 0; i < 30; i++) watchSlice(s);
+      let t = 0;
+      for (let i = 0; i < 20; i++) watchSlice(s, () => (t += 10));
       return JSON.stringify(s.record);
     };
     expect(play(3)).toBe(play(3));
@@ -110,7 +119,7 @@ describe("the end of a game and the saved record", () => {
 describe("a computer that cannot move", () => {
   it("stops with a message that says where, keeps the state, and is not asked again", async () => {
     vi.resetModules();
-    vi.doMock("../src/ai", async (orig) => ({ ...(await orig<typeof import("../src/ai")>()), chooseAction: () => null }));
+    vi.doMock("../src/ai", async (orig) => ({ ...(await orig<Record<string, unknown>>()), chooseAction: () => null }));
     const play = await import("../src/ui/watchPlay");
     const ctl = await import("../src/ui/watchController");
     const s = play.newWatchSession(SCENARIO_1942, 1, "slow", null);
@@ -125,7 +134,7 @@ describe("a computer that cannot move", () => {
   });
   it("a thrown error is caught and reported the same way", async () => {
     vi.resetModules();
-    vi.doMock("../src/ai", async (orig) => ({ ...(await orig<typeof import("../src/ai")>()), chooseAction: () => { throw new Error("boom"); } }));
+    vi.doMock("../src/ai", async (orig) => ({ ...(await orig<Record<string, unknown>>()), chooseAction: () => { throw new Error("boom"); } }));
     const play = await import("../src/ui/watchPlay");
     const s = play.newWatchSession(SCENARIO_1939, 1, "turbo", null);
     play.watchSlice(s);

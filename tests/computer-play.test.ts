@@ -78,6 +78,26 @@ describe("the computer's turns in the browser", () => {
     expect(Object.keys(s.state.units).length).toBeGreaterThan(builtAfterFirst);
     expect(computerToMove(s)).toBe(false);
   });
+
+  it("does not start an action whose predecessor cost more than the budget has left", () => {
+    const s = inPlay("allies");
+    toConstruction(s);
+    // Clock readings in the order the tick takes them: start, before and after the first action (50 ms), then the budget check twice.
+    const readings = [0, 0, 50, 50, 50, 50, 50, 50];
+    const scripted = () => readings.shift() ?? 50;
+    const before = Object.keys(s.state.units).length;
+    expect(computerTick(s, 60, scripted)).toBe("more");
+    expect(Object.keys(s.state.units).length - before).toBe(1); // one build; 10 ms are left but the last action took 50
+  });
+
+  it("writes the ground moves of a turn up in one log line, not one line each", () => {
+    const s = inPlay("allies");
+    const logBefore = s.log.length;
+    for (let i = 0; i < 30 && computerToMove(s); i++) expect(computerTick(s, 1e9)).not.toBe("stuck");
+    const mine = s.log.slice(logBefore).filter((l) => l.startsWith("Computer ("));
+    expect(mine.filter((l) => / Moves (a unit|\d+ units) from /.test(l))).toEqual([]);
+    expect(mine.filter((l) => /moved \d+ units? in \d+ moves?/.test(l))).toHaveLength(1);
+  });
 });
 
 /** Ticks the computer through the steps before construction, each of which must finish in one tick, until it waits at 8b. */
