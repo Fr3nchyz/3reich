@@ -28,7 +28,7 @@ The game can be opened in a browser, any of the four scenarios (1939, Campaign, 
 | 4 Economy and turn skeleton | Part 1 built: BRP ledger, the yearly spending limit, declarations of war at step 1 (35 / 10 BRPs), the U.S. entering in Spring 1942, Initiative reading real wars. Part 2 built: construction at step 8b (costs, dates, home-territory placement as an approximation until supply and control exist) and BRP grants at 9a. Not built: Year Start Sequence arithmetic, front options (spec 02, "As built") |
 | 5 Movement, ZOC, supply | Spec written (03); not built |
 | 6 Combat, air, naval | Tables and resolvers exist and are verified; spec written (04); not wired to actions |
-| 7 Computer opponent | Spec written (05); not built (today's "computer" only places forces) |
+| 7 Computer opponent | Started: layer 3 for the steps that wait today (declarations, construction, grants, end of turn) in `src/ai/`, and it plays the other side in the browser; setup is still the placeholder, no evaluation or strength levels yet (spec 05, "As built") |
 | 8 Play screens | Setup screen done (mouse and touch); everything else waits for rules |
 | Release 1 (1939 vs the computer) | Not reached |
 

@@ -34,6 +34,8 @@ export interface Session {
   ctx: GameContext;
   state: GameState;
   humanSide: Side;
+  /** The game's seed; the computer's tie-breaks use it too, so a game replays the same. */
+  seed: number;
   log: string[];
   /** The counter chosen to place next, if any. */
   selected: UnitSpec | null;
@@ -54,6 +56,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     ctx: { map: MAP, scenario },
     state: newGame(scenario, seed),
     humanSide: side,
+    seed,
     log: [`${scenario.name} started. You play the ${sideName(side)} side; the computer sets up the other.`],
     selected: null,
     mode: "place",

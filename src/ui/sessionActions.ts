@@ -3,6 +3,7 @@ import type { MapHex } from "../engine/map";
 import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
+import { computerToMove } from "./computerPlay";
 import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
@@ -41,7 +42,7 @@ export function buildInBox(s: Session, box: OffMapBox): void {
 /** A tap on a map hex during setup: place the chosen counter there, or take the top one back. */
 export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
-  if (s.state.phase === "player-turn") return tapToBuild(s, h);
+  if (s.state.phase === "player-turn") return computerToMove(s) ? undefined : tapToBuild(s, h);
   const owner = currentSetupOwner(s.state);
   if (!owner || sideOfOwner(owner) !== s.humanSide) return;
   if (s.mode === "remove") {
