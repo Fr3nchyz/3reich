@@ -14,6 +14,7 @@ import { createComputerLoop } from "./ui/computerLoop";
 import { computerToMove } from "./ui/computerPlay";
 import { createSession, setupView, type Session } from "./ui/session";
 import { normaliseMode, tapHex } from "./ui/sessionActions";
+import { bindOverlay } from "./ui/overlayToggle";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { statusHtml } from "./ui/statusView";
@@ -31,6 +32,7 @@ const view = renderMap(shell.map, MAP, {
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
+const overlay = bindOverlay(shell, view, () => session);
 
 /** The scenarios whose setup can be played now; the others wait for map data the printed card lacks. */
 shell.scenario.innerHTML = SCENARIOS.map((s) => {
@@ -57,6 +59,7 @@ function render(): void {
   const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
   shell.status.innerHTML = statusHtml(session, setup, actions);
   syncMap(view, session, setup);
+  overlay.refresh(session);
   bindStatus(shell.status, session, setup, actions, render);
   computer.kick();
 }

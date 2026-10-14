@@ -9,9 +9,13 @@ const SHELL = `
     <label><input type="checkbox" id="fronts"> Show fronts</label>
     <button id="wholemap">Whole map</button>
   </header>
-  <div class="map-wrap">
-    <div id="map" class="map-fill"></div>
-    <div id="hexinfo" class="hexinfo">Tap or hover a hex</div>
+  <div class="map-dock">
+    <div class="map-wrap">
+      <div id="map" class="map-fill"></div>
+      <div id="hexinfo" class="hexinfo">Tap or hover a hex</div>
+      <div id="legend" class="legend" hidden></div>
+    </div>
+    <div class="map-tools"><button id="overlay" aria-pressed="false">Show control and zones</button></div>
   </div>
   <section id="status"></section>`;
 
@@ -25,6 +29,9 @@ export interface Shell {
   newGame: HTMLElement;
   fronts: HTMLInputElement;
   wholeMap: HTMLElement;
+  /** The button that switches the control overlay on and off, and the key shown over the map while it is on. */
+  overlay: HTMLButtonElement;
+  legend: HTMLElement;
 }
 
 export function mountShell(app: HTMLElement): Shell {
@@ -39,5 +46,7 @@ export function mountShell(app: HTMLElement): Shell {
     newGame: el("newgame"),
     fronts: el<HTMLInputElement>("fronts"),
     wholeMap: el("wholemap"),
+    overlay: el<HTMLButtonElement>("overlay"),
+    legend: el("legend"),
   };
 }
