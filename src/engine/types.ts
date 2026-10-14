@@ -1,5 +1,6 @@
 import type { HexId } from "./hex";
 import type { Front } from "./map";
+import type { CombatRecord } from "./combat-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -276,6 +277,8 @@ export interface GameState {
   noGrants: [PowerId, PowerId][];
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
+  /** Ground combat so far in the current Player Turn (step 7h); absent until the first attack. */
+  combat?: CombatRecord;
   /** Deterministic RNG state; advanced on every roll. */
   rngState: number;
 }

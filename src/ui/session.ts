@@ -89,6 +89,14 @@ function describeEvent(e: GameEvent): string | null {
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
     case "WAR_DECLARED":
       return `${POWER_NAMES[e.by]} declares war on ${nameOf(e.on)} (${e.cost} BRPs).`;
+    case "COMBAT_RESOLVED":
+      return `Attack on ${e.target}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
+    case "UNIT_ELIMINATED":
+      return `${OWNER_NAMES[e.owner]} unit ${e.unitId} at ${e.at} is eliminated.`;
+    case "LOSSES_CHOSEN":
+      return `${sideName(e.side)} chooses losses: ${e.units.join(", ")}.`;
+    case "UNITS_ADVANCED":
+      return `${e.units.join(", ")} advance into ${e.to}.`;
     case "GAME_OVER":
       return `The scenario ends after ${cap(e.season)} ${e.year}.`;
   }

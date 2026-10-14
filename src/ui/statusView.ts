@@ -42,6 +42,12 @@ function label(a: Action): string {
       return `${POWER_NAMES[a.by]} declares war on ${nameOf(a.on)} (${isMajorPower(a.on) ? BRP_COSTS.declareWarOnMajorPower : BRP_COSTS.declareWarOnMinorCountry} BRPs)`;
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
+    case "ATTACK":
+      return `Attack ${a.target} with ${a.units.join(", ")}`;
+    case "ALLOCATE_LOSSES":
+      return `Lose ${a.units.join(", ")}`;
+    case "ADVANCE":
+      return `Advance ${a.units.join(", ")} into ${a.to}`;
     default:
       return a.type;
   }

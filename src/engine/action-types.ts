@@ -1,4 +1,5 @@
 import type { HexId } from "./hex";
+import type { CombatRound } from "./combat";
 import type { Combatant, ForceOwner, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
@@ -17,6 +18,12 @@ export type Action =
   | { type: "BUILD"; owner: PowerId; unit: { type: UnitType; strength: number }; at: HexId | OffMapBox }
   /** Step 9a: grant BRPs to an allied Major Power. */
   | { type: "GRANT_BRPS"; from: PowerId; to: PowerId; amount: number }
+  /** Step 7h: ground units attack an adjacent enemy hex (Ref 12.1; each unit attacks one hex, PC README 14.23). */
+  | { type: "ATTACK"; side: Side; units: string[]; target: HexId }
+  /** Step 7h: the side that must lose factors after an Exchange chooses which of its units go (Ref 12.2). */
+  | { type: "ALLOCATE_LOSSES"; side: Side; units: string[] }
+  /** Step 7h: attackers advance into the hex the defenders left (TODO(verify) in attack.ts). */
+  | { type: "ADVANCE"; side: Side; units: string[]; to: HexId }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -39,6 +46,11 @@ export type GameEvent =
   | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
+  /** One ground attack resolved: the odds, every die roll and how it ended (Ref 12.1-12.2). */
+  | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange" }
+  | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId }
+  | { type: "LOSSES_CHOSEN"; side: Side; units: string[] }
+  | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
   | { type: "GAME_OVER"; year: number; season: Season };
 
 export type ActionResult =

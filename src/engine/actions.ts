@@ -2,6 +2,9 @@ import type { GameContext } from "./context";
 import { describeStep, FIRST_STEP, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
+import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
+import { applyAllocation } from "./attack-losses";
+import { combatOf } from "./combat-record";
 import { applyBuild, legalBuilds } from "./construction";
 import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
@@ -19,6 +22,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
   if (step === "9a") return legalGrants(state);
   return [];
@@ -31,7 +35,8 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
-  return [...stepActions(ctx, state, step), moveOn];
+  // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
+  return combatOf(state).pending && step === "7h" ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
 /** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
@@ -49,6 +54,12 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return applyMoveOn(ctx, state, action);
     case "DECLARE_WAR":
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
+    case "ATTACK":
+      return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
+    case "ALLOCATE_LOSSES":
+      return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(state, action));
+    case "ADVANCE":
+      return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(state, action));
     case "BUILD":
       return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
     case "GRANT_BRPS":
@@ -78,6 +89,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (step === "7h" && combatOf(state).pending) return { ok: false, error: "An Exchange in step 7h is waiting for its losses to be chosen." };
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
   }
