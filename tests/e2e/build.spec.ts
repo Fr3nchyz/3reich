@@ -18,7 +18,7 @@ test("1939, Axis: get to construction, pick a counter, tap a yellow hex, the cou
   await expect(page.locator(".note").filter({ hasText: "Front Options (step 3)" })).toBeVisible();
   await page.locator("summary", { hasText: "Choose a Front Option" }).click();
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
-  await expect(page.locator(".log li").last()).toContainText("Axis choose the Offensive Option on the Eastern Front.");
+  await expect(page.locator(".log li").first()).toContainText("Axis choose the Offensive Option on the Eastern Front.");
   await page.locator(".actions button[data-action]").last().click();
   // Step 6f (ground movement): move nothing.
   await expect(page.locator(".turn")).toContainText("step 6f");
@@ -46,7 +46,7 @@ test("1939, Axis: get to construction, pick a counter, tap a yellow hex, the cou
   else await page.mouse.click(pt[0]!, pt[1]!);
 
   await expect(page.locator("g.units > g")).toHaveCount(before + 1);
-  await expect(page.locator(".log li").last()).toContainText("Germany builds a 3-factor infantry");
+  await expect(page.locator(".log li").first()).toContainText("Germany builds a 3-factor infantry");
   await expect(page.locator(".toast")).toBeEmpty();
   expect(errors).toEqual([]);
 });

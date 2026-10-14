@@ -14,6 +14,7 @@ import { createComputerLoop } from "./ui/computerLoop";
 import { computerToMove } from "./ui/computerPlay";
 import { createSession, setupView, type Session } from "./ui/session";
 import { normaliseMode, tapHex } from "./ui/sessionActions";
+import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
@@ -50,6 +51,7 @@ function start(scenario: Scenario, side: Side): void {
   shell.scenario.value = scenario.id;
   shell.side.value = side;
   view.focus([]);
+  shell.status.innerHTML = ""; // a new game starts its status column and log at the top
   render();
 }
 
@@ -57,7 +59,9 @@ function render(): void {
   normaliseMode(session);
   const setup = setupView(session);
   const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
+  const mark = captureLog(shell.status);
   shell.status.innerHTML = statusHtml(session, setup, actions);
+  restoreLog(shell.status, mark);
   syncMap(view, session, setup);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;
