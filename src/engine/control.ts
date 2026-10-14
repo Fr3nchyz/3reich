@@ -88,7 +88,6 @@ export function controlAfterEntry(ctx: GameContext, state: GameState, unit: Pick
   const h = ctx.map.hexes[hex];
   if (!h?.land || !CONTROL_CHANGING_TYPES.includes(unit.type)) return null;
   const now = controllerOf(ctx, state, hex);
-  if (now === unit.owner) return null;
   if (now !== null) return areEnemies(state, unit.owner, now) ? unit.owner : null;
   return isMinorCountry(h.country) && atWar(state, unit.owner, h.country) ? unit.owner : null;
 }

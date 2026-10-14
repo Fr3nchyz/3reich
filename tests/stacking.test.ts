@@ -11,7 +11,7 @@ describe("overstacked hexes", () => {
   it("two ground units fit, three are over; airborne never count (Ref 5.0)", () => {
     expect(overstacks(CTX, board([inf("u1", "M33"), inf("u2", "M33")]))).toEqual([]);
     const three = board([inf("u1", "M33"), inf("u2", "M33"), inf("u3", "M33")]);
-    expect(overstacks(CTX, three)).toEqual([{ hex: "M33", kind: "ground", unitIds: ["u1", "u2", "u3"] }]);
+    expect(overstacks(CTX, three)).toEqual([{ hex: "M33", kind: "ground", side: "axis", unitIds: ["u1", "u2", "u3"] }]);
     const jump = board([inf("u1", "M33"), inf("u2", "M33"), counter("u3", "germany", "airborne", 2, "M33", 5), counter("u4", "germany", "airborne", 2, "M33", 5)]);
     expect(overstacks(CTX, jump)).toEqual([]);
   });
@@ -31,13 +31,38 @@ describe("overstacked hexes", () => {
   it("five air factors per base: 5 fit, 6 are over (Ref 5.0)", () => {
     const air = (id: string, f: number) => counter(id, "germany", "air", f, "L31", 6);
     expect(overstacks(CTX, board([air("u1", 3), air("u2", 2)]))).toEqual([]);
-    expect(overstacks(CTX, board([air("u1", 3), air("u2", 3)]))).toEqual([{ hex: "L31", kind: "air", unitIds: ["u1", "u2"] }]);
+    expect(overstacks(CTX, board([air("u1", 3), air("u2", 3)]))).toEqual([{ hex: "L31", kind: "air", side: "axis", unitIds: ["u1", "u2"] }]);
+  });
+
+  it("the air limit is per base and the naval limit per port: 3+3 air on open ground and 20+20 fleets at sea are fine (Ref 5.0, 20.0)", () => {
+    const air = (id: string, at = "M34") => counter(id, "germany", "air", 3, at, 6);
+    expect(overstacks(CTX, board([air("u1"), air("u2")]))).toEqual([]); // M34 is a plain hex with no base
+    const withAirbase = board([air("u1"), air("u2"), counter("u3", "germany", "airbase", 1, "M34")]);
+    expect(overstacks(CTX, withAirbase).map((o) => o.kind)).toEqual(["air"]); // an airbase counter makes it a base
+    expect(overstacks(CTX, board([air("u1", "N33"), air("u2", "N33")]))).toHaveLength(1); // Lodz is a city
+    expect(CTX.map.hexes.A24!.land).toBeNull();
+    const ship = (id: string, at: string) => counter(id, "germany", "fleet", 20, at);
+    expect(overstacks(CTX, board([ship("u1", "A24"), ship("u2", "A24")]))).toEqual([]);
+    expect(overstacks(CTX, board([ship("u1", "J35"), ship("u2", "J35")]))).toHaveLength(1);
+    expect(overstacks(CTX, board([ship("u1", "M34"), ship("u2", "M34")]))).toEqual([]); // land with no port
+  });
+
+  it("each side's units are counted apart: two Germans and a Pole in one hex are not an overstack", () => {
+    const pole = counter("u3", "poland", "infantry", 2, "M33", 3);
+    expect(overstacks(CTX, board([inf("u1", "M33"), inf("u2", "M33"), pole]))).toEqual([]);
+    const s = board([inf("u1", "M33"), inf("u2", "M33"), inf("u4", "M33"), pole]);
+    expect(overstacks(CTX, s)).toEqual([{ hex: "M33", kind: "ground", side: "axis", unitIds: ["u1", "u2", "u4"] }]);
+    expect(overstacksOf(CTX, s, "allies")).toEqual([]);
+    expect(eliminateOverstack(CTX, s, "allies", { M33: ["u3"] }).ok).toBe(false);
+    expect(eliminateOverstack(CTX, s, "axis", { M33: ["u3"] }).ok).toBe(false); // the enemy's unit is not the Axis player's to choose
+    const r = eliminateOverstack(CTX, s, "axis", { M33: ["u4"] });
+    expect(r.ok && Object.keys(r.state.units)).toEqual(["u1", "u2", "u3"]);
   });
 
   it("36 naval factors per port: 36 fit, 37 are over (Ref 5.0)", () => {
     const ship = (id: string, f: number) => counter(id, "germany", "fleet", f, "J35");
     expect(overstacks(CTX, board([ship("u1", 20), ship("u2", 16)]))).toEqual([]);
-    expect(overstacks(CTX, board([ship("u1", 20), ship("u2", 17)]))).toEqual([{ hex: "J35", kind: "naval", unitIds: ["u1", "u2"] }]);
+    expect(overstacks(CTX, board([ship("u1", 20), ship("u2", 17)]))).toEqual([{ hex: "J35", kind: "naval", side: "axis", unitIds: ["u1", "u2"] }]);
   });
 
   it("reports several hexes in hex order, each side's own, and counters in boxes are never overstacked", () => {
@@ -99,6 +124,13 @@ describe("eliminating overstacked units (steps 6g and 9j)", () => {
     expect(eliminateOverstack(CTX, s, "axis", { L31: ["u2"] }).ok).toBe(true); // exactly 5 left
     expect(eliminateOverstack(CTX, s, "axis", { L31: ["u2", "u3"] }).ok).toBe(false); // one of them is needless
     expect(eliminateOverstack(CTX, s, "axis", { L31: [] }).ok).toBe(false);
+  });
+
+  it("refuses to eliminate a unit of another kind in the same hex, or one that is elsewhere", () => {
+    const s = board([inf("u1", "M33"), inf("u2", "M33"), inf("u3", "M33"), counter("u4", "germany", "air", 3, "M33", 6), inf("u5", "M34")]);
+    expect(eliminateOverstack(CTX, s, "axis", { M33: ["u1", "u4"] })).toEqual({ ok: false, error: "u4 is not part of an overstack." });
+    expect(eliminateOverstack(CTX, s, "axis", { M33: ["u1", "u5"] })).toEqual({ ok: false, error: "u5 is not part of an overstack." });
+    expect(eliminateOverstack(CTX, s, "axis", { M33: ["u1"] }).ok).toBe(true);
   });
 
   it("a hex over in two kinds needs both settled", () => {

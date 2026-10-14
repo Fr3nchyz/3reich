@@ -1,7 +1,7 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import { GROUND_FOR_STACKING, stackingProblem } from "./placement";
+import { baseSuits, GROUND_FOR_STACKING, stackingProblem } from "./placement";
 import { sideOfOwner } from "./setup";
 import type { GameState, Side, Unit } from "./types";
 
@@ -22,14 +22,17 @@ export type StackKind = "ground" | "air" | "naval";
 export interface Overstack {
   hex: HexId;
   kind: StackKind;
-  /** The units of that kind in the hex, in id order: the ones the owner may choose from. */
+  /** The side whose units these are: each side's units are counted apart (an enemy never shares a hex). */
+  side: Side;
+  /** The units of that kind and side in the hex, in id order: the ones the owner may choose from. */
   unitIds: string[];
 }
 
 const kindOf = (u: Unit): StackKind | null =>
   GROUND_FOR_STACKING.includes(u.type) ? "ground" : u.type === "air" ? "air" : u.type === "fleet" ? "naval" : null;
 
-const idOrder = (a: Unit, b: Unit) => Number(a.id.replace(/\D/g, "")) - Number(b.id.replace(/\D/g, "")) || (a.id < b.id ? -1 : 1);
+/** Unit ids are "u1", "u2", ...: oldest first. */
+const idOrder = (a: Unit, b: Unit) => Number(a.id.replace(/\D/g, "")) - Number(b.id.replace(/\D/g, ""));
 
 const unitsByHex = (ctx: GameContext, state: GameState): Map<HexId, Unit[]> => {
   const out = new Map<HexId, Unit[]>();
@@ -40,8 +43,15 @@ const unitsByHex = (ctx: GameContext, state: GameState): Map<HexId, Unit[]> => {
   return out;
 };
 
-/** Whether `kind` is over its limit in the hex, given just that hex's units. Reuses placement's per-counter test. */
+/**
+ * Whether `kind` is over its limit in the hex, given just one side's units there. Reuses placement's per-counter test.
+ * Ref 5.0 and RULES.md: the air limit is per BASE and the naval limit per PORT, so air units off a base (a city, port,
+ * capital or an airbase counter) and fleets outside a port are not counted.
+ * TODO(verify): whether air units in flight or fleets at sea have a stacking limit of their own.
+ */
 function overLimit(ctx: GameContext, state: GameState, hex: HexId, here: readonly Unit[], kind: StackKind): boolean {
+  if (kind === "air" && !baseSuits(ctx, "air", hex) && !here.some((u) => u.type === "airbase")) return false;
+  if (kind === "naval" && !baseSuits(ctx, "fleet", hex)) return false;
   // A counter is "in the way" if re-adding it to the hex without it breaks a limit. The year is set past 1941 so Ref 26.0 is not counted.
   return here.some((u) => {
     if (kindOf(u) !== kind) return false;
@@ -51,12 +61,15 @@ function overLimit(ctx: GameContext, state: GameState, hex: HexId, here: readonl
   });
 }
 
-/** Every hex and kind of counter that is over its limit now, in hex order. */
+/** Every hex, side and kind of counter that is over its limit now, in hex order. */
 export function overstacks(ctx: GameContext, state: GameState): Overstack[] {
   const out: Overstack[] = [];
   for (const [hex, here] of [...unitsByHex(ctx, state)].sort(([a], [b]) => (a < b ? -1 : 1))) {
-    for (const kind of ["ground", "air", "naval"] as const) {
-      if (overLimit(ctx, state, hex, here, kind)) out.push({ hex, kind, unitIds: here.filter((u) => kindOf(u) === kind).map((u) => u.id) });
+    for (const side of ["axis", "allies"] as const) {
+      const mine = here.filter((u) => sideOfOwner(u.owner) === side);
+      for (const kind of ["ground", "air", "naval"] as const) {
+        if (overLimit(ctx, state, hex, mine, kind)) out.push({ hex, kind, side, unitIds: mine.filter((u) => kindOf(u) === kind).map((u) => u.id) });
+      }
     }
   }
   return out;
@@ -64,7 +77,7 @@ export function overstacks(ctx: GameContext, state: GameState): Overstack[] {
 
 /** The overstacks that hold units of this side: the ones its player must resolve. */
 export const overstacksOf = (ctx: GameContext, state: GameState, side: Side): Overstack[] =>
-  overstacks(ctx, state).filter((o) => o.unitIds.some((id) => sideOfOwner(state.units[id]!.owner) === side));
+  overstacks(ctx, state).filter((o) => o.side === side);
 
 /** Hexes where British and French units share a hex before 1942 (Ref 26.0). */
 export function angloFrenchHexes(ctx: GameContext, state: GameState): HexId[] {
@@ -78,7 +91,7 @@ const without = (state: GameState, ids: readonly string[]): GameState => ({
 });
 
 const stillOver = (ctx: GameContext, state: GameState, o: Overstack, removed: readonly string[]): boolean =>
-  overstacks(ctx, without(state, removed)).some((x) => x.hex === o.hex && x.kind === o.kind);
+  overstacks(ctx, without(state, removed)).some((x) => x.hex === o.hex && x.kind === o.kind && x.side === o.side);
 
 /** Why the owner's choice of units to eliminate does not settle this overstack, or null if it does and takes no more than needed. */
 export function eliminationProblem(ctx: GameContext, state: GameState, o: Overstack, chosen: readonly string[]): string | null {
@@ -129,8 +142,6 @@ export function eliminateOverstack(
   const removed: string[] = [];
   for (const o of todo) {
     const mine = (choices[o.hex] ?? []).filter((id) => o.unitIds.includes(id));
-    const foreign = mine.find((id) => sideOfOwner(state.units[id]!.owner) !== side);
-    if (foreign) return { ok: false, error: `${foreign} is not a ${side} unit.` };
     // Several kinds can be over at once in one hex: judge each kind by the units named for it.
     const problem = eliminationProblem(ctx, state, o, mine);
     if (problem) return { ok: false, error: problem };

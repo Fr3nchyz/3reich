@@ -120,6 +120,25 @@ describe("control changes when a ground unit enters (Ref 7.0)", () => {
     expect(r.events).toEqual([{ type: "HEX_CONTROL_CHANGED", hex: "M25", from: null, to: "germany", unitId: "u1" }]);
   });
 
+  it("Minor-Allies take hexes for the Axis only while active; Free France takes them for the Allies", () => {
+    const ctx = ctxFor(SCENARIO_1942);
+    const s = board([], SCENARIO_1942);
+    // Warsaw is German in 1942: a Hungarian or Rumanian unit is an ally there, a Soviet one an enemy.
+    for (const owner of ["finland", "rumania", "hungary", "bulgaria"] as const) {
+      expect(sideInWar(s, owner), owner).toBe("axis");
+      expect(areEnemies(s, owner, "ussr"), owner).toBe(true);
+      expect(areEnemies(s, owner, "germany"), owner).toBe(false);
+      const off = { ...s, minorAllies: s.minorAllies.map((m) => ({ ...m, active: m.owner !== owner })) };
+      expect(sideInWar(off, owner), `${owner} inactive`).toBeNull();
+      expect(sideInWar(off, owner === "finland" ? "hungary" : "finland")).toBe("axis");
+    }
+    const held = { ...s, control: { M35: "ussr" as const } };
+    expect(controlAfterEntry(ctx, held, { owner: "hungary", type: "infantry" }, "M35")).toBe("hungary");
+    expect(sideInWar(s, "free-france")).toBe("allies");
+    expect(controlAfterEntry(ctx, s, { owner: "free-france", type: "infantry" }, "M35")).toBe("free-france");
+    expect(areEnemies(s, "free-france", "germany")).toBe(true);
+  });
+
   it("the USSR retakes a hex Germany holds (1942)", () => {
     const ctx = ctxFor(SCENARIO_1942);
     const s = board([], SCENARIO_1942);

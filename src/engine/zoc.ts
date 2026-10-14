@@ -31,6 +31,8 @@ export const ZOC_POLICY: ZocPolicy = { friendlyUnitNegates: true };
  * Whether a ground unit may cross from one hex into the next (Ref 4.3, 4.6): a land hexside, or a
  * crossing arrow; never a Qattara hexside, never open water. Rivers and the Suez Canal do not stop it.
  * The two hexes must be adjacent and on the map.
+ * TODO(verify, docs/RULES.md "Map details"): 25 hexsides where the coast reaches only one end are crossable by
+ * land in the original game but not on our map (and K32-K33 the reverse); ZOC follows our map until that is decided.
  */
 export function canCross(ctx: GameContext, from: HexId, to: HexId): boolean {
   const a = parseHexId(from);

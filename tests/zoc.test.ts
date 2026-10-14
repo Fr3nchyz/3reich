@@ -42,8 +42,8 @@ describe("which hexes a ground unit exerts a ZOC into", () => {
     expect(zocOfUnit(CTX, german("u1", "L24"))).not.toContain("K24");
   });
 
-  it("across a crossing arrow, in both directions: Messina, the Turkish Straits, Denmark (Ref 4.6)", () => {
-    for (const [a, b] of [["DD21", "DD22"], ["Z33", "Z34"], ["AA31", "BB31"], ["I30", "I31"], ["I31", "I32"], ["F33", "G32"]]) {
+  it("across a crossing arrow, in both directions: Messina, the Turkish Straits, Denmark, Kerch, Scotland (Ref 4.6)", () => {
+    for (const [a, b] of [["DD21", "DD22"], ["Z33", "Z34"], ["AA31", "BB31"], ["I30", "I31"], ["I31", "I32"], ["F33", "G32"], ["U40", "U41"], ["B29", "C28"]]) {
       expect(MAP.hexsides[[a, b].sort().join("-")] ?? MAP.hexsides[`${a}-${b}`], `${a}-${b}`).toBeDefined();
       expect(zocOfUnit(CTX, german("u1", a!)), `${a} into ${b}`).toContain(b);
       expect(zocOfUnit(CTX, german("u1", b!)), `${b} into ${a}`).toContain(a);
@@ -84,6 +84,26 @@ describe("whose ZOC", () => {
     expect(zocSources(CTX, s, "allies", "M34")).toEqual(["u1", "u2"]);
     expect(zocSources(CTX, s, "allies", "M33")).toEqual([]);
     expect(zocSources(CTX, s, "axis", "M34")).toEqual([]);
+  });
+
+  it("Minor-Allies exert a ZOC only while active; Free France fights on the Allied side", () => {
+    const ctx = ctxFor(SCENARIO_1942);
+    const at = { finland: "D43", rumania: "S33", hungary: "P33", bulgaria: "AA33" } as const;
+    for (const [owner, hex] of Object.entries(at)) {
+      const unit = counter("u1", owner as keyof typeof at, "infantry", 2, hex, 3);
+      const on = board([unit], SCENARIO_1942);
+      expect(zocHexes(ctx, on, "axis").size, `${owner} active`).toBeGreaterThan(0);
+      expect(zocHexes(ctx, on, "allies").size).toBe(0);
+      const off = board([unit], SCENARIO_1942, { minorAllies: on.minorAllies.map((m) => ({ ...m, active: false })) });
+      expect(zocHexes(ctx, off, "axis").size, `${owner} inactive`).toBe(0);
+      expect(zocHexes(ctx, off, "allies").size).toBe(0);
+      // Only the named ally is switched off: the others still count.
+      const one = board([unit], SCENARIO_1942, { minorAllies: on.minorAllies.map((m) => ({ ...m, active: m.owner !== owner })) });
+      expect(zocHexes(ctx, one, "axis").size, `${owner} alone inactive`).toBe(0);
+    }
+    const free = board([counter("u1", "free-france", "infantry", 2, "M33", 3)], SCENARIO_1942);
+    expect(zocHexes(ctx, free, "allies").has("M34")).toBe(true);
+    expect(zocHexes(ctx, free, "axis").size).toBe(0);
   });
 
   it("1942: Soviet units exert ZOC against the Germans", () => {
