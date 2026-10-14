@@ -95,15 +95,30 @@ svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; st
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 .icon { vertical-align: middle; }
-@media (max-width: 640px) {
-  /* Phone: the map stays in view (about half the screen) while the panels scroll under it, so a tap on a chip never loses the map. */
+.map-toast { display: none; }
+/* Phone, portrait or landscape: the map stays in view while the panels scroll under it, so a tap on a chip never loses the map. */
+@media (max-width: 640px), (max-height: 480px) {
+  html { scroll-padding-top: var(--dock-h, 56dvh); }
   header { padding: .35rem .75rem; gap: .35rem .9rem; }
   header h1 { font-size: 1.15rem; }
   .map-dock { position: sticky; top: 0; z-index: 10; background: var(--edge); }
   .map-wrap { height: 46vh; height: 46dvh; }
   .map-tools { padding: .15rem .5rem; }
   .legend { font-size: .7rem; left: .35rem; top: .35rem; max-width: calc(100% - .7rem); }
+  /* A rejected move is told over the map too: the panel that holds the message is scrolled out of sight. */
+  .map-toast { display: block; position: absolute; left: .5rem; right: .5rem; bottom: 3rem; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; background: rgba(47, 37, 34, .92); color: #ffd27a; border-radius: 4px; pointer-events: none; }
+  .map-toast:empty { display: none; }
   main { margin-top: .75rem; }
+}
+/* Short screens (a phone on its side): the map block is about 40% of the height, the toggle sits over the map's corner. */
+@media (max-height: 480px) {
+  .map-wrap { height: 40vh; height: 40dvh; }
+  .map-dock { border-bottom: 3px solid var(--border); }
+  .map-tools { position: absolute; top: .35rem; right: .35rem; padding: 0; background: none; border: 0; }
+  .legend { top: .35rem; left: .35rem; max-width: calc(100% - 9.5rem); font-size: .65rem; }
+  .map-toast { bottom: 2.4rem; }
+}
+@media (max-width: 640px) {
   table { display: block; overflow-x: auto; }
   .turn { font-size: 1rem; }
 }

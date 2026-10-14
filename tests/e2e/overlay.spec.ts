@@ -24,6 +24,7 @@ test("the control overlay toggles on and off, changing the map and showing its k
   await expect(legend).toBeVisible();
   await expect(legend).toContainText("who holds the hex");
   await expect(legend).toContainText("Zones of Control");
+  await expect(button, "the label stays; only aria-pressed changes").toHaveText("Control and zones");
   expect(await control.count()).toBeGreaterThan(100);
   expect(await zoc.count()).toBeGreaterThan(0);
 

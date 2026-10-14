@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { controllerOf, sideInWar } from "../src/engine/control";
-import { zocHexes } from "../src/engine/zoc";
+import { enemyZocFor, mustStop, zocHexes } from "../src/engine/zoc";
 import { HATCH_ID, overlayMarkup } from "../src/ui/mapOverlay";
 import { overlayCells, overlayLegend } from "../src/ui/overlayModel";
 import { board, counter } from "./board";
@@ -58,19 +58,37 @@ describe("Zones of Control of the side not to move", () => {
     const units = [german("u1", "M34"), polish("u2", "M35")];
     const axisMove = overlayCells(CTX, board(units, undefined, { activeSide: "axis" }));
     expect(axisMove.zocSide).toBe("allies");
-    expect(axisMove.zoc).toEqual([...zocHexes(CTX, board(units), "allies")].sort());
-    expect(axisMove.zoc).toContain("M34"); // the Polish infantry reach the German hex
+    expect(axisMove.zoc).toEqual([...enemyZocFor(CTX, board(units), "axis")].sort());
+    expect(axisMove.zoc).toContain("N34"); // next to the Polish infantry
     const alliesMove = overlayCells(CTX, board(units, undefined, { activeSide: "allies" }));
     expect(alliesMove.zocSide).toBe("axis");
-    expect(alliesMove.zoc).toEqual([...zocHexes(CTX, board(units), "axis")].sort());
-    expect(alliesMove.zoc).toContain("M35");
+    expect(alliesMove.zoc).toEqual([...enemyZocFor(CTX, board(units), "allies")].sort());
     expect(alliesMove.zoc).not.toEqual(axisMove.zoc);
+  });
+
+  // Ref 6.0 as read in zoc.ts (TODO(verify) friendlyUnitNegates): the key says a unit "must stop" there, so only hexes where mustStop holds are hatched.
+  it("leaves clear a hex that holds the mover's own ground unit: hatched exactly where the mover must stop", () => {
+    const units = [german("u1", "M34"), polish("u2", "M35")];
+    const s = board(units, undefined, { activeSide: "axis" });
+    expect(zocHexes(CTX, s, "allies").has("M34")).toBe(true); // the raw Polish ZOC reaches the German hex
+    expect(mustStop(CTX, s, "axis", "M34")).toBe(false); // but the German unit there cancels it
+    const { zoc } = overlayCells(CTX, s);
+    expect(zoc).not.toContain("M34");
+    for (const h of zocHexes(CTX, s, "allies")) expect(zoc.includes(h), h).toBe(mustStop(CTX, s, "axis", h));
   });
 
   it("is empty with no ground units, and air units and fleets exert none", () => {
     expect(overlayCells(CTX, board([])).zoc).toEqual([]);
     const air = counter("u3", "poland", "air", 4, "M35", 6);
     expect(overlayCells(CTX, board([air], undefined, { activeSide: "axis" })).zoc).toEqual([]);
+  });
+});
+
+describe("one position, one result", () => {
+  it("gives the same object for the same game state, so an unchanged position is not redrawn, and a new one for a changed state", () => {
+    const s = board([german("u1", "M34")]);
+    expect(overlayCells(CTX, s)).toBe(overlayCells(CTX, s));
+    expect(overlayCells(CTX, { ...s, activeSide: "allies" })).not.toBe(overlayCells(CTX, s));
   });
 });
 
@@ -96,10 +114,11 @@ describe("drawing", () => {
 describe("the key", () => {
   it("names the side whose ZOC is hatched and the side that must stop, in plain words", () => {
     const axisMove = overlayLegend(overlayCells(CTX, board([], undefined, { activeSide: "axis" }))).join(" ");
-    expect(axisMove).toMatch(/Allies Zones of Control\. Axis ground units entering one must stop/);
+    expect(axisMove).toMatch(/Allies Zones of Control\. Axis ground units entering one must stop \(a hex with an Axis ground unit/);
     const alliesMove = overlayLegend(overlayCells(CTX, board([], undefined, { activeSide: "allies" }))).join(" ");
     expect(alliesMove).toMatch(/Axis Zones of Control\. Allies ground units entering one must stop/);
     expect(axisMove).toMatch(/Axis/);
     expect(axisMove).toMatch(/green = Allies/);
+    expect(axisMove).not.toMatch(/yet/); // Vichy and the USSR in 1939 are neutral, not "not yet" anything
   });
 });

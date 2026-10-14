@@ -108,7 +108,7 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="bays">${buildBays(map)}</g>
       <g class="front-tint" style="display:${showFronts ? "inline" : "none"}">${hexLayers.fronts}</g>
       ${HATCH_DEFS}
-      <g class="overlay"></g>
+      <g class="overlay" aria-hidden="true"></g>
       <g class="rivers">${sides.rivers}</g>
       <g class="borders">${sides.borders}</g>
       <g class="fronts">${sides.fronts}</g>

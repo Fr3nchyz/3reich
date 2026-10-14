@@ -60,6 +60,7 @@ function render(): void {
   shell.status.innerHTML = statusHtml(session, setup, actions);
   syncMap(view, session, setup);
   overlay.refresh(session);
+  shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
   computer.kick();
 }
