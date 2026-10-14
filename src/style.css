@@ -76,6 +76,9 @@ svg.map .terrain.swamp { fill: none; stroke: #5f7a68; stroke-width: .6; stroke-l
 svg.map g:not(.hexes), svg.map .hover { pointer-events: none; }
 svg.map .front-tint polygon { opacity: .28; }
 svg.map .wave { fill: none; stroke: #6f9fc4; stroke-width: .6; }
+svg.map .wateredges path { fill: none; pointer-events: none; stroke-linecap: round; }
+svg.map .wateredges .water-band { stroke: #6a9ec8; stroke-width: 3; }
+svg.map .wateredges .water-ripple { stroke: #e3f0f8; stroke-width: .8; stroke-dasharray: 1 2.2; }
 svg.map .rivers line { stroke: #3f7fbf; stroke-width: 1.4; stroke-linecap: round; }
 svg.map .borders line { stroke: #4a2f2b; stroke-width: 1.4; stroke-linecap: round; }
 svg.map .fronts line { stroke: #d01f2e; stroke-width: 1.1; stroke-linecap: round; }
