@@ -4,7 +4,6 @@ import { hex } from "../src/engine/hex";
 import { BAY_DEPTH, FORTRESS_INSET, SIZE, baysBetweenLand, cornersOf, hexCenter, hexCorners, midpoint, sideSegment } from "../src/ui/mapGeometry";
 import { highlightsMarkup, unitsMarkup } from "../src/ui/mapCounters";
 import { citySymbol } from "../src/ui/mapCities";
-import { counterLabel } from "../src/ui/mapStyle";
 import { buildBays, buildHexLayers, buildSideLayers } from "../src/ui/mapLayers";
 import type { Unit } from "../src/engine/types";
 
@@ -93,11 +92,6 @@ describe("map layers", () => {
 
 describe("counters on the map", () => {
   const unit = (id: string, at: string): Unit => ({ id, owner: "germany", type: "infantry", strength: 3, at, movement: 4 });
-
-  it("labels a counter with its type mark, strength and movement", () => {
-    expect(counterLabel({ type: "infantry", strength: 3, movement: 4 })).toBe("3-4");
-    expect(counterLabel({ type: "fleet", strength: 9, movement: undefined })).toBe("⚓9");
-  });
 
   it("draws a counter as cardboard in its nation's colour, with the unit symbol and the numbers", () => {
     const at = Object.keys(MAP.hexes)[0]!;

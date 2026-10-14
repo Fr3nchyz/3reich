@@ -44,3 +44,4 @@ svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; st
 header label { display: flex; align-items: center; gap: .4rem; }
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
+.icon { vertical-align: middle; }

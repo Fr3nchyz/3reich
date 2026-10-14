@@ -46,13 +46,5 @@ export const OWNER_COLOURS: Record<ForceOwner, { fill: string; text: string }> =
   bulgaria: { fill: "#b4b0a4", text: "#101418" },
 };
 
-const TYPE_MARK: Record<string, string> = { infantry: "", armor: "▭", airborne: "⌃", replacement: "r", air: "✈", fleet: "⚓", airbase: "", bridgehead: "" };
-
 /** The numbers printed on a counter: strength, and movement for ground and air units ("3-4", "9"). */
 export const counterNumber = (u: Pick<Unit, "strength" | "movement">): string => `${u.strength}${u.movement !== undefined ? `-${u.movement}` : ""}`;
-
-/** One counter's label: "3-4" for ground and air units, "9" for fleets, with a mark for the type. */
-export function counterLabel(u: Pick<Unit, "type" | "strength" | "movement">): string {
-  const mark = TYPE_MARK[u.type] ?? "";
-  return `${mark}${u.strength}${u.movement !== undefined ? `-${u.movement}` : ""}`;
-}
