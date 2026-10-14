@@ -1,0 +1,115 @@
+import { applyAction, legalActions, type Action, type GameEvent } from "../../src/engine/actions";
+import { chooseAction } from "../../src/ai";
+import { autoSetup } from "../../src/engine/autosetup";
+import type { GameContext } from "../../src/engine/context";
+import { newGame, turnIndex } from "../../src/engine/game";
+import { overstacks } from "../../src/engine/stacking";
+import type { GameState, Scenario } from "../../src/engine/types";
+import { MAP } from "../../src/data/map";
+import { SCENARIOS } from "./scenarios";
+import { turnLabel, TurnTally } from "./stats";
+import type { Anomaly, GameResult, RunOptions, TurnStats } from "./types";
+
+/** The defaults of the budgets that keep a run from looping. */
+export const STEP_LIMIT = 1000;
+export const TURN_LIMIT = 8000;
+
+const where = (s: GameState): string => `${turnLabel(s)}, ${s.activeSide}, ${s.position?.part === "player-turn" ? `step ${s.position.step}` : s.phase}`;
+const placeOf = (s: GameState): string => `${s.year}-${s.season}-${s.activeSide}-${s.position?.part === "player-turn" ? `${s.position.turn}-${s.position.step}` : s.phase}`;
+const sameAction = (a: Action, b: Action): boolean => JSON.stringify(a) === JSON.stringify(b);
+
+/** Things that must never be true of a state: a nation below zero BRPs, and (checked when a Player Turn has ended) a hex over its stacking limit. */
+export function auditState(ctx: GameContext, state: GameState, turnEnded: boolean): { kind: "negative-brp" | "overstack"; detail: string }[] {
+  const out: { kind: "negative-brp" | "overstack"; detail: string }[] = [];
+  for (const n of Object.values(state.nations)) if (n.brpTotal < 0) out.push({ kind: "negative-brp", detail: `${n.id} has ${n.brpTotal} BRPs` });
+  if (turnEnded) for (const o of overstacks(ctx, state)) out.push({ kind: "overstack", detail: `${o.kind} stack of ${o.unitIds.length} (${o.side}) at ${o.hex}` });
+  return out;
+}
+
+/** What picks the next action: the computer, unless a test puts something else in its place to provoke an anomaly. */
+export type Chooser = typeof chooseAction;
+
+/** Replacements for tests: another chooser, or scenario data (a shortened one) in place of the named scenario. */
+export interface Hooks {
+  choose?: Chooser;
+  scenario?: Scenario;
+}
+
+/**
+ * Plays one game with the computer on both sides, headless: the engine's automatic setup for every nation, then
+ * chooseAction for whichever side is to act, applied through applyAction, until the Game Turn limit or the end of
+ * the scenario. Never throws and never loops: a stuck state, a refused action, a step that does not advance or an
+ * exhausted budget stops the run and is listed in `anomalies`. Deterministic for a scenario and seed (the runtime is
+ * the only thing that varies).
+ */
+export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
+  const choose = hooks.choose ?? chooseAction;
+  const opt = { verify: true, stepLimit: STEP_LIMIT, turnLimit: TURN_LIMIT, ...options };
+  const started = performance.now();
+  const ctx: GameContext = { map: MAP, scenario: hooks.scenario ?? SCENARIOS[opt.scenario] };
+  const initial = newGame(ctx.scenario, opt.seed);
+  const anomalies: Anomaly[] = [];
+  const actions: Action[] = [];
+  const turns: TurnStats[] = [];
+  const seen = new Set<string>();
+  const note = (kind: Anomaly["kind"], s: GameState, detail: string) => {
+    const key = `${kind}|${where(s)}|${detail}`;
+    if (!seen.has(key)) anomalies.push({ kind, at: where(s), detail });
+    seen.add(key);
+  };
+
+  let state = initial;
+  let setupActions = 0;
+  try {
+    for (const a of autoSetup(ctx, state)) {
+      const r = applyAction(ctx, state, a);
+      if (!r.ok) throw new Error(`setup action ${JSON.stringify(a)} refused: ${r.error}`);
+      actions.push(a);
+      state = r.state;
+    }
+    setupActions = actions.length;
+  } catch (e) {
+    note("exception", state, `setup failed: ${(e as Error).message}`);
+  }
+
+  const stop = opt.turns === "end" ? Infinity : turnIndex(state) + opt.turns;
+  let tally = new TurnTally(turnLabel(state));
+  let place = "";
+  let stepCount = 0;
+  let turnCount = 0;
+  while (state.phase === "player-turn" && turnIndex(state) < stop) {
+    if (placeOf(state) !== place) { place = placeOf(state); stepCount = 0; }
+    if (++stepCount > opt.stepLimit) { note("no-progress", state, `more than ${opt.stepLimit} actions at one step`); break; }
+    if (++turnCount > opt.turnLimit) { note("turn-budget", state, `more than ${opt.turnLimit} actions in one Game Turn`); break; }
+    let events: GameEvent[];
+    let next: GameState;
+    let action: Action;
+    try {
+      const decision = choose(ctx, state, { seed: opt.seed });
+      if (!decision) { note("stuck", state, "the computer has no action to take"); break; }
+      action = decision.action;
+      if (opt.verify && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);
+      const r = applyAction(ctx, state, action);
+      if (!r.ok) { note("refused", state, `${JSON.stringify(action)}: ${r.error}`); break; }
+      next = r.state;
+      events = r.events;
+    } catch (e) {
+      note("exception", state, (e as Error).message);
+      break;
+    }
+    actions.push(action);
+    tally.add(events, state);
+    for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
+    if (turnIndex(next) !== turnIndex(state) || next.phase !== "player-turn") {
+      // The Game Turn ended with this action: read its closing numbers from the state the action was taken in (before the next Year Start).
+      turns.push(tally.close(ctx, state, false));
+      tally = new TurnTally(turnLabel(next));
+      turnCount = 0;
+    }
+    state = next;
+  }
+  // The run stopped inside a Game Turn (an anomaly): report what it did so far.
+  if (tally.count > 0) turns.push(tally.close(ctx, state, true));
+  const ended = state.phase === "game-over" ? "game-over" : turnIndex(state) >= stop ? "turn-limit" : "stopped";
+  return { options: opt, ctx, initial, actions, setupActions, final: state, turns, anomalies, ended, runtimeMs: performance.now() - started };
+}

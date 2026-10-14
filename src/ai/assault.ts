@@ -1,0 +1,49 @@
+import type { Action } from "../engine/actions";
+import { attackNumbers, defendersAt } from "../engine/attack-rules";
+import { combatOf } from "../engine/combat-record";
+import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
+import type { GameContext } from "../engine/context";
+import type { GameState } from "../engine/types";
+import { isObjective } from "./geo";
+import { best } from "./random";
+import type { AiConfig, Decision } from "./types";
+
+/**
+ * Step 7h, ground attacks. COMPUTER POLICY, not rules (spec 05; every number is TODO(verify), to be tuned by play-testing).
+ * Of the ATTACK actions the engine lists it makes the best one whose odds (the column the engine's own `attackNumbers`
+ * gives, terrain included) are at least ATTACK_MIN_COLUMN and whose Exchange is acceptable: an Exchange costs the attackers
+ * at least the defender's multiplied factors (Ref 12.2), and that may be at most ATTACK_MAX_EXCHANGE_FACTORS. Better odds first, then an attack on a capital or objective, then the bigger force. After a battle that left a
+ * hex empty it advances with as many survivors as the hex takes. When nothing qualifies it ends the step.
+ */
+export const ATTACK_MIN_COLUMN: OddsColumn = "2-1";
+export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
+export const ATTACK_MAX_PER_TURN = 40;
+
+type Attack = Extract<Action, { type: "ATTACK" }>;
+type Advance = Extract<Action, { type: "ADVANCE" }>;
+
+export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig): Decision | undefined {
+  if (combatOf(state).targets.length >= ATTACK_MAX_PER_TURN) return undefined;
+  const floor = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN);
+  const scored = new Map<Attack, number>();
+  for (const a of legal) {
+    if (a.type !== "ATTACK") continue;
+    const units = a.units.map((id) => state.units[id]!);
+    const n = attackNumbers(ctx, state, units, defendersAt(state, units, a.target), a.target);
+    const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
+    if (column < floor || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
+    scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
+  }
+  const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);
+  if (!pick) return undefined;
+  const units = pick.units.map((id) => state.units[id]!);
+  const n = attackNumbers(ctx, state, units, defendersAt(state, units, pick.target), pick.target);
+  return { action: pick, why: `Attacks ${pick.target} with ${n.attackFactors} factors against ${n.defenseFactors}${n.multiplier > 1 ? ` (x${n.multiplier})` : ""}, odds ${n.column}.` };
+}
+
+/** After a won battle: the largest advance the engine lists, as it takes the hex and nothing in the rules asks for more. */
+export function chooseAdvance(legal: readonly Action[], cfg: AiConfig): Decision | undefined {
+  const advances = legal.filter((a): a is Advance => a.type === "ADVANCE");
+  const pick = best(advances, (a) => a.units.length, cfg.seed, (a) => `${a.to}:${a.units.join(",")}`);
+  return pick ? { action: pick, why: `Advances ${pick.units.length} unit${pick.units.length === 1 ? "" : "s"} into ${pick.to}, which the defenders left.` } : undefined;
+}

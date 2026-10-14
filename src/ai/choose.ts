@@ -1,10 +1,12 @@
-import { legalActions, moveOnAction, type Action } from "../engine/actions";
+import { legalActions, type Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
 import { FIRST_STEP, LAST_STEP } from "../engine/sequence";
 import type { GameState } from "../engine/types";
+import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseGrant } from "./grant";
+import { chooseMove } from "./move";
 import type { AiConfig, Decision } from "./types";
 
 /**
@@ -15,22 +17,23 @@ import type { AiConfig, Decision } from "./types";
 export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig): Decision | null {
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
-  // The computer does not move yet: at 6f only the way on is needed, not the (long) list of moves.
-  const legal = step === "6f" ? moveOnAction(state) : legalActions(ctx, state);
+  // The move list at 6f is the longest the engine builds (about 15-40 ms); it is cached per state, so asking again costs nothing.
+  const legal = legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
-    : step === "7h" ? chooseLosses(legal)
+    : step === "6f" ? chooseMove(ctx, state, legal, cfg)
+    : step === "7h" ? chooseLosses(legal) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
 }
 
 /**
- * Ground combat (step 7h): the computer does not attack yet, so it ends the step (the fallback). If an Exchange waits
- * for losses to be chosen and the computer is the one to choose (the engine lists only that choice then), it takes the
- * first legal set, as the engine lists them.
+ * Ground combat (step 7h): if an Exchange waits for losses to be chosen and the computer is the one to choose (the
+ * engine lists only that choice then), it takes the first legal set, as the engine lists them. Otherwise it advances
+ * or attacks by assault.ts, and ends the step when neither qualifies (the fallback).
  */
 function chooseLosses(legal: readonly Action[]): Decision | undefined {
   const action = legal.find((a) => a.type === "ALLOCATE_LOSSES");
@@ -52,8 +55,8 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "No Front Option chosen: with no combat rules yet every Front stays on the default (defensive) Option.",
-    "6f": "The computer does not move its ground units yet.",
-    "7h": "The computer makes no ground attacks yet.",
+    "6f": "No ground move brings a stack closer to an enemy objective.",
+    "7h": "No ground attack is worth making at the odds on offer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",

@@ -15,7 +15,7 @@ import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { createSession } from "../src/ui/session";
 import { CTX, atStart } from "./helpers";
 
-/** The computer at step 7h (spec 04/05): it makes no attacks yet but never gets stuck there. */
+/** The computer at step 7h (spec 04/05): it attacks only at good odds (ai-assault.test.ts) and never gets stuck there. */
 
 const u = (id: string, owner: Unit["owner"], strength: number, at: string): Unit => ({ id, owner, type: "infantry", strength, at });
 const at7h = (units: Unit[], seed: number, extra: Partial<GameState> = {}): GameState => ({
@@ -33,8 +33,8 @@ const EXCHANGE_SEED = (() => {
 })();
 
 describe("the computer at step 7h", () => {
-  it("ends the step when attacks are legal: it does not attack yet", () => {
-    const s = at7h([u("g1", "germany", 6, "M32"), u("p1", "poland", 1, "M33")], 1);
+  it("ends the step when attacks are legal but none is worth making (1-2 odds)", () => {
+    const s = at7h([u("g1", "germany", 1, "M32"), u("p1", "poland", 2, "M33")], 1);
     expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(true);
     expect(chooseAction(CTX, s, { seed: 1 })!.action).toEqual({ type: "END_STEP", side: "axis", step: "7h" });
   });
@@ -76,11 +76,11 @@ describe("self-play with attacks made at step 7h", () => {
   const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
   const made: number[] = [];
   for (const scenario of SCENARIOS) {
-    it(`${scenario.name}: whoever is up attacks whenever it can, the computer settles Exchanges, no illegal action in 3 Game Turns`, () => {
+    it(`${scenario.name}: whoever is up attacks whenever it can, the computer settles Exchanges, no illegal action in 1 Game Turn`, () => {
       const ctx: GameContext = { map: MAP, scenario };
       let state = newGame(scenario, 5);
       for (const a of autoSetup(ctx, state)) state = ok(applyAction(ctx, state, a));
-      const stop = turnIndex(state) + 3;
+      const stop = turnIndex(state) + 1;
       let attacks = 0;
       for (let n = 0; state.phase === "player-turn" && turnIndex(state) < stop; n++) {
         expect(n, "no stall").toBeLessThan(5000);

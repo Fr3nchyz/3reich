@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.engine.json && tsc --noEmit -p tests/tsconfig.json && tsc --noEmit -p tests/e2e/tsconfig.json && tsc --noEmit -p scripts/tsconfig.json",
     "lint": "eslint --max-warnings 0 .",
     "coverage": "vitest run --coverage",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "selfplay": "vite-node scripts/selfplay/cli.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
