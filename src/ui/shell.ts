@@ -18,7 +18,7 @@ const SHELL = `
     </div>
     <div class="map-tools"><button id="overlay" aria-pressed="false" aria-controls="legend">Control and zones</button></div>
   </div>
-  <section id="status"></section>`;
+  <section id="status" tabindex="-1"></section>`;
 
 export interface Shell {
   map: HTMLElement;

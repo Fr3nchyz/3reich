@@ -34,6 +34,12 @@ describe("the order and size of the listed entries", () => {
     expect(logHtml(["only"])).not.toContain("Older entries");
   });
 
+  it("escapes the text of an entry", () => {
+    const html = logHtml(['<img src=x onerror="boom()"> & more']);
+    expect(html).not.toContain("<img");
+    expect(html).toContain("&lt;img src=x onerror=&quot;boom()&quot;&gt; &amp; more");
+  });
+
   it("is what the status area shows for a real session, with the first line last", () => {
     const s = createSession(SCENARIO_1939, "axis", 1);
     s.log.push("newest line");

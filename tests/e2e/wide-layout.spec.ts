@@ -6,9 +6,16 @@ import { expect, test, type Page } from "@playwright/test";
  * lists the newest entry first and keeps its scroll position when the panels are redrawn.
  */
 
-const TABLETS_AND_DESKTOPS = [[768, 1024], [1024, 768], [1180, 820], [1280, 800], [1920, 1080], [1024, 600]] as const;
-/** The widths and heights from which the page is two columns (mirrors the media query in style.css). */
-const twoColumns = (w: number, h: number) => w >= 900 && h > 480 && w / h >= 1.25;
+/** Width, height and whether the page is expected to be two columns there (checked against the real layout, not a copy of the CSS). */
+const TABLETS_AND_DESKTOPS = [[768, 1024, false], [1024, 768, true], [1180, 820, true], [1280, 800, true], [1920, 1080, true], [1024, 600, true]] as const;
+
+/** Whether the page is laid out as two columns right now: the panels sit to the right of the map block, and the page does not scroll. */
+const isTwoColumns = (page: Page) =>
+  page.evaluate(() => {
+    const dock = document.querySelector(".map-dock")!.getBoundingClientRect();
+    const status = document.getElementById("status")!.getBoundingClientRect();
+    return getComputedStyle(document.getElementById("app")!).display === "grid" && status.left >= dock.right - 1 && status.top < dock.bottom;
+  });
 
 async function startSetup(page: Page, width: number, height: number): Promise<void> {
   await page.setViewportSize({ width, height });
@@ -25,7 +32,7 @@ const scrollPanelsToEnd = (page: Page) =>
     status.scrollTop = status.scrollHeight;
   });
 
-for (const [width, height] of TABLETS_AND_DESKTOPS) {
+for (const [width, height, expectTwoColumns] of TABLETS_AND_DESKTOPS) {
   test(`${width}x${height}: the map stays on screen with the panels scrolled to the bottom, and a tap on it works`, async ({ page, hasTouch }) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -42,7 +49,8 @@ for (const [width, height] of TABLETS_AND_DESKTOPS) {
     expect((await page.locator("#overlay").boundingBox())!.height, "touch target").toBeGreaterThanOrEqual(44);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
 
-    if (twoColumns(width, height)) {
+    expect(await isTwoColumns(page), `${width}x${height} is ${expectTwoColumns ? "" : "not "}two columns`).toBe(expectTwoColumns);
+    if (expectTwoColumns) {
       const status = (await page.locator("#status").boundingBox())!;
       expect(status.x, "the panels are in a column beside the map").toBeGreaterThanOrEqual(dock.x + dock.width - 1);
       expect(await page.evaluate(() => document.documentElement.scrollHeight), "the page itself does not scroll").toBeLessThanOrEqual(height);
@@ -126,12 +134,78 @@ for (const [width, height] of [[1280, 800], [768, 1024], [390, 844]] as const) {
     expect(Math.abs(after.offset - before.offset), "the entry being read has not moved in the box (give or take a rounded pixel)").toBeLessThanOrEqual(2);
     expect(await log.evaluate((el) => el.scrollTop)).toBeGreaterThan(top);
 
-    // At the top, the reader follows the newest entries.
+    // At the top, the reader follows the newest entries: more are added, the box stays at the top and shows the newest.
     await log.evaluate((el) => { el.scrollTop = 0; });
     const count = await log.locator("li").count();
-    await page.locator("#newgame").click();
-    await expect(log.locator("li").last()).toContainText("started");
+    const newest = await log.locator("li").first().textContent();
+    await page.locator("#fill").click();
+    await expect.poll(() => log.locator("li").count()).toBeGreaterThan(count);
+    expect(await log.locator("li").first().textContent()).not.toBe(newest);
     expect(await log.evaluate((el) => el.scrollTop)).toBe(0);
-    expect(await log.locator("li").count()).toBeLessThanOrEqual(count);
   });
 }
+
+test("1280x800: the panel column keeps its scroll position when the panels are redrawn", async ({ page }) => {
+  await startSetup(page, 1280, 800);
+  const column = await page.evaluate(() => {
+    const status = document.getElementById("status")!;
+    status.scrollTop = 120;
+    return status.scrollTop;
+  });
+  expect(column, "the column scrolls").toBeGreaterThan(50);
+  // A redraw of the panels (choosing a counter), without the click moving the scroll.
+  await page.evaluate(() => document.querySelector<HTMLElement>(".setup button[data-spec]")!.click());
+  await expect(page.locator(".setup button[data-spec][aria-pressed=true]")).toHaveCount(1);
+  expect(await page.evaluate(() => document.getElementById("status")!.scrollTop)).toBe(column);
+});
+
+test("a redraw of the panels keeps the keyboard focus on the same control, and never steals it", async ({ page }) => {
+  await startSetup(page, 1280, 800);
+  const redraw = () => page.evaluate(() => document.querySelectorAll<HTMLElement>(".setup button[data-spec]")[1]!.click());
+  const active = () => page.evaluate(() => {
+    const a = document.activeElement as HTMLElement;
+    return { tag: a.tagName, id: a.id, spec: a.dataset.spec ?? "", cls: a.className, inStatus: !!a.closest("#status") };
+  });
+
+  // On a counter chip: it is the same chip afterwards.
+  const chip = page.locator(".setup button[data-spec]").first();
+  const spec = await chip.getAttribute("data-spec");
+  await chip.focus();
+  await redraw();
+  expect(await active()).toMatchObject({ tag: "BUTTON", spec, inStatus: true });
+
+  // On the log (a keyboard user reading it): still the log, also when an entry is added by the redraw.
+  await page.locator("ol.log").focus();
+  await redraw();
+  expect(await active()).toMatchObject({ tag: "OL", cls: "log", inStatus: true });
+  const entries = await page.locator("ol.log li").count();
+  await page.evaluate(() => document.getElementById("fill")!.click());
+  await expect.poll(() => page.locator("ol.log li").count()).toBeGreaterThan(entries);
+  expect(await active()).toMatchObject({ tag: "OL", cls: "log", inStatus: true });
+
+  // Focus outside the panels is left alone.
+  await page.locator("#scenario").focus();
+  await page.evaluate(() => document.querySelector<HTMLElement>("#status button")!.click());
+  expect(await active()).toMatchObject({ id: "scenario", inStatus: false });
+});
+
+test("after an action the focus never lands on a different choice: 'declares war on Arabia' is not followed by Belgium", async ({ page }) => {
+  await startSetup(page, 1280, 720);
+  for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
+  await expect(page.locator(".turn")).toContainText("step 1");
+  await page.locator("summary", { hasText: "Declare war" }).click();
+  const arabia = page.getByRole("button", { name: /^Germany declares war on Arabia/ });
+  await arabia.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".log li").first()).toContainText("declares war on Arabia");
+  const focused = await page.evaluate(() => {
+    const a = document.activeElement as HTMLElement;
+    return { id: a.id, isAction: a.matches("button[data-action]") };
+  });
+  expect(focused.isAction, "no other choice has taken the focus").toBe(false);
+  expect(focused.id, "it rests on the panel").toBe("status");
+  // Pressing Enter again must not declare anything else.
+  const logCount = await page.locator(".log li").count();
+  await page.keyboard.press("Enter");
+  expect(await page.locator(".log li").count()).toBe(logCount);
+});
