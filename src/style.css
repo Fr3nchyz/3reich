@@ -1,13 +1,63 @@
-body { font-family: Georgia, serif; background: #1d1f1a; color: #e8e4d4; margin: 0; }
-main { max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
-button { font-size: 1rem; padding: .5rem 1rem; }
-.note { opacity: .7; }
-table { border-collapse: collapse; margin: 1rem 0; } td, th { padding: .25rem .75rem; text-align: left; border-bottom: 1px solid #555; }
-header { display: flex; gap: 1.5rem; align-items: baseline; padding: .5rem 1rem; flex-wrap: wrap; }
-header h1 { margin: 0; font-size: 1.6rem; }
-.hexinfo { position: absolute; left: .5rem; bottom: .5rem; right: .5rem; padding: .25rem .6rem; font-size: .95rem; background: rgba(20, 22, 18, .78); border-radius: 4px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.map-wrap { position: relative; height: 72vh; border-top: 1px solid #444; border-bottom: 1px solid #444; background: #bcd6e6; }
+/* The page around the map, in the printed-board look: a dark board edge, paper panels, cardboard buttons. */
+:root {
+  --edge: #2f2522;        /* the board edge: header and page background */
+  --edge-fg: #efe9da;
+  --paper: #f4efe2;       /* panels */
+  --paper-line: #cfc6b0;
+  --ink: #27211d;
+  --ink-soft: #6a6055;
+  --border: #4a2f2b;      /* the brown of the national border lines */
+  --accent: #8b1e24;      /* the red of objectives and the front line */
+  --accent-fg: #fbf6ea;
+  --card: #e8dfc9;        /* cardboard */
+  --gold: #e0a526;
+  --sans: "Helvetica Neue", Arial, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+body { font-family: var(--sans); background: var(--edge); color: var(--edge-fg); margin: 0; line-height: 1.45; }
+header { display: flex; gap: .75rem 1.25rem; align-items: center; padding: .5rem 1rem; flex-wrap: wrap; background: var(--edge); border-bottom: 3px solid var(--border); }
+header h1 { margin: 0; font-size: 1.5rem; letter-spacing: .04em; text-transform: uppercase; }
+header label { display: flex; align-items: center; gap: .4rem; font-size: .95rem; }
+select { font: inherit; padding: .3rem .5rem; min-height: 40px; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; }
+button { font: inherit; font-weight: 600; padding: .5rem 1rem; min-height: 40px; background: var(--card); color: var(--ink); border: 1px solid var(--border); border-bottom-width: 3px; border-radius: 4px; cursor: pointer; }
+button:hover:not(:disabled) { background: #f0e8d2; }
+button:active:not(:disabled) { border-bottom-width: 1px; margin-top: 2px; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+header button { background: var(--card); }
+#newgame, #done, main > .actions button:last-child { background: var(--accent); color: var(--accent-fg); border-color: #4d0f13; }
+#newgame:hover:not(:disabled), #done:hover:not(:disabled), main > .actions button:last-child:hover:not(:disabled) { background: #a3262d; }
+.map-wrap { position: relative; height: 72vh; border-bottom: 3px solid var(--border); background: #bcd6e6; }
 .map-fill { position: absolute; inset: 0; }
+.hexinfo { position: absolute; left: .5rem; bottom: .5rem; right: .5rem; padding: .25rem .6rem; font-size: .95rem; background: rgba(47, 37, 34, .85); color: var(--edge-fg); border-radius: 4px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+main { max-width: 56rem; margin: 1.25rem auto; padding: 0 1rem; display: flex; flex-direction: column; gap: .9rem; }
+main > * { margin: 0; }
+.turn { font-size: 1.15rem; font-weight: 700; padding: .55rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--accent); border-radius: 4px; }
+.note { color: #cfc6b3; font-size: .9rem; }
+.toast { min-height: 1.4rem; color: #ffd27a; font-weight: 600; }
+.setup, .declarations, .log, table { background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; }
+.setup { padding: .8rem 1rem 1rem; }
+.setup h2 { margin: 0 0 .6rem; font-size: 1.1rem; }
+.setup .note { color: var(--ink-soft); }
+.setup ul { margin: .25rem 0 .75rem 1.2rem; padding: 0; }
+.setup .problems { color: var(--accent); }
+.unavailable { opacity: .6; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
+.chips button { min-width: 5.5rem; min-height: 56px; line-height: 1.25; background: var(--card); }
+.chips button small { font-weight: 400; color: var(--ink-soft); }
+.chips button[aria-pressed="true"] { border-color: var(--accent); border-width: 2px; border-bottom-width: 3px; background: #fff7d6; box-shadow: 0 0 0 2px var(--gold); }
+.actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.declarations { padding: .4rem .8rem; }
+.declarations summary { cursor: pointer; font-weight: 700; min-height: 36px; display: flex; align-items: center; }
+.declarations .actions { margin: .4rem 0 .6rem; }
+table { border-collapse: collapse; width: 100%; overflow: hidden; }
+td, th { padding: .4rem .75rem; text-align: left; border-bottom: 1px solid var(--paper-line); }
+th { background: var(--card); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+tbody tr:last-child td { border-bottom: 0; }
+.log { margin: 0; padding: .6rem 1rem .6rem 2.4rem; max-height: 14rem; overflow-y: auto; font-size: .9rem; }
+.setup button, .controls button { min-height: 44px; }
+.fan-note { color: #cfc6b3; }
+
 svg.map { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
 svg.map .hexes polygon { stroke: #6b655a; stroke-width: .3; stroke-linejoin: round; }
 svg.map .hexes polygon.sea { stroke: #a9c7da; }
@@ -28,20 +78,11 @@ svg.map .hover { fill: none; stroke: #fff; stroke-width: 1.2; }
 svg.map .units { pointer-events: none; }
 svg.map .units text { font: bold 3.9px "Helvetica Neue", Arial, sans-serif; text-anchor: middle; }
 svg.map .units text.more { fill: #fff; stroke: #101418; stroke-width: .5; paint-order: stroke; font-size: 4px; }
-.setup { margin: 1rem 0; padding: .75rem 1rem; border: 1px solid #555; background: #262922; }
-.setup h2 { margin: 0 0 .5rem; font-size: 1.1rem; }
-.setup ul { margin: .25rem 0 .75rem 1.2rem; padding: 0; }
-.setup .problems { color: #e8b86a; }
-.unavailable { opacity: .6; }
-select { font-size: 1rem; padding: .25rem .5rem; }
 svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; stroke-width: 1; }
-.setup button, .controls button { min-height: 44px; padding: .4rem .9rem; }
-.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
-.chips button { min-width: 5.5rem; border: 2px solid #777; background: #33362e; color: #e8e4d4; border-radius: 6px; }
-.chips button[aria-pressed="true"] { border-color: #ffe050; background: #4a4a2a; }
-.actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
-.toast { min-height: 1.4rem; color: #e8b86a; margin: .25rem 0; }
-header label { display: flex; align-items: center; gap: .4rem; }
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 .icon { vertical-align: middle; }
+@media (max-width: 640px) {
+  table { display: block; overflow-x: auto; }
+  .turn { font-size: 1rem; }
+}
