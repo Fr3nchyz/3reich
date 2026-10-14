@@ -56,7 +56,7 @@ export function computerTick(s: Session, budgetMs = TICK_BUDGET_MS, now: () => n
 }
 
 /** The result of one computer action: it was taken, or why it was not. */
-export type ActResult = { ok: true } | { ok: false; kind: "no-action" | "refused"; detail: string };
+export type ActResult = { ok: true } | { ok: false; kind: "stuck" | "refused"; detail: string };
 
 /**
  * The computer takes one action for the side now to move and logs its reason (the one place a computer action is chosen,
@@ -66,7 +66,7 @@ export type ActResult = { ok: true } | { ok: false; kind: "no-action" | "refused
 export function computerAct(s: Session): ActResult {
   const memory = memories.get(s) ?? memories.set(s, createMemory()).get(s)!;
   const decision = chooseAction(s.ctx, s.state, { seed: s.seed, memory });
-  if (!decision) return { ok: false, kind: "no-action", detail: "the computer has no action to take" };
+  if (!decision) return { ok: false, kind: "stuck", detail: "the computer has no action to take" };
   const who = `Computer (${sideName(computerSide(s))})`;
   if (decision.action.type === "MOVE" && !s.watch) {
     // Up to 40 moves a turn would bury the log: they are written up in one line when the step ends.

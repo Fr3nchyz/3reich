@@ -20,7 +20,7 @@ export function newWatchSession(scenario: Scenario, seed: number, speed: Speed, 
   s.log = [`${scenario.name} started with seed ${seed}: the computer plays both sides and you watch.`];
   for (let guard = 0; guard < MAX_SETUP_OWNERS && s.state.phase === "setup"; guard++) if (!placeTheRest(s)) break;
   s.watch = createWatchInfo(s.state, s.record.length, speed, turns);
-  if (s.state.phase === "setup") s.watch = markStuck(s.watch, "no-action", "the automatic setup did not finish");
+  if (s.state.phase === "setup") s.watch = markStuck(s.watch, "setup", "the automatic setup did not finish");
   return s;
 }
 

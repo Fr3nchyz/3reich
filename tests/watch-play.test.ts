@@ -10,7 +10,7 @@ import { endText, newWatchSession, recordFor, stuckText, takeOver, watchSlice, w
 import { recordName } from "../src/ui/watchRecord";
 import { statusLine } from "../src/ui/watchBar";
 import { summarise } from "../src/ui/watchSummary";
-import { parseSeed, parseTurns } from "../src/ui/watchMenu";
+import { MAX_TURNS, parseSeed, parseTurns, seedError, SEED_ERROR, turnsError, TURNS_ERROR } from "../src/ui/watchMenu";
 import { describeUnits } from "../src/ui/format";
 import type { Session } from "../src/ui/session";
 
@@ -126,11 +126,11 @@ describe("a computer that cannot move", () => {
     const s = play.newWatchSession(SCENARIO_1942, 1, "slow", null);
     const before = s.state;
     play.watchSlice(s);
-    expect(s.watch!.stuck?.kind).toBe("no-action");
+    expect(s.watch!.stuck?.kind).toBe("stuck");
     expect(play.stuckText(s)).toMatch(/^The computer got stuck at .*step .*: the computer has no action to take\.$/);
     expect(s.state).toBe(before);
     expect(ctl.shouldRun(s.watch!, s.state)).toBe(false);
-    expect(play.recordFor(s).anomalies[0]?.kind).toBe("no-action");
+    expect(play.recordFor(s).anomalies[0]?.kind).toBe("stuck");
     vi.doUnmock("../src/ai");
   });
   it("a thrown error is caught and reported the same way", async () => {
@@ -187,7 +187,13 @@ describe("text and menu helpers", () => {
     expect(parseSeed("42")).toBe(42);
     expect(parseSeed(" 4294967295 ")).toBe(4294967295);
     expect([parseSeed("4294967296"), parseSeed("-1"), parseSeed("1.5"), parseSeed(""), parseSeed("abc")]).toEqual([null, null, null, null, null]);
-    expect([parseTurns("3"), parseTurns(""), parseTurns("0"), parseTurns("2.5"), parseTurns("x")]).toEqual([3, null, null, null, null]);
+    expect([parseTurns("3"), parseTurns(" 99 "), parseTurns(""), parseTurns("0"), parseTurns("100"), parseTurns("2.5"), parseTurns("-1"), parseTurns("x")]).toEqual([3, MAX_TURNS, null, null, null, null, null, null]);
+  });
+  it("tells the player what is wrong with a seed or a number of Game Turns instead of falling back", () => {
+    expect([seedError("0"), seedError("4294967295"), seedError(" 12 ")]).toEqual(["", "", ""]);
+    expect([seedError(""), seedError("abc"), seedError("-3"), seedError("1.5"), seedError("4294967296"), seedError("99999999999")]).toEqual(Array(6).fill(SEED_ERROR));
+    expect([turnsError(""), turnsError("  "), turnsError("1"), turnsError("99")]).toEqual(["", "", "", ""]);
+    expect([turnsError("0"), turnsError("100"), turnsError("2.5"), turnsError("x"), turnsError("-1")]).toEqual(Array(5).fill(TURNS_ERROR));
   });
   it("lists the counters of a hex for the hex info: grouped, with factor, type and nation", () => {
     const s = fresh();

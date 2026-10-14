@@ -19,8 +19,8 @@ export const SPEEDS: Record<Speed, { label: string; delayMs: number }> = {
 };
 export const SPEED_ORDER: readonly Speed[] = ["slow", "normal", "fast", "turbo"];
 
-/** The longest one slice of actions may keep the page busy before it yields and repaints (the page repaints at least about every 100 ms). */
-export const SLICE_MS = 80;
+/** The longest one slice of actions may keep the page busy before it yields and repaints. One slow computer action is not cut short, so a single action can still hold the page for about half a second. */
+export const SLICE_MS = 40;
 /** Most actions at one step, and most in one Game Turn, before the computer counts as stuck: the self-play runner's limits (docs/SELFPLAY.md). */
 export const STEP_ACTION_LIMIT = 1000;
 export const TURN_ACTION_LIMIT = 8000;
@@ -28,7 +28,7 @@ export const TURN_ACTION_LIMIT = 8000;
 /** What a step button runs to: one action, or the end of the Game Turn it started in. */
 export type StepMode = "action" | "turn";
 
-export type StuckKind = "no-action" | "refused" | "exception" | "no-progress" | "turn-budget";
+export type StuckKind = "setup" | "stuck" | "refused" | "exception" | "no-progress" | "turn-budget";
 export interface Stuck {
   kind: StuckKind;
   detail: string;
@@ -70,8 +70,11 @@ export function overOf(info: WatchInfo, state: GameState): Over | null {
   return info.endAtTurn !== null && turnIndex(state) >= info.endAtTurn ? "turn-limit" : null;
 }
 
+/** Whether actions are being played or waiting to be: a run that is not paused, or a step button being served. */
+export const isRunning = (info: WatchInfo): boolean => !info.paused || info.step !== null;
+
 /** Whether the run should play now: not paused (or a step button is waiting to be served), not stuck, not over. */
-export const shouldRun = (info: WatchInfo, state: GameState): boolean => !info.stuck && !overOf(info, state) && (!info.paused || info.step !== null);
+export const shouldRun = (info: WatchInfo, state: GameState): boolean => !info.stuck && !overOf(info, state) && isRunning(info);
 
 /** Actions in one slice: a single one, except at Turbo and for "next turn", which take as many as fit in SLICE_MS. */
 export const actionsPerSlice = (info: WatchInfo): number => (info.step === "action" ? 1 : info.step === "turn" || info.speed === "turbo" ? Infinity : 1);
@@ -79,7 +82,8 @@ export const actionsPerSlice = (info: WatchInfo): number => (info.step === "acti
 /** The wait before the next slice: none while a step button is being served (it runs flat out), else the chosen speed's. */
 export const delayBefore = (info: WatchInfo): number => (info.step ? 0 : speedDelay(info.speed));
 
-export const pause = (info: WatchInfo): WatchInfo => ({ ...info, paused: true });
+/** Pause stops everything at once, including a step that is still running to the next Game Turn. */
+export const pause = (info: WatchInfo): WatchInfo => ({ ...info, paused: true, step: null });
 export const play = (info: WatchInfo): WatchInfo => ({ ...info, paused: false, step: null });
 export const setSpeed = (info: WatchInfo, speed: Speed): WatchInfo => ({ ...info, speed });
 /** A step button: pause and serve exactly this much. */
@@ -97,7 +101,7 @@ export function afterAction(info: WatchInfo, next: GameState): WatchInfo {
   return out;
 }
 
-/** The run cannot continue: the computer had no action, the engine refused it, or it threw. */
+/** The run cannot continue (the kinds are the names the self-play runner gives the same anomalies, so a saved record reads the same): the computer had no action, the engine refused it, or it threw. */
 export const markStuck = (info: WatchInfo, kind: StuckKind, detail: string): WatchInfo => ({ ...info, stuck: { kind, detail }, step: null });
 
 /** The message shown when stuck, with `where` as "Spring 1940, Allied player turn, step 6f". */

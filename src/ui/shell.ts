@@ -7,10 +7,11 @@ const SHELL = `
     <label>Mode <select id="side"><option value="axis">Play Axis</option><option value="allies">Play Allies</option><option value="watch">Watch the computer play both sides</option></select></label>
     <div id="watchopts" class="watch-opts" hidden>
       <span class="watch-help">Two computers play a whole game while you look on: you can pause it, speed it up, step through it and save it.</span>
-      <label>Seed <input id="seed" inputmode="numeric" autocomplete="off" aria-describedby="seedhelp"></label>
+      <label>Seed <input id="seed" inputmode="numeric" autocomplete="off" aria-describedby="seedhelp menuerror"></label>
       <button id="seedrandom" type="button">Random seed</button>
-      <label>Stop after <input id="watchturns" type="number" min="1" max="99" placeholder="end" class="watch-turns"> Game Turns</label>
+      <label>Stop after <input id="watchturns" inputmode="numeric" autocomplete="off" placeholder="end" class="watch-turns" aria-describedby="menuerror"> Game Turns</label>
       <span id="seedhelp" class="watch-help">The same scenario and seed play the same game again.</span>
+      <span id="menuerror" class="watch-error" role="alert"></span>
     </div>
     <button id="newgame">New game</button>
     <label><input type="checkbox" id="fronts"> Show fronts</label>
@@ -31,7 +32,8 @@ const SHELL = `
         <button id="w-turn" type="button">Step to next turn</button>
         <label>Speed <select id="w-speed"></select></label>
       </div>
-      <p id="w-status" class="watch-status" role="status" aria-live="off"></p>
+      <p id="w-status" class="watch-status"></p>
+      <p id="w-announce" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </div>
   <section id="status" tabindex="-1"></section>`;
@@ -56,6 +58,7 @@ export interface Shell {
   seed: HTMLInputElement;
   seedRandom: HTMLElement;
   watchTurns: HTMLInputElement;
+  menuError: HTMLElement;
   watchBar: HTMLElement;
 }
 
@@ -86,6 +89,7 @@ export function mountShell(app: HTMLElement): Shell {
     seed: el<HTMLInputElement>("seed"),
     seedRandom: el("seedrandom"),
     watchTurns: el<HTMLInputElement>("watchturns"),
+    menuError: el("menuerror"),
     watchBar: el("watchbar"),
   };
 }

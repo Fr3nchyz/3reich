@@ -79,10 +79,18 @@ function start(scenario: Scenario, side: Side): void {
 
 /** Two computers play and the player looks on (spec 06): the seed and the number of Game Turns come from the menu. */
 function startWatch(scenario: Scenario): void {
-  const { seed, turns, speed } = menu.read();
-  begin(scenario, newWatchSession(scenario, seed, speed, turns));
+  const options = menu.read();
+  if (!options) return; // the menu shows what is wrong with the seed or the number of Game Turns
+  menu.collapse();
+  begin(scenario, newWatchSession(scenario, options.seed, options.speed, options.turns));
   // On a phone the menu above the map is tall: bring the map and the controls into view (a no-op in the two-column layout).
   window.scrollTo(0, document.querySelector("header")!.offsetHeight);
+}
+
+/** "Stop watching": back to the setup menu with a fresh single-player game (spec 06); focus goes to the Mode menu, where a new game is chosen. */
+function stopWatching(): void {
+  start(session.ctx.scenario, "axis");
+  shell.side.focus();
 }
 
 /** "Take over as ...": the running watched game becomes a normal one, from where it stands. */
@@ -110,7 +118,7 @@ function render(): void {
   shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
   drawBar(shell.watchBar, session);
-  bindPanel(shell.status, session, { stop: () => start(session.ctx.scenario, "axis"), takeOver: takeOverAs });
+  bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
   if (session.watch) watcher.kick();
   else computer.kick();
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { GameState } from "../src/engine/types";
 import {
-  actionsPerSlice, afterAction, beginStep, createWatchInfo, delayBefore, markStuck, overOf, pause, play, setSpeed, shouldRun, SLICE_MS, speedDelay, SPEEDS, STEP_ACTION_LIMIT, stuckMessage,
+  actionsPerSlice, afterAction, beginStep, createWatchInfo, delayBefore, isRunning, markStuck, overOf, pause, play, setSpeed, shouldRun, SLICE_MS, speedDelay, SPEEDS, STEP_ACTION_LIMIT, stuckMessage,
   TURN_ACTION_LIMIT, type WatchInfo,
 } from "../src/ui/watchController";
 import { atStart, CTX, endTurn } from "./helpers";
@@ -67,6 +67,20 @@ describe("pause, play and the step modes", () => {
     expect(shouldRun(i, next)).toBe(false);
     expect(i.paused).toBe(true);
   });
+  it("'pause' stops a step that is still running to the next Game Turn, and the run counts as running while a step is served", () => {
+    const s = start();
+    const stepping = beginStep(info(), "turn", s);
+    expect(isRunning(stepping)).toBe(true); // the bar then offers "Pause", not "Play"
+    expect(isRunning(info())).toBe(true);
+    const stopped = pause(stepping);
+    expect(stopped.step).toBeNull();
+    expect(isRunning(stopped)).toBe(false);
+    expect(shouldRun(stopped, s)).toBe(false);
+    // and a paused run served one action counts as running only until that action is done
+    const one = beginStep(pause(info()), "action", s);
+    expect(isRunning(one)).toBe(true);
+    expect(isRunning(afterAction(one, s))).toBe(false);
+  });
   it("'play' cancels a step in progress and resumes", () => {
     const i = play(beginStep(info(), "turn", start()));
     expect(i.paused).toBe(false);
@@ -104,8 +118,8 @@ describe("stuck detection", () => {
   });
   it("a stuck run stays stuck, ends a step, and names where", () => {
     const s = start();
-    const i = markStuck(beginStep(info(), "turn", s), "no-action", "the computer has no action to take");
-    expect(i.stuck?.kind).toBe("no-action");
+    const i = markStuck(beginStep(info(), "turn", s), "stuck", "the computer has no action to take");
+    expect(i.stuck?.kind).toBe("stuck");
     expect(i.step).toBeNull();
     expect(shouldRun(play(i), s)).toBe(false);
     expect(stuckMessage(i.stuck!, "Summer 1939, Axis, step 6f")).toBe("The computer got stuck at Summer 1939, Axis, step 6f: the computer has no action to take.");

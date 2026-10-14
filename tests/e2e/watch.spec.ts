@@ -155,6 +155,59 @@ test("take over: the game becomes a normal single-player game where it stood", a
   expect(errors).toEqual([]);
 });
 
+test("the menu flags a bad seed or number of Game Turns and does not start; the options fold away once a game runs", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.goto("/");
+  await page.locator("#side").selectOption("watch");
+  for (const bad of ["abc", "-1", "4294967296", ""]) {
+    await page.locator("#seed").fill(bad);
+    await page.locator("#newgame").click();
+    await expect(page.locator("#seed")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.locator("#menuerror")).toContainText("whole number from 0 to 4294967295");
+    await expect(page.locator("#watchbar")).toBeHidden();
+  }
+  await page.locator("#seed").fill("5");
+  await expect(page.locator("#seed")).not.toHaveAttribute("aria-invalid", "true");
+  await page.locator("#watchturns").fill("100");
+  await page.locator("#newgame").click();
+  await expect(page.locator("#watchturns")).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#menuerror")).toContainText("1 to 99");
+  await expect(page.locator("#watchbar")).toBeHidden();
+  expect((await page.locator("#seed").boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await page.locator("#watchturns").fill("");
+  await page.locator("#newgame").click();
+  await expect(page.locator("#watchbar")).toBeVisible();
+  await expect(page.locator("#watchopts")).toBeHidden();
+  await page.locator("#side").selectOption("allies");
+  await page.locator("#side").selectOption("watch");
+  await expect(page.locator("#watchopts")).toBeVisible(); // choosing the mode again brings the options back
+  expect(errors).toEqual([]);
+});
+
+test("Pause also stops 'Step to next turn' that is still running", async ({ page }) => {
+  const errors = await startWatch(page, "1939", { seed: "9", speed: "slow" });
+  await page.locator("#w-turn").click();
+  await page.locator("#w-play").click();
+  await expect(page.locator("#w-play")).toHaveText("Play");
+  await page.waitForTimeout(200);
+  const n = await actions(page);
+  await page.waitForTimeout(500);
+  expect(await actions(page)).toBe(n);
+  expect(await status(page)).toContain("paused");
+  expect(errors).toEqual([]);
+});
+
+test("Take over is still offered after the Game Turn limit", async ({ page }) => {
+  const errors = await startWatch(page, "1939", { seed: "3", speed: "turbo", turns: "1" });
+  await expect(page.locator(".watch-summary")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator("#w-take-axis")).toBeEnabled();
+  await page.locator("#w-take-axis").click();
+  await expect(page.locator("#watchbar")).toBeHidden();
+  await expect(page.locator("ol.log")).toContainText("You take over the Axis side");
+  expect(errors).toEqual([]);
+});
+
 test("stop watching returns to the setup menu; map taps only inspect", async ({ page }) => {
   const errors = await startWatch(page, "1939", { seed: "2", speed: "slow" });
   await page.locator("#w-play").click();
@@ -164,6 +217,7 @@ test("stop watching returns to the setup menu; map taps only inspect", async ({ 
   await page.locator("#w-stop").click();
   await expect(page.locator("#watchbar")).toBeHidden();
   await expect(page.locator(".setup h2")).toContainText("Your setup");
+  await expect(page.locator("#side")).toBeFocused(); // focus is not lost with the panel that held the button
   expect(errors).toEqual([]);
 });
 

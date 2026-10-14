@@ -2,7 +2,7 @@ import { describeStep } from "../engine/sequence";
 import { computerSide } from "./computerPlay";
 import { cap, sideName } from "./format";
 import type { Session } from "./session";
-import { beginStep, overOf, pause, play, setSpeed, SPEEDS, SPEED_ORDER, type Speed, type WatchInfo } from "./watchController";
+import { beginStep, isRunning, overOf, pause, play, setSpeed, SPEEDS, SPEED_ORDER, type Speed, type WatchInfo } from "./watchController";
 import { endText, recordFor, stuckText } from "./watchPlay";
 import { downloadRecord } from "./watchRecord";
 import type { Side } from "../engine/types";
@@ -22,9 +22,15 @@ export function statusLine(s: Session): string {
   }
   parts.push(`action ${w.actions}`);
   if (state.phase === "player-turn" && !w.stuck && !overOf(w, state)) parts.push(`${sideName(computerSide(s))} acting`);
-  parts.push(w.stuck ? "stuck" : overOf(w, state) ? "ended" : w.paused ? "paused" : `running (${SPEEDS[w.speed].label})`);
+  parts.push(stateWord(s) === "running" ? `running (${SPEEDS[w.speed].label})` : stateWord(s));
   return parts.join(" · ");
 }
+
+/** The state of a watched game in one word: what the status line ends with. */
+export const stateWord = (s: Session): string => {
+  const w = s.watch!;
+  return w.stuck ? "stuck" : overOf(w, s.state) ? "ended" : !isRunning(w) ? "paused" : "running";
+};
 
 /** A number per session, so that a panel is never kept from one game into the next. */
 const ids = new WeakMap<Session, number>();
@@ -36,14 +42,14 @@ export function panelHtml(s: Session): string {
   const w = s.watch!;
   const stuck = stuckText(s);
   const end = endText(s);
-  const over = overOf(w, s.state) !== null;
-  return `<section class="watch-panel" aria-label="Watching two computers" data-key="${[gameId(s), !!stuck, over, end ?? ""].join("|")}">
+  const gameOver = overOf(w, s.state) === "game-over"; // after the chosen Game Turn limit the game can still be taken over and played on
+  return `<section class="watch-panel" aria-label="Watching two computers" data-key="${[gameId(s), !!stuck, gameOver, end ?? ""].join("|")}">
     ${stuck ? `<p class="watch-stuck" role="alert">${escape(stuck)} The position is left as it is: look at the map and the log, or save the record.</p>` : ""}
     ${end ? summaryHtml(summarise(s.ctx, s.state), end) : ""}
     <div class="actions controls">
       <button id="w-save" type="button">Save game record</button>
-      <button id="w-take-axis" type="button" ${over ? "disabled" : ""}>Take over as Axis</button>
-      <button id="w-take-allies" type="button" ${over ? "disabled" : ""}>Take over as Allies</button>
+      <button id="w-take-axis" type="button" ${gameOver ? "disabled" : ""}>Take over as Axis</button>
+      <button id="w-take-allies" type="button" ${gameOver ? "disabled" : ""}>Take over as Allies</button>
       <button id="w-stop" type="button">Stop watching</button>
     </div>
     <p class="note">Seed ${s.seed} (type it in the menu to repeat this game). The opening setup took ${w.setupActions} actions.</p>
@@ -60,10 +66,16 @@ export function drawBar(bar: HTMLElement, s: Session): void {
   const w = s.watch;
   const live = !w.stuck && overOf(w, s.state) === null;
   const q = <T extends HTMLElement>(id: string) => bar.querySelector<T>(`#${id}`)!;
-  q("w-play").textContent = w.paused ? "Play" : "Pause";
+  q("w-play").textContent = isRunning(w) ? "Pause" : "Play";
   for (const id of ["w-play", "w-step", "w-turn"]) q<HTMLButtonElement>(id).disabled = !live;
   q<HTMLSelectElement>("w-speed").value = w.speed;
   q("w-status").textContent = statusLine(s);
+  // A screen reader hears only changes of state (paused, running, ended, stuck), not every action.
+  const state = stateWord(s);
+  if (bar.dataset.state !== state) {
+    bar.dataset.state = state;
+    q("w-announce").textContent = state === "stuck" ? stuckText(s) : `Watching: ${state}.`;
+  }
 }
 
 /** Wires the bar's controls once; they change whatever session `current` returns, then `changed` drops a waiting timer and draws. */
@@ -76,7 +88,7 @@ export function bindBar(bar: HTMLElement, current: () => Session, changed: () =>
     if (s.watch) s.watch = f(s.watch, s);
     changed();
   };
-  q("w-play").addEventListener("click", edit((w) => (w.paused ? play(w) : pause(w))));
+  q("w-play").addEventListener("click", edit((w) => (isRunning(w) ? pause(w) : play(w))));
   q("w-step").addEventListener("click", edit((w, s) => beginStep(w, "action", s.state)));
   q("w-turn").addEventListener("click", edit((w, s) => beginStep(w, "turn", s.state)));
   q<HTMLSelectElement>("w-speed").addEventListener("change", edit((w) => setSpeed(w, q<HTMLSelectElement>("w-speed").value as Speed)));
