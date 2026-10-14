@@ -216,7 +216,7 @@ describe("malformed input does not throw", () => {
     const holes = { ...s, units: { ...s.units, n1: null } } as unknown as GameState;
     expect(supplyStatus(CTX, holes, "axis").supplied.map((l) => l.unitId)).toEqual([]);
     for (const k of ["nations", "minorAllies", "control"] as const) {
-      const bad = { ...s, [k]: undefined } as unknown as GameState;
+      const bad = { ...s, [k]: undefined };
       expect(() => supplyStatus(CTX, bad, "axis"), k).not.toThrow();
       expect(() => supplySources(CTX, bad, "allies"), k).not.toThrow();
       expect(isUnitSupplied(CTX, bad, "g1"), k).toBe(false);
