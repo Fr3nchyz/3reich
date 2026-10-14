@@ -3,6 +3,8 @@ import { ALONE_NONGROUND_DESTROYED } from "../src/engine/attack-rules";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { combatOf } from "../src/engine/combat-record";
 import { chooseAttack } from "../src/ai/assault";
+import { sweepLine } from "../src/ui/format";
+import { run, type Session } from "../src/ui/session";
 import type { GameState, Unit, UnitType, ForceOwner } from "../src/engine/types";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { CTX, atStart } from "./helpers";
@@ -89,8 +91,72 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
     expect(attack(s, ["g1"], "M35")).toMatchObject({ ok: false });
   });
 
-  it("the computer takes the free sweep", () => {
-    const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 3, "M35")]);
-    expect(chooseAttack(CTX, s, legalActions(CTX, s), { seed: 1 })?.action).toEqual({ type: "ATTACK", side: "axis", units: ["g1"], target: "M35" });
+  it("a ground unit of any owner in the hex, even one not at war with the attackers, protects the counters stacked with it", () => {
+    const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 3, "M35"), unit("u1", "ussr", "infantry", 2, "M35")]);
+    expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(false);
+    expect(attack(s, ["g1"], "M35")).toMatchObject({ ok: false });
+  });
+
+  it("equal totals in an Exchange: both sides are wholly eliminated and the air units go with them", () => {
+    // The defenders count at their terrain multiple in the first round (x3 across the river at Warsaw), so the equal totals are found by search.
+    let found = 0;
+    for (let attack_ = 1; attack_ <= 6; attack_++) {
+      for (let seed = 1; seed < 200; seed++) {
+        const s = at7h([unit("g1", "germany", "infantry", attack_, "M34"), unit("p1", "poland", "infantry", 1, "M35"), unit("a1", "poland", "air", 1, "M35")], seed);
+        const r = attack(s, ["g1"], "M35");
+        if (!r.ok) continue;
+        const gone = r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId);
+        const fought = r.events.find((e) => e.type === "COMBAT_RESOLVED") as { outcome: string };
+        if (fought.outcome !== "exchange" || !gone.includes("g1") || !gone.includes("p1")) continue;
+        found++;
+        expect(gone, `attack ${attack_}, seed ${seed}`).toContain("a1");
+        expect(stacks(r.state, "M35")).toEqual([]);
+      }
+    }
+    expect(found).toBeGreaterThan(0);
+  });
+
+  it("marks the roll-free attack as a sweep and says so in the log in one line with the place name", () => {
+    const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 1, "M35"), unit("a2", "poland", "air", 1, "M35")]);
+    const r = ok(attack(s, ["g1"], "M35"));
+    expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).toMatchObject({ sweep: true });
+    const swept = r.events.find((e) => e.type === "UNITS_SWEPT");
+    expect(swept).toMatchObject({ type: "UNITS_SWEPT", hex: "M35", units: [{ id: "a1", type: "air" }, { id: "a2", type: "air" }] });
+    expect(sweepLine(CTX, swept as Extract<typeof swept, { type: "UNITS_SWEPT" }>)).toBe("Warsaw (M35): 2 air units alone in the hex are destroyed (Poland air 1, Poland air 1).");
+    const session = { ctx: CTX, state: s, log: [] as string[], toast: "" } as unknown as Session;
+    expect(run(session, { type: "ATTACK", side: "axis", units: ["g1"], target: "M35" })).toBe(true);
+    expect(session.log.filter((l) => /M35/.test(l))).toEqual(["Warsaw (M35): 2 air units alone in the hex are destroyed (Poland air 1, Poland air 1)."]);
+  });
+
+  it("a battle that ends with air units alone also reports the sweep, and a normal attack does not", () => {
+    const base = [unit("g1", "germany", "infantry", 4, "M34"), unit("g2", "germany", "infantry", 4, "L35"), ...WARSAW()];
+    const seed = seedFor(base, ["g1", "g2"], (s, ev) => ev.some((e) => e.type === "COMBAT_RESOLVED" && e.outcome === "defender-eliminated") && stacks(s, "M35").length === 0);
+    const r = ok(attack(at7h(base, seed), ["g1", "g2"], "M35"));
+    expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).not.toHaveProperty("sweep");
+    expect(r.events.find((e) => e.type === "UNITS_SWEPT")).toMatchObject({ units: [{ id: "a1" }, { id: "a2" }] });
+  });
+});
+
+describe("the computer's sweeps (policy: after every real attack, one infantry unit)", () => {
+  const sweepable = (seed: number) => at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("g2", "germany", "armor", 5, "M34"), unit("g3", "germany", "infantry", 2, "L35"), unit("a1", "poland", "air", 3, "M35")], seed);
+
+  it("sends a single infantry unit, over any seed, never the armor and never everyone", () => {
+    const picks = new Set<string>();
+    for (let seed = 1; seed <= 60; seed++) {
+      const s = sweepable(seed);
+      const a = chooseAttack(CTX, s, legalActions(CTX, s), { seed })?.action as Extract<Action, { type: "ATTACK" }>;
+      expect(a.units, `seed ${seed}`).toHaveLength(1);
+      expect(s.units[a.units[0]!]!.type).toBe("infantry");
+      expect(legalActions(CTX, s)).toContainEqual(a);
+      picks.add(a.units[0]!);
+    }
+    expect(picks.size).toBeGreaterThan(0);
+  });
+
+  it("prefers a real attack to a sweep, whatever the seed", () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const s = at7h([unit("g1", "germany", "infantry", 6, "M34"), unit("a1", "poland", "air", 3, "M35"), unit("p1", "poland", "infantry", 1, "N34")], seed);
+      expect((chooseAttack(CTX, s, legalActions(CTX, s), { seed })?.action as Extract<Action, { type: "ATTACK" }>).target, `seed ${seed}`).toBe("N34");
+    }
   });
 });

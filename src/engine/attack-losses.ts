@@ -48,9 +48,11 @@ const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState =
  * attack may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). `by` are the attackers as they stood before the battle.
  */
 function finishBattle(state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): { state: GameState; events: GameEvent[] } {
-  const swept = eliminate(state, lonersAt(state, by, target).map((u) => u.id));
+  const loners = lonersAt(state, by, target);
+  const swept = eliminate(state, loners.map((u) => u.id));
   const done = finishWithRecord(swept.state, attackers, target);
-  return { state: done, events: swept.events };
+  const note: GameEvent[] = loners.length > 0 ? [{ type: "UNITS_SWEPT", hex: target, units: loners.map((u) => ({ id: u.id, owner: u.owner, type: u.type, strength: u.strength })) }] : [];
+  return { state: done, events: [...note, ...swept.events] };
 }
 
 /** An attack on a hex that holds only counters that cannot defend on the ground: they are destroyed, and the attackers may advance. */

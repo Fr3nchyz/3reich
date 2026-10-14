@@ -22,6 +22,8 @@ export const ATTACK_SUPERIORITY = 3;
 export const ATTACK_MIN_COLUMN_SUPERIOR: OddsColumn = "1-1";
 export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
 export const ATTACK_MAX_PER_TURN = 40;
+/** Base score of a sweep of a hex with only air units or the like: below any real attack, so the units are first offered to real attacks. */
+export const SWEEP_SCORE = -1000;
 
 type Attack = Extract<Action, { type: "ATTACK" }>;
 type Advance = Extract<Action, { type: "ADVANCE" }>;
@@ -35,9 +37,11 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
     if (a.type !== "ATTACK") continue;
     const units = a.units.map((id) => state.units[id]!);
     const defenders = defendersAt(state, units, a.target);
-    // Only air units or the like in the hex (rules: ALONE_NONGROUND_DESTROYED): no roll and no risk, so always worth making.
+    // Only air units or the like in the hex (rules: ALONE_NONGROUND_DESTROYED): no roll and no risk, but it must not take units a real
+    // attack could use, so it scores below every real attack (which scores 0 or more).
     if (defenders.length === 0) {
-      scored.set(a, 100000 + (isObjective(ctx, a.target) ? 500 : 0));
+      // The fewest factors, so one weak unit, and infantry before anything else.
+      scored.set(a, SWEEP_SCORE + (units.every((u) => u.type === "infantry") ? 10 : 0) - units.reduce((n, u) => n + u.strength, 0) + (isObjective(ctx, a.target) ? 5 : 0));
       continue;
     }
     const n = attackNumbers(ctx, state, units, defenders, a.target);

@@ -7,7 +7,7 @@ import { OWNER_NAMES, POWER_NAMES } from "../engine/nations";
 import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
-import { cap, nameOf, sideName } from "./format";
+import { cap, nameOf, sideName, sweepLine } from "./format";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -71,7 +71,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
   return session;
 }
 
-function describeEvent(e: GameEvent): string | null {
+function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>): string | null {
   switch (e.type) {
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
@@ -96,9 +96,13 @@ function describeEvent(e: GameEvent): string | null {
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
     case "WAR_DECLARED":
       return `${POWER_NAMES[e.by]} declares war on ${nameOf(e.on)} (${e.cost} BRPs).`;
+    case "UNITS_SWEPT":
+      return sweepLine(ctx, e);
     case "COMBAT_RESOLVED":
+      if (e.sweep) return null; // the line of the sweep says it
       return `Attack on ${e.target}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
+      if (swept.has(e.unitId)) return null;
       return `${OWNER_NAMES[e.owner]} unit ${e.unitId} at ${e.at} is eliminated.`;
     case "LOSSES_CHOSEN":
       return `${sideName(e.side)} chooses losses: ${e.units.join(", ")}.`;
@@ -124,8 +128,9 @@ export function run(s: Session, ...actions: Action[]): boolean {
       return false;
     }
     s.state = result.state;
+    const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
     for (const e of result.events) {
-      const line = describeEvent(e);
+      const line = describeEvent(e, s.ctx, swept);
       if (line) s.log.push(line);
     }
   }

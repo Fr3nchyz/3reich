@@ -51,6 +51,11 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
     out.push({ type: "ATTACK", side: state.activeSide, units: all.map((u) => u.id), target });
     const hexes = [...new Set(all.map((u) => u.at))];
     if (hexes.length > 1) for (const h of hexes) out.push({ type: "ATTACK", side: state.activeSide, units: all.filter((u) => u.at === h).map((u) => u.id), target });
+    // A sweep of a hex with only air units or the like needs one ground unit, so each may go alone (the computer sends the least it can).
+    if (defendersAt(state, all, target).length === 0) {
+      const have = (ids: string[]) => out.some((a) => a.type === "ATTACK" && a.target === target && a.units.join() === ids.join());
+      for (const u of all) if (!have([u.id])) out.push({ type: "ATTACK", side: state.activeSide, units: [u.id], target });
+    }
   }
   return out;
 }
@@ -115,7 +120,7 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
     if (loners.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
     const swept = applySweep({ ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
     const factors = units.reduce((n, u) => n + u.strength, 0);
-    return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated" }, ...swept.events] };
+    return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated", sweep: true }, ...swept.events] };
   }
 
   const numbers = attackNumbers(ctx, state, units, defenders, action.target);
