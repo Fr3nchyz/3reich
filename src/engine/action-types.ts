@@ -28,6 +28,10 @@ export type Action =
 export type GameEvent =
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
+  /** Ref 7.0: a hex changed hands because a ground unit entered it. */
+  | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
+  /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */
+  | { type: "OVERSTACK_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId }
   | { type: "SETUP_OWNER_DONE"; owner: ForceOwner }
   | { type: "SETUP_COMPLETE" }
   | { type: "INITIATIVE_DETERMINED"; year: number; season: Season; firstSide: Side; axis: number; allies: number }
