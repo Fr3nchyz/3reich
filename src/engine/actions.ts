@@ -32,6 +32,16 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   return [];
 }
 
+/**
+ * Only the action that moves the game on from the step it waits at, without the step's own actions. The computer uses it at a
+ * step it has no plan for, so a long list (ground moves) is not built for nothing. Empty when no step is waited at.
+ */
+export function moveOnAction(state: GameState): Action[] {
+  const step = state.phase === "player-turn" ? waitingStep(state) : undefined;
+  if (step === undefined) return [];
+  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step }];
+}
+
 /** All actions the active player may take now. Empty when the game is over. */
 export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "game-over") return [];

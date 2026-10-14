@@ -17,9 +17,22 @@ type MoveAction = Extract<Action, { type: "MOVE" }>;
 
 /**
  * Whether control changes on the hexes a unit only passes through, not just where it ends (Ref 7.0).
- * TODO(verify, Ref 7.0): control.ts's reading is that every hex entered counts; set false to take only the last hex.
+ * TODO(verify, Ref 7.0): the rule text does not settle it. Off: only the hex where the move ends changes hands, which does not
+ * depend on which of several equal routes the listed path happens to take. Set true for control.ts's other reading (every hex entered).
  */
-export const CONTROL_ON_PASS_THROUGH = true;
+export const CONTROL_ON_PASS_THROUGH = false;
+
+/** Counts uncached computations of the full move list, so a test can bound the work a tap causes. */
+export const moveListStats = { computed: 0 };
+
+const listed = new WeakMap<GameState, WeakMap<GameContext, Action[]>>();
+
+/** True for a real array of strings: holes (a sparse array) and other entries are refused, since `some` and `map` skip holes. */
+function allStrings(x: unknown): x is string[] {
+  if (!Array.isArray(x)) return false;
+  for (let i = 0; i < x.length; i++) if (typeof x[i] !== "string") return false;
+  return true;
+}
 
 /** Groups of movable units that stand in one hex, in hex order (units in id order). */
 function groups(ctx: GameContext, state: GameState): Unit[][] {
@@ -38,6 +51,16 @@ function destinations(ctx: GameContext, state: GameState, units: readonly Unit[]
  * more that can move together (the slowest unit's points) to each place all of it can reach.
  */
 export function legalMoves(ctx: GameContext, state: GameState): Action[] {
+  // A state is never changed, so its list is computed once however often the UI and the computer ask (the list is not to be edited).
+  const hit = listed.get(state)?.get(ctx);
+  if (hit) return hit;
+  const out = computeMoves(ctx, state);
+  listed.set(state, (listed.get(state) ?? new WeakMap()).set(ctx, out));
+  return out;
+}
+
+function computeMoves(ctx: GameContext, state: GameState): Action[] {
+  moveListStats.computed++;
   const side = state.activeSide;
   const zoc = enemyZocFor(ctx, state, side);
   const out: Action[] = [];
@@ -57,9 +80,9 @@ export function hasMoveWork(ctx: GameContext, state: GameState): boolean {
 
 /** The reasons the units named cannot move together, or the units themselves. */
 function resolveUnits(ctx: GameContext, state: GameState, ids: unknown): { units: Unit[] } | { error: string } {
-  if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => typeof id !== "string") || new Set(ids).size !== ids.length) return { error: "A move names one or more distinct units." };
-  if (ids.some((id: string) => !Object.hasOwn(state.units, id))) return { error: "A moving unit is not on the map." };
-  const units = ids.map((id: string) => state.units[id]!);
+  if (!allStrings(ids) || ids.length === 0 || new Set(ids).size !== ids.length) return { error: "A move names one or more distinct units." };
+  if (ids.some((id) => !Object.hasOwn(state.units, id))) return { error: "A moving unit is not on the map." };
+  const units = ids.map((id) => state.units[id]!);
   for (const u of units) {
     const problem = movableProblem(ctx, state, u);
     if (problem) return { error: problem };
@@ -75,7 +98,7 @@ export function applyMove(ctx: GameContext, state: GameState, action: MoveAction
   if ("error" in found) return { ok: false, error: found.error };
   const { units } = found;
   const path = action.path;
-  if (!Array.isArray(path) || path.length === 0 || path.some((h) => typeof h !== "string" || !Object.hasOwn(ctx.map.hexes, h))) {
+  if (!allStrings(path) || path.length === 0 || path.some((h) => !Object.hasOwn(ctx.map.hexes, h))) {
     return { ok: false, error: "A move names a path of one or more hexes on the map." };
   }
   const problem = movePathProblem(ctx, state, units, path);

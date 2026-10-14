@@ -83,6 +83,13 @@ describe("legalActions lists every reachable destination with its path", () => {
   });
 });
 
+/** An array of length 2 whose first entry is a hole: `some` and `map` skip it. */
+const withHole = (last: string): string[] => {
+  const a = new Array<string>(2);
+  a[1] = last;
+  return a;
+};
+
 describe("malformed MOVE actions are refused without throwing", () => {
   const s = at6f([inf("u1", "germany", "L32")]);
   const bad: [string, unknown][] = [
@@ -91,6 +98,8 @@ describe("malformed MOVE actions are refused without throwing", () => {
     ["no units", { type: "MOVE", side: "axis", path: ["L33"] }],
     ["units not an array", { type: "MOVE", side: "axis", units: "u1", path: ["L33"] }],
     ["empty units", { type: "MOVE", side: "axis", units: [], path: ["L33"] }],
+    ["a sparse units array", { type: "MOVE", side: "axis", units: withHole("u1"), path: ["L33"] }],
+    ["a sparse path array", { type: "MOVE", side: "axis", units: ["u1"], path: withHole("L33") }],
     ["unit ids that are not strings", { type: "MOVE", side: "axis", units: [1], path: ["L33"] }],
     ["a duplicate unit", { type: "MOVE", side: "axis", units: ["u1", "u1"], path: ["L33"] }],
     ["an inherited property as unit id", { type: "MOVE", side: "axis", units: ["__proto__"], path: ["L33"] }],

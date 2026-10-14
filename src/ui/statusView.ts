@@ -80,7 +80,7 @@ function frontPrompt(s: Session, actions: Action[]): string {
 
 /** What step 6f asks for: the moves are made on the map, not with buttons. */
 const movePrompt = (actions: Action[]): string =>
-  actions.some((a) => a.type === "MOVE") ? `<p class="note">Ground movement (step 6f): tap a stack of yours on the map, then one of the yellow hexes to move it there. Each unit moves once. Press Done when you have finished.</p>` : "";
+  actions.some((a) => a.type === "MOVE") ? `<p class="note">Ground movement (step 6f): tap a stack of yours on the map, then one of the yellow hexes to move it there. Each unit moves once. Press &ldquo;Done with step 6f&rdquo; when you have finished.</p>` : "";
 
 const logList = (s: Session) => `<ol class="log">${s.log.map((l) => `<li>${l}</li>`).join("")}</ol>`;
 

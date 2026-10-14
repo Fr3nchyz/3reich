@@ -58,10 +58,23 @@ export function movableUnits(ctx: GameContext, state: GameState): Unit[] {
 /** The points a stack moves with: the slowest unit's. */
 export const stackMovement = (units: readonly Unit[]): number => Math.min(...units.map(movementFactor));
 
+const occupancy = new WeakMap<GameState["units"], Map<HexId, Unit[]>>();
+
+/** The units standing in a hex. The index is built once per set of units (they are never edited), so asking for many hexes is cheap. */
+function occupants(state: GameState, hex: HexId): Unit[] {
+  let index = occupancy.get(state.units);
+  if (!index) {
+    index = new Map();
+    for (const u of Object.values(state.units)) index.set(u.at, [...(index.get(u.at) ?? []), u]);
+    occupancy.set(state.units, index);
+  }
+  return index.get(hex) ?? [];
+}
+
 /** Why units of these owners may not enter `hex`: enemy or foreign units there, or land that is closed to them. Null if they may. */
 export function entryProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
   const side = sideInWar(state, owners[0]!);
-  const blocker = Object.values(state.units).find((u) => u.at === hex && (sideOfOwner(u.owner) !== side || owners.some((o) => areEnemies(state, o, u.owner))));
+  const blocker = occupants(state, hex).find((u) => (sideOfOwner(u.owner) !== side || owners.some((o) => areEnemies(state, o, u.owner))));
   if (blocker) return `${hex} holds ${blocker.id} of the other side: that is an attack, not a move.`;
   if (!NEUTRAL_LAND_CLOSED) return null;
   const control = controllerOf(ctx, state, hex);
@@ -82,7 +95,8 @@ export const entryCost = (ctx: GameContext, hex: HexId): number => TERRAIN_MOVE_
  * in setup), or null. They are added one at a time, so each sees the ones before it; units already there count.
  */
 export function endProblem(ctx: GameContext, state: GameState, units: readonly Unit[], to: HexId): string | null {
-  let s = state;
+  // Stacking looks only at the units in the hex, so the rest are left out of the state it is asked about.
+  let s = { ...state, units: Object.fromEntries(occupants(state, to).map((u) => [u.id, u])) };
   for (const u of units) {
     const spec = { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) };
     const problem = stackingProblem(ctx, s, u.owner, spec, to);

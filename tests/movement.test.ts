@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { controllerOf } from "../src/engine/control";
+import { CONTROL_ON_PASS_THROUGH } from "../src/engine/move-action";
 import { GROUND_MOVERS, ONE_MOVE_PER_TURN, TERRAIN_MOVE_COST, movementFactor, reachableHexes } from "../src/engine/movement";
 import { adjacentHexes, zocPathProblem } from "../src/engine/zoc";
 import { CTX, ctxFor } from "./helpers";
-import { at6f, errorOf, inf, move, okOf } from "./helpers-move";
+import { legalActions } from "../src/engine/actions";
+import { hasMoveWork } from "../src/engine/move-action";
+import { at6f, errorOf, inf, move, movesIn, okOf } from "./helpers-move";
 
 // Step 6f, ground movement (Ref 5.45f; hexsides Ref 4.3, 4.6, 4.51; ZOC Ref 6.0; stacking Ref 5.0, 26.0; control Ref 7.0).
 // Positions are on the real map: L32-L33-L34-L35 is a row of German then Polish plain, M34 is Polish plain next to
@@ -194,13 +197,13 @@ describe("neutral land and units of other sides", () => {
 });
 
 describe("control of hexes through a move (Ref 7.0, via enterHexes)", () => {
-  it("entering enemy hexes takes them, one event each, passing through included", () => {
+  it("the hex where the move ends is taken, and hexes only passed through are not (CONTROL_ON_PASS_THROUGH off, TODO(verify))", () => {
+    expect(CONTROL_ON_PASS_THROUGH).toBe(false);
     const s = at6f([inf("u1", "germany", "L32", 3, 4)]);
     const r = okOf(move(s, ["u1"], ["L33", "L34", "L35"]));
-    expect(r.events.map((e) => e.type)).toEqual(["UNITS_MOVED", "HEX_CONTROL_CHANGED", "HEX_CONTROL_CHANGED"]);
-    expect(controllerOf(CTX, r.state, "L34")).toBe("germany");
+    expect(r.events.map((e) => e.type)).toEqual(["UNITS_MOVED", "HEX_CONTROL_CHANGED"]);
     expect(controllerOf(CTX, r.state, "L35")).toBe("germany");
-    expect(controllerOf(CTX, r.state, "L33")).toBe("germany");
+    expect(controllerOf(CTX, r.state, "L34")).toBe("poland");
     expect(r.events[0]).toMatchObject({ type: "UNITS_MOVED", units: ["u1"], from: "L32", to: "L35", path: ["L33", "L34", "L35"] });
   });
 
@@ -208,5 +211,41 @@ describe("control of hexes through a move (Ref 7.0, via enterHexes)", () => {
     const r = okOf(move(at6f([inf("u1", "germany", "L32")]), ["u1"], ["L33"]));
     expect(r.events.map((e) => e.type)).toEqual(["UNITS_MOVED"]);
     expect(r.state.control).toEqual({});
+  });
+});
+
+describe("more of the rules", () => {
+  it("a movement factor is whole hexes: 2.5 points are 2", () => {
+    expect(movementFactor({ type: "infantry", movement: 2.5 })).toBe(2);
+    const s = at6f([inf("u1", "germany", "L32", 3, 2.5)]);
+    expect(errorOf(move(s, ["u1"], ["L33", "L34", "L35"]))).toMatch(/slowest unit has 2/);
+  });
+
+  it("the Danish straits: Jutland to Copenhagen over the two arrows, but not on to Sweden (war declared on Denmark)", () => {
+    expect(MAP.hexsides["I30-I31"]!.crossingArrow).toBe(true);
+    expect(MAP.hexsides["I31-I32"]!.crossingArrow).toBe(true);
+    const s = at6f([inf("u1", "germany", "I30", 3, 3)]);
+    const war = { ...s, wars: [...s.wars, ["germany", "denmark"] as ["germany", "denmark"]] };
+    expect(okOf(move(war, ["u1"], ["I31", "I32"])).state.units.u1!.at).toBe("I32");
+    expect(errorOf(move(war, ["u1"], ["I31", "I32", "I33"]))).toMatch(/water or the Qattara|neutral/);
+    expect(adjacentHexes(CTX, "I32")).toContain("I33");
+    expect(reachableHexes(CTX, war, [war.units.u1!]).has("I33")).toBe(false);
+  });
+
+  it("land held by a power that takes no side is closed (Italy in 1939), and open to its own units' side only through war", () => {
+    const s = at6f([inf("u1", "germany", "X22", 3, 3)]);
+    expect(MAP.hexes.Y22!.country).toBe("italy");
+    expect(errorOf(move(s, ["u1"], ["Y22"]))).toMatch(/neutral land: germany is not at war with it/);
+    const war = { ...s, wars: [...s.wars, ["germany", "italy"] as ["germany", "italy"]] };
+    expect(okOf(move(war, ["u1"], ["Y22"])).state.units.u1!.at).toBe("Y22");
+  });
+
+  it("a unit with movement but nowhere to go gives the step no work (the Qattara Depression boxes it in)", () => {
+    const boxed = at6f([inf("u1", "britain", "NN26", 3, 3)], "allies");
+    expect(reachableHexes(CTX, boxed, [boxed.units.u1!]).size).toBe(0);
+    expect(hasMoveWork(CTX, boxed)).toBe(false);
+    const free = at6f([inf("u1", "britain", "NN26", 3, 3), inf("u2", "britain", "MM27", 3, 3)], "allies");
+    expect(hasMoveWork(CTX, free)).toBe(true);
+    expect(movesIn(legalActions(CTX, boxed))).toEqual([]);
   });
 });
