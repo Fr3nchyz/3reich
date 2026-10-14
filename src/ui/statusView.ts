@@ -9,6 +9,7 @@ import { cap, nameOf, sideName } from "./format";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
+import { logHtml } from "./logView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -82,8 +83,6 @@ function frontPrompt(s: Session, actions: Action[]): string {
 const movePrompt = (actions: Action[]): string =>
   actions.some((a) => a.type === "MOVE") ? `<p class="note">Ground movement (step 6f): tap a stack of yours on the map, then one of the yellow hexes to move it there. Each unit moves once. Press &ldquo;Done with step 6f&rdquo; when you have finished.</p>` : "";
 
-const logList = (s: Session) => `<ol class="log">${s.log.map((l) => `<li>${l}</li>`).join("")}</ol>`;
-
 /** The whole status area. `setup` is set while a nation of yours is setting up. */
 export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
   const totals = initiativeTotals(s.state);
@@ -99,6 +98,6 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
       ${turnButtons(actions, s.foldOpen)}
-      ${logList(s)}
+      ${logHtml(s.log)}
     </main>`;
 }

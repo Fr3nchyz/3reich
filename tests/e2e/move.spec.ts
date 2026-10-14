@@ -69,7 +69,8 @@ test("1939, Axis: step 6f, tap a stack then a yellow hex to move it; a refused t
     const out: [number, number][] = [];
     for (let y = Math.max(box.top, 0) + 40; y < Math.min(box.bottom, window.innerHeight) - 40; y += 31) {
       for (let x = box.left + 40; x < Math.min(box.right, window.innerWidth) - 40; x += 37) {
-        if (!busy.some((r) => x > r.left - 20 && x < r.right + 20 && y > r.top - 20 && y < r.bottom + 20)) out.push([x, y]);
+        const onHex = document.elementFromPoint(x, y)?.closest("g.hexes") != null; // the map may be letterboxed
+        if (onHex && !busy.some((r) => x > r.left - 20 && x < r.right + 20 && y > r.top - 20 && y < r.bottom + 20)) out.push([x, y]);
       }
     }
     return out.slice(0, 12);

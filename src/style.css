@@ -27,7 +27,7 @@ button:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px
 header button { background: var(--card); }
 #newgame, #done, main > .actions button:last-child { background: var(--accent); color: var(--accent-fg); border-color: #4d0f13; }
 #newgame:hover:not(:disabled), #done:hover:not(:disabled), main > .actions button:last-child:hover:not(:disabled) { background: #a3262d; }
-.map-wrap { position: relative; height: 72vh; border-bottom: 3px solid var(--border); background: #bcd6e6; }
+.map-wrap { position: relative; height: 46vh; height: 46dvh; border-bottom: 3px solid var(--border); background: #bcd6e6; }
 .map-fill { position: absolute; inset: 0; }
 .map-tools { display: flex; align-items: center; gap: .5rem; padding: .25rem .5rem; background: var(--edge); border-bottom: 3px solid var(--border); }
 .map-tools button { min-height: 44px; padding: .25rem .8rem; font-size: .9rem; }
@@ -62,7 +62,8 @@ table { border-collapse: collapse; width: 100%; overflow: hidden; }
 td, th { padding: .4rem .75rem; text-align: left; border-bottom: 1px solid var(--paper-line); }
 th { background: var(--card); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
 tbody tr:last-child td { border-bottom: 0; }
-.log { margin: 0; padding: .6rem 1rem .6rem 2.4rem; max-height: 14rem; overflow-y: auto; font-size: .9rem; }
+.log { margin: 0; padding: .6rem 1rem .6rem 3rem; max-height: min(14rem, 40dvh); overflow-y: auto; overscroll-behavior: contain; font-size: .9rem; }
+.log .log-more { list-style: none; color: var(--ink-soft); }
 .setup button, .controls button { min-height: 44px; }
 .fan-note { color: #cfc6b3; }
 
@@ -95,20 +96,19 @@ svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; st
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 .icon { vertical-align: middle; }
-.map-toast { display: none; }
-/* Phone, portrait or landscape: the map stays in view while the panels scroll under it, so a tap on a chip never loses the map. */
+/* Every screen starts from the pinned layout: the map and its toggle bar stay at the top of the viewport while the panels scroll under them, so a tap on a chip never loses the map. Wide screens switch to two columns below. */
+html { scroll-padding-top: var(--dock-h, 56dvh); }
+.map-dock { position: sticky; top: 0; z-index: 10; background: var(--edge); }
+/* A rejected move is told over the map too: the panel that holds the message may be scrolled out of sight. */
+.map-toast { display: block; position: absolute; left: .5rem; right: .5rem; bottom: 3rem; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; background: rgba(47, 37, 34, .92); color: #ffd27a; border-radius: 4px; pointer-events: none; }
+.map-toast:empty { display: none; }
+main { margin-top: .75rem; }
+/* Phone, portrait or landscape: tighter header and key. */
 @media (max-width: 640px), (max-height: 480px) {
-  html { scroll-padding-top: var(--dock-h, 56dvh); }
   header { padding: .35rem .75rem; gap: .35rem .9rem; }
   header h1 { font-size: 1.15rem; }
-  .map-dock { position: sticky; top: 0; z-index: 10; background: var(--edge); }
-  .map-wrap { height: 46vh; height: 46dvh; }
   .map-tools { padding: .15rem .5rem; }
   .legend { font-size: .7rem; left: .35rem; top: .35rem; max-width: calc(100% - .7rem); }
-  /* A rejected move is told over the map too: the panel that holds the message is scrolled out of sight. */
-  .map-toast { display: block; position: absolute; left: .5rem; right: .5rem; bottom: 3rem; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; background: rgba(47, 37, 34, .92); color: #ffd27a; border-radius: 4px; pointer-events: none; }
-  .map-toast:empty { display: none; }
-  main { margin-top: .75rem; }
 }
 /* Short screens (a phone on its side): the map block is about 40% of the height, the toggle sits over the map's corner. */
 @media (max-height: 480px) {
@@ -121,4 +121,19 @@ svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 @media (max-width: 640px) {
   table { display: block; overflow-x: auto; }
   .turn { font-size: 1rem; }
+}
+/* Wide landscape screens (tablets on their side, laptops, desktops): two columns that each fill the viewport. The map column never scrolls; the panels scroll in their own column beside it. */
+@media (min-width: 900px) and (min-height: 481px) and (min-aspect-ratio: 5/4) {
+  html { scroll-padding-top: 0; }
+  body { height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+  body > .fan-note { margin: .15rem 1rem; font-size: .7rem; line-height: 1.3; }
+  #app { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) clamp(24rem, 40vw, 36rem); grid-template-rows: auto minmax(0, 1fr); }
+  header { grid-column: 1 / -1; }
+  .map-dock { position: static; grid-column: 1; grid-row: 2; display: flex; flex-direction: column; min-height: 0; border-right: 3px solid var(--border); }
+  .map-dock .map-wrap { flex: 1 1 0; height: auto; min-height: 0; }
+  #status { grid-column: 2; grid-row: 2; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-padding-top: .5rem; background: var(--edge); }
+  main { margin: .75rem auto; padding: 0 .75rem; max-width: none; }
+  table { font-size: .85rem; }
+  td, th { padding: .3rem .4rem; }
+  th { font-size: .7rem; letter-spacing: 0; }
 }
