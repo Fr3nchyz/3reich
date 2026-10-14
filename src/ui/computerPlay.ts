@@ -1,4 +1,5 @@
 import { chooseAction, placeOf } from "../ai";
+import { combatOf } from "../engine/combat-record";
 import { otherSide } from "../engine/game";
 import type { Side } from "../engine/types";
 import { sideName } from "./format";
@@ -18,8 +19,15 @@ export const TICK_BUDGET_MS = 60;
 
 export const computerSide = (s: Session): Side => otherSide(s.humanSide);
 
-/** Whether the computer is the one to move now. */
-export const computerToMove = (s: Session): boolean => s.state.phase === "player-turn" && s.state.activeSide === computerSide(s);
+/**
+ * Whether the computer is the one to move now: its Player Turn, or an Exchange (step 7h) whose losses it must choose
+ * even though the other side is attacking (the chooser is the owner of the units that lose, Ref 12.2).
+ */
+export const computerToMove = (s: Session): boolean => {
+  if (s.state.phase !== "player-turn") return false;
+  const pending = combatOf(s.state).pending;
+  return pending ? pending.chooser === computerSide(s) : s.state.activeSide === computerSide(s);
+};
 
 /** "more": the step is not finished, tick again soon. "done": it left the step. "stuck": the computer could not act. */
 export type TickResult = "more" | "done" | "stuck";

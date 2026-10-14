@@ -21,8 +21,19 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     step === FIRST_STEP ? chooseDeclaration(state, legal)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
+    : step === "7h" ? chooseLosses(legal)
     : undefined;
   return picked ?? endTheStep(legal, step);
+}
+
+/**
+ * Ground combat (step 7h): the computer does not attack yet, so it ends the step (the fallback). If an Exchange waits
+ * for losses to be chosen and the computer is the one to choose (the engine lists only that choice then), it takes the
+ * first legal set, as the engine lists them.
+ */
+function chooseLosses(legal: readonly Action[]): Decision | undefined {
+  const action = legal.find((a) => a.type === "ALLOCATE_LOSSES");
+  return action ? { action, why: "Loses the first legal set of units to the Exchange." } : undefined;
 }
 
 const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLAYER_TURN" }> => a.type === "END_STEP" || a.type === "END_PLAYER_TURN";
@@ -40,6 +51,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "No Front Option chosen: with no combat rules yet every Front stays on the default (defensive) Option.",
+    "7h": "The computer makes no ground attacks yet.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",

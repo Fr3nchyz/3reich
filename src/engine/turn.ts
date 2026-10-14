@@ -4,6 +4,7 @@ import { resetSpending } from "./brps";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
+import { hasCombatWork } from "./attack";
 import { legalBuilds } from "./construction";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
@@ -105,6 +106,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
   switch (id) {
     case FIRST_STEP:
       return legalDeclarations(ctx, state).length > 0;
+    case "7h":
+      return hasCombatWork(ctx, state);
     case "3":
       return atWarNow(state);
     case "8b":

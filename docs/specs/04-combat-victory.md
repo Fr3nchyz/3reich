@@ -10,7 +10,7 @@ Armies, air forces and fleets can fight, and the game can end with a result. The
 
 ### Ground combat (steps 7a to 7p)
 
-- The active side chooses the hexes to attack, the attacking units (at most two per attacking hex, PC README rule 31.5 and 14.23: each unit attacks one hex) and any ground support, then the engine shows the odds before the attack is made.
+- The active side chooses the hexes to attack, the attacking units (at most two per attacking hex, PC README rule 31.5 and 14.23: each unit attacks one hex) and any ground support; the odds and every die roll are shown in the log after the roll (a preview before the roll is not built in the first slice; `attackNumbers` computes it).
 - The defender's multiplier comes from terrain, fortress, rivers and crossing arrows, and beaches against a seaborne invasion; benefits do not stack (best one applies).
 - The die is rolled from the game's seeded generator, the result is shown with the column and roll, counterattacks chain as the rules say, and the log records every round.
 - **Exchange**: the side with fewer factors loses everything; the larger side removes at least as many factors, and the player chooses which units go (the program picks the smallest legal set for the computer).
@@ -68,3 +68,17 @@ Armies, air forces and fleets can fight, and the game can end with a result. The
 5. Air and naval modifiers and interception are covered by tests wired through actions.
 6. Victory results for all four scenarios are tested at every threshold boundary (for example 16, 17 and 18 Objectives in 1939).
 7. Mutation checks: changing a multiplier, a column boundary, a loss rule or a victory threshold each makes a test fail.
+
+## As built (ground combat, roadmap 6.1)
+
+Only the ground-combat slice of this spec is built. The combat step on the card is **7h** ("Resolve normal ground combat"); it is in `IMPLEMENTED_STEPS` and the engine waits there only while an attack is legal (like steps 1, 8b and 9a).
+
+- **Actions** (`src/engine/attack.ts`, `attack-losses.ts`, `attack-rules.ts`, `combat-record.ts`):
+  - `ATTACK { side, units, target }`: ground units (infantry, armor, airborne, replacement) of the side to move, each on a hex next to `target` across a hexside ground units may attack over (land on both sides or a crossing arrow, never Qattara), against an adjacent hex holding an enemy ground unit. Each unit attacks once a turn (PC README 14.23) and each hex is attacked once (`ONE_ATTACK_PER_HEX`, TODO(verify)). The odds come from attacker factors against defender factors times the multiplier (`defenseMultiplier`: plain x2, mountains/swamp x3, river or crossing arrow x3 only if every attacker is across it, fortress x4, best one applies). The die is the game's seeded generator through `resolveOffensiveCombat`, so a recorded game replays exactly. The result is applied at once. `legalActions` lists one attack per target with every unit that can reach it, plus each source hex alone; `applyAction` accepts any non-empty subset.
+  - `ALLOCATE_LOSSES { side, units }`: after an Exchange (Ref 12.2) the smaller side loses everything (both, if equal) and the larger removes at least that many factors. The owner picks which units go; only sets in which no unit could be spared are legal. When only one such set exists it is taken at once. Until it is chosen nothing else (not even moving on) is legal. The chooser may be the non-active side, so `legalActions` then lists actions for that side. On the original attack the defenders count at their multiplier; on a counterattack's Exchange both sides count basic factors.
+  - `ADVANCE { side, units, to }`: survivors of an attack may move into the hex the defenders left empty, once, within the stacking rules of setup (`stackingProblem`: two ground units, airborne not counted, no British with French before 1942, London). `legalActions` considers the first 12 survivors. Optional and not blocking.
+- **State**: `GameState.combat` (optional; keyed by Game Turn and side so a new Player Turn starts empty).
+- **Events**: `COMBAT_RESOLVED` (odds, every round), `UNIT_ELIMINATED`, `LOSSES_CHOSEN`, `UNITS_ADVANCED`.
+- **Hooks for other workers** (`attack-rules.ts`, all `TODO(verify)`): `isSupplied` (supply, Ref 10), `frontAllowsAttack` (Offensive Option on the Front, Ref 11.2) both return true; control of the hex taken, ZOC, fortress loss on occupation and rebuilding of eliminated units are not done.
+- **Open rule questions**: whether Replacement counters attack and defend; a hex attacked only once; whether the defenders' multiplied value is what they remove when they are the larger side in an Exchange; advance after combat (who, how many, ZOC); who is "at war" for minor forces and Minor-Allies (patrons' wars are used); what happens to air units, fleets or airbases left alone in a captured hex.
+- **Not built**: retreat (the offensive CRT has none; attrition retreats belong to 7a/7p), air and naval support, seaborne invasions, exploitation, attrition combat, a tap-to-attack screen (the UI shows one button per legal attack, labelled with unit ids).
