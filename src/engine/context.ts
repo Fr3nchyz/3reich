@@ -9,6 +9,6 @@ import type { Scenario } from "./types";
 export interface GameContext {
   map: MapData;
   scenario: Scenario;
-  /** Steps whose rules are built (default: IMPLEMENTED_STEPS in sequence.ts). A test may widen it. */
+  /** Steps whose rules are built (default: IMPLEMENTED_STEPS in sequence.ts, which wait only while there is something to do). A test may set it, and then every listed step waits. */
   implementedSteps?: ReadonlySet<string>;
 }

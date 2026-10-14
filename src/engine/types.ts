@@ -270,6 +270,10 @@ export interface GameState {
   units: Record<string, Unit>;
   /** Next number to use in a unit id ("u1", "u2", ...). */
   nextUnitId: number;
+  /** BRP grants made in the current Player Turn (Ref 11.71); cleared when a Player Turn begins. */
+  grants: { from: PowerId; to: PowerId; amount: number }[];
+  /** [giver, receiver] pairs that may not grant: whoever received a grant may not grant back to the giver (Ref 11.71). */
+  noGrants: [PowerId, PowerId][];
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
   /** Deterministic RNG state; advanced on every roll. */

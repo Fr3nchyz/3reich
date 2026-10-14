@@ -2,6 +2,8 @@ import type { GameContext } from "./context";
 import { describeStep, FIRST_STEP, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
+import { applyBuild, legalBuilds } from "./construction";
+import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
@@ -14,6 +16,14 @@ function waitingStep(state: GameState): string | undefined {
   return state.phase === "player-turn" && p?.part === "player-turn" ? p.step : undefined;
 }
 
+/** The actions that belong to the step the game waits at, besides moving on. */
+function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
+  if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "8b") return legalBuilds(ctx, state);
+  if (step === "9a") return legalGrants(state);
+  return [];
+}
+
 /** All actions the active player may take now. Empty when the game is over. */
 export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "game-over") return [];
@@ -21,7 +31,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
-  return [...(step === FIRST_STEP ? legalDeclarations(ctx, state) : []), moveOn];
+  return [...stepActions(ctx, state, step), moveOn];
 }
 
 /** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
@@ -37,14 +47,23 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
     case "END_PLAYER_TURN":
     case "END_STEP":
       return applyMoveOn(ctx, state, action);
-    case "DECLARE_WAR": {
-      const step = waitingStep(state);
-      if (step !== FIRST_STEP) return { ok: false, error: step === undefined ? "No game turn is in progress." : `Declarations of war are made in step ${describeStep(FIRST_STEP)}; the game is at step ${describeStep(step)}.` };
-      return applyDeclaration(ctx, state, action);
-    }
+    case "DECLARE_WAR":
+      return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
+    case "BUILD":
+      return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
+    case "GRANT_BRPS":
+      return atStep(state, "9a", "BRP grants are made", () => applyGrant(state, action));
     default:
       return { ok: false, error: `Unknown action: ${JSON.stringify(action)}` };
   }
+}
+
+/** Runs `apply` only if the game waits at `step`; otherwise refuses, naming the step it is at. */
+function atStep(state: GameState, step: string, what: string, apply: () => ActionResult): ActionResult {
+  const at = waitingStep(state);
+  if (at === undefined) return { ok: false, error: "No game turn is in progress." };
+  if (at !== step) return { ok: false, error: `${what} in step ${describeStep(step)}; the game is at step ${describeStep(at)}.` };
+  return apply();
 }
 
 /** Done with the step the game waits at (END_STEP) or with the whole Player Turn (END_PLAYER_TURN, at its last step). */

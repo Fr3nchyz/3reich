@@ -6,7 +6,7 @@ import { newGame } from "../engine/game";
 import { OWNER_NAMES, POWER_NAMES } from "../engine/nations";
 import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
-import type { ForceOwner, GameState, Scenario, Side } from "../engine/types";
+import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName } from "./format";
 
 /**
@@ -19,6 +19,13 @@ const MAX_SETUP_OWNERS = 20;
 
 /** What a tap on the map does during your setup: put the chosen counter down, or pick one up. */
 export type TapMode = "place" | "remove";
+
+/** A build chosen at step 8b: who builds which counter. */
+export interface BuildPick {
+  owner: PowerId;
+  type: UnitType;
+  strength: number;
+}
 
 /** A counter in a setup pool, with how many are left. */
 export type PoolSpec = UnitSpec & { movement?: number; count: number };
@@ -35,8 +42,10 @@ export interface Session {
   toast: string;
   /** The nation the map was last zoomed to, so it zooms once per nation and then stays where you put it. */
   focusedOwner: ForceOwner | null;
-  /** Whether the "Declare war" fold-out is open: it stays open while you make several declarations. */
-  declarationsOpen: boolean;
+  /** Whether the fold-out of declarations or grants is open: it stays open while you make several. */
+  foldOpen: boolean;
+  /** The counter chosen to build at step 8b (its places are outlined on the map), or null. */
+  build: BuildPick | null;
 }
 
 /** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
@@ -50,7 +59,8 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     mode: "place",
     toast: "",
     focusedOwner: null,
-    declarationsOpen: false,
+    foldOpen: false,
+    build: null,
   };
   computerSetup(session);
   return session;
@@ -71,6 +81,10 @@ function describeEvent(e: GameEvent): string | null {
       return `${sideName(e.side)} player turn begins.`;
     case "STEPS_PASSED":
       return null;
+    case "UNIT_BUILT":
+      return `${POWER_NAMES[e.owner]} builds a ${e.strength}-factor ${e.unitType} at ${e.at} (${e.cost} BRPs).`;
+    case "BRPS_GRANTED":
+      return `${POWER_NAMES[e.from]} grants ${e.amount} BRPs to ${POWER_NAMES[e.to]}.`;
     case "BRPS_CHANGED":
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
     case "WAR_DECLARED":

@@ -208,9 +208,14 @@ describe("declarations of war (Ref 13.0)", () => {
     const actions: Action[] = [
       { type: "DECLARE_WAR", by: "germany", on: "norway" },
       { type: "DECLARE_WAR", by: "germany", on: "denmark" },
-      { type: "END_STEP", side: "axis", step: "1" },
-      { type: "END_PLAYER_TURN", side: "axis" },
     ];
+    // Then move on, step after step, until the Axis turn is over.
+    let at = replay(CTX, initial, actions).state;
+    while (at.activeSide === "axis") {
+      const next = legalActions(CTX, at).at(-1)!;
+      actions.push(next);
+      at = ok(applyAction(CTX, at, next)).state;
+    }
     const { state } = replay(CTX, initial, actions);
     // The Allied Player Turn has begun, so nobody has spent anything in it.
     expect(state.nations.germany).toMatchObject({ brpTotal: 130, spent: 0 });

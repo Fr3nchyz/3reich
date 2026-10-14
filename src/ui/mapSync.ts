@@ -3,12 +3,17 @@ import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
 import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
+import { builds } from "./sessionActions";
 
 /** Brings the map in line with the session after each change: counters, zoom and highlights. */
 
 /** The hexes to outline: your own counters when taking back, else where the chosen counter may go. */
 function highlightedHexes(s: Session, setup: SetupView | null): string[] {
-  if (!setup) return [];
+  if (!setup) {
+    // Not setting up: the places a chosen build may go.
+    const pick = s.build;
+    return pick ? builds(s).filter((a) => a.owner === pick.owner && a.unit.type === pick.type && a.unit.strength === pick.strength && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
+  }
   const { owner: mine, spec } = setup;
   const onMap = (id: string) => s.ctx.map.hexes[id] !== undefined;
   if (s.mode === "remove") return Object.values(s.state.units).filter((u) => u.owner === mine && onMap(u.at)).map((u) => u.at);

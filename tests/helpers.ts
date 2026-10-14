@@ -19,21 +19,24 @@ export function atStart(scenario: Scenario, seed: number): GameState {
   return beginPlay(ctxFor(scenario), { ...newGame(scenario, seed), phase: "player-turn", setup: null }).state;
 }
 
-/** Leaves step 1 without declaring anything, if the game waits there. */
-export function pastDeclarations(ctx: GameContext, s: GameState): GameState {
-  if (s.position?.part !== "player-turn" || s.position.step !== "1") return s;
-  const r = applyAction(ctx, s, { type: "END_STEP", side: s.activeSide, step: "1" });
-  if (!r.ok) throw new Error(r.error);
-  return r.state;
+/** Moves on from every step the game waits at until it waits at 10b, where a turn is ended; nothing is declared, built or granted. */
+export function toEndOfTurn(ctx: GameContext, s: GameState): GameState {
+  let state = s;
+  for (let guard = 0; guard < 60 && state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step !== "10b"; guard++) {
+    const r = applyAction(ctx, state, { type: "END_STEP", side: state.activeSide, step: state.position.step });
+    if (!r.ok) throw new Error(r.error);
+    state = r.state;
+  }
+  return state;
 }
 
-/** Like atStart, but with step 1 left behind: the game waits at 10b, where a turn is ended. */
+/** Like atStart, but with every earlier step left behind: the game waits at 10b. */
 export function started(scenario: Scenario, seed: number): GameState {
-  return pastDeclarations(ctxFor(scenario), atStart(scenario, seed));
+  return toEndOfTurn(ctxFor(scenario), atStart(scenario, seed));
 }
 
 /** Ends the Player Turn of whoever is up, leaving step 1 first if the game waits there. */
 export function endTurn(ctx: GameContext, s: GameState): ActionResult {
-  const here = pastDeclarations(ctx, s);
+  const here = toEndOfTurn(ctx, s);
   return applyAction(ctx, here, { type: "END_PLAYER_TURN", side: here.activeSide });
 }
