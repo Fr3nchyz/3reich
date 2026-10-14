@@ -81,6 +81,7 @@ svg.map .units text.more { fill: #fff; stroke: #101418; stroke-width: .5; paint-
 svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; stroke-width: 1; }
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
+.icon { vertical-align: middle; }
 @media (max-width: 640px) {
   table { display: block; overflow-x: auto; }
   .turn { font-size: 1rem; }

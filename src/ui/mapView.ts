@@ -15,7 +15,7 @@ import { createViewport, padBox, MAP_MARGIN } from "./viewport";
 
 // Re-exported so that callers (main.ts, tests/map-view.test.ts) keep importing everything map-related from here.
 export { baysBetweenLand, hexCenter, type Bay } from "./mapGeometry";
-export { counterLabel } from "./mapStyle";
+export { counterNumber } from "./mapStyle";
 
 export interface MapViewOptions {
   showFronts?: boolean;
