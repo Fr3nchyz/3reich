@@ -2,7 +2,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { CombatOutcome } from "./combat";
 import { combatOf, type CombatRecord, type PendingLosses } from "./combat-record";
 import type { HexId } from "./hex";
-import { ADVANCE_AFTER_COMBAT } from "./attack-rules";
+import { ADVANCE_AFTER_COMBAT, lonersAt } from "./attack-rules";
 import type { GameState, Side, Unit } from "./types";
 
 /**
@@ -43,8 +43,21 @@ function eliminate(state: GameState, ids: readonly string[]): { state: GameState
 
 const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState => ({ ...state, combat: { ...combatOf(state), ...patch } });
 
-/** The battle is over: the survivors of the attack may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). */
-function finishBattle(state: GameState, attackers: readonly string[], target: HexId): GameState {
+/**
+ * The battle is over: air units and the like left alone in the hex are destroyed (ALONE_NONGROUND_DESTROYED), and the survivors of the
+ * attack may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). `by` are the attackers as they stood before the battle.
+ */
+function finishBattle(state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): { state: GameState; events: GameEvent[] } {
+  const swept = eliminate(state, lonersAt(state, by, target).map((u) => u.id));
+  const done = finishWithRecord(swept.state, attackers, target);
+  return { state: done, events: swept.events };
+}
+
+/** An attack on a hex that holds only counters that cannot defend on the ground: they are destroyed, and the attackers may advance. */
+export const applySweep = (state: GameState, attackers: readonly Unit[], target: HexId): { state: GameState; events: GameEvent[] } =>
+  finishBattle(state, attackers.map((u) => u.id), target, attackers);
+
+function finishWithRecord(state: GameState, attackers: readonly string[], target: HexId): GameState {
   const survivors = attackers.filter((id) => state.units[id] !== undefined);
   const empty = !Object.values(state.units).some((u) => u.at === target);
   const rec = combatOf(state);
@@ -73,11 +86,13 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
   const attackerIds = ids(b.attackers);
   if (b.outcome.kind === "attacker-eliminated") {
     const gone = eliminate(state, attackerIds);
-    return { state: finishBattle(gone.state, attackerIds, b.target), events: gone.events };
+    const done = finishBattle(gone.state, attackerIds, b.target, b.attackers);
+    return { state: done.state, events: [...gone.events, ...done.events] };
   }
   if (b.outcome.kind === "defender-eliminated") {
     const gone = eliminate(state, ids(b.defenders));
-    return { state: finishBattle(gone.state, attackerIds, b.target), events: gone.events };
+    const done = finishBattle(gone.state, attackerIds, b.target, b.attackers);
+    return { state: done.state, events: [...gone.events, ...done.events] };
   }
   const m = b.outcome.multipliedDefense ? b.multiplier : 1;
   const attackTotal = b.attackers.reduce((n, u) => n + u.strength, 0);
@@ -86,7 +101,10 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
   const defendersLose = defenseTotal <= attackTotal;
   const wholly = eliminate(state, [...(attackersLose ? attackerIds : []), ...(defendersLose ? ids(b.defenders) : [])]);
   // The larger side (both, if equal) removes at least as many factors as the smaller side has; with equal totals that is everything.
-  if (attackersLose && defendersLose) return { state: finishBattle(wholly.state, attackerIds, b.target), events: wholly.events };
+  if (attackersLose && defendersLose) {
+    const done = finishBattle(wholly.state, attackerIds, b.target, b.attackers);
+    return { state: done.state, events: [...wholly.events, ...done.events] };
+  }
   const choosing = attackersLose ? b.defenders : b.attackers;
   const required = attackersLose ? attackTotal : defenseTotal;
   const values = Object.fromEntries(choosing.map((u) => [u.id, attackersLose ? u.strength * m : u.strength]));
@@ -94,7 +112,8 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
   const sets = minimalSets(candidates, values, required);
   if (sets.length === 1) {
     const rest = eliminate(wholly.state, sets[0]!);
-    return { state: finishBattle(rest.state, attackerIds, b.target), events: [...wholly.events, ...rest.events] };
+    const done = finishBattle(rest.state, attackerIds, b.target, b.attackers);
+    return { state: done.state, events: [...wholly.events, ...rest.events, ...done.events] };
   }
   const pending: PendingLosses = { chooser: attackersLose ? (b.side === "axis" ? "allies" : "axis") : b.side, target: b.target, candidates, values, required, attackers: attackerIds };
   return { state: withRecord(wholly.state, { pending }), events: wholly.events };
@@ -118,5 +137,6 @@ export function applyAllocation(state: GameState, action: Extract<Action, { type
   if (sum < p.required) return { ok: false, error: `The Exchange takes at least ${p.required} factors; ${units.join(", ") || "no units"} count for ${sum}.` };
   if (units.some((id) => sum - p.values[id]! >= p.required)) return { ok: false, error: `Those losses are more than the Exchange takes: a unit could be spared.` };
   const gone = eliminate(state, units);
-  return { ok: true, state: finishBattle(gone.state, p.attackers, p.target), events: [{ type: "LOSSES_CHOSEN", side: action.side, units: [...units] }, ...gone.events] };
+  const done = finishBattle(gone.state, p.attackers, p.target, p.attackers.flatMap((id) => (state.units[id] ? [state.units[id]] : [])));
+  return { ok: true, state: done.state, events: [{ type: "LOSSES_CHOSEN", side: action.side, units: [...units] }, ...gone.events, ...done.events] };
 }

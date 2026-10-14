@@ -107,9 +107,10 @@ describe("Replacement counters (TODO(verify): they fight like other ground units
     const d = at7h([unit("g1", "germany", "infantry", 3, "M32"), unit("p1", "poland", "replacement", 1, "M33")]);
     expect(legalActions(CTX, d).some((x) => x.type === "ATTACK")).toBe(true);
   });
-  it("air units and airbases alone are not attacked on the ground", () => {
+  it("air units and airbases alone are not fought on the ground: the attack is a sweep with no roll (tests/lone-units.test.ts)", () => {
     const s = at7h([unit("g1", "germany", "infantry", 3, "M32"), unit("a1", "poland", "air", 3, "M33"), unit("b1", "poland", "airbase", 1, "M33")]);
-    expect(legalActions(CTX, s).some((x) => x.type === "ATTACK")).toBe(false);
+    const r = ok(applyAction(CTX, s, { type: "ATTACK", side: "axis", units: ["g1"], target: "M33" }));
+    expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).toMatchObject({ rounds: [], defenseFactors: 0, outcome: "defender-eliminated" });
   });
 });
 

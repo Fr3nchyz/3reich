@@ -1,6 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
-import { applyOutcome, legalAllocations } from "./attack-losses";
-import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, neighborIds } from "./attack-rules";
+import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
+import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { combatOf } from "./combat-record";
 import { enterHexes } from "./control";
@@ -35,7 +35,7 @@ function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
     const front = ctx.map.hexes[t]!.front;
     if (!frontAllowsAttack(ctx, state, state.activeSide, front)) continue;
     const from = pool.filter((u) => crossable(ctx, u.at, t));
-    if (from.length > 0 && defendersAt(state, from, t).length > 0) out.set(t, from);
+    if (from.length > 0 && (defendersAt(state, from, t).length > 0 || lonersAt(state, from, t).length > 0)) out.set(t, from);
   }
   return out;
 }
@@ -47,7 +47,7 @@ export const hasCombatWork = (ctx: GameContext, state: GameState): boolean => at
 function legalAttacks(ctx: GameContext, state: GameState): Action[] {
   const out: Action[] = [];
   for (const [target, from] of attackables(ctx, state)) {
-    const all = from.filter((u) => defendersAt(state, [u], target).length > 0);
+    const all = from.filter((u) => defendersAt(state, [u], target).length > 0 || lonersAt(state, [u], target).length > 0);
     out.push({ type: "ATTACK", side: state.activeSide, units: all.map((u) => u.id), target });
     const hexes = [...new Set(all.map((u) => u.at))];
     if (hexes.length > 1) for (const h of hexes) out.push({ type: "ATTACK", side: state.activeSide, units: all.filter((u) => u.at === h).map((u) => u.id), target });
@@ -109,7 +109,14 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (ONE_ATTACK_PER_HEX && rec.targets.includes(action.target)) return { ok: false, error: `${action.target} has already been attacked this turn.` };
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
   const defenders = defendersAt(state, units, action.target);
-  if (defenders.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
+  if (defenders.length === 0) {
+    // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll and destroys them.
+    const loners = lonersAt(state, units, action.target);
+    if (loners.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
+    const swept = applySweep({ ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
+    const factors = units.reduce((n, u) => n + u.strength, 0);
+    return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated" }, ...swept.events] };
+  }
 
   const numbers = attackNumbers(ctx, state, units, defenders, action.target);
   const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier }, state.rngState);
