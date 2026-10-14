@@ -30,7 +30,9 @@ import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, type 
  * - sea supply (19.31: a designated fleet, one ground unit or airbase per naval factor, ports, Gibraltar, Kiel and
  *   Istanbul as transfer points) needs fleet designation at 6e / 9f and a port-to-port rule: a documented stub.
  * - replacement counters, bridgeheads and units in the off-map boxes (always supplied, U.S. Box) are not checked.
- * - whether a friendly unit cancels an enemy ZOC for supply (spec 03 says so; `ZOC_POLICY`).
+ * - CONFLICT: the same web text says (7.0) that friendly units do NOT negate enemy ZOC and that only armor exerts ZOC
+ *   into adjacent hexes (supply cannot pass a hex next to enemy armor). Not followed: `ZOC_POLICY` and `ZOC_UNIT_TYPES`
+ *   follow spec 03. For the product owner to decide, see docs/RULES.md "Open questions".
  */
 
 /** Ground units, whose supply is checked, and airbases, which 9h relocates when unsupplied. Naval and air units are always supplied (19.3). */
@@ -93,9 +95,13 @@ function capitalCounts(state: GameState, side: Side, country: string | undefined
   return country in (state.nations ?? {}) || sideInWar(state, country as ForceOwner) === side;
 }
 
+/** Whether the state has the parts supply reads (a cheap shape check so a malformed state gives an empty answer, not a throw). */
+const wellFormed = (state: GameState): boolean =>
+  !!state && !!state.units && !!state.nations && !!state.control && Array.isArray(state.minorAllies) && Object.values(state.units).every((u) => !!u && typeof u === "object");
+
 /** Every hex the side controls that is a supply source under the policy, in hex-id order. */
 export function supplySources(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): HexId[] {
-  if (!isSide(side)) return [];
+  if (!isSide(side) || !wellFormed(state)) return [];
   return Object.values(ctx.map.hexes)
     .filter((h) => h.land && h.features.some((f) => policy.sourceFeatures.includes(f)) && capitalCounts(state, side, h.country) && controllingSide(ctx, state, h.id) === side)
     .map((h) => h.id)
@@ -114,7 +120,7 @@ export function seaSupplyLine(_ctx: GameContext, _state: GameState, _side: Side,
 /** The hexes of enemy ground units: a line cannot enter them. */
 function enemyGroundHexes(state: GameState, side: Side): Set<HexId> {
   const out = new Set<HexId>();
-  for (const u of Object.values(state.units ?? {})) {
+  for (const u of Object.values(state.units)) {
     const s = sideInWar(state, u.owner);
     if (s !== null && s !== side && ZOC_UNIT_TYPES.includes(u.type)) out.add(u.at);
   }
@@ -152,7 +158,7 @@ function reach(ctx: GameContext, state: GameState, side: Side, sources: readonly
 
 /** The units of a side whose supply is checked, standing on map hexes (not in a box), in unit-id order. */
 const checkedUnits = (ctx: GameContext, state: GameState, side: Side): Unit[] =>
-  Object.values(state.units ?? {})
+  Object.values(state.units)
     .filter((u) => SUPPLY_CHECKED_TYPES.includes(u.type) && !!ctx.map.hexes[u.at] && sideInWar(state, u.owner) === side)
     .sort((a, b) => byId(a.id, b.id));
 
@@ -160,7 +166,7 @@ const checkedUnits = (ctx: GameContext, state: GameState, side: Side): Unit[] =>
 export function supplyStatus(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SupplyStatus {
   const sources = supplySources(ctx, state, side, policy);
   const status: SupplyStatus = { side, sources, supplied: [], unsupplied: [] };
-  if (!isSide(side) || !state.units) return status;
+  if (!isSide(side) || !wellFormed(state)) return status;
   const reached = new Map<SupplyGroup, Map<HexId, HexId | null>>();
   for (const g of ["axis", "western", "soviet"] as const) {
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
@@ -185,9 +191,10 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
 export const unsuppliedUnits = (ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): string[] =>
   supplyStatus(ctx, state, side, policy).unsupplied;
 
-/** Whether one unit is in supply: false if it is out of supply or is a counter whose supply is not checked. */
+/** Whether one unit is in supply: true for counters whose supply is not checked (fleets and air units are always in supply, 19.3; replacements and bridgeheads are not checked), false if checked and cut or unknown. */
 export function isUnitSupplied(ctx: GameContext, state: GameState, unitId: string, policy: SupplyPolicy = SUPPLY_POLICY): boolean {
-  const u = state.units?.[unitId];
+  const u = wellFormed(state) ? state.units[unitId] : undefined;
   const side = u ? sideInWar(state, u.owner) : null;
-  return !!u && side !== null && supplyStatus(ctx, state, side, policy).supplied.some((l) => l.unitId === unitId);
+  if (!u || side === null) return false;
+  return !SUPPLY_CHECKED_TYPES.includes(u.type) || supplyStatus(ctx, state, side, policy).supplied.some((l) => l.unitId === unitId);
 }

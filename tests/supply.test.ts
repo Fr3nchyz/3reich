@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { attackerPool } from "../src/engine/attack-rules";
+import { controllingSide } from "../src/engine/control";
 import { adjacentHexes, canCross } from "../src/engine/zoc";
 import { isUnitSupplied, SUPPLY_POLICY, supplySources, supplyStatus, unsuppliedUnits, type SupplyPolicy } from "../src/engine/supply";
 import type { GameState, Unit } from "../src/engine/types";
@@ -97,8 +98,16 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(unsuppliedUnits(CTX, { ...open, control: { CC23: "france" as const } }, "axis")).toEqual(["i1"]);
   });
 
-  it("a hex nobody controls cannot carry a line", () => {
-    const s = board([german("g1", "CC30")]); // Greece, neutral and uncontrolled
+  it("a hex nobody controls cannot carry a line (Ref 7.0: neutral Hungary)", () => {
+    expect(CTX.map.hexes["S30"]?.land).toBeTruthy();
+    const s = board([german("g1", "S30"), german("g2", "L32")]);
+    expect(controllingSide(CTX, s, "S30")).toBeNull();
+    expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["g1"]);
+    expect(unsuppliedUnits(CTX, board([german("g3", "CC30")]), "axis")).toEqual(["g3"]);
+  });
+
+  it("an enemy ground unit standing on a controlled source cuts it off (the capital cannot supply)", () => {
+    const s = board([german("g1", "L32"), british("b1", "L31")]);
     expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["g1"]);
   });
 
@@ -141,6 +150,7 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(lineOf(s, "axis", "g1")).toBeDefined();
     const far = withItaly([italian("i1", "DD21")]);
     expect(unsuppliedUnits(CTX, far, "axis", { ...SUPPLY_POLICY, maxLength: 3 })).toEqual(["i1"]);
+    expect(unsuppliedUnits(CTX, far, "axis", { ...SUPPLY_POLICY, maxLength: 6 })).toEqual(["i1"]); // the line is 7 steps long
     expect(unsuppliedUnits(CTX, far, "axis", { ...SUPPLY_POLICY, maxLength: 7 })).toEqual([]);
   });
 
@@ -158,6 +168,11 @@ describe("land supply lines (Ref 19.3)", () => {
   it("naval and air units and replacements are never listed; airbases are (Ref 19.3, 19.4, 11.75)", () => {
     const s = board([counter("f1", "germany", "fleet", 5, "CC30"), counter("a1", "germany", "air", 4, "CC30"), counter("b1", "germany", "airbase", 1, "CC30")]);
     expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["b1"]);
+  });
+
+  it("isUnitSupplied: fleets and air units are always in supply, an airbase or ground unit only when traced (Ref 19.3)", () => {
+    const s = board([counter("f1", "germany", "fleet", 5, "CC30"), counter("a1", "germany", "air", 4, "CC30"), counter("r1", "germany", "replacement", 1, "CC30"), counter("b1", "germany", "airbase", 1, "CC30"), german("g1", "CC30"), german("g2", "L32")]);
+    expect(["f1", "a1", "r1", "b1", "g1", "g2"].map((id) => isUnitSupplied(CTX, s, id))).toEqual([true, true, true, false, false, true]);
   });
 
   it("works in the 1942 scenario too", () => {
@@ -198,6 +213,15 @@ describe("malformed input does not throw", () => {
     expect(supplyStatus(CTX, s, "nobody" as never)).toMatchObject({ sources: [], supplied: [], unsupplied: [] });
     expect(isUnitSupplied(CTX, s, "missing")).toBe(false);
     expect(isUnitSupplied(CTX, s, "x3")).toBe(false);
+    const holes = { ...s, units: { ...s.units, n1: null } } as unknown as GameState;
+    expect(supplyStatus(CTX, holes, "axis").supplied.map((l) => l.unitId)).toEqual([]);
+    for (const k of ["nations", "minorAllies", "control"] as const) {
+      const bad = { ...s, [k]: undefined } as unknown as GameState;
+      expect(() => supplyStatus(CTX, bad, "axis"), k).not.toThrow();
+      expect(() => supplySources(CTX, bad, "allies"), k).not.toThrow();
+      expect(isUnitSupplied(CTX, bad, "g1"), k).toBe(false);
+    }
+    expect(() => supplyStatus(CTX, undefined as unknown as GameState, "axis")).not.toThrow();
     const noUnits = { ...s, units: undefined } as unknown as GameState;
     expect(unsuppliedUnits(CTX, noUnits, "axis")).toEqual([]);
   });

@@ -34,8 +34,8 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 
 ### Supply (steps 6e, 9f to 9h)
 
-- Each ground unit is in supply if it can trace a path of friendly-controlled, enemy-ZOC-free hexes to a supply source (a friendly city or the nation's capital, Ref 10.0), or by sea through supply fleets.
-- Supply is checked at the printed steps. A unit out of supply is flagged, shown on the map, and suffers the printed penalty (it cannot attack, and it is eliminated at the check in 9g if still unsupplied; unsupplied airbases are relocated or eliminated in 9h).
+- Each ground unit is in supply if it can trace a path of friendly-controlled, enemy-ZOC-free hexes to a supply source (the nation's capital and the other sources of Ref 19.2 in the web text; not every friendly city, which this draft first said; the draft's "Ref 10.0" is the spending limit, supply is Ref 19.0 there, TODO(verify)), or by sea through supply fleets.
+- Supply is checked at the printed steps. A unit out of supply is flagged, shown on the map, and suffers the printed penalty (per the web text, Ref 19.4, it CAN still attack but cannot move, advance after combat or be redeployed, TODO(verify) against the PC manual; and it is eliminated at the check in 9g if still unsupplied; unsupplied airbases are relocated or eliminated in 9h).
 - The supply check is deterministic: given a state, it returns the same set of supplied units and the path used.
 
 ### Strategic Redeployment (step 9e)
@@ -49,7 +49,7 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 
 ## Rules references
 
-- Ref 4.0 to 4.8 (map, hexsides, terrain, fortresses), 5.0 (stacking), 6.0 (ZOC), 7.0 (control), 10.0 (supply), 11.7 to 11.77 (redeployment, overstacking), 16.0 (conquest), 20.0 (air movement).
+- Ref 4.0 to 4.8 (map, hexsides, terrain, fortresses), 5.0 (stacking), 6.0 (ZOC), 7.0 (control), 19.0 (supply; written 10.0 in the first draft, which is the spending limit), 11.7 to 11.77 (redeployment, overstacking), 16.0 (conquest), 20.0 (air movement).
 - Ops 5.45, 5.45e to 5.45g, 5.48 to 5.48j.
 - PC README: rule 3.35 (once initial setup requirements are met you may move any units freely), rule 14.23 (an attacking unit may attack only one hex), rule 24.23 (supply lines for conquest of minors are chosen by the program), rule 47.3 and 47.4 (Suez Canal behaviour).
 
@@ -94,5 +94,7 @@ Pure queries in `src/engine/supply.ts`; no action, no step and no UI uses them y
 - Tracing: a breadth-first search outward from the sources over land hexes the side controls with no enemy ground unit, across hexsides ground units cross (`canCross`, so Crossing Arrows count and Qattara does not), with `enemyZocFor` and its friendly cancellation (`ZOC_POLICY`). An enemy-ZOC hex is reached but not passed through unless it is a source. Fixed neighbour order, so the same state always gives the same nearest source and path. Western Allied and Soviet units trace from their own sources only (lines may cross each other's hexes); `SUPPLY_POLICY` holds the switches (`sourceFeatures`, `maxLength` null, `separateAlliedGroups`, `zoc`).
 - Sea supply (19.31) is a documented stub (`seaSupplyLine` returns null): it needs fleet designation at 6e and 9f and the port rule.
 - Cost: both sides together took 3 ms (1939), 7 ms (1942) and 5 ms (1944) on a fully set up board, so no cache; nothing calls it per render because the hook stays true.
-- Tested on concrete positions in `tests/supply.test.ts` (27 tests): Warsaw and Rome as sources, a continuous line, ZOC on the unit and the source (no cut), a cut by enemy ZOC (Sicily chain, Poland ring), an enemy-controlled hex, an enemy unit on the line, friendly units cancelling ZOC, the Messina arrow (and the same strait without it), Sardinia, the Western and Soviet split, a length policy, determinism, malformed input, and that an unsupplied unit stays in the attacker pool. Mutation checks (each made tests fail): ZOC stop, source-in-ZOC exemption, control test, enemy-unit block, hexside crossing, sources widened to cities, friendly cancellation, the Soviet split.
+- Tested on concrete positions in `tests/supply.test.ts` (29 tests): Warsaw and Rome as sources, a continuous line, ZOC on the unit and the source (no cut), a cut by enemy ZOC (Sicily chain, Poland ring), an enemy-controlled hex, an enemy unit on the line, friendly units cancelling ZOC, the Messina arrow (and the same strait without it), Sardinia, the Western and Soviet split, a length policy, determinism, malformed input, and that an unsupplied unit stays in the attacker pool. Mutation checks (each made tests fail; a first review found four that survived, the enemy unit on a source, the maximum length boundary, a null controller and the always-supplied counters, each now has a test): ZOC stop, source-in-ZOC exemption, control test, enemy-unit block, hexside crossing, sources widened to cities, friendly cancellation, the Soviet split.
 - Open (all `TODO(verify)`, listed in docs/RULES.md "Open questions"): see there; the unsupplied penalties (no move, no advance, elimination at 9g, airbases at 9h) are not built.
+- **Conflict to decide** (RULES.md "Open questions", first item): the web text says friendly units do not negate enemy ZOC and only armor exerts ZOC into adjacent hexes; this module and `zoc.ts` follow the draft above instead. Its section numbers also differ (control 6.0, ZOC 7.0).
+- Malformed input: a state missing `units`, `nations`, `control` or `minorAllies`, or with a null unit entry, gives an empty answer; `zoc.ts` itself is not guarded for those shapes.
