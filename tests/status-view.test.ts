@@ -34,9 +34,18 @@ describe("the status area in play", () => {
     const s = inPlay();
     takeAction(s, { type: "DECLARE_WAR", by: "germany", on: "norway" });
     expect(s.toast).toBe("");
-    expect(s.log.at(-2)).toBe("Germany: -10 BRPs (declaring war on norway), 140 left.");
+    expect(s.log.at(-2)).toBe("Germany: -10 BRPs (declaring war on Norway), 140 left.");
     expect(s.log.at(-1)).toBe("Germany declares war on Norway (10 BRPs).");
     expect(statusHtml(s, null, legalActions(s.ctx, s.state))).toContain("10 of 75 spent");
+  });
+
+  it("keeps the declarations open while you make several, and closed otherwise", () => {
+    const s = inPlay();
+    expect(statusHtml(s, null, legalActions(s.ctx, s.state))).toMatch(/<details class="declarations">/);
+    takeAction(s, { type: "DECLARE_WAR", by: "germany", on: "norway" });
+    expect(statusHtml(s, null, legalActions(s.ctx, s.state))).toMatch(/<details class="declarations" open>/);
+    takeAction(s, { type: "DECLARE_WAR", by: "germany", on: "denmark" });
+    expect(statusHtml(s, null, legalActions(s.ctx, s.state))).toMatch(/<details class="declarations" open>/);
   });
 
   it("puts a refusal in the toast", () => {

@@ -21,6 +21,9 @@ export const OWNER_NAMES: Record<ForceOwner, string> = {
   bulgaria: "Bulgaria",
 };
 
+/** A readable name for anyone at war: an owner of forces, or a minor country by its id ("norway" becomes "Norway"). */
+export const combatantName = (c: string): string => (c in OWNER_NAMES ? OWNER_NAMES[c as ForceOwner] : c.charAt(0).toUpperCase() + c.slice(1));
+
 /** Ref 10.0: half the BRP total at the Year Start Sequence, fractions rounded down, per Player Turn. */
 export function spendingLimit(nation: Nation): number {
   return nation.spendLimit;

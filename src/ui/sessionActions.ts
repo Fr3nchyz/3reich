@@ -41,6 +41,7 @@ export function tapHex(s: Session, h: MapHex): void {
 /** A turn button: apply one of the legal actions that were on offer. */
 export function takeAction(s: Session, action: Action): void {
   s.toast = "";
+  s.declarationsOpen = action.type === "DECLARE_WAR";
   run(s, action);
 }
 

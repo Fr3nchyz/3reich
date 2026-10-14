@@ -1,5 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { charge, spend, spendable } from "./brps";
+import { combatantName } from "./nations";
 import type { GameContext } from "./context";
 import { BRP_COSTS, MINOR_COUNTRY_FORCES } from "./tables";
 import type { Combatant, GameState, Nation, PowerId, Side } from "./types";
@@ -75,10 +76,22 @@ export function applyDeclaration(ctx: GameContext, state: GameState, action: Ext
     return { ok: false, error: `${action.by} may not declare war on ${action.on}: it is on the same side, out of the game, protected by the scenario, or beyond what ${action.by} may spend this turn.` };
   }
   const cost = costOf(action.on);
-  const paid = spend(state, action.by, cost, `declaring war on ${action.on}`);
+  const paid = spend(state, action.by, cost, `declaring war on ${combatantName(action.on)}`);
   if (!paid.ok) return paid;
   const events: GameEvent[] = [paid.event, { type: "WAR_DECLARED", by: action.by, on: action.on, cost }];
-  return { ok: true, state: { ...paid.state, wars: [...paid.state.wars, [action.by, action.on]] }, events };
+  const wars: GameState["wars"] = [...paid.state.wars, [action.by, action.on]];
+  return { ok: true, state: joinsItsSide({ ...paid.state, wars }, action.on), events };
+}
+
+/**
+ * A neutral Major Power that is at war has to be fighting for its own side: Italy for the Axis, the
+ * U.S.A. and the U.S.S.R. for the Allies (ALIGNMENT). Anyone else is left as it is.
+ * TODO(verify, spec 02): alliances for the rest (a neutral Major Power joining the other side).
+ */
+function joinsItsSide(state: GameState, who: Combatant): GameState {
+  if (!isMajorPower(who) || state.nations[who].status !== "neutral") return state;
+  const status = ALIGNMENT[who] === "axis" ? ("axis" as const) : ("allied" as const);
+  return { ...state, nations: { ...state.nations, [who]: { ...state.nations[who], status } } };
 }
 
 /**
@@ -91,8 +104,13 @@ export function scheduledDeclarations(ctx: GameContext, state: GameState): { sta
   const events: GameEvent[] = [];
   for (const rule of ctx.scenario.rules) {
     if (rule.kind !== "automatic-declaration" || rule.side !== state.activeSide) continue;
-    if (rule.turn.year !== state.year || rule.turn.season !== state.season || atWar(next, rule.by, rule.on)) continue;
-    const charged = charge(next, rule.by, rule.brpCost, `declaring war on ${rule.on} (scenario rule)`);
+    if (rule.turn.year !== state.year || rule.turn.season !== state.season) continue;
+    // The war may exist already (Germany declared first): the Major Power still joins its side, with nothing to pay.
+    if (atWar(next, rule.by, rule.on)) {
+      next = joinsItsSide(next, rule.by);
+      continue;
+    }
+    const charged = charge(next, rule.by, rule.brpCost, `declaring war on ${combatantName(rule.on)} (scenario rule)`);
     const joined = { ...charged.state.nations[rule.by], status: rule.side === "axis" ? ("axis" as const) : ("allied" as const) };
     next = { ...charged.state, nations: { ...charged.state.nations, [rule.by]: joined }, wars: [...charged.state.wars, [rule.by, rule.on]] };
     events.push(charged.event, { type: "WAR_DECLARED", by: rule.by, on: rule.on, cost: rule.brpCost });

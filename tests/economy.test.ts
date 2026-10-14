@@ -4,6 +4,7 @@ import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
 import { charge, resetSpending, spend, spendable } from "../src/engine/brps";
+import { initiativeTotals } from "../src/engine/game";
 import { spendingLimit } from "../src/engine/nations";
 import { BRP_COSTS } from "../src/engine/tables";
 import type { Combatant, GameState, PowerId } from "../src/engine/types";
@@ -79,7 +80,7 @@ describe("declarations of war (Ref 13.0)", () => {
     const minor = ok(declare(s, "germany", "norway"));
     expect(minor.state.nations.germany.brpTotal).toBe(140);
     expect(minor.events).toEqual([
-      { type: "BRPS_CHANGED", nation: "germany", delta: -10, total: 140, reason: "declaring war on norway" },
+      { type: "BRPS_CHANGED", nation: "germany", delta: -10, total: 140, reason: "declaring war on Norway" },
       { type: "WAR_DECLARED", by: "germany", on: "norway", cost: 10 },
     ]);
     const major = ok(declare(s, "germany", "ussr"));
@@ -89,8 +90,35 @@ describe("declarations of war (Ref 13.0)", () => {
   });
 
   it("make the war part of the state, and count for the Initiative", () => {
-    const s = ok(declare(atStart(SCENARIO_1939, 1), "germany", "ussr")).state;
+    const before = atStart(SCENARIO_1939, 1);
+    const s = ok(declare(before, "germany", "ussr")).state;
     expect(s.wars).toContainEqual(["germany", "ussr"]);
+    // Germany paid 35 and the Soviet BRPs now count for the Allies (Ref 11.1): 210 + 90.
+    expect(initiativeTotals(before)).toEqual({ axis: 225, allies: 210 });
+    expect(initiativeTotals(s)).toEqual({ axis: 190, allies: 300 });
+  });
+
+  it("bring a neutral Major Power into the war on its own side", () => {
+    const before = atStart(SCENARIO_1939, 1);
+    const s = ok(declare(before, "germany", "ussr")).state;
+    expect(before.nations.ussr.status).toBe("neutral");
+    expect(s.nations.ussr.status).toBe("allied");
+    expect(s.nations.usa.status).toBe("neutral");
+    // Attacked by the Allies, Italy joins the Axis.
+    const allied = { ...before, activeSide: "allies" as const };
+    const italy = ok(applyAction(CTX, allied, { type: "DECLARE_WAR", by: "britain", on: "italy" })).state;
+    expect(italy.nations.italy.status).toBe("axis");
+    // A minor country has no status to change.
+    expect(ok(declare(before, "germany", "norway")).state.nations).toEqual({ ...before.nations, germany: { ...before.nations.germany, brpTotal: 140, spent: 10 } });
+  });
+
+  it("leave out a Major Power that is out of the game or Vichy", () => {
+    const s = atStart(SCENARIO_1939, 1);
+    const out = { ...s, activeSide: "allies" as const, nations: { ...s.nations, italy: { ...s.nations.italy, status: "out" as const } } };
+    expect(declarationTargets(CTX, out, "britain")).not.toContain("italy");
+    const s42 = atStart(SCENARIO_1942, 1);
+    expect(s42.nations.france.status).toBe("vichy");
+    expect(declarationTargets(ctxFor(SCENARIO_1942), s42, "germany")).not.toContain("france");
   });
 
   it("are listed as legal actions at step 1 only, ahead of the move-on action", () => {
@@ -201,7 +229,7 @@ describe("a declaration the scenario makes by itself", () => {
     expect(atWar(r.state, "usa", "germany")).toBe(true);
     expect(r.state.nations.usa).toMatchObject({ status: "allied", brpTotal: 235, spent: 0 });
     expect(r.events).toContainEqual({ type: "WAR_DECLARED", by: "usa", on: "germany", cost: 35 });
-    expect(r.events).toContainEqual({ type: "BRPS_CHANGED", nation: "usa", delta: -35, total: 235, reason: "declaring war on germany (scenario rule)" });
+    expect(r.events).toContainEqual({ type: "BRPS_CHANGED", nation: "usa", delta: -35, total: 235, reason: "declaring war on Germany (scenario rule)" });
   });
 
   it("is not made on the other side's turn, a different turn, or when the war already exists", () => {
@@ -212,5 +240,7 @@ describe("a declaration the scenario makes by itself", () => {
     expect(atWar(summer, "usa", "germany")).toBe(false);
     const already = ok(endTurn(CTX, { ...axisTurn, wars: [...axisTurn.wars, ["usa", "germany"]] })).state;
     expect(already.nations.usa.brpTotal).toBe(270);
+    // Germany declared first, so there is nothing to pay; the U.S. still joins the Allies in Spring 1942.
+    expect(already.nations.usa.status).toBe("allied");
   });
 });

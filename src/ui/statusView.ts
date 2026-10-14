@@ -48,11 +48,11 @@ function label(a: Action): string {
  * One button per legal action; data-action is the index into `actions`. Declarations of war, of
  * which there are many, sit in a fold-out above the buttons that move the game on.
  */
-function turnButtons(actions: Action[]): string {
+function turnButtons(actions: Action[], open: boolean): string {
   const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${label(a)}</button>`;
   const wars = actions.filter((a) => a.type === "DECLARE_WAR");
   const rest = actions.filter((a) => a.type !== "DECLARE_WAR");
-  const fold = wars.length > 0 ? `<details class="declarations"><summary>Declare war (${wars.length} choices)</summary><div class="actions controls">${wars.map(button).join("")}</div></details>` : "";
+  const fold = wars.length > 0 ? `<details class="declarations"${open ? " open" : ""}><summary>Declare war (${wars.length} choices)</summary><div class="actions controls">${wars.map(button).join("")}</div></details>` : "";
   return `${fold}<div class="actions controls">${rest.map(button).join("")}</div>`;
 }
 
@@ -69,7 +69,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${s.state.phase === "player-turn" ? `<p class="note">The computer opponent does not play yet, so you take both sides' turns for now.</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
-      ${turnButtons(actions)}
+      ${turnButtons(actions, s.declarationsOpen)}
       ${logList(s)}
     </main>`;
 }

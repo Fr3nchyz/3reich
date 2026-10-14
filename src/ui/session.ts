@@ -35,6 +35,8 @@ export interface Session {
   toast: string;
   /** The nation the map was last zoomed to, so it zooms once per nation and then stays where you put it. */
   focusedOwner: ForceOwner | null;
+  /** Whether the "Declare war" fold-out is open: it stays open while you make several declarations. */
+  declarationsOpen: boolean;
 }
 
 /** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
@@ -48,6 +50,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     mode: "place",
     toast: "",
     focusedOwner: null,
+    declarationsOpen: false,
   };
   computerSetup(session);
   return session;
