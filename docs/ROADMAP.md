@@ -112,7 +112,7 @@ Each item is its own module, tested on specific map situations (a river, Qattara
 | 5.2 | **Stacking in play** and overstack elimination (steps 6g, 9j) |
 | 5.3 | **Zones of control** |
 | 5.4 | **Ground movement** with crossing arrows, rivers, Qattara and the Suez Canal (step 6f) |
-| 5.5 | **Supply** (land, sea, fleets), unsupplied units (steps 6e, 9f-9h) |
+| 5.5 | **Supply** (land, sea, fleets), unsupplied units (steps 6e, 9f-9h). Land tracing built as queries (spec 03 part 2); sea supply and the step penalties not. Supply is Ref 19 in the web text; unsupplied units there may still attack |
 | 5.6 | **Strategic Redeployment** (step 9e) |
 | 5.7 | **Fortress** changes: Maginot, West Wall, Sevastopol (Ref 4.8) |
 
