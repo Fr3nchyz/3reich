@@ -155,19 +155,19 @@ export interface Zone {
 /** Where a setup requirement applies. */
 export type Area =
   /** Anywhere on that country's land, as named in map data (e.g. "egypt"). */
-  | { country: string }
+  | { kind: "country"; id: string }
   /** One specific hex. */
-  | { hex: HexId }
+  | { kind: "hex"; id: HexId }
   /** Any port on that Front. */
-  | { ports: Front }
+  | { kind: "ports"; front: Front }
   /** Any hex on that Front. */
-  | { front: Front }
+  | { kind: "front"; front: Front }
   /** An off-map box. */
-  | { box: OffMapBox }
+  | { kind: "box"; box: OffMapBox }
   /** A zone defined in the scenario's `zones`. */
-  | { zone: ZoneId }
+  | { kind: "zone"; id: ZoneId }
   /** Anywhere in the territory this owner controls at the start. */
-  | { controlledBy: ForceOwner };
+  | { kind: "controlled-by"; owner: ForceOwner };
 
 /** Opening-setup restriction from a scenario page (Ops 9.0). Checked when the player sets up. */
 export type SetupRequirement =

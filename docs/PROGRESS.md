@@ -24,7 +24,7 @@ The game can be opened in a browser, any of the four scenarios (1939, Campaign, 
 |---|---|
 | 1 Housekeeping | Done |
 | 2 Read the original game's data | 2.1, 2.2, 2.3, 2.4, 2.8 done. **Not done:** 2.5 compare scenario files, 2.6 write up the PC-vs-board-game rule differences, 2.7 read the AI resources |
-| 3 Engine refactors | 3.2 setup split, 3.4 test gaps, 3.5 tooling, 3.6 UI split done; 3.3 partly (tagged `Area` union not done). 3.1 turn-step cursor done (spec 01 built; see `docs/specs/01-turn-steps.md`, "As built") |
+| 3 Engine refactors | 3.2 setup split, 3.4 test gaps, 3.5 tooling, 3.6 UI split done; 3.3 done (tagged `Area` union, no `!` assertions left in setup). 3.1 turn-step cursor done (spec 01 built; see `docs/specs/01-turn-steps.md`, "As built") |
 | 4 Economy and turn skeleton | Part 1 built: BRP ledger, the yearly spending limit, declarations of war at step 1 (35 / 10 BRPs), the U.S. entering in Spring 1942, Initiative reading real wars. Not built: Year Start Sequence arithmetic, front options, construction, grants (spec 02, "As built") |
 | 5 Movement, ZOC, supply | Spec written (03); not built |
 | 6 Combat, air, naval | Tables and resolvers exist and are verified; spec written (04); not wired to actions |

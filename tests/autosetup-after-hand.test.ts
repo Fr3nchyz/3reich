@@ -121,7 +121,7 @@ describe("autoSetupOwner after counters were placed by hand", () => {
   it("fails with a typed error in plain words, not an uncaught one, when no setup can be finished at all", () => {
     // A contrived page: all of Poland's counters in one hex, which holds two ground units.
     const warsaw = Object.values(CTX.map.hexes).find((h) => h.name === "Warsaw")!.id;
-    const scenario: Scenario = { ...SCENARIO_1939, forces: { ...SCENARIO_1939.forces, poland: { ...SCENARIO_1939.forces.poland!, setup: [{ kind: "all-in", types: "all", in: [{ hex: warsaw }] }], forcePool: [inf(2, 3, 3)] } } };
+    const scenario: Scenario = { ...SCENARIO_1939, forces: { ...SCENARIO_1939.forces, poland: { ...SCENARIO_1939.forces.poland!, setup: [{ kind: "all-in", types: "all", in: [{ kind: "hex", id: warsaw }] }], forcePool: [inf(2, 3, 3)] } } };
     const ctx = ctxFor(scenario);
     for (const hand of [0, 2]) {
       const s = byHand(ctx, newGame(scenario, 1), "poland", Array.from({ length: hand }, () => ({ type: "infantry" as const, strength: 2, at: warsaw })));

@@ -11,26 +11,26 @@ export function axisMinorSetups(scenario: "1942" | "1944") {
     finland: nationSetup({
       controlledAtStart: ["finland"],
       // "Finnish units may start the 1942 scenario only in Finland and/or hexes A47 and B46. In the 1944 scenario they may start only in Finland."
-      mayAlsoSetUpIn: scenario === "1942" ? [{ areas: [{ hex: "A47" }, { hex: "B46" }], axisControlled: true }] : [],
+      mayAlsoSetUpIn: scenario === "1942" ? [{ areas: [{ kind: "hex", id: "A47" }, { kind: "hex", id: "B46" }], axisControlled: true }] : [],
       forcePool: [inf(2, 3, 5), air(1, 4, 1)],
       allowableBuilds: [],
     }),
     rumania: nationSetup({
       controlledAtStart: ["rumania"],
-      mayAlsoSetUpIn: [{ areas: [{ country: "yugoslavia" }, { zone: "eastern-europe" }, { country: "ussr" }], axisControlled: true }],
+      mayAlsoSetUpIn: [{ areas: [{ kind: "country", id: "yugoslavia" }, { kind: "zone", id: "eastern-europe" }, { kind: "country", id: "ussr" }], axisControlled: true }],
       forcePool: [inf(2, 3, 2), inf(1, 3, 6), air(1, 4, 1)],
       allowableBuilds: [],
     }),
     bulgaria: nationSetup({
       controlledAtStart: ["bulgaria"],
-      mayAlsoSetUpIn: [{ areas: [{ country: "yugoslavia" }, { country: "greece" }, { zone: "european-turkey" }], axisControlled: true }],
+      mayAlsoSetUpIn: [{ areas: [{ kind: "country", id: "yugoslavia" }, { kind: "country", id: "greece" }, { kind: "zone", id: "european-turkey" }], axisControlled: true }],
       forcePool: [inf(1, 3, 4), air(1, 4, 1)],
       allowableBuilds: [],
     }),
     hungary: nationSetup({
       controlledAtStart: ["hungary"],
       mayAlsoSetUpIn: [
-        { areas: [{ country: "yugoslavia" }, { zone: "eastern-europe" }, { country: "poland" }, { country: "ussr" }], axisControlled: true },
+        { areas: [{ kind: "country", id: "yugoslavia" }, { kind: "zone", id: "eastern-europe" }, { kind: "country", id: "poland" }, { kind: "country", id: "ussr" }], axisControlled: true },
       ],
       forcePool: [inf(2, 3, 1), inf(1, 3, 6), air(1, 4, 1)],
       allowableBuilds: [],
