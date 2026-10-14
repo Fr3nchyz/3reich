@@ -63,6 +63,9 @@ export const SCENARIO_CAMPAIGN: Scenario = {
     // The Campaign page does not repeat the 1939 page's Summer '42 Seaborne Invasion ban.
     { kind: "automatic-declaration", by: "usa", on: "germany", turn: { year: 1942, season: "spring" }, side: "allies", brpCost: 35 },
     { kind: "no-brp-growth", year: 1940 },
+    // Ref 29.0: "Germany's opening Eastern Front Offensive Option is free." Read as the Axis Fall '39 turn.
+    // TODO(verify): whether it is free only on that first turn.
+    { kind: "free-front-option", side: "axis", front: "eastern", option: "offensive", turn: { year: 1939, season: "fall" } },
     { kind: "eliminate-in-zone", zone: "poland-east-of-partition-line", side: "axis", turn: { year: 1939, season: "fall" } },
   ],
 

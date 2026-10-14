@@ -39,6 +39,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   if (!action) return null;
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
+    "3": "No Front Option chosen: with no combat rules yet every Front stays on the default (defensive) Option.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",

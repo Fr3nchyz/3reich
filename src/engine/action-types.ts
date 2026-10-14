@@ -1,5 +1,6 @@
 import type { HexId } from "./hex";
-import type { Combatant, ForceOwner, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
+import type { Front } from "./map";
+import type { Combatant, ForceOwner, FrontOption, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
  * Everything a player (human or computer) can do is an Action. Actions are plain,
@@ -13,6 +14,8 @@ export type Action =
   | { type: "END_STEP"; side: Side; step: string }
   /** Step 1: a Major Power declares war on another Major Power (35 BRPs) or a minor country (10). */
   | { type: "DECLARE_WAR"; by: PowerId; on: Combatant }
+  /** Step 3: the side to move chooses its Option on one Front (Ref 11.21); `payer` is the Major Power that pays for an Offensive Option, left out when it is free. */
+  | { type: "SELECT_FRONT_OPTION"; side: Side; front: Front; option: FrontOption; payer?: PowerId }
   /** Step 8b: build one counter from the nation's Allowable Builds, paying for it, and place it. */
   | { type: "BUILD"; owner: PowerId; unit: { type: UnitType; strength: number }; at: HexId | OffMapBox }
   /** Step 9a: grant BRPs to an allied Major Power. */
@@ -28,6 +31,10 @@ export type Action =
 export type GameEvent =
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
+  /** Ref 7.0: a hex changed hands because a ground unit entered it. */
+  | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
+  /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */
+  | { type: "OVERSTACK_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId }
   | { type: "SETUP_OWNER_DONE"; owner: ForceOwner }
   | { type: "SETUP_COMPLETE" }
   | { type: "INITIATIVE_DETERMINED"; year: number; season: Season; firstSide: Side; axis: number; allies: number }
@@ -36,6 +43,7 @@ export type GameEvent =
   | { type: "STEPS_PASSED"; steps: string[] }
   /** A nation's BRP total changed; `delta` is negative for spending. */
   | { type: "BRPS_CHANGED"; nation: PowerId; delta: number; total: number; reason: string }
+  | { type: "FRONT_OPTION_SELECTED"; side: Side; front: Front; option: FrontOption; cost: number }
   | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

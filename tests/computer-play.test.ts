@@ -56,8 +56,7 @@ describe("the computer's turns in the browser", () => {
     const s = inPlay("allies");
     expect(computerToMove(s)).toBe(true);
     // Bring the computer's turn to its construction step and choose a build, as a tap would need.
-    expect(computerTick(s, 1e9)).toBe("done");
-    expect(s.state.position).toMatchObject({ step: "8b" });
+    toConstruction(s);
     pickBuild(s, "germany:infantry:3");
     const target = builds(s).find((a) => a.owner === "germany" && a.unit.type === "infantry" && a.unit.strength === 3)!;
     expect(target, "an unguarded tap here would build").toBeDefined();
@@ -70,9 +69,9 @@ describe("the computer's turns in the browser", () => {
     const s = inPlay("allies");
     let clock = 0;
     const slow = () => (clock += 100);
-    let result = computerTick(s, 50, slow);
-    expect(result).toBe("done"); // step 1 is a single action
-    result = computerTick(s, 50, slow);
+    // The steps before construction (declarations, Front Options) are one action each: they finish within a tick.
+    toConstruction(s, slow);
+    const result = computerTick(s, 50, slow);
     expect(result).toBe("more"); // construction needs many actions
     const builtAfterFirst = Object.keys(s.state.units).length;
     for (let i = 0; i < 200 && computerToMove(s); i++) computerTick(s, 50, slow);
@@ -80,6 +79,14 @@ describe("the computer's turns in the browser", () => {
     expect(computerToMove(s)).toBe(false);
   });
 });
+
+/** Ticks the computer through the steps before construction, each of which must finish in one tick, until it waits at 8b. */
+function toConstruction(s: Session, now?: () => number): void {
+  for (let i = 0; i < 5 && !(s.state.position?.part === "player-turn" && s.state.position.step === "8b"); i++) {
+    expect(computerTick(s, 1e9, now)).toBe("done");
+  }
+  expect(s.state.position).toMatchObject({ step: "8b" });
+}
 
 function applied(s: Session, a: ReturnType<typeof legalActions>[number]) {
   const r = applyAction(s.ctx, s.state, a);

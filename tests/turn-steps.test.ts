@@ -41,22 +41,26 @@ describe("the position in the game", () => {
     expect(legalActions(CTX, s).at(-1)).toEqual({ type: "END_STEP", side: "axis", step: FIRST_STEP });
   });
 
-  it("passes step 1 when there is nothing to declare and waits at 8b, where the Germans may build (1944: no war on neutrals)", () => {
+  it("passes step 1 when there is nothing to declare and waits at 3, where Front Options are chosen (1944: no war on neutrals)", () => {
     const ctx = ctxFor(SCENARIO_1944);
     const s = play(ctx, SCENARIO_1944);
-    expect(s.position).toEqual({ part: "player-turn", turn: 1, step: "8b" });
-    expect(legalActions(ctx, s).at(-1)).toEqual({ type: "END_STEP", side: s.activeSide, step: "8b" });
+    expect(s.position).toEqual({ part: "player-turn", turn: 1, step: "3" });
+    expect(legalActions(ctx, s).at(-1)).toEqual({ type: "END_STEP", side: s.activeSide, step: "3" });
   });
 
-  it("leaves step 1 for 8b once the side is done, passing steps 2 to 8a", () => {
+  it("leaves step 1 for 3 once the side is done (passing step 2), then 3 for 8b (passing steps 4 to 8a)", () => {
     const s = atStart(SCENARIO_1939, 1);
     const r = apply(CTX, s, moveOn(CTX, s));
-    expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: "8b" });
-    expect(passedIn(r.events)).toEqual(STEPS.slice(1, STEPS.indexOf("8b")));
+    expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: "3" });
+    expect(passedIn(r.events)).toEqual(["2"]);
+    const r2 = apply(CTX, r.state, moveOn(CTX, r.state));
+    expect(r2.state.position).toEqual({ part: "player-turn", turn: 1, step: "8b" });
+    expect(passedIn(r2.events)).toEqual(STEPS.slice(STEPS.indexOf("3") + 1, STEPS.indexOf("8b")));
   });
 
   it("passes 9a when there is nothing to grant and waits at 10b", () => {
-    const at8b = apply(CTX, atStart(SCENARIO_1939, 1), moveOn(CTX, atStart(SCENARIO_1939, 1))).state;
+    const at3 = apply(CTX, atStart(SCENARIO_1939, 1), moveOn(CTX, atStart(SCENARIO_1939, 1))).state;
+    const at8b = apply(CTX, at3, moveOn(CTX, at3)).state;
     const r = apply(CTX, at8b, moveOn(CTX, at8b));
     expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: LAST_STEP });
     expect(passedIn(r.events)).toEqual(STEPS.slice(STEPS.indexOf("8b") + 1, -1));
@@ -105,12 +109,13 @@ describe("steps without rules are passed, and the passing is recorded", () => {
   it("records exactly the steps that are not waited at, and never a step that is", () => {
     const events = oneGameTurn(CTX, atStart(SCENARIO_1939, 1));
     const passed = passedIn(events);
-    // Both sides had something to declare and to build, so steps 1 and 8b were waited at and never recorded as
-    // passed. Germany has nobody to grant to, so 9a passed for the Axis; the Allies (Britain to France) waited at it.
+    // Both sides had something to declare, to choose (Front Options, both at war) and to build, so steps 1, 3 and 8b
+    // were waited at and never recorded as passed. Germany has nobody to grant to, so 9a passed for the Axis; the
+    // Allies (Britain to France) waited at it.
     const without = (waited: string[]) => STEPS.slice(1, -1).filter((id) => !waited.includes(id));
-    expect(passed).toEqual([...without(["8b"]), ...without(["8b", "9a"]), "II.A"]);
+    expect(passed).toEqual([...without(["3", "8b"]), ...without(["3", "8b", "9a"]), "II.A"]);
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
-    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "8b", "9a"].includes(id)).toBe(true);
+    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "8b", "9a"].includes(id)).toBe(true);
   });
 
   it("records step 1 as passed when a side has nothing to declare", () => {
@@ -143,7 +148,10 @@ describe("the Year Start Sequence and the Russian-Winter roll", () => {
   it("keep the order YSS, II.A, II.B", () => {
     const r = apply(CTX, lastOfTurn(1940, "winter"), { type: "END_PLAYER_TURN", side: "allies" });
     const kinds = r.events.map((e) => (e.type === "STEPS_PASSED" ? e.steps.join(",").slice(0, 10) : e.type));
-    expect(kinds.slice(0, 3)).toEqual(["YSS,II.A", "INITIATIVE_DETERMINED", "PLAYER_TURN_STARTED"]);
+    // The Year Start Sequence recalculates the BRP totals (one event per nation that changes) before II.A and II.B.
+    const yss = kinds.indexOf("YSS");
+    expect(yss).toBe(0);
+    expect(kinds.slice(kinds.lastIndexOf("BRPS_CHANGED") + 1, kinds.lastIndexOf("BRPS_CHANGED") + 4)).toEqual(["II.A", "INITIATIVE_DETERMINED", "PLAYER_TURN_STARTED"]);
   });
 });
 

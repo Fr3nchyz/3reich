@@ -21,7 +21,8 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/tables.ts` | BRP costs (DoW 35/10, Offensive option 15, per-factor build costs), stacking limits, interception table, naval and air DRMs, minor-country forces | Map card; Ref 5.0, 13.0; verified against the game's data (`GAME_DATA.md`, "Rule tables") |
 | `src/engine/hex.ts` | Hex ids (`K21`, `AA25`), axial neighbours, distance, hexside ids (`MM26-NN26`) | Ref 4.1 |
 | `src/engine/map.ts` | Map data model (land/sea per hex, crossability per hexside, fortress kinds) and `validateMap` | Ref 4.1-4.9 |
-| `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
+| `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1 | Ref 11.1; Ops 5.1-5.3 |
+| `src/engine/yearstart.ts`, `frontoptions.ts`, `minors.ts` | Year Start Sequence part B (Base growth, Minor-Ally BRPs, spending limit); Front Options at step 3; a minor country's forces as counters | Ref 9.2, 10.0, 11.21, 14.0; Ops 6.0 |
 | `src/engine/actions.ts` | `legalActions`, `applyAction` (returns events), `replay` | (engine API) |
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
 | `src/engine/context.ts` | `GameContext` (map + scenario), passed with the state to `legalActions`, `applyAction` and `replay` so the engine imports no data | (engine API) |
@@ -114,7 +115,7 @@ Done is legal when every counter is placed and every requirement is met: the uni
 
 | Step | Status |
 |---|---|
-| Year Start Sequence (A strategic warfare, B BRP totals, C SW construction) | Hook only; not run |
+| Year Start Sequence (A strategic warfare, B BRP totals, C SW construction) | B done (`yearstart.ts`); A and C not built |
 | II.B Determination of Player-Turn Order (Ref 11.1) | Done |
 | II.A Russian-Winter roll; Player Turn steps 1-10 and their sub-steps | Not yet; a Player Turn is one End Turn action |
 
@@ -152,10 +153,19 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 
 ## Open questions
 
+- **Year Start Sequence and Front Options (spec 02, part 3), all `TODO(verify)`:**
+  - `KEEP_UNUSED_BRPS` (`yearstart.ts`): whether BRPs a nation did not spend by year end also stay in its new total. Built as no: they only feed the growth and are then dropped.
+  - Whether growth is taken on the whole total (including Minor-Ally BRPs and grants received), as built, or on something narrower.
+  - Each Minor-Ally's own BRP value: `minorAllyBrps` adds the scenario's summed figure (Germany's 45) only while every Minor-Ally active at the start is still active, otherwise nothing. Only Bulgaria's 10 is known (PC README).
+  - Which Major Power pays for an Offensive Option (built: the action names a payer from the side).
+  - Whether that cost counts towards the spending limit (built: yes).
+  - Whether a Front Option can be changed within step 3 (built: no, one choice per Front, no refunds).
+  - The Option for a Front with no choice (built: Defensive).
+  - Whether Germany's free Eastern Front Offensive Option (Ref 29.0) is for the first turn only (built: Fall 1939 only).
 - **Vichy and Free French naval nationality DRM.** The printed rule is settled: the Reference Manual's chart in 21.51 has the row "French (including Vichy & Free French)" at 0 (see "Web research" below). What is still open is only whether the PC program does the same: its naval routine gives 0 only to France's nation number; a fleet carrying Vichy's or Free France's own number (40, 41 in `FORMAT.TXT`) would get -2. The engine keeps the chart's 0 (`TODO(verify)` on `navalNationalityDrm`). A naval battle with a Vichy or Free French fleet in the original would settle it.
 - **Mixed nationalities, for the naval and air rules when they are written:** Ref 20.44 gives an air force that mixes nationalities the lowest modifier among them (confirmed, see "Web research" below). The game's air and naval nationality routines were read by hand to do the same (the lowest DRM among a group's units; not reproduced by the script). For naval combat the printed text found online has no such sentence in section 21, so a mixed-nationality fleet is still undecided; check the Reference Manual's 21.x before encoding.
 - **Computer opponent policy (not rules; spec 05, `TODO(verify)` in `src/ai/`).** The computer's own choices, to be tuned by play-testing: the build priority list (`BUILD_PRIORITY`), the declaration plans and their dates (`DECLARATION_PLANS`, Italy on France and Britain from Summer 1940, Germany on the U.S.S.R. from Summer 1941), the BRPs kept back for a pending plan (`plannedReserve`), and the grant thresholds (`GRANT_RECEIVER_BELOW`, `GRANT_STEP`). Also open: a neutral Major Power (Italy in 1939) has no side in the engine, so it cannot declare war until it is on one; the plans for Italy only fire once it is at war on the Axis side.
-- Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front options (11), exploitation (12.3), DoW and alliances (13), minor countries (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
+- Rest of the Reference Manual not yet encoded: movement and ZOC (Ref 4-7), supply (10), front option effects on combat (11.21; the choice itself is built, see below), exploitation (12.3), DoW and alliances (13), minor countries' set-up and activation (14-17), Russian winter and surrender (18), air and naval (20-21), strategic warfare (9), special national rules.
 - Zones still to confirm: whether Gibraltar (on the strait) counts as an Atlantic port (it does in the data; no German fleet can start there), and whether the original tags any other port to a different sea than our map's fronts suggest (`BINMAP*.BIN` is not decoded yet).
 - Two setup permissions read from the pages rather than stated outright: Free French units set up in British-controlled territory within the area the page names, because they "function as British in all respects" (Ref 35.0); and Germany may set up in Libya west of the 1942 start line, held to the 7 factors of the one 4-6 armor and one 3-3 infantry the page names there. TODO(verify): whether the original lets more German units start in Libya.
 - TODO(verify): V39 (in the Crimea) is in neither side's bitmap in 1944, though it is marked German in 1942, so it is land in the original; why 1944 leaves it out is not known. It is in neither start-line zone, so nobody sets up there. D43 (next to Leningrad), also in neither bitmap, is Finnish land after the map correction, so it needs no zone.

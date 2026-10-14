@@ -13,8 +13,11 @@ const ok = (r: ReturnType<typeof applyAction>) => {
   if (!r.ok) throw new Error(r.error);
   return r;
 };
-/** The Axis turn of Fall 1939, moved on to step 8b. */
-const at8b = (): GameState => ok(applyAction(CTX, atStart(SCENARIO_1939, 1), { type: "END_STEP", side: "axis", step: "1" })).state;
+/** The Axis turn of Fall 1939, moved on to step 8b (past step 3, where Front Options are chosen). */
+const at8b = (): GameState => {
+  const at3 = ok(applyAction(CTX, atStart(SCENARIO_1939, 1), { type: "END_STEP", side: "axis", step: "1" })).state;
+  return ok(applyAction(CTX, at3, { type: "END_STEP", side: "axis", step: "3" })).state;
+};
 const build = (s: GameState, owner: PowerId, type: Unit["type"], strength: number, at: string) =>
   applyAction(CTX, s, { type: "BUILD", owner, unit: { type, strength }, at });
 const berlinArea = (): string => Object.values(CTX.map.hexes).find((h) => h.land && h.country === "germany" && !h.features.includes("capital"))!.id;
@@ -142,7 +145,8 @@ describe("building a counter at step 8b", () => {
   it("step 8b is passed when there is nothing to build", () => {
     const s = atStart(SCENARIO_1939, 1);
     const broke = { ...s, nations: { ...s.nations, germany: { ...s.nations.germany, spendLimit: 0 } } };
-    const r = ok(applyAction(CTX, broke, { type: "END_STEP", side: "axis", step: "1" }));
+    const at3 = ok(applyAction(CTX, broke, { type: "END_STEP", side: "axis", step: "1" })).state;
+    const r = ok(applyAction(CTX, at3, { type: "END_STEP", side: "axis", step: "3" }));
     expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: "10b" });
     expect(r.events.flatMap((e) => (e.type === "STEPS_PASSED" ? e.steps : []))).toContain("8b");
   });
@@ -151,6 +155,7 @@ describe("building a counter at step 8b", () => {
     const initial = atStart(SCENARIO_1939, 4);
     const actions: Action[] = [
       { type: "END_STEP", side: "axis", step: "1" },
+      { type: "END_STEP", side: "axis", step: "3" },
       { type: "BUILD", owner: "germany", unit: { type: "infantry", strength: 3 }, at: berlinArea() },
       { type: "BUILD", owner: "germany", unit: { type: "armor", strength: 4 }, at: Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany")[5]!.id },
     ];

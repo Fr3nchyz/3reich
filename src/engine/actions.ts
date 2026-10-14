@@ -3,6 +3,7 @@ import { describeStep, FIRST_STEP, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
 import { applyBuild, legalBuilds } from "./construction";
+import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
 import type { Action, ActionResult, GameEvent } from "./action-types";
@@ -19,6 +20,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
   if (step === "9a") return legalGrants(state);
   return [];
@@ -49,6 +51,8 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return applyMoveOn(ctx, state, action);
     case "DECLARE_WAR":
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
+    case "SELECT_FRONT_OPTION":
+      return atStep(state, "3", "Front Options are chosen", () => applyFrontOption(ctx, state, action));
     case "BUILD":
       return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
     case "GRANT_BRPS":

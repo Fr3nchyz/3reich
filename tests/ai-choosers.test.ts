@@ -75,9 +75,15 @@ describe("BRPs kept back for a planned declaration (spec 05)", () => {
 
 describe("step 8b: construction within the spending limit (Ref 10.0, 11.6)", () => {
   const atBuild = (): GameState => {
-    const s = atStart(SCENARIO_1942, 1);
-    const r = applyAction(ctxFor(SCENARIO_1942), s, { type: "END_STEP", side: s.activeSide, step: "1" });
-    return r.ok ? r.state : s;
+    // Leave the steps before construction (declarations, Front Options) the way a player would: by ending them.
+    let s = atStart(SCENARIO_1942, 1);
+    for (let i = 0; i < 5 && !(s.position?.part === "player-turn" && s.position.step === "8b"); i++) {
+      const step = s.position?.part === "player-turn" ? s.position.step : "?";
+      const r = applyAction(ctxFor(SCENARIO_1942), s, { type: "END_STEP", side: s.activeSide, step });
+      if (!r.ok) throw new Error(r.error);
+      s = r.state;
+    }
+    return s;
   };
 
   it("builds the first kind on the priority list, only what the engine lists, and never beyond the limit", () => {
@@ -141,6 +147,20 @@ describe("step 9a: BRP grants only when allowed (Ref 11.71)", () => {
       s = r.state;
     }
     expect(s.position).not.toMatchObject({ step: "9a", turn: 2 });
+  });
+});
+
+describe("step 3: Front Options (Ref 11.21)", () => {
+  it("ends the step with an accurate reason, the Options being listed next to the move-on action", () => {
+    const s0 = atStart(SCENARIO_1942, 1);
+    const r = applyAction(ctxFor(SCENARIO_1942), s0, { type: "END_STEP", side: s0.activeSide, step: "1" });
+    if (!r.ok) throw new Error(r.error);
+    expect(r.state.position).toMatchObject({ step: "3" });
+    const legal = legalActions(ctxFor(SCENARIO_1942), r.state);
+    expect(legal.some((a) => a.type === "SELECT_FRONT_OPTION")).toBe(true);
+    const d = chooseAction(ctxFor(SCENARIO_1942), r.state, cfg)!;
+    expect(d.action).toEqual({ type: "END_STEP", side: r.state.activeSide, step: "3" });
+    expect(d.why).toContain("Front Option");
   });
 });
 
