@@ -122,6 +122,7 @@ main { margin-top: .75rem; }
   table { display: block; overflow-x: auto; }
   .turn { font-size: 1rem; }
 }
+#status:focus { outline: none; }
 /* Wide landscape screens (tablets on their side, laptops, desktops): two columns that each fill the viewport. The map column never scrolls; the panels scroll in their own column beside it. */
 @media (min-width: 900px) and (min-height: 481px) and (min-aspect-ratio: 5/4) {
   html { scroll-padding-top: 0; }

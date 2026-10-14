@@ -174,13 +174,38 @@ test("a redraw of the panels keeps the keyboard focus on the same control, and n
   await redraw();
   expect(await active()).toMatchObject({ tag: "BUTTON", spec, inStatus: true });
 
-  // On the log (a keyboard user reading it): still the log.
+  // On the log (a keyboard user reading it): still the log, also when an entry is added by the redraw.
   await page.locator("ol.log").focus();
   await redraw();
+  expect(await active()).toMatchObject({ tag: "OL", cls: "log", inStatus: true });
+  const entries = await page.locator("ol.log li").count();
+  await page.evaluate(() => document.getElementById("fill")!.click());
+  await expect.poll(() => page.locator("ol.log li").count()).toBeGreaterThan(entries);
   expect(await active()).toMatchObject({ tag: "OL", cls: "log", inStatus: true });
 
   // Focus outside the panels is left alone.
   await page.locator("#scenario").focus();
-  await redraw();
+  await page.evaluate(() => document.querySelector<HTMLElement>("#status button")!.click());
   expect(await active()).toMatchObject({ id: "scenario", inStatus: false });
+});
+
+test("after an action the focus never lands on a different choice: 'declares war on Arabia' is not followed by Belgium", async ({ page }) => {
+  await startSetup(page, 1280, 720);
+  for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
+  await expect(page.locator(".turn")).toContainText("step 1");
+  await page.locator("summary", { hasText: "Declare war" }).click();
+  const arabia = page.getByRole("button", { name: /^Germany declares war on Arabia/ });
+  await arabia.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".log li").first()).toContainText("declares war on Arabia");
+  const focused = await page.evaluate(() => {
+    const a = document.activeElement as HTMLElement;
+    return { id: a.id, isAction: a.matches("button[data-action]") };
+  });
+  expect(focused.isAction, "no other choice has taken the focus").toBe(false);
+  expect(focused.id, "it rests on the panel").toBe("status");
+  // Pressing Enter again must not declare anything else.
+  const logCount = await page.locator(".log li").count();
+  await page.keyboard.press("Enter");
+  expect(await page.locator(".log li").count()).toBe(logCount);
 });

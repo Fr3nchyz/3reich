@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { panBox, refitBox, wholeOnScreen, zoomBox } from "../src/ui/viewport";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createViewport, panBox, refitBox, wholeOnScreen, zoomBox, type Size } from "../src/ui/viewport";
 
 /** The map's box when its screen area changes shape: a window dragged across the breakpoint, browser zoom, a tablet turned over. */
 
@@ -60,5 +60,64 @@ describe("refitBox", () => {
     const zoomed = zoomBox(b, wholeOnScreen(whole, small), 300, 300, 0.5);
     // The map point under the pointer does not move.
     expect(zoomed.x + (300 - b.x) / b.w * zoomed.w - 300).toBeCloseTo(0);
+  });
+});
+
+/** A stand-in for the <svg>: a box whose size the test sets, and the viewBox it was given. */
+function fakeSvg(size: Size) {
+  const svg = {
+    size,
+    viewBox: "",
+    getBoundingClientRect: () => ({ left: 0, top: 0, right: svg.size.w, bottom: svg.size.h, width: svg.size.w, height: svg.size.h }),
+    setAttribute: (_: string, v: string) => { svg.viewBox = v; },
+    box: () => { const [x, y, w, h] = svg.viewBox.split(" ").map(Number) as [number, number, number, number]; return { x, y, w, h }; },
+  };
+  return svg;
+}
+const as = (s: ReturnType<typeof fakeSvg>) => s as unknown as SVGSVGElement;
+
+describe("zoom limits are measured against the whole map as it fits the screen", () => {
+  it("on a wide screen, zooming out stops at 1.2 times the whole map's box, and in at a twelfth of it", () => {
+    const svg = fakeSvg({ w: 2900, h: 1000 });
+    const v = createViewport(as(svg), whole);
+    v.focus([]);
+    v.zoomAt(1450, 500, 10);
+    expect(svg.box().w).toBeCloseTo(wholeOnScreen(whole, svg.size).w * 1.2);
+    v.zoomAt(1450, 500, 0.0001);
+    expect(svg.box().w).toBeCloseTo(wholeOnScreen(whole, svg.size).w / 12);
+  });
+
+  it("on a tall screen the same, and the box keeps the screen's shape", () => {
+    const svg = fakeSvg({ w: 650, h: 1000 });
+    const v = createViewport(as(svg), whole);
+    v.focus([]);
+    v.zoomAt(325, 500, 10);
+    const b = svg.box();
+    expect(b.h).toBeCloseTo(wholeOnScreen(whole, svg.size).h * 1.2);
+    expect(b.w / b.h).toBeCloseTo(0.65);
+  });
+});
+
+describe("a map box with no size", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("ignores zoom and pan, and a later resize still refits from the last real size", () => {
+    let fire: () => void = () => undefined;
+    vi.stubGlobal("ResizeObserver", class { constructor(cb: () => void) { fire = cb; } observe() {} });
+    const svg = fakeSvg({ w: 1300, h: 1000 });
+    const v = createViewport(as(svg), whole);
+    fire();
+    v.zoomAt(650, 500, 0.5);
+    const before = svg.box();
+    svg.size = { w: 0, h: 0 };
+    const attr = svg.viewBox;
+    v.zoomAt(10, 10, 0.5);
+    v.panBy(30, 30);
+    expect(svg.viewBox, "no NaN, no change").toBe(attr);
+    svg.size = { w: 650, h: 500 };
+    fire();
+    const after = svg.box();
+    const expected = refitBox(before, whole, { w: 1300, h: 1000 }, { w: 650, h: 500 });
+    for (const k of ["x", "y", "w", "h"] as const) expect(after[k]).toBeCloseTo(expected[k]);
   });
 });

@@ -116,8 +116,10 @@ for (const [i, [width, height]] of SEQUENCE.entries()) {
     await wholeMap(page);
     await settle(page);
     const target = await centreHex(page);
+    const widthOf = (id: string) => page.locator(`svg.map g.hexes polygon[data-id="${id}"]`).evaluate((p) => p.getBoundingClientRect().width);
+    const widthBefore = await widthOf(target.id);
     await zoomIn(page, hasTouch, [target.x, target.y]);
-    await expect.poll(async () => (await centreHex(page)).id).toBeDefined();
+    await expect.poll(() => widthOf(target.id), "the map zoomed in").toBeGreaterThan(widthBefore * 1.05);
     const after = await hexCentre(page, target.id);
     expect(Math.abs(after.x - target.x), "zoom anchors under the pointer (x)").toBeLessThan(3);
     expect(Math.abs(after.y - target.y), "zoom anchors under the pointer (y)").toBeLessThan(3);

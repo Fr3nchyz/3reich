@@ -97,31 +97,35 @@ export function createViewport(svg: SVGSVGElement, whole: Box): Viewport {
     apply();
   };
   if (typeof ResizeObserver !== "undefined") new ResizeObserver(refit).observe(svg);
+  /** The map's box, or null while it has no size (hidden, or not laid out yet); nothing can be measured then. */
+  const measure = (): { r: DOMRect; size: Size } | null => {
+    const r = svg.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return null;
+    last = sizeOf(r);
+    return { r, size: sizeOf(r) };
+  };
   return {
     zoomAt(clientX, clientY, factor) {
-      const r = svg.getBoundingClientRect();
-      last = sizeOf(r);
+      const m = measure();
+      if (!m) return;
+      const { r, size } = m;
       const s = scaleOf(r);
       const mx = vb.x + vb.w / 2 + (clientX - (r.left + r.width / 2)) / s;
       const my = vb.y + vb.h / 2 + (clientY - (r.top + r.height / 2)) / s;
-      vb = zoomBox(vb, r.width > 0 && r.height > 0 ? wholeOnScreen(whole, sizeOf(r)) : whole, mx, my, factor);
+      vb = zoomBox(vb, wholeOnScreen(whole, size), mx, my, factor);
       apply();
     },
     panBy(dx, dy) {
-      const r = svg.getBoundingClientRect();
-      last = sizeOf(r);
-      const s = scaleOf(r);
+      const m = measure();
+      if (!m) return;
+      const s = scaleOf(m.r);
       vb = panBox(vb, dx, dy, vb.w * s, vb.h * s);
       apply();
     },
     focus(centres) {
-      const r = svg.getBoundingClientRect();
-      last = r.width > 0 && r.height > 0 ? sizeOf(r) : last;
-      if (centres.length === 0) {
-        vb = r.width > 0 && r.height > 0 ? wholeOnScreen(whole, sizeOf(r)) : { ...whole };
-      } else {
-        vb = fitBox(centres, r.width > 0 && r.height > 0 ? r.width / r.height : whole.w / whole.h);
-      }
+      const m = measure();
+      if (centres.length === 0) vb = m ? wholeOnScreen(whole, m.size) : { ...whole };
+      else vb = fitBox(centres, m ? m.size.w / m.size.h : whole.w / whole.h);
       apply();
     },
   };
