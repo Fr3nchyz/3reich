@@ -83,6 +83,8 @@ function describeEvent(e: GameEvent): string | null {
       return null;
     case "UNIT_BUILT":
       return `${POWER_NAMES[e.owner]} builds a ${e.strength}-factor ${e.unitType} at ${e.at} (${e.cost} BRPs).`;
+    case "FRONT_OPTION_SELECTED":
+      return `${sideName(e.side)} choose the ${cap(e.option)} Option on the ${cap(e.front)} Front${e.cost > 0 ? ` (${e.cost} BRPs)` : ""}.`;
     case "BRPS_GRANTED":
       return `${POWER_NAMES[e.from]} grants ${e.amount} BRPs to ${POWER_NAMES[e.to]}.`;
     case "BRPS_CHANGED":

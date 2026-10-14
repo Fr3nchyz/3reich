@@ -21,7 +21,8 @@ Links and download notes: [SOURCES.md](SOURCES.md). Cite manual sections (e.g. "
 | `src/engine/tables.ts` | BRP costs (DoW 35/10, Offensive option 15, per-factor build costs), stacking limits, interception table, naval and air DRMs, minor-country forces | Map card; Ref 5.0, 13.0; verified against the game's data (`GAME_DATA.md`, "Rule tables") |
 | `src/engine/hex.ts` | Hex ids (`K21`, `AA25`), axial neighbours, distance, hexside ids (`MM26-NN26`) | Ref 4.1 |
 | `src/engine/map.ts` | Map data model (land/sea per hex, crossability per hexside, fortress kinds) and `validateMap` | Ref 4.1-4.9 |
-| `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1; Year Start Sequence hook (empty) | Ref 11.1; Ops 5.1-5.3 |
+| `src/engine/game.ts` | New game from a scenario and a required seed; Game Turn order; Initiative per Ref 11.1 | Ref 11.1; Ops 5.1-5.3 |
+| `src/engine/yearstart.ts`, `frontoptions.ts`, `minors.ts` | Year Start Sequence part B (Base growth, Minor-Ally BRPs, spending limit); Front Options at step 3; a minor country's forces as counters | Ref 9.2, 10.0, 11.21, 14.0; Ops 6.0 |
 | `src/engine/actions.ts` | `legalActions`, `applyAction` (returns events), `replay` | (engine API) |
 | `src/engine/nations.ts` | Spending limit = half the total, rounded down | Ref 10.0 |
 | `src/engine/context.ts` | `GameContext` (map + scenario), passed with the state to `legalActions`, `applyAction` and `replay` so the engine imports no data | (engine API) |
@@ -114,7 +115,7 @@ Done is legal when every counter is placed and every requirement is met: the uni
 
 | Step | Status |
 |---|---|
-| Year Start Sequence (A strategic warfare, B BRP totals, C SW construction) | Hook only; not run |
+| Year Start Sequence (A strategic warfare, B BRP totals, C SW construction) | B done (`yearstart.ts`); A and C not built |
 | II.B Determination of Player-Turn Order (Ref 11.1) | Done |
 | II.A Russian-Winter roll; Player Turn steps 1-10 and their sub-steps | Not yet; a Player Turn is one End Turn action |
 
