@@ -2,7 +2,7 @@ import { hex } from "../engine/hex";
 import type { MapData } from "../engine/map";
 import { citySymbol } from "./mapCities";
 import { baysBetweenLand, fmt, hexCenter, hexCorners, midpoint, points, sideSegment, type Box, type Point } from "./mapGeometry";
-import { FRONT_TINT, SEA, TERRAIN_FILL } from "./mapStyle";
+import { FRONT_TINT, SEA, landFill } from "./mapStyle";
 
 /** The SVG text of each layer of the map, built once from the map data. */
 
@@ -13,6 +13,17 @@ const WAVE_DROP = 4;
 const BAY_CONTROL = 2;
 /** Radius of the dot that marks a crossing arrow on a hexside. */
 const ARROW_RADIUS = 2.6;
+
+/** A small mark for mountains and swamp, which the ground colour no longer shows. */
+function terrainMark(terrain: string | null, cx: number, cy: number): string {
+  if (terrain === "mountains") {
+    return `<path class="terrain" d="M${fmt(cx - 4.4)},${fmt(cy + 2.6)} L${fmt(cx - 1.2)},${fmt(cy - 3)} L${fmt(cx + 1.2)},${fmt(cy + 0.6)} L${fmt(cx + 2.8)},${fmt(cy - 1.4)} L${fmt(cx + 5.2)},${fmt(cy + 2.6)} Z"/>`;
+  }
+  if (terrain === "swamp") {
+    return `<path class="terrain swamp" d="M${fmt(cx - 4)},${fmt(cy - 1)} h2.4 M${fmt(cx + 0.6)},${fmt(cy - 1)} h2.4 M${fmt(cx - 2.6)},${fmt(cy + 1.6)} h2.4 M${fmt(cx + 1.8)},${fmt(cy + 1.6)} h2.4"/>`;
+  }
+  return "";
+}
 
 export interface HexLayers {
   hexes: string;
@@ -32,8 +43,9 @@ export function buildHexLayers(map: MapData): HexLayers {
     for (const [x, y] of pts) {
       minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
     }
-    const fill = h.land ? TERRAIN_FILL[h.land] : SEA;
-    hexes += `<polygon data-id="${h.id}" points="${points(pts)}" fill="${fill}"/>`;
+    const fill = h.land ? landFill(h.country, h.land) : SEA;
+    hexes += `<polygon data-id="${h.id}" points="${points(pts)}" fill="${fill}"${h.land ? "" : ' class="sea"'}/>`;
+    hexes += terrainMark(h.land, cx, cy);
     if (h.land && h.sea) {
       // Coastal hexes: a small wave mark keeps "part land, part sea" visible.
       hexes += `<path d="M${fmt(cx - WAVE_HALF)},${fmt(cy + WAVE_DROP)} q2,-1.5 4,0 t4,0" class="wave"/>`;

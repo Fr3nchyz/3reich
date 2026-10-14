@@ -99,11 +99,20 @@ describe("counters on the map", () => {
     expect(counterLabel({ type: "fleet", strength: 9, movement: undefined })).toBe("⚓9");
   });
 
+  it("draws a counter as cardboard in its nation's colour, with the unit symbol and the numbers", () => {
+    const at = Object.keys(MAP.hexes)[0]!;
+    const out = unitsMarkup(MAP, [{ id: "u1", owner: "germany", type: "armor", strength: 4, at, movement: 6 }]);
+    expect(out).toContain('fill="#3a3340"'); // Germany's counter colour
+    expect(out).toContain("<ellipse"); // the armor symbol
+    expect(out).toContain(">4-6</text>");
+    expect(unitsMarkup(MAP, [{ id: "u2", owner: "britain", type: "fleet", strength: 9, at }])).toContain(">9</text>");
+  });
+
   it("draws at most four counters of a stack and counts the rest", () => {
     const at = Object.keys(MAP.hexes)[0]!;
     const six = Array.from({ length: 6 }, (_, i) => unit(`u${i}`, at));
     const out = unitsMarkup(MAP, six);
-    expect(out.match(/<rect /g)).toHaveLength(4);
+    expect(out.match(/<g data-at=/g)).toHaveLength(4);
     expect(out).toContain(">+2<");
   });
 
