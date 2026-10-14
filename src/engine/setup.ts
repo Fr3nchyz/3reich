@@ -72,13 +72,15 @@ type SetupAction = Extract<Action, { type: "SETUP_PLACE" | "SETUP_REMOVE" | "SET
 
 export function applySetupAction(ctx: GameContext, state: GameState, action: SetupAction): ActionResult {
   const owner = currentSetupOwner(state);
-  if (!owner) return { ok: false, error: "The game is not in the setup phase." };
+  const progress = state.setup;
+  if (!owner || !progress) return { ok: false, error: "The game is not in the setup phase." };
   if (action.owner !== owner) return { ok: false, error: `${owner} is setting up now, not ${action.owner}.` };
 
   if (action.type === "SETUP_PLACE") {
     const spec: UnitSpec = { type: action.unit.type, strength: action.unit.strength, ...(action.unit.nationality ? { nationality: action.unit.nationality } : {}) };
-    const entry = (state.pools[owner]?.forcePool ?? []).find((e) => e.count > 0 && poolKey(e) === poolKey(spec));
-    if (!entry) return { ok: false, error: `${owner} has no ${spec.strength}-factor ${spec.type} left to place.` };
+    const pool = state.pools[owner];
+    const entry = pool?.forcePool.find((e) => e.count > 0 && poolKey(e) === poolKey(spec));
+    if (!pool || !entry) return { ok: false, error: `${owner} has no ${spec.strength}-factor ${spec.type} left to place.` };
     const problem = placementProblem(ctx, state, owner, spec, action.at);
     if (problem) return { ok: false, error: problem };
     const id = `u${state.nextUnitId}`;
@@ -91,7 +93,6 @@ export function applySetupAction(ctx: GameContext, state: GameState, action: Set
       ...(entry.movement !== undefined ? { movement: entry.movement } : {}),
       at: action.at,
     };
-    const pool = state.pools[owner]!;
     const forcePool = pool.forcePool.map((e) => (e === entry ? { ...e, count: e.count - 1 } : e)).filter((e) => e.count > 0);
     return {
       ok: true,
@@ -102,9 +103,9 @@ export function applySetupAction(ctx: GameContext, state: GameState, action: Set
 
   if (action.type === "SETUP_REMOVE") {
     const unit = state.units[action.unitId];
-    if (!unit || unit.owner !== owner) return { ok: false, error: `${owner} has no unit ${action.unitId} on the map.` };
+    const pool = state.pools[owner];
+    if (!unit || unit.owner !== owner || !pool) return { ok: false, error: `${owner} has no unit ${action.unitId} on the map.` };
     const { [action.unitId]: _removed, ...units } = state.units;
-    const pool = state.pools[owner]!;
     const back: ForceEntry = { type: unit.type, strength: unit.strength, ...(unit.movement !== undefined ? { movement: unit.movement } : {}), count: 1, ...(unit.nationality ? { nationality: unit.nationality } : {}) };
     const same = pool.forcePool.find((e) => poolKey(e) === poolKey(back) && e.movement === back.movement);
     const forcePool = same ? pool.forcePool.map((e) => (e === same ? { ...e, count: e.count + 1 } : e)) : [...pool.forcePool, back];
@@ -119,8 +120,8 @@ export function applySetupAction(ctx: GameContext, state: GameState, action: Set
   const problems = setupProblems(ctx, state, owner);
   if (problems.length) return { ok: false, error: `${owner} cannot finish setup: ${problems.join(" ")}` };
   const events: GameEvent[] = [{ type: "SETUP_OWNER_DONE", owner }];
-  const index = state.setup!.index + 1;
-  if (index < state.setup!.order.length) return { ok: true, state: { ...state, setup: { ...state.setup!, index } }, events };
+  const index = progress.index + 1;
+  if (index < progress.order.length) return { ok: true, state: { ...state, setup: { ...progress, index } }, events };
   events.push({ type: "SETUP_COMPLETE" }, { type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side: state.firstSide });
   const played = beginPlay(ctx, { ...state, phase: "player-turn", setup: null, activeSide: state.firstSide });
   return { ok: true, state: played.state, events: [...events, ...played.events] };

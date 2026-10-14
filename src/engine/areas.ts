@@ -54,17 +54,25 @@ function resolveAreaUncached(ctx: GameContext, area: Area): Resolved {
     places: new Set(hexes.filter(pred).map((h) => h.id)),
     unresolved: [],
   });
-  if ("country" in area) return of((h) => !!h.land && h.country === area.country);
-  if ("hex" in area) return of((h) => !!h.land && h.id === area.hex);
-  if ("ports" in area) return of((h) => !!h.land && h.front === area.ports && h.features.some((f) => NAVAL_BASE_FEATURES.includes(f)));
-  if ("front" in area) return of((h) => !!h.land && h.front === area.front);
-  if ("box" in area) return { places: new Set([area.box]), unresolved: [] };
-  if ("zone" in area) {
-    const zone = ctx.scenario.zones[area.zone];
-    if (!zone?.hexes) return { places: new Set(), unresolved: [area.zone] };
-    return { places: new Set(zone.hexes), unresolved: [] };
+  switch (area.kind) {
+    case "country":
+      return of((h) => !!h.land && h.country === area.id);
+    case "hex":
+      return of((h) => !!h.land && h.id === area.id);
+    case "ports":
+      return of((h) => !!h.land && h.front === area.front && h.features.some((f) => NAVAL_BASE_FEATURES.includes(f)));
+    case "front":
+      return of((h) => !!h.land && h.front === area.front);
+    case "box":
+      return { places: new Set([area.box]), unresolved: [] };
+    case "zone": {
+      const zone = ctx.scenario.zones[area.id];
+      if (!zone?.hexes) return { places: new Set(), unresolved: [area.id] };
+      return { places: new Set(zone.hexes), unresolved: [] };
+    }
+    case "controlled-by":
+      return territoryOf(ctx, area.owner);
   }
-  return territoryOf(ctx, area.controlledBy);
 }
 
 /** Hexes an owner controls at the start: whole countries plus zones. */
@@ -74,8 +82,8 @@ export function territoryOf(ctx: GameContext, owner: ForceOwner): Resolved {
   if (hit) return hit;
   const f = setupOf(ctx.scenario, owner);
   let out = EMPTY;
-  for (const c of f.controlledAtStart) out = union(out, resolveArea(ctx, { country: c }));
-  for (const z of f.controlledZones) out = union(out, resolveArea(ctx, { zone: z }));
+  for (const c of f.controlledAtStart) out = union(out, resolveArea(ctx, { kind: "country", id: c }));
+  for (const z of f.controlledZones) out = union(out, resolveArea(ctx, { kind: "zone", id: z }));
   cache.set(owner, out);
   return out;
 }
@@ -84,8 +92,23 @@ export function territoryOf(ctx: GameContext, owner: ForceOwner): Resolved {
 export const resolveAreas = (ctx: GameContext, areas: readonly Area[], from: Resolved = EMPTY): Resolved =>
   areas.reduce((acc, a) => union(acc, resolveArea(ctx, a)), from);
 
+function describeArea(a: Area): string {
+  switch (a.kind) {
+    case "country":
+    case "hex":
+    case "zone":
+      return a.id;
+    case "ports":
+      return `${a.front} ports`;
+    case "front":
+      return `the ${a.front} front`;
+    case "box":
+      return a.box;
+    case "controlled-by":
+      return `${a.owner}-controlled territory`;
+  }
+}
+
 export function describeAreas(areas: readonly Area[]): string {
-  return areas
-    .map((a) => ("country" in a ? a.country : "hex" in a ? a.hex : "ports" in a ? `${a.ports} ports` : "front" in a ? `the ${a.front} front` : "box" in a ? a.box : "zone" in a ? a.zone : `${a.controlledBy}-controlled territory`))
-    .join(" or ");
+  return areas.map(describeArea).join(" or ");
 }

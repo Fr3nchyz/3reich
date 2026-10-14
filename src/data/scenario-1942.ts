@@ -87,7 +87,7 @@ export const SCENARIO_1942: Scenario = {
     usa: nationSetup({
       controlledAtStart: ["usa"],
       // "All U.S. units set up in the U.S. Box ... in Spring '42."
-      setup: [{ kind: "all-in", types: "all", in: [{ box: "us-box" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "box", box: "us-box" }] }],
       forcePool: [inf(3, 4, 10), armor(5, 6, 1), fleet(9, 4), air(5, 4, 2)],
       allowableBuilds: [inf(3, 4, 5), airborne(3, 3, 1), armor(5, 6, 4), fleet(9, 3), air(5, 4, 3), replacement(7)],
     }),
@@ -97,15 +97,15 @@ export const SCENARIO_1942: Scenario = {
       controlledAtStart: ["britain", "egypt", "iraq", "lebanon-syria", "palestine", "transjordan"],
       controlledZones: ["libya-east-of-start-line"],
       setup: [
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ country: "lebanon-syria" }] },
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "GG19" }] }, // Malta
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "AA7" }] }, // Gibraltar
-        { kind: "place", type: "fleet", strength: 9, count: 2, in: [{ hex: "AA7" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "country", id: "lebanon-syria" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "GG19" }] }, // Malta
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "AA7" }] }, // Gibraltar
+        { kind: "place", type: "fleet", strength: 9, count: 2, in: [{ kind: "hex", id: "AA7" }] },
         // "in Egypt and/or in Libya east of the scenario start line"
-        { kind: "place", type: "infantry", strength: 3, count: 2, in: [{ country: "egypt" }, { zone: "libya-east-of-start-line" }] },
-        { kind: "place", type: "armor", strength: 4, count: 1, in: [{ country: "egypt" }, { zone: "libya-east-of-start-line" }] },
-        { kind: "place", type: "fleet", strength: 9, count: 3, in: [{ country: "egypt" }, { zone: "libya-east-of-start-line" }] },
-        { kind: "place", type: "air", strength: 5, count: 1, in: [{ country: "egypt" }, { zone: "libya-east-of-start-line" }] },
+        { kind: "place", type: "infantry", strength: 3, count: 2, in: [{ kind: "country", id: "egypt" }, { kind: "zone", id: "libya-east-of-start-line" }] },
+        { kind: "place", type: "armor", strength: 4, count: 1, in: [{ kind: "country", id: "egypt" }, { kind: "zone", id: "libya-east-of-start-line" }] },
+        { kind: "place", type: "fleet", strength: 9, count: 3, in: [{ kind: "country", id: "egypt" }, { kind: "zone", id: "libya-east-of-start-line" }] },
+        { kind: "place", type: "air", strength: 5, count: 1, in: [{ kind: "country", id: "egypt" }, { kind: "zone", id: "libya-east-of-start-line" }] },
       ],
       forcePool: [inf(3, 4, 6), inf(1, 3, 3), armor(4, 5, 3), fleet(9, 9), air(5, 4, 2)],
       allowableBuilds: [
@@ -122,8 +122,8 @@ export const SCENARIO_1942: Scenario = {
       controlledAtStart: [],
       // Free French units function as British in all respects (Ref 35.0), so they set up in
       // British-controlled territory, within the area the page names.
-      mayAlsoSetUpIn: [{ areas: [{ controlledBy: "britain" }] }],
-      setup: [{ kind: "all-in", types: "all", in: [{ country: "lebanon-syria" }] }],
+      mayAlsoSetUpIn: [{ areas: [{ kind: "controlled-by", owner: "britain" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "country", id: "lebanon-syria" }] }],
       forcePool: [inf(2, 3, 2)],
       allowableBuilds: [],
     }),
@@ -142,9 +142,9 @@ export const SCENARIO_1942: Scenario = {
       controlledAtStart: ["italy", "albania"],
       controlledZones: ["libya-west-of-start-line"],
       setup: [
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ country: "albania" }] },
-        { kind: "place", type: "infantry", strength: 1, count: 2, in: [{ zone: "libya-west-of-start-line" }] },
-        { kind: "all-in", types: ["fleet"], in: [{ ports: "mediterranean" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "country", id: "albania" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 2, in: [{ kind: "zone", id: "libya-west-of-start-line" }] },
+        { kind: "all-in", types: ["fleet"], in: [{ kind: "ports", front: "mediterranean" }] },
       ],
       forcePool: [inf(3, 3, 2), inf(2, 3, 4), inf(1, 3, 6), airborne(2, 3, 1), armor(2, 5, 2), fleet(9, 6), air(5, 4, 2)],
       allowableBuilds: [replacement(6)],
@@ -154,20 +154,20 @@ export const SCENARIO_1942: Scenario = {
       controlledAtStart: ["germany", "baltic-states", "belgium", "denmark", "netherlands", "norway", "luxembourg", "poland", "yugoslavia", "greece"],
       controlledZones: ["occupied-france", "ussr-west-of-start-line"],
       setup: [
-        { kind: "all-in", types: ["fleet"], in: [{ zone: "baltic-north-atlantic-ports" }, { box: "murmansk-box" }] },
-        { kind: "place", type: "armor", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
-        { kind: "place", type: "infantry", count: 1, in: [{ zone: "libya-west-of-start-line" }] },
+        { kind: "all-in", types: ["fleet"], in: [{ kind: "zone", id: "baltic-north-atlantic-ports" }, { kind: "box", box: "murmansk-box" }] },
+        { kind: "place", type: "armor", count: 1, in: [{ kind: "zone", id: "libya-west-of-start-line" }] },
+        { kind: "place", type: "infantry", count: 1, in: [{ kind: "zone", id: "libya-west-of-start-line" }] },
         // TODO(verify): the page names one armor and one infantry unit for Libya, so Germany is held
         // to their 7 factors there (4-6 armor plus 3-3 infantry), the literal reading. Whether the
         // original lets more German units start in Libya is not known (docs/RULES.md).
-        { kind: "max-factors", area: { zone: "libya-west-of-start-line" }, max: 7 },
+        { kind: "max-factors", area: { kind: "zone", id: "libya-west-of-start-line" }, max: 7 },
       ],
       mayAlsoSetUpIn: [
-        { areas: [{ country: "bulgaria" }, { country: "finland" }, { country: "hungary" }, { country: "rumania" }] },
-        { areas: [{ box: "murmansk-box" }], types: ["fleet", "air"] },
+        { areas: [{ kind: "country", id: "bulgaria" }, { kind: "country", id: "finland" }, { kind: "country", id: "hungary" }, { kind: "country", id: "rumania" }] },
+        { areas: [{ kind: "box", box: "murmansk-box" }], types: ["fleet", "air"] },
         // The page sets up a German armor and infantry unit in Libya west of the start line, which is
         // Italian; the max-factors requirement above limits how much may go there.
-        { areas: [{ zone: "libya-west-of-start-line" }], types: ["armor", "infantry"] },
+        { areas: [{ kind: "zone", id: "libya-west-of-start-line" }], types: ["armor", "infantry"] },
       ],
       forcePool: [inf(3, 3, 28), armor(4, 6, 8), fleet(9, 3), air(5, 4, 4)],
       allowableBuilds: [airborne(3, 3, 1), armor(4, 6, 4), air(5, 4, 2), replacement(8), from(armor(5, 6, 2), 1943)],
@@ -179,8 +179,8 @@ export const SCENARIO_1942: Scenario = {
       controlledAtStart: ["morocco", "algeria", "tunisia"],
       controlledZones: ["vichy-france", "corsica"],
       setup: [
-        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ country: "morocco" }, { country: "algeria" }, { country: "tunisia" }] },
-        { kind: "rest-in", in: [{ zone: "vichy-france" }, { zone: "corsica" }] },
+        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ kind: "country", id: "morocco" }, { kind: "country", id: "algeria" }, { kind: "country", id: "tunisia" }] },
+        { kind: "rest-in", in: [{ kind: "zone", id: "vichy-france" }, { kind: "zone", id: "corsica" }] },
       ],
       forcePool: [inf(2, 3, 6), fleet(9, 1)],
       allowableBuilds: [], // "none (other than losses that occur while Vichy is active)"

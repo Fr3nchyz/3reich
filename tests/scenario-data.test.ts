@@ -48,19 +48,26 @@ function areasOf(r: SetupRequirement): Area[] {
 }
 
 function areaProblems(s: Scenario, area: Area): string[] {
-  if ("country" in area) return area.country === "usa" || mapCountries.has(area.country) ? [] : [`unknown country ${area.country}`];
-  if ("hex" in area) {
-    const h = MAP.hexes[area.hex];
-    return h && h.land ? [] : [`hex ${area.hex} is not a land hex`];
+  switch (area.kind) {
+    case "country":
+      return area.id === "usa" || mapCountries.has(area.id) ? [] : [`unknown country ${area.id}`];
+    case "hex": {
+      const h = MAP.hexes[area.id];
+      return h && h.land ? [] : [`hex ${area.id} is not a land hex`];
+    }
+    case "ports": {
+      const any = hexes.some((h) => h.front === area.front && h.features.some((f) => f === "port" || f === "capital-port"));
+      return any ? [] : [`no ports on the ${area.front} front`];
+    }
+    case "front":
+      return hexes.some((h) => h.land && h.front === area.front) ? [] : [`no land on the ${area.front} front`];
+    case "zone":
+      return s.zones[area.id] ? [] : [`unknown zone ${area.id}`];
+    case "controlled-by":
+      return s.forces[area.owner] ? [] : [`${area.owner} has no forces in ${s.id}`];
+    case "box":
+      return [];
   }
-  if ("ports" in area) {
-    const any = hexes.some((h) => h.front === area.ports && h.features.some((f) => f === "port" || f === "capital-port"));
-    return any ? [] : [`no ports on the ${area.ports} front`];
-  }
-  if ("front" in area) return hexes.some((h) => h.land && h.front === area.front) ? [] : [`no land on the ${area.front} front`];
-  if ("zone" in area) return s.zones[area.zone] ? [] : [`unknown zone ${area.zone}`];
-  if ("controlledBy" in area) return s.forces[area.controlledBy] ? [] : [`${area.controlledBy} has no forces in ${s.id}`];
-  return [];
 }
 
 /**
@@ -164,7 +171,7 @@ describe.each(ALL)("scenario data: $id", ({ s, maxTurns }) => {
     for (const owner of owners) {
       const f = setupOf(s, owner);
       f.controlledZones.forEach((z) => used.add(z));
-      for (const a of [...f.setup.flatMap(areasOf), ...f.mayAlsoSetUpIn.flatMap((p) => p.areas)]) if ("zone" in a) used.add(a.zone);
+      for (const a of [...f.setup.flatMap(areasOf), ...f.mayAlsoSetUpIn.flatMap((p) => p.areas)]) if (a.kind === "zone") used.add(a.id);
     }
     for (const r of s.rules) if (r.kind === "eliminate-in-zone") used.add(r.zone);
     expect([...used].sort()).toEqual(Object.keys(s.zones).sort());
@@ -355,7 +362,7 @@ describe("1939 scenario data (Ops 9.0, pp. 20-21)", () => {
 
   it("puts the Soviet setup units on the cities the page names", () => {
     const hexOfCity = (name: string) => hexes.find((h) => h.name === name)?.id;
-    const placed = setupOf(s, "ussr").setup.flatMap((r) => (r.kind === "place" && "hex" in r.in[0]! ? [[r.type, r.strength, r.in[0].hex] as const] : []));
+    const placed = setupOf(s, "ussr").setup.flatMap((r) => (r.kind === "place" && r.in[0]?.kind === "hex" ? [[r.type, r.strength, r.in[0].id] as const] : []));
     expect(placed).toEqual([
       ["infantry", 2, hexOfCity("Leningrad")],
       ["armor", 3, hexOfCity("Moscow")],
@@ -480,7 +487,7 @@ describe("1942 scenario data (Ops 9.0, pp. 22-24)", () => {
   });
 
   it("gives the Finns the hexes Ref 17.3 names, in 1942 only", () => {
-    expect(setupOf(s, "finland").mayAlsoSetUpIn).toEqual([{ areas: [{ hex: "A47" }, { hex: "B46" }], axisControlled: true }]);
+    expect(setupOf(s, "finland").mayAlsoSetUpIn).toEqual([{ areas: [{ kind: "hex", id: "A47" }, { kind: "hex", id: "B46" }], axisControlled: true }]);
     expect(setupOf(SCENARIO_1944, "finland").mayAlsoSetUpIn).toEqual([]);
   });
 });
