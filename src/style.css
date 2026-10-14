@@ -34,6 +34,7 @@ main { max-width: 56rem; margin: 1.25rem auto; padding: 0 1rem; display: flex; f
 main > * { margin: 0; }
 .turn { font-size: 1.15rem; font-weight: 700; padding: .55rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--accent); border-radius: 4px; }
 .note { color: #cfc6b3; font-size: .9rem; }
+.computer-status { color: #9fd3ff; font-weight: 600; margin: .2rem 0; }
 .toast { min-height: 1.4rem; color: #ffd27a; font-weight: 600; }
 .setup, .declarations, .log, table { background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; }
 .setup { padding: .8rem 1rem 1rem; }

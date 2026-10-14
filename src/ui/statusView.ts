@@ -4,6 +4,7 @@ import { POWER_NAMES, spendingLimit } from "../engine/nations";
 import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
+import { computerSide, computerToMove } from "./computerPlay";
 import { cap, nameOf, sideName } from "./format";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
@@ -81,7 +82,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       <p class="turn">${turnLine(s)}</p>
       ${setup ? setupPanel(s, setup) : ""}
       <p class="toast" role="status">${s.toast}</p>
-      ${s.state.phase === "player-turn" ? `<p class="note">The computer opponent does not play yet, so you take both sides' turns for now.</p>` : ""}
+      ${computerToMove(s) ? `<p class="computer-status" role="status">Computer is playing the ${sideName(computerSide(s))} turn...</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
       ${frontPrompt(s, actions)}

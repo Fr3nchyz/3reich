@@ -30,7 +30,7 @@ async function visibleHighlight(page: Page, rnd: () => number): Promise<[number,
 }
 
 test("random play at phone size: every scenario, both sides, new games between", async ({ page, hasTouch }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(300_000);
   await page.setViewportSize({ width: 420, height: 900 });
   const rnd = random(777);
   const problems: string[] = [];
@@ -74,6 +74,8 @@ test("random play at phone size: every scenario, both sides, new games between",
       // Turns with random choices at the steps that have any.
       let played = 0;
       for (let guard = 0; guard < TURNS * 12 && played < TURNS; guard++) {
+        // The computer plays the other side's turns by itself: wait until it is the player's turn again.
+        await expect(page.locator(".computer-status")).toHaveCount(0, { timeout: 60_000 });
         const turn = await turnLine();
         if (/undefined|NaN|\[object/.test(await page.locator("body").innerText())) problems.push(`${tag}: odd text on the page at "${turn}"`);
         const step = /step (\S+)/.exec(turn)?.[1];

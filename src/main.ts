@@ -10,6 +10,8 @@ import type { Scenario, Side } from "./engine/types";
 import { describeHex } from "./ui/format";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
+import { createComputerLoop } from "./ui/computerLoop";
+import { computerToMove } from "./ui/computerPlay";
 import { createSession, setupView, type Session } from "./ui/session";
 import { normaliseMode, tapHex } from "./ui/sessionActions";
 import { mountShell } from "./ui/shell";
@@ -21,6 +23,7 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 /** The one game being played; start() replaces it. */
 let session: Session;
 
+const computer = createComputerLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = describeHex(h); },
@@ -40,6 +43,7 @@ shell.newGame.addEventListener("click", () => start(SCENARIOS.find((s) => s.id =
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0]!;
 
 function start(scenario: Scenario, side: Side): void {
+  computer.reset();
   session = createSession(scenario, side, newSeed());
   shell.scenario.value = scenario.id;
   shell.side.value = side;
@@ -50,10 +54,11 @@ function start(scenario: Scenario, side: Side): void {
 function render(): void {
   normaliseMode(session);
   const setup = setupView(session);
-  const actions = session.state.phase === "player-turn" ? legalActions(session.ctx, session.state) : [];
+  const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
   shell.status.innerHTML = statusHtml(session, setup, actions);
   syncMap(view, session, setup);
   bindStatus(shell.status, session, setup, actions, render);
+  computer.kick();
 }
 
 start(SCENARIO_1939, "axis");
