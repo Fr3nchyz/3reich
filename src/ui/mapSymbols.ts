@@ -15,7 +15,7 @@ export function unitSymbol(type: UnitType, x: number, y: number, s: number, ink:
     case "infantry":
       return box + cross;
     case "armor":
-      return box + `<ellipse cx="${fmt(x)}" cy="${fmt(y)}" rx="${fmt(w * 0.32)}" ry="${fmt(h * 0.3)}" fill="none" stroke="${ink}" stroke-width="${line}"/>`;
+      return box + `<ellipse cx="${fmt(x)}" cy="${fmt(y)}" rx="${fmt(w * 0.34)}" ry="${fmt(h * 0.32)}" fill="${ink}" fill-opacity=".35" stroke="${ink}" stroke-width="${line}"/>`;
     case "airborne":
       // An infantry box under a parachute canopy.
       return box + cross + `<path d="M${fmt(x - w * 0.4)} ${fmt(y - h * 0.5)}A${fmt(w * 0.4)} ${fmt(h * 0.5)} 0 0 1 ${fmt(x + w * 0.4)} ${fmt(y - h * 0.5)}" fill="none" stroke="${ink}" stroke-width="${line}"/>`;
@@ -30,4 +30,9 @@ export function unitSymbol(type: UnitType, x: number, y: number, s: number, ink:
     case "fleet":
       return `<path d="M${fmt(x - w * 0.55)} ${fmt(y - h * 0.1)}L${fmt(x + w * 0.55)} ${fmt(y - h * 0.1)}L${fmt(x + w * 0.35)} ${fmt(y + h * 0.5)}L${fmt(x - w * 0.35)} ${fmt(y + h * 0.5)}Z" fill="${ink}"/><rect x="${fmt(x - w * 0.12)}" y="${fmt(y - h * 0.6)}" width="${fmt(w * 0.24)}" height="${fmt(h * 0.5)}" fill="${ink}"/>`;
   }
+}
+
+/** A small picture of a unit type for buttons and lists: the same symbol as on the counter, in the text colour. */
+export function counterIcon(type: UnitType): string {
+  return `<svg class="icon" viewBox="0 0 22 14" width="30" height="19" aria-hidden="true">${unitSymbol(type, 11, 7, 20, "currentColor")}</svg>`;
 }

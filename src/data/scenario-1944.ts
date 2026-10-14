@@ -83,6 +83,8 @@ export const SCENARIO_1944: Scenario = {
       controlledAtStart: ["usa"],
       // "U.S. 'at start' forces are set up in the U.S. Box and/or anywhere in British-controlled territory."
       setup: [{ kind: "all-in", types: "all", in: [{ kind: "box", box: "us-box" }, { kind: "controlled-by", owner: "britain" }] }],
+      // The page lets them set up "anywhere in British-controlled territory", which is not U.S. territory.
+      mayAlsoSetUpIn: [{ areas: [{ kind: "controlled-by", owner: "britain" }] }],
       forcePool: [inf(3, 4, 10), airborne(3, 3, 1), armor(5, 6, 4), fleet(9, 7), air(5, 4, 5)],
       allowableBuilds: [inf(3, 4, 5), armor(5, 6, 1), replacement(7)],
     }),

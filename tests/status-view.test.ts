@@ -18,6 +18,23 @@ function inPlay(): Session {
   return s;
 }
 
+describe("the counter chips in setup", () => {
+  it("show each counter's drawn symbol and numbers, never a text glyph that a font may draw as a blank box", () => {
+    const s = createSession(SCENARIO_1939, "axis", 1);
+    const html = statusHtml(s, setupView(s), legalActions(s.ctx, s.state));
+    const chips = [...html.matchAll(/<button data-spec="([^"]+)"[^>]*>(.*?)<\/button>/g)];
+    expect(chips.length).toBeGreaterThan(2);
+    for (const [, , inner] of chips) {
+      expect(inner).toContain('<svg class="icon"');
+      expect(inner).not.toMatch(/[▭⌃✈⚓]/);
+    }
+    // The armor chip carries the armor symbol (a box with an oval) and its numbers.
+    const armor = chips.find(([, key]) => key!.startsWith("armor:"));
+    expect(armor?.[2]).toContain("<ellipse");
+    expect(armor?.[2]).toMatch(/\d+-\d+/);
+  });
+});
+
 describe("the status area in play", () => {
   it("names the step and offers declarations of war in a fold-out, then the button that moves on", () => {
     const s = inPlay();
