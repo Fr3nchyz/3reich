@@ -34,3 +34,14 @@ Taps on the map only select and inspect (hex info, pan, zoom); the player cannot
 - No loading of a saved record into the browser (replay is by `replay()` in tests or scripts).
 - No different strength for each side, no hidden moves, no stepping backwards.
 - Take over does not undo anything: it continues from the exact state, including a step half done.
+
+## As built
+
+- **Pure rules**: `src/ui/watchController.ts` (speeds, step modes, stuck limits, end of game; unit-tested with mutation checks). **Glue**: `watchPlay.ts` (new watched session, `watchSlice`, record, take over), `watchLoop.ts` (timer), `watchBar.ts` (bar, panel), `watchMenu.ts` (seed and Game Turn fields), `watchSummary.ts`, `watchRecord.ts`. The computer's one action is `computerAct` in `computerPlay.ts`, shared with the single-player ticks (so the same seed and scenario give exactly the self-play runner's actions: a test compares them). The setup uses `placeTheRest`, the single-player computer's own setup path.
+- The mode is the third entry of the "Mode" menu ("Watch the computer play both sides"); the seed, a "Random seed" button and an optional "Stop after N Game Turns" field appear with it. The bar (Pause/Play, Step one action, Step to next turn, Speed) sits under the map; Save game record, Take over as Axis / Allies and Stop watching are in a panel at the top of the status column, kept as the same elements across redraws so a click is never lost at Fast or Turbo.
+- Stuck limits are the runner's: 1000 actions at one step, 8000 in one Game Turn, no action, a refused action, an exception. The slice at Turbo and for "Step to next turn" is 80 ms.
+- "Stop watching" starts a fresh single-player game (the menu's state at page load). Take over keeps the exact state, including a step half done; the computer's memory of its movement targets is kept.
+- The End of game counting (BRPs, counters, hexes) is `watchSummary.ts`, a copy of the logic of `scripts/selfplay/stats.ts` (holdings and forces): that file belongs to the Node-side script, so it is not imported into the browser bundle. Moving that logic into `src` and importing it from both would remove the copy.
+- The hex info line now also lists the counters in the hex ("Units: 2 x 2-infantry (Poland), ..."); a full unit panel is a separate task.
+- In watch mode each ground move is logged as it happens (single-player folds them into one line per step).
+- Tests: `tests/watch-controller.test.ts`, `tests/watch-play.test.ts`, `tests/watch-record-file.test.ts` (replays a downloaded record; run by the e2e), `tests/e2e/watch.spec.ts`. The e2e runs on a `PW_PORT` of your choice (default 4789).

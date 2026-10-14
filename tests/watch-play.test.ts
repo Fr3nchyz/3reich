@@ -11,6 +11,7 @@ import { recordName } from "../src/ui/watchRecord";
 import { statusLine } from "../src/ui/watchBar";
 import { summarise } from "../src/ui/watchSummary";
 import { parseSeed, parseTurns } from "../src/ui/watchMenu";
+import { describeUnits } from "../src/ui/format";
 import type { Session } from "../src/ui/session";
 
 /** The session glue of the watch mode (spec 06): setup, slices, records, take over. */
@@ -187,5 +188,14 @@ describe("text and menu helpers", () => {
     expect(parseSeed(" 4294967295 ")).toBe(4294967295);
     expect([parseSeed("4294967296"), parseSeed("-1"), parseSeed("1.5"), parseSeed(""), parseSeed("abc")]).toEqual([null, null, null, null, null]);
     expect([parseTurns("3"), parseTurns(""), parseTurns("0"), parseTurns("2.5"), parseTurns("x")]).toEqual([3, null, null, null, null]);
+  });
+  it("lists the counters of a hex for the hex info: grouped, with factor, type and nation", () => {
+    const s = fresh();
+    const [a, b] = Object.values(s.state.units).filter((u) => s.ctx.map.hexes[u.at]);
+    const one = describeUnits(s.state, a!.at);
+    expect(one).toMatch(/^Units: \d+ x \d+-\w+ \(.+\)/);
+    expect(describeUnits(s.state, "no-such-hex")).toBe("");
+    expect(describeUnits({ ...s.state, units: { x: { ...a!, id: "x" }, y: { ...a!, id: "y" } } }, a!.at)).toMatch(/^Units: 2 x /);
+    expect(b).toBeDefined();
   });
 });

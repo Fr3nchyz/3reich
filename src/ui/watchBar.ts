@@ -26,13 +26,18 @@ export function statusLine(s: Session): string {
   return parts.join(" · ");
 }
 
+/** A number per session, so that a panel is never kept from one game into the next. */
+const ids = new WeakMap<Session, number>();
+let lastId = 0;
+const gameId = (s: Session): number => ids.get(s) ?? ids.set(s, ++lastId).get(s)!;
+
 /** The panel's HTML: the stuck message, the End of game summary, and the buttons that are not in the bar. */
 export function panelHtml(s: Session): string {
   const w = s.watch!;
   const stuck = stuckText(s);
   const end = endText(s);
   const over = overOf(w, s.state) !== null;
-  return `<section class="watch-panel" aria-label="Watching two computers">
+  return `<section class="watch-panel" aria-label="Watching two computers" data-key="${[gameId(s), !!stuck, over, end ?? ""].join("|")}">
     ${stuck ? `<p class="watch-stuck" role="alert">${escape(stuck)} The position is left as it is: look at the map and the log, or save the record.</p>` : ""}
     ${end ? summaryHtml(summarise(s.ctx, s.state), end) : ""}
     <div class="actions controls">
@@ -82,9 +87,23 @@ export interface PanelHooks {
   takeOver: (side: Side) => void;
 }
 
-/** Wires the panel's buttons after each redraw of the status column. */
+/**
+ * After the status column is redrawn, puts the old panel back in place of the new one when nothing in it changed (same
+ * `data-key`): the buttons then stay the same elements through the many redraws of a fast game, so a click on one is
+ * never lost to a redraw between pressing and releasing.
+ */
+export function keepPanel(root: HTMLElement, old: HTMLElement | null): void {
+  const fresh = root.querySelector<HTMLElement>(".watch-panel");
+  if (old && fresh && old.dataset.key === fresh.dataset.key) fresh.replaceWith(old);
+}
+
+/** Wires the panel's buttons after each redraw of the status column (once per panel element). */
 export function bindPanel(root: HTMLElement, s: Session, hooks: PanelHooks): void {
+  const panel = root.querySelector<HTMLElement>(".watch-panel");
+  if (!panel || panel.dataset.bound) return;
+  panel.dataset.bound = "1";
   const on = (id: string, f: () => void) => root.querySelector(`#${id}`)?.addEventListener("click", f);
+  // The session is replaced by a new game, and the panel with it, so `s` stays the right one; the record is read when the button is pressed.
   on("w-save", () => downloadRecord(recordFor(s)));
   on("w-take-axis", () => hooks.takeOver("axis"));
   on("w-take-allies", () => hooks.takeOver("allies"));

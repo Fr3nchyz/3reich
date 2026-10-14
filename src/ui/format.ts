@@ -1,6 +1,6 @@
 import type { MapHex } from "../engine/map";
-import { combatantName } from "../engine/nations";
-import type { Side } from "../engine/types";
+import { combatantName, OWNER_NAMES } from "../engine/nations";
+import type { GameState, Side } from "../engine/types";
 
 /** Small text helpers shared by the views. */
 
@@ -16,4 +16,15 @@ export const describeHex = (h: MapHex | null) => {
   if (h.fortress) parts.push(`fortress (${h.fortress})`);
   if (h.features.length) parts.push(h.features.join(", "));
   return parts.filter(Boolean).join(" · ");
+};
+
+/** The counters in a hex, grouped, as "Units: 2 x 3-armor (Germany), 1 x 2-infantry (Italy)"; "" when it is empty. A counter of another nation than its owner shows its nationality. */
+export const describeUnits = (state: GameState, hexId: string): string => {
+  const counts = new Map<string, number>();
+  for (const u of Object.values(state.units)) {
+    if (u.at !== hexId) continue;
+    const key = `${u.strength}-${u.type} (${OWNER_NAMES[u.nationality ?? u.owner]})`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return counts.size ? `Units: ${[...counts].map(([k, n]) => `${n} x ${k}`).join(", ")}` : "";
 };

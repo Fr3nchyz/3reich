@@ -7,7 +7,8 @@ import { SCENARIO_CAMPAIGN } from "./data/scenario-campaign";
 import { legalActions } from "./engine/actions";
 import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
-import { describeHex } from "./ui/format";
+import { describeHex, describeUnits } from "./ui/format";
+import type { MapHex } from "./engine/map";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
 import { createComputerLoop } from "./ui/computerLoop";
@@ -19,7 +20,7 @@ import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
-import { bindBar, bindPanel, drawBar } from "./ui/watchBar";
+import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
 import { createWatchLoop } from "./ui/watchLoop";
 import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
@@ -30,12 +31,15 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 /** The one game being played; start() replaces it. */
 let session: Session;
 
+/** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
+const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
+
 const computer = createComputerLoop(() => session, () => render());
 const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
-  onHover: (h) => { if (h) shell.info.textContent = describeHex(h); },
-  onHexClick: (h) => { shell.info.textContent = describeHex(h); tapHex(session, h); render(); },
+  onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
@@ -77,6 +81,8 @@ function start(scenario: Scenario, side: Side): void {
 function startWatch(scenario: Scenario): void {
   const { seed, turns, speed } = menu.read();
   begin(scenario, newWatchSession(scenario, seed, speed, turns));
+  // On a phone the menu above the map is tall: bring the map and the controls into view (a no-op in the two-column layout).
+  window.scrollTo(0, document.querySelector("header")!.offsetHeight);
 }
 
 /** "Take over as ...": the running watched game becomes a normal one, from where it stands. */
@@ -94,7 +100,9 @@ function render(): void {
   const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
   const mark = captureLog(shell.status);
   const focus = captureFocus(shell.status);
+  const watchPanel = shell.status.querySelector<HTMLElement>(".watch-panel");
   shell.status.innerHTML = statusHtml(session, setup, actions);
+  keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
   syncMap(view, session, setup);
