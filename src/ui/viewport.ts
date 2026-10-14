@@ -40,6 +40,38 @@ export function fitBox(centres: readonly Point[], aspect: number, pad = FOCUS_MA
   return { x: (x0 + x1) / 2 - w / 2, y: (y0 + y1) / 2 - h / 2, w, h };
 }
 
+/** A size in screen pixels. */
+export interface Size {
+  w: number;
+  h: number;
+}
+
+/** Pixels per map unit when `whole` is fitted to a screen of this size (the whole map just fits). */
+const fitScale = (whole: Box, s: Size): number => Math.min(s.w / whole.w, s.h / whole.h);
+
+/**
+ * The box that shows the whole map on a screen of this size, with nothing letterboxed: `whole` grown on
+ * one axis to the screen's shape, about its centre. Zoom limits are measured against it.
+ */
+export function wholeOnScreen(whole: Box, s: Size): Box {
+  const k = fitScale(whole, s);
+  const w = s.w / k, h = s.h / k;
+  return { x: whole.x + whole.w / 2 - w / 2, y: whole.y + whole.h / 2 - h / 2, w, h };
+}
+
+/**
+ * The box after the map's screen area changed from `from` to `to` (a window dragged across the two-column
+ * breakpoint, browser zoom, a tablet turned over). The same map point stays at the centre and the same
+ * share of the whole map stays in view (zoom measured against the whole map just fitting), and the box
+ * takes the new screen's shape, so nothing is cropped or letterboxed and pan and zoom stay exact.
+ */
+export function refitBox(vb: Box, whole: Box, from: Size, to: Size): Box {
+  const zoom = Math.min(from.w / vb.w, from.h / vb.h) / fitScale(whole, from);
+  const scale = zoom * fitScale(whole, to);
+  const w = to.w / scale, h = to.h / scale;
+  return { x: vb.x + vb.w / 2 - w / 2, y: vb.y + vb.h / 2 - h / 2, w, h };
+}
+
 export interface Viewport {
   /** Zoom by `factor` (above 1 shows more) keeping the map point under screen point (clientX, clientY) in place. */
   zoomAt(clientX: number, clientY: number, factor: number): void;
@@ -52,24 +84,42 @@ export interface Viewport {
 export function createViewport(svg: SVGSVGElement, whole: Box): Viewport {
   let vb: Box = { ...whole };
   const apply = () => svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  /** Screen pixels per map unit as drawn (the viewBox is letterboxed if its shape differs from the element's). */
+  const scaleOf = (r: DOMRect) => Math.min(r.width / vb.w, r.height / vb.h);
+  const sizeOf = (r: DOMRect): Size => ({ w: r.width, h: r.height });
+  /** The size of the box the current viewBox was last made for, so that a resize knows what it is changing from. */
+  let last: Size | null = null;
+  const refit = () => {
+    const r = svg.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    vb = refitBox(vb, whole, last ?? sizeOf(r), sizeOf(r));
+    last = sizeOf(r);
+    apply();
+  };
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(refit).observe(svg);
   return {
     zoomAt(clientX, clientY, factor) {
       const r = svg.getBoundingClientRect();
-      const mx = vb.x + ((clientX - r.left) / r.width) * vb.w;
-      const my = vb.y + ((clientY - r.top) / r.height) * vb.h;
-      vb = zoomBox(vb, whole, mx, my, factor);
+      last = sizeOf(r);
+      const s = scaleOf(r);
+      const mx = vb.x + vb.w / 2 + (clientX - (r.left + r.width / 2)) / s;
+      const my = vb.y + vb.h / 2 + (clientY - (r.top + r.height / 2)) / s;
+      vb = zoomBox(vb, r.width > 0 && r.height > 0 ? wholeOnScreen(whole, sizeOf(r)) : whole, mx, my, factor);
       apply();
     },
     panBy(dx, dy) {
       const r = svg.getBoundingClientRect();
-      vb = panBox(vb, dx, dy, r.width, r.height);
+      last = sizeOf(r);
+      const s = scaleOf(r);
+      vb = panBox(vb, dx, dy, vb.w * s, vb.h * s);
       apply();
     },
     focus(centres) {
+      const r = svg.getBoundingClientRect();
+      last = r.width > 0 && r.height > 0 ? sizeOf(r) : last;
       if (centres.length === 0) {
-        vb = { ...whole };
+        vb = r.width > 0 && r.height > 0 ? wholeOnScreen(whole, sizeOf(r)) : { ...whole };
       } else {
-        const r = svg.getBoundingClientRect();
         vb = fitBox(centres, r.width > 0 && r.height > 0 ? r.width / r.height : whole.w / whole.h);
       }
       apply();

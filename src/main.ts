@@ -14,6 +14,7 @@ import { createComputerLoop } from "./ui/computerLoop";
 import { computerToMove } from "./ui/computerPlay";
 import { createSession, setupView, type Session } from "./ui/session";
 import { normaliseMode, tapHex } from "./ui/sessionActions";
+import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { mountShell } from "./ui/shell";
@@ -60,8 +61,10 @@ function render(): void {
   const setup = setupView(session);
   const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
   const mark = captureLog(shell.status);
+  const focus = captureFocus(shell.status);
   shell.status.innerHTML = statusHtml(session, setup, actions);
   restoreLog(shell.status, mark);
+  restoreFocus(shell.status, focus);
   syncMap(view, session, setup);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;

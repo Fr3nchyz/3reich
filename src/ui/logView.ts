@@ -1,3 +1,5 @@
+import { escape } from "./mapGeometry";
+
 /**
  * The activity log as shown: newest entry first, only the latest LOG_LIMIT of them (the session keeps all),
  * and a scroll position that survives the status area being redrawn. The maths is pure and unit tested;
@@ -53,5 +55,5 @@ export function restoreLog(status: HTMLElement, mark: LogMark): void {
 export function logHtml(log: readonly string[]): string {
   const shown = logEntries(log);
   const more = log.length > shown.length ? `<li class="log-more">Older entries (${log.length - shown.length}) are not shown.</li>` : "";
-  return `<ol class="log" reversed start="${log.length}" data-total="${log.length}" tabindex="0" aria-label="Activity log, newest first">${shown.map((l) => `<li>${l}</li>`).join("")}${more}</ol>`;
+  return `<ol class="log" reversed start="${log.length}" data-total="${log.length}" tabindex="0" aria-label="Activity log, newest first">${shown.map((l) => `<li>${escape(l)}</li>`).join("")}${more}</ol>`;
 }
