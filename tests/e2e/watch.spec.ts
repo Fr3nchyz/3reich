@@ -187,8 +187,15 @@ test("the menu flags a bad seed or number of Game Turns and does not start; the 
 
 test("Pause also stops 'Step to next turn' that is still running", async ({ page }) => {
   const errors = await startWatch(page, "1939", { seed: "9", speed: "slow" });
-  await page.locator("#w-turn").click();
-  await page.locator("#w-play").click();
+  // Both clicks in one go, so that no action can be played in between (a step to the next turn can end within a blink).
+  const label = await page.evaluate(() => {
+    const button = (id: string) => document.getElementById(id) as HTMLButtonElement;
+    button("w-turn").click();
+    const while_stepping = button("w-play").textContent;
+    button("w-play").click();
+    return while_stepping;
+  });
+  expect(label, "while a step runs the button offers Pause").toBe("Pause");
   await expect(page.locator("#w-play")).toHaveText("Play");
   await page.waitForTimeout(200);
   const n = await actions(page);
