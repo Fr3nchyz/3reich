@@ -32,7 +32,11 @@ export const ONE_ATTACK_PER_HEX = true;
  */
 export const ADVANCE_AFTER_COMBAT = true;
 
-/** Hook for the supply engine: whether the unit is supplied and so may attack. TODO(verify): Ref 10.0 supply, not built; everyone is supplied. */
+/**
+ * Hook for supply: whether the unit may attack. Stays true on purpose: the rule text found (Ref 19.4, docs/RULES.md "Web research") lets an
+ * unsupplied unit attack at full strength; it cannot move, advance after combat or be redeployed. `supplyStatus` (supply.ts) is separate.
+ * TODO(verify, Ref 19.4): confirm against the PC manual; if unsupplied units cannot attack there, call `isUnitSupplied` here.
+ */
 export const isSupplied = (_ctx: GameContext, _state: GameState, _unit: Unit): boolean => true;
 
 /** Hook for front options: whether the side may attack on that Front. TODO(verify): Ref 11.2 Offensive Option, built elsewhere; every Front allows it. */
