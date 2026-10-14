@@ -65,6 +65,8 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     setup: { order: [...scenario.deploymentOrder], index: 0 },
     units: {},
     nextUnitId: 1,
+    grants: [],
+    noGrants: [],
     fortresses: {},
     rngState: seed,
   };

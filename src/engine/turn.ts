@@ -4,6 +4,8 @@ import { resetSpending } from "./brps";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, runYearStartSequence, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
+import { legalBuilds } from "./construction";
+import { legalGrants } from "./grants";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 
 /**
@@ -96,7 +98,16 @@ function endGameTurn(state: GameState): Transition {
 
 /** Whether the side to move has anything to do at a step whose rules are built. */
 function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
-  return id !== FIRST_STEP || legalDeclarations(ctx, state).length > 0;
+  switch (id) {
+    case FIRST_STEP:
+      return legalDeclarations(ctx, state).length > 0;
+    case "8b":
+      return legalBuilds(ctx, state).length > 0;
+    case "9a":
+      return legalGrants(state).length > 0;
+    default:
+      return true;
+  }
 }
 
 /**
@@ -115,9 +126,10 @@ export function settle(ctx: GameContext, from: GameState): Transition {
   for (let moves = 0; state.phase === "player-turn" && state.position; moves++) {
     if (moves > MAX_MOVES) throw new Error("settle: the Sequence of Play did not reach a step that waits.");
     const id = positionId(state.position);
-    if (state.position.part === "player-turn" && implemented.has(id) && hasWork(ctx, state, id)) break;
+    const waits = implemented.has(id) && (ctx.implementedSteps !== undefined || hasWork(ctx, state, id));
+    if (state.position.part === "player-turn" && waits) break;
     const moved = advance(ctx, state);
-    if (implemented.has(id) && hasWork(ctx, state, id)) flush();
+    if (waits) flush();
     else passed.push(id);
     if (moved.events.length > 0) flush();
     events.push(...moved.events);

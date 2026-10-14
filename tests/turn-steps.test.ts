@@ -41,18 +41,25 @@ describe("the position in the game", () => {
     expect(legalActions(CTX, s).at(-1)).toEqual({ type: "END_STEP", side: "axis", step: FIRST_STEP });
   });
 
-  it("passes step 1 when there is nothing to declare and waits at 10b (1944: no war on neutrals)", () => {
+  it("passes step 1 when there is nothing to declare and waits at 8b, where the Germans may build (1944: no war on neutrals)", () => {
     const ctx = ctxFor(SCENARIO_1944);
     const s = play(ctx, SCENARIO_1944);
-    expect(s.position).toEqual({ part: "player-turn", turn: 1, step: LAST_STEP });
-    expect(legalActions(ctx, s)).toEqual([{ type: "END_PLAYER_TURN", side: s.activeSide }]);
+    expect(s.position).toEqual({ part: "player-turn", turn: 1, step: "8b" });
+    expect(legalActions(ctx, s).at(-1)).toEqual({ type: "END_STEP", side: s.activeSide, step: "8b" });
   });
 
-  it("leaves step 1 for 10b once the side is done, passing steps 2 to 10a", () => {
+  it("leaves step 1 for 8b once the side is done, passing steps 2 to 8a", () => {
     const s = atStart(SCENARIO_1939, 1);
     const r = apply(CTX, s, moveOn(CTX, s));
+    expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: "8b" });
+    expect(passedIn(r.events)).toEqual(STEPS.slice(1, STEPS.indexOf("8b")));
+  });
+
+  it("passes 9a when there is nothing to grant and waits at 10b", () => {
+    const at8b = apply(CTX, atStart(SCENARIO_1939, 1), moveOn(CTX, atStart(SCENARIO_1939, 1))).state;
+    const r = apply(CTX, at8b, moveOn(CTX, at8b));
     expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: LAST_STEP });
-    expect(passedIn(r.events)).toEqual(STEPS.filter((id) => id !== FIRST_STEP && id !== LAST_STEP));
+    expect(passedIn(r.events)).toEqual(STEPS.slice(STEPS.indexOf("8b") + 1, -1));
   });
 });
 
@@ -98,9 +105,12 @@ describe("steps without rules are passed, and the passing is recorded", () => {
   it("records exactly the steps that are not waited at, and never a step that is", () => {
     const events = oneGameTurn(CTX, atStart(SCENARIO_1939, 1));
     const passed = passedIn(events);
-    // Both sides had a declaration to make, so step 1 was waited at and never recorded as passed.
-    expect(passed).toEqual([...STEPS.slice(1, -1), ...STEPS.slice(1, -1), "II.A"]);
-    for (const id of passed) expect(IMPLEMENTED_STEPS.has(id)).toBe(false);
+    // Both sides had something to declare and to build, so steps 1 and 8b were waited at and never recorded as
+    // passed. Germany has nobody to grant to, so 9a passed for the Axis; the Allies (Britain to France) waited at it.
+    const without = (waited: string[]) => STEPS.slice(1, -1).filter((id) => !waited.includes(id));
+    expect(passed).toEqual([...without(["8b"]), ...without(["8b", "9a"]), "II.A"]);
+    // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
+    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "8b", "9a"].includes(id)).toBe(true);
   });
 
   it("records step 1 as passed when a side has nothing to declare", () => {
@@ -199,12 +209,14 @@ describe("replay", () => {
     const initial = atStart(SCENARIO_1939, 5);
     const actions: Action[] = [];
     let s = initial;
-    for (let i = 0; i < 7; i++) {
+    // Move on until the second Player Turn of the next Game Turn waits at its last step.
+    for (let i = 0; i < 40 && !(s.season === "winter" && s.position?.part === "player-turn" && s.position.turn === 2 && s.position.step === LAST_STEP); i++) {
       const a = moveOn(CTX, s);
       actions.push(a);
       s = apply(CTX, s, a).state;
     }
     expect(replay(CTX, initial, actions).state).toEqual(s);
     expect(s.position).toEqual({ part: "player-turn", turn: 2, step: LAST_STEP });
+    expect(actions.length).toBeGreaterThan(8);
   });
 });

@@ -39,8 +39,8 @@ export function charge(state: GameState, id: PowerId, amount: number, reason: st
   return { state: withNation(state, id, next), event: { type: "BRPS_CHANGED", nation: id, delta: -paid, total: next.brpTotal, reason } };
 }
 
-/** A new Player Turn begins: nobody has spent anything yet (Ref 10.0 is a limit per Player Turn). */
+/** A new Player Turn begins: nobody has spent anything or granted anything yet (Ref 10.0 and 11.71 are limits per Player Turn). */
 export function resetSpending(state: GameState): GameState {
   const nations = Object.fromEntries(Object.entries(state.nations).map(([id, n]) => [id, { ...n, spent: 0 }])) as GameState["nations"];
-  return { ...state, nations };
+  return { ...state, nations, grants: [] };
 }

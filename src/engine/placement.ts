@@ -87,33 +87,42 @@ const unitsAt = (state: GameState, place: Place): Unit[] => Object.values(state.
 export const unitsOf = (state: GameState, owner: ForceOwner): Unit[] => Object.values(state.units).filter((u) => u.owner === owner);
 export const factorsOf = (u: Pick<Unit, "type" | "strength">): number => (FACTOR_TYPES.includes(u.type) ? u.strength : 0);
 
+/** Why stacking forbids this counter in this hex (Ref 5.0, 26.0), or null if it fits. Boxes have no stacking limit. */
+export function stackingProblem(ctx: GameContext, state: GameState, owner: ForceOwner, spec: UnitSpec, place: Place): string | null {
+  if (isBox(place)) return null;
+  const here = unitsAt(state, place);
+  if (GROUND_FOR_STACKING.includes(spec.type)) {
+    const ground = here.filter((u) => GROUND_FOR_STACKING.includes(u.type));
+    // Ref 5.0: two ground units per hex; three in London if all three are British. Airborne never count.
+    const allBritish = owner === "britain" && ground.every((u) => u.owner === "britain");
+    const limit = ctx.map.hexes[place]?.name === "London" && allBritish ? STACKING_LIMIT_LONDON_BRITISH : STACKING_LIMIT;
+    if (ground.length + 1 > limit) return `${place} already holds ${ground.length} ground units (limit ${limit}).`;
+  }
+  if (spec.type === "air") {
+    const air = here.filter((u) => u.type === "air").reduce((n, u) => n + u.strength, 0);
+    if (air + spec.strength > AIR_FACTOR_STACKING_LIMIT) return `${place} would hold ${air + spec.strength} air factors (limit ${AIR_FACTOR_STACKING_LIMIT}).`;
+  }
+  if (spec.type === "fleet") {
+    const naval = here.filter((u) => u.type === "fleet").reduce((n, u) => n + u.strength, 0);
+    if (naval + spec.strength > NAVAL_FACTOR_STACKING_LIMIT) return `${place} would hold ${naval + spec.strength} naval factors (limit ${NAVAL_FACTOR_STACKING_LIMIT}).`;
+  }
+  // Ref 26.0: before 1942 British and French units may not stack together.
+  if (state.year < 1942 && (owner === "britain" || owner === "france")) {
+    const other = owner === "britain" ? "france" : "britain";
+    if (here.some((u) => u.owner === other)) return `British and French units may not stack together before 1942.`;
+  }
+  return null;
+}
+
+/** Whether a base suits the counter: ground units on land, air units on air bases, fleets in ports. */
+export const baseSuits = suitsBase;
+
 /** Why a counter cannot be placed in a place right now, or null if it can. */
 export function placementProblem(ctx: GameContext, state: GameState, owner: ForceOwner, spec: UnitSpec, place: Place): string | null {
   const allowed = allowedPlaces(ctx, owner, spec);
   if (!allowed.places.has(place)) return `${place} is not a place where ${owner} may set up a ${spec.type}.`;
-  if (!isBox(place)) {
-    const here = unitsAt(state, place);
-    if (GROUND_FOR_STACKING.includes(spec.type)) {
-      const ground = here.filter((u) => GROUND_FOR_STACKING.includes(u.type));
-      // Ref 5.0: two ground units per hex; three in London if all three are British. Airborne never count.
-      const allBritish = owner === "britain" && ground.every((u) => u.owner === "britain");
-      const limit = ctx.map.hexes[place]?.name === "London" && allBritish ? STACKING_LIMIT_LONDON_BRITISH : STACKING_LIMIT;
-      if (ground.length + 1 > limit) return `${place} already holds ${ground.length} ground units (limit ${limit}).`;
-    }
-    if (spec.type === "air") {
-      const air = here.filter((u) => u.type === "air").reduce((n, u) => n + u.strength, 0);
-      if (air + spec.strength > AIR_FACTOR_STACKING_LIMIT) return `${place} would hold ${air + spec.strength} air factors (limit ${AIR_FACTOR_STACKING_LIMIT}).`;
-    }
-    if (spec.type === "fleet") {
-      const naval = here.filter((u) => u.type === "fleet").reduce((n, u) => n + u.strength, 0);
-      if (naval + spec.strength > NAVAL_FACTOR_STACKING_LIMIT) return `${place} would hold ${naval + spec.strength} naval factors (limit ${NAVAL_FACTOR_STACKING_LIMIT}).`;
-    }
-    // Ref 26.0: before 1942 British and French units may not stack together.
-    if (state.year < 1942 && (owner === "britain" || owner === "france")) {
-      const other = owner === "britain" ? "france" : "britain";
-      if (here.some((u) => u.owner === other)) return `British and French units may not stack together before 1942.`;
-    }
-  }
+  const stacking = stackingProblem(ctx, state, owner, spec, place);
+  if (stacking) return stacking;
   // "At most N factors in an area" (Peele's errata: five in Finland).
   const added = factorsOf(spec);
   for (const r of setupOf(ctx.scenario, owner).setup) {

@@ -1,8 +1,9 @@
-import type { Action } from "../engine/actions";
+import { legalActions, type Action } from "../engine/actions";
 import type { MapHex } from "../engine/map";
 import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
+import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
 /**
@@ -16,11 +17,31 @@ const unitsOf = (s: Session, owner: ForceOwner) => Object.values(s.state.units).
 export function normaliseMode(s: Session): void {
   const owner = currentSetupOwner(s.state);
   if (s.mode === "remove" && !Object.values(s.state.units).some((u) => u.owner === owner)) s.mode = "place";
+  // A chosen build is dropped once it is no longer on offer (step left, counter used up, BRPs spent).
+  if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
+}
+
+type Build = Extract<Action, { type: "BUILD" }>;
+
+/** The builds on offer now (step 8b). */
+export const builds = (s: Session): Build[] => (s.state.phase === "player-turn" ? legalActions(s.ctx, s.state).filter((a): a is Build => a.type === "BUILD") : []);
+
+/** A construction chip, given as the "owner:type:strength" key on the button. */
+export function pickBuild(s: Session, key: string): void {
+  s.build = parseBuildKey(key);
+  s.toast = "";
+}
+
+/** "Build in the U.S. Box": put the chosen build off the map. */
+export function buildInBox(s: Session, box: OffMapBox): void {
+  s.toast = "";
+  if (s.build) run(s, { type: "BUILD", owner: s.build.owner, unit: { type: s.build.type, strength: s.build.strength }, at: box });
 }
 
 /** A tap on a map hex during setup: place the chosen counter there, or take the top one back. */
 export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
+  if (s.state.phase === "player-turn") return tapToBuild(s, h);
   const owner = currentSetupOwner(s.state);
   if (!owner || sideOfOwner(owner) !== s.humanSide) return;
   if (s.mode === "remove") {
@@ -38,10 +59,22 @@ export function tapHex(s: Session, h: MapHex): void {
   }
 }
 
+/** A tap on a map hex at step 8b: build the chosen counter there. */
+function tapToBuild(s: Session, h: MapHex): void {
+  if (!s.build) return;
+  const { owner, type, strength } = s.build;
+  if (builds(s).some((a) => a.owner === owner && a.unit.type === type && a.unit.strength === strength && a.at === h.id)) {
+    run(s, { type: "BUILD", owner, unit: { type, strength }, at: h.id });
+  } else {
+    s.toast = `A ${strength}-factor ${type} cannot be built there. The yellow hexes are the places it can.`;
+  }
+}
+
 /** A turn button: apply one of the legal actions that were on offer. */
 export function takeAction(s: Session, action: Action): void {
   s.toast = "";
-  s.declarationsOpen = action.type === "DECLARE_WAR";
+  s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS";
+  if (action.type !== "BUILD") s.build = null;
   run(s, action);
 }
 
