@@ -2,6 +2,7 @@ import { hex } from "../engine/hex";
 import type { MapData } from "../engine/map";
 import { citySymbol } from "./mapCities";
 import { baysBetweenLand, fmt, hexCenter, hexCorners, midpoint, points, sideSegment, type Box, type Point } from "./mapGeometry";
+import { HATCH_DEFS } from "./mapOverlay";
 import { FRONT_TINT, SEA, landFill } from "./mapStyle";
 
 /** The SVG text of each layer of the map, built once from the map data. */
@@ -106,6 +107,8 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="hexes">${hexLayers.hexes}</g>
       <g class="bays">${buildBays(map)}</g>
       <g class="front-tint" style="display:${showFronts ? "inline" : "none"}">${hexLayers.fronts}</g>
+      ${HATCH_DEFS}
+      <g class="overlay" aria-hidden="true"></g>
       <g class="rivers">${sides.rivers}</g>
       <g class="borders">${sides.borders}</g>
       <g class="fronts">${sides.fronts}</g>
