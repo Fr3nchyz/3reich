@@ -1,4 +1,5 @@
 import { chooseAction, placeOf } from "../ai";
+import { createMemory, type AiMemory } from "../ai/memory";
 import { combatOf } from "../engine/combat-record";
 import { otherSide } from "../engine/game";
 import type { Side } from "../engine/types";
@@ -16,6 +17,10 @@ const MAX_ACTIONS_PER_TICK = 300;
 
 /** The most time one tick may keep the page busy before it yields to the browser (a build step can run dozens of actions of tens of milliseconds each). */
 export const TICK_BUDGET_MS = 60;
+
+/** What the computer remembers in each game (the targets of its units), and the ground moves it has made but not yet written up. */
+const memories = new WeakMap<Session, AiMemory>();
+const moveTally = new WeakMap<Session, { moves: number; units: number }>();
 
 export const computerSide = (s: Session): Side => otherSide(s.humanSide);
 
@@ -37,12 +42,29 @@ export function computerTick(s: Session, budgetMs = TICK_BUDGET_MS, now: () => n
   if (!computerToMove(s)) return "stuck";
   const here = placeOf(s.state);
   const started = now();
+  const memory = memories.get(s) ?? memories.set(s, createMemory()).get(s)!;
+  let lastCost = 0;
   for (let i = 0; i < MAX_ACTIONS_PER_TICK && placeOf(s.state) === here && computerToMove(s); i++) {
-    if (i > 0 && now() - started >= budgetMs) return "more";
-    const decision = chooseAction(s.ctx, s.state, { seed: s.seed });
+    // Another action only if the last one's cost fits in what is left of the budget: one slow action never runs on top of a spent budget.
+    if (i > 0 && (now() - started >= budgetMs || lastCost > budgetMs - (now() - started))) return "more";
+    const before = now();
+    const decision = chooseAction(s.ctx, s.state, { seed: s.seed, memory });
     if (!decision) return "stuck";
-    s.log.push(`Computer (${sideName(computerSide(s))}): ${decision.why}`);
+    const who = `Computer (${sideName(computerSide(s))})`;
+    if (decision.action.type === "MOVE") {
+      // Up to 40 moves a turn would bury the log: they are written up in one line when the step ends.
+      const tally = moveTally.get(s) ?? { moves: 0, units: 0 };
+      moveTally.set(s, { moves: tally.moves + 1, units: tally.units + decision.action.units.length });
+    } else {
+      const tally = moveTally.get(s);
+      if (tally) {
+        s.log.push(`${who}: moved ${tally.units} unit${tally.units === 1 ? "" : "s"} in ${tally.moves} move${tally.moves === 1 ? "" : "s"}, each toward the nearest enemy-held capital or objective.`);
+        moveTally.delete(s);
+      }
+      s.log.push(`${who}: ${decision.why}`);
+    }
     if (!run(s, decision.action)) return "stuck";
+    lastCost = now() - before;
   }
   return placeOf(s.state) === here ? "more" : "done";
 }

@@ -20,6 +20,7 @@ npm run lint       # ESLint (flat config); src/ files stay at or under 300 lines
 npm run typecheck  # app, engine (no DOM, no Node) and e2e configs
 npm run coverage   # unit tests plus the coverage floor for src/engine
 npm run e2e        # builds, then a Playwright smoke test against `vite preview` (mouse and touch)
+npm run selfplay -- --scenario 1939 --turns end --seed 1   # headless computer-against-computer game with reports (docs/SELFPLAY.md)
 ```
 
 `npm run e2e` needs a Chromium: run `npx playwright install chromium` once, or set `PW_CHROMIUM_PATH` to an installed one.
@@ -56,6 +57,7 @@ This is a note about intent, not legal advice.
 - [docs/RULES.md](docs/RULES.md): what is encoded, sources, coordinates, open questions
 - [docs/SOURCES.md](docs/SOURCES.md): where to download the original manuals and map
 - [docs/ROADMAP.md](docs/ROADMAP.md): milestones and the plan
+- [docs/SELFPLAY.md](docs/SELFPLAY.md): headless computer-against-computer games, reports and anomaly checks
 - [docs/PROGRESS.md](docs/PROGRESS.md): where the project stands, measured against the plan (2026-10-13)
 - [docs/PRODUCT_OWNER.md](docs/PRODUCT_OWNER.md): how a non-technical product owner can help and decide
 - [docs/AUDIT_REPORT.md](docs/AUDIT_REPORT.md): technical audit of the code (2026-10-13)

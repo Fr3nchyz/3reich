@@ -1,4 +1,5 @@
 import type { Action } from "../engine/actions";
+import type { AiMemory } from "./memory";
 
 /**
  * The computer opponent (spec 05). It reads the game state and the list of legal actions and
@@ -8,6 +9,12 @@ import type { Action } from "../engine/actions";
 export interface AiConfig {
   /** Breaks ties between equally good actions, the same way every time for the same seed. */
   seed: number;
+  /**
+   * What the computer remembers during a game (the target each unit is heading for, where it has been lately), owned by the
+   * caller and filled by the choosers. Without it every choice depends on the position alone, which is still legal and
+   * terminates, but units may change their minds between turns.
+   */
+  memory?: AiMemory;
 }
 
 /** One thing the computer chose, with a short reason for the log. */
