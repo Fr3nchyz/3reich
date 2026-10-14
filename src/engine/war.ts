@@ -22,6 +22,12 @@ export function atWar(state: GameState, a: Combatant, b: Combatant): boolean {
   return state.wars.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 }
 
+/**
+ * Which side each Major Power belongs to for good, even while it is neutral (Italy in 1939, the U.S.A.
+ * and the U.S.S.R. until they are attacked or declare): a Major Power never declares war on its own side.
+ */
+export const ALIGNMENT: Readonly<Record<PowerId, Side>> = { germany: "axis", italy: "axis", britain: "allies", france: "allies", usa: "allies", ussr: "allies" };
+
 /** The side a Major Power fights on, or null while it is neutral, out of the scenario or Vichy. */
 export function sideOfPower(n: Nation): Side | null {
   return n.status === "axis" ? "axis" : n.status === "allied" ? "allies" : null;
@@ -32,15 +38,16 @@ const costOf = (on: Combatant) => (isMajorPower(on) ? BRP_COSTS.declareWarOnMajo
 /** Who `by` may declare war on now: not already at war, not on its own side, and the scenario allows it. */
 export function declarationTargets(ctx: GameContext, state: GameState, by: PowerId): Combatant[] {
   const me = state.nations[by];
+  // A recorded action can name anyone; an unknown nation has nothing to declare (applyAction must not throw).
+  if (!me) return [];
   const side = sideOfPower(me);
   if (side === null || side !== state.activeSide) return [];
   const noNeutrals = ctx.scenario.rules.some((r) => r.kind === "no-war-on-neutrals");
   const targets: Combatant[] = [];
   for (const other of Object.values(state.nations)) {
     if (other.id === by || atWar(state, by, other.id) || other.status === "out" || other.status === "vichy") continue;
-    const theirs = sideOfPower(other);
-    if (theirs === side) continue;
-    if (theirs === null && noNeutrals) continue;
+    if (ALIGNMENT[other.id] === side) continue;
+    if (sideOfPower(other) === null && noNeutrals) continue;
     targets.push(other.id);
   }
   const minorAllies = new Set<string>(state.minorAllies.map((m) => m.owner));
@@ -61,6 +68,7 @@ export function legalDeclarations(ctx: GameContext, state: GameState): Action[] 
 
 export function applyDeclaration(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DECLARE_WAR" }>): ActionResult {
   const nation = state.nations[action.by];
+  if (!nation) return { ok: false, error: `${String(action.by)} is not a Major Power in this game.` };
   if (sideOfPower(nation) !== state.activeSide) return { ok: false, error: `${action.by} is not on the ${state.activeSide} side, so it cannot declare war now.` };
   if (atWar(state, action.by, action.on)) return { ok: false, error: `${action.by} is already at war with ${action.on}.` };
   if (!declarationTargets(ctx, state, action.by).includes(action.on)) {

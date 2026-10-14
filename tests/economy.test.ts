@@ -110,6 +110,27 @@ describe("declarations of war (Ref 13.0)", () => {
     expect(declare(s, "britain", "france").ok).toBe(false); // not their turn: Britain is Allied, the Axis is up
   });
 
+  it("never target a Major Power of the declarer's own alignment, neutral or not", () => {
+    const s = atStart(SCENARIO_1939, 1);
+    const majors = (t: Combatant[]) => t.filter(isMajorPower).sort();
+    // The Axis may attack the neutral Allied powers, never Italy.
+    expect(majors(declarationTargets(CTX, s, "germany"))).toEqual(["usa", "ussr"]);
+    // The Allies may attack Italy, never the U.S.A. or the U.S.S.R. (their own side) or each other.
+    const allied = { ...s, activeSide: "allies" as const };
+    expect(majors(declarationTargets(CTX, allied, "britain"))).toEqual(["italy"]);
+    expect(majors(declarationTargets(CTX, allied, "france"))).toEqual(["italy"]);
+    expect(applyAction(CTX, allied, { type: "DECLARE_WAR", by: "britain", on: "usa" }).ok).toBe(false);
+    expect(applyAction(CTX, s, { type: "DECLARE_WAR", by: "germany", on: "italy" }).ok).toBe(false);
+  });
+
+  it("refuse an action that names a nation that is not in the game, without throwing", () => {
+    const s = atStart(SCENARIO_1939, 1);
+    expect(declarationTargets(CTX, s, "poland" as never)).toEqual([]);
+    const r = applyAction(CTX, s, { type: "DECLARE_WAR", by: "poland" as never, on: "germany" });
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toMatch(/not a Major Power/);
+  });
+
   it("are made only by the side whose Player Turn it is, and by a Major Power that is in the war", () => {
     const s = atStart(SCENARIO_1939, 1);
     expect(declarationTargets(CTX, s, "britain")).toEqual([]);
