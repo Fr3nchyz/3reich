@@ -4,7 +4,7 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 
 ## 2 (2026-10-14): the player (Frank), on iPad, then clarified
 
-**Who and how.** French speaker. Prefers the **iPad** (he plays Panzer Corps there); has not played our version on a tablet yet. Favourite scenario: **the Campaign**. Plays the original DOS game, so he knows the BRP sequence and recognised it. Overall: "très bon début", impressive.
+**Who and how.** Prefers to communicate in French, but the English game is fine for now. Prefers the **iPad** (he plays Panzer Corps there); has not played our version on a tablet yet. Favourite scenario: **the Campaign**. Plays the original DOS game, so he knows the BRP sequence and recognised it. Overall: "très bon début", impressive.
 
 **What he tried and what went wrong.**
 
@@ -22,7 +22,7 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 
 **How we will keep learning from Frank**
 - A "Send feedback" button that saves the game record (the action list) with a note, so a reported problem can be replayed exactly.
-- A short French play-test card: five things to try in ten minutes and what to report.
+- A short play-test card: five things to try in ten minutes and what to report. Frank prefers to communicate in French, so the card can be written in French; the game itself stays English for now (a French interface is not a priority).
 - Questions for him (rules): do friendly units cancel enemy Zones of Control, and does every ground unit exert one or only armor; can an unsupplied unit still attack; what happens to unused BRPs at each Year Start; can a hex be attacked more than once per turn; who holds Greek hex EE27 in 1942; six factors at Leningrad and Moscow each or in total; Libya's setup limit.
 
 ## 1 (2026-10-14): Amaury, desktop (MacBook), two full games
