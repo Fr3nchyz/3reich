@@ -45,6 +45,12 @@ function label(a: Action): string {
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
+    case "ATTACK":
+      return `Attack ${a.target} with ${a.units.join(", ")}`;
+    case "ALLOCATE_LOSSES":
+      return `Lose ${a.units.join(", ")}`;
+    case "ADVANCE":
+      return `Advance ${a.units.join(", ")} into ${a.to}`;
     default:
       return a.type;
   }
