@@ -1,6 +1,6 @@
 import { MAP } from "../data/map";
 import { applyAction, type Action, type GameEvent } from "../engine/actions";
-import { autoSetupOwner } from "../engine/autosetup";
+import { AutoSetupError, autoSetupOwner } from "../engine/autosetup";
 import type { GameContext } from "../engine/context";
 import { newGame } from "../engine/game";
 import { OWNER_NAMES } from "../engine/nations";
@@ -88,12 +88,34 @@ export function run(s: Session, ...actions: Action[]): boolean {
   return true;
 }
 
+/**
+ * Finishes the nation now up, keeping what is placed. Where the rules leave no way to finish with
+ * everything kept, the automatic setup takes back the counters in the way and the toast says so;
+ * if it cannot finish at all the toast says that, and nothing changes.
+ */
+export function placeTheRest(s: Session): boolean {
+  let actions: Action[];
+  try {
+    actions = autoSetupOwner(s.ctx, s.state);
+  } catch (e) {
+    if (!(e instanceof AutoSetupError)) throw e;
+    s.toast = e.message;
+    return false;
+  }
+  const takenBack = actions.filter((a) => a.type === "SETUP_REMOVE").length;
+  if (!run(s, ...actions)) return false;
+  if (takenBack > 0) {
+    s.toast = `To fit the rest, ${takenBack} counter${takenBack === 1 ? "" : "s"} you had placed ${takenBack === 1 ? "was" : "were"} taken back and set down somewhere else.`;
+  }
+  return true;
+}
+
 /** The computer sets up its nations (a placeholder for its own choices) until a nation of yours is up. */
 export function computerSetup(s: Session): void {
   for (let guard = 0; guard < MAX_SETUP_OWNERS && s.state.phase === "setup"; guard++) {
     const owner = currentSetupOwner(s.state)!;
     if (sideOfOwner(owner) === s.humanSide) break;
-    run(s, ...autoSetupOwner(s.ctx, s.state));
+    if (!placeTheRest(s)) break;
   }
 }
 
