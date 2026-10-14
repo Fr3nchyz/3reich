@@ -21,7 +21,7 @@ export const OWNER_NAMES: Record<ForceOwner, string> = {
   bulgaria: "Bulgaria",
 };
 
-/** Ref 10.0: half the BRP total, fractions rounded down, per Player Turn. */
+/** Ref 10.0: half the BRP total at the Year Start Sequence, fractions rounded down, per Player Turn. */
 export function spendingLimit(nation: Nation): number {
-  return Math.floor(nation.brpTotal / 2);
+  return nation.spendLimit;
 }

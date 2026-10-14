@@ -1,3 +1,4 @@
+import { atWar } from "./war";
 import type { ForceOwner, ForcePools, GameState, GameTurn, NationSetup, PowerId, Scenario, Season, Side, StrategicWarfare } from "./types";
 
 export const SEASONS: readonly Season[] = ["spring", "summer", "fall", "winter"];
@@ -77,9 +78,7 @@ export function newGame(scenario: Scenario, seed: number): GameState {
 export function initiativeTotals(state: GameState): { axis: number; allies: number } {
   const n = state.nations;
   const usCounts = turnIndex(state) >= turnIndex({ year: 1942, season: "summer" });
-  // TODO(verify): "at war with Germany" is approximated by the USSR having joined the
-  // Allies, until declarations of war are modelled (Ref 13).
-  const ussrCounts = n.ussr.status === "allied";
+  const ussrCounts = atWar(state, "ussr", "germany");
   return {
     axis: n.germany.brpTotal + n.italy.brpTotal,
     allies: n.france.brpTotal + n.britain.brpTotal + (usCounts ? n.usa.brpTotal : 0) + (ussrCounts ? n.ussr.brpTotal : 0),

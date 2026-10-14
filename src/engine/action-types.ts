@@ -1,5 +1,5 @@
 import type { HexId } from "./hex";
-import type { ForceOwner, GameState, OffMapBox, Season, Side, UnitType } from "./types";
+import type { Combatant, ForceOwner, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
  * Everything a player (human or computer) can do is an Action. Actions are plain,
@@ -11,6 +11,8 @@ export type Action =
   | { type: "END_PLAYER_TURN"; side: Side }
   /** Done with a step that has rules built; `step` is the step being left, so a stale action is refused. */
   | { type: "END_STEP"; side: Side; step: string }
+  /** Step 1: a Major Power declares war on another Major Power (35 BRPs) or a minor country (10). */
+  | { type: "DECLARE_WAR"; by: PowerId; on: Combatant }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -28,6 +30,9 @@ export type GameEvent =
   | { type: "PLAYER_TURN_STARTED"; year: number; season: Season; side: Side }
   /** Steps with no rules built yet that the engine passed without asking (ids as on the card). */
   | { type: "STEPS_PASSED"; steps: string[] }
+  /** A nation's BRP total changed; `delta` is negative for spending. */
+  | { type: "BRPS_CHANGED"; nation: PowerId; delta: number; total: number; reason: string }
+  | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
   | { type: "GAME_OVER"; year: number; season: Season };
 
 export type ActionResult =

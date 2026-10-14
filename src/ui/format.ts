@@ -1,9 +1,12 @@
 import type { MapHex } from "../engine/map";
+import { OWNER_NAMES } from "../engine/nations";
 import type { Side } from "../engine/types";
 
 /** Small text helpers shared by the views. */
 
 export const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
+/** A readable name for a country at war: an owner of forces, or a minor country by its id. */
+export const nameOf = (c: string): string => (c in OWNER_NAMES ? OWNER_NAMES[c as keyof typeof OWNER_NAMES] : cap(c));
 export const sideName = (s: Side) => (s === "axis" ? "Axis" : "Allied");
 
 /** The line shown in the hex info overlay: id, name, terrain, country, front and features. */

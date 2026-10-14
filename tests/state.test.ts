@@ -12,9 +12,11 @@ function playThrough(initial: GameState): Action[] {
   for (let guard = 0; guard < 1000; guard++) {
     const legal = legalActions(CTX, state);
     if (legal.length === 0) return actions;
-    const r = applyAction(CTX, state, legal[0]!);
+    // The move-on action is always the last one offered; declarations of war come before it.
+    const next = legal.at(-1)!;
+    const r = applyAction(CTX, state, next);
     if (!r.ok) throw new Error(r.error);
-    actions.push(legal[0]!);
+    actions.push(next);
     state = r.state;
   }
   throw new Error("Scenario did not end");
@@ -54,7 +56,8 @@ describe("actions", () => {
   it("runs the 1939 scenario for exactly 12 Game Turns, then stops", () => {
     const initial = started(SCENARIO_1939, 1);
     const actions = playThrough(initial);
-    expect(actions).toHaveLength(24);
+    // 24 Player Turns end with END_PLAYER_TURN; the game also leaves step 1 whenever it waited there.
+    expect(actions.filter((a) => a.type === "END_PLAYER_TURN")).toHaveLength(24);
     const { state, events } = replay(CTX, initial, actions);
     expect([state.phase, state.year, state.season]).toEqual(["game-over", 1942, "summer"]);
     expect(events.filter((e) => e.type === "GAME_OVER")).toHaveLength(1);

@@ -1,8 +1,10 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
+import { resetSpending } from "./brps";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, runYearStartSequence, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
+import { legalDeclarations, scheduledDeclarations } from "./war";
 
 /**
  * The Sequence of Play as a machine (Ops 5.0, specs/01-turn-steps.md). The state always has a
@@ -37,11 +39,18 @@ export function positionId(p: TurnPosition): string {
 
 /** Play starts here when the last nation has set up: step 1 of the first Player Turn. */
 export function beginPlay(ctx: GameContext, state: GameState): Transition {
-  return settle(ctx, { ...state, position: PLAYER_TURN_START });
+  const begun = beginPlayerTurn(ctx, { ...state, position: PLAYER_TURN_START });
+  const settled = settle(ctx, begun.state);
+  return { state: settled.state, events: [...begun.events, ...settled.events] };
+}
+
+/** A Player Turn begins: spending starts again from nothing and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
+function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
+  return scheduledDeclarations(ctx, resetSpending(state));
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
-export function advance(state: GameState): Transition {
+export function advance(ctx: GameContext, state: GameState): Transition {
   const pos = state.position;
   if (!pos) throw new Error("advance: the game has no position (setup, or an old saved game).");
   switch (pos.part) {
@@ -51,29 +60,28 @@ export function advance(state: GameState): Transition {
       return { state: { ...state, position: { part: "turn-order" } }, events: [] };
     case "turn-order": {
       const firstSide = determineInitiative(state);
-      const next: GameState = { ...state, firstSide, activeSide: firstSide, position: PLAYER_TURN_START };
+      const began = beginPlayerTurn(ctx, { ...state, firstSide, activeSide: firstSide, position: PLAYER_TURN_START });
       return {
-        state: next,
+        state: began.state,
         events: [
           { type: "INITIATIVE_DETERMINED", year: state.year, season: state.season, firstSide, ...initiativeTotals(state) },
           { type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side: firstSide },
+          ...began.events,
         ],
       };
     }
     case "player-turn": {
       const step = nextStepId(pos.step);
       if (step) return { state: { ...state, position: { ...pos, step } }, events: [] };
-      return pos.turn === 1 ? secondPlayerTurn(state) : endGameTurn(state);
+      return pos.turn === 1 ? secondPlayerTurn(ctx, state) : endGameTurn(state);
     }
   }
 }
 
-function secondPlayerTurn(state: GameState): Transition {
+function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
   const side = otherSide(state.firstSide);
-  return {
-    state: { ...state, activeSide: side, position: { part: "player-turn", turn: 2, step: FIRST_STEP } },
-    events: [{ type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side }],
-  };
+  const began = beginPlayerTurn(ctx, { ...state, activeSide: side, position: { part: "player-turn", turn: 2, step: FIRST_STEP } });
+  return { state: began.state, events: [{ type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side }, ...began.events] };
 }
 
 /** Both Player Turns are done: the scenario ends, or the next Game Turn begins at its first part. */
@@ -84,6 +92,11 @@ function endGameTurn(state: GameState): Transition {
   const turn = nextTurn(state);
   const position: TurnPosition = turn.season === "spring" ? { part: "year-start" } : { part: "russian-winter" };
   return { state: { ...state, ...turn, position }, events: [] };
+}
+
+/** Whether the side to move has anything to do at a step whose rules are built. */
+function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
+  return id !== FIRST_STEP || legalDeclarations(ctx, state).length > 0;
 }
 
 /**
@@ -102,9 +115,9 @@ export function settle(ctx: GameContext, from: GameState): Transition {
   for (let moves = 0; state.phase === "player-turn" && state.position; moves++) {
     if (moves > MAX_MOVES) throw new Error("settle: the Sequence of Play did not reach a step that waits.");
     const id = positionId(state.position);
-    if (state.position.part === "player-turn" && implemented.has(id)) break;
-    const moved = advance(state);
-    if (implemented.has(id)) flush();
+    if (state.position.part === "player-turn" && implemented.has(id) && hasWork(ctx, state, id)) break;
+    const moved = advance(ctx, state);
+    if (implemented.has(id) && hasWork(ctx, state, id)) flush();
     else passed.push(id);
     if (moved.events.length > 0) flush();
     events.push(...moved.events);

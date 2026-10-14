@@ -1,4 +1,4 @@
-import type { PowerId } from "./types";
+import type { MinorCountry, PowerId } from "./types";
 
 /**
  * Charts from the PC reference map and Reference Manual. See docs/RULES.md. Each chart
@@ -135,10 +135,7 @@ export function airNationalityDrm(nation: PowerId | "other"): number {
   return -2;
 }
 
-export type MinorCountry =
-  | "arabia" | "belgium" | "bulgaria" | "denmark" | "finland" | "greece" | "hungary"
-  | "ireland" | "luxembourg" | "netherlands" | "norway" | "persia" | "poland"
-  | "portugal" | "rumania" | "spain" | "sweden" | "turkey" | "yugoslavia";
+export type { MinorCountry } from "./types";
 
 /**
  * Minor Country Forces: number of counters of each type when a minor is attacked or
