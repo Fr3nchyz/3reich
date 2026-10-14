@@ -82,7 +82,7 @@ export const SCENARIO_1944: Scenario = {
     usa: nationSetup({
       controlledAtStart: ["usa"],
       // "U.S. 'at start' forces are set up in the U.S. Box and/or anywhere in British-controlled territory."
-      setup: [{ kind: "all-in", types: "all", in: [{ box: "us-box" }, { controlledBy: "britain" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "box", box: "us-box" }, { kind: "controlled-by", owner: "britain" }] }],
       forcePool: [inf(3, 4, 10), airborne(3, 3, 1), armor(5, 6, 4), fleet(9, 7), air(5, 4, 5)],
       allowableBuilds: [inf(3, 4, 5), armor(5, 6, 1), replacement(7)],
     }),
@@ -95,10 +95,10 @@ export const SCENARIO_1944: Scenario = {
       controlledZones: ["corsica", "sardinia", "sicily", "italy-south-of-start-line"],
       setup: [
         // "At least three 3-4 infantry, two 4-5 armor, four 9-factor fleets and one 5-4 air unit on the Mediterranean Front."
-        { kind: "place", type: "infantry", strength: 3, count: 3, in: [{ front: "mediterranean" }] },
-        { kind: "place", type: "armor", strength: 4, count: 2, in: [{ front: "mediterranean" }] },
-        { kind: "place", type: "fleet", strength: 9, count: 4, in: [{ front: "mediterranean" }] },
-        { kind: "place", type: "air", strength: 5, count: 1, in: [{ front: "mediterranean" }] },
+        { kind: "place", type: "infantry", strength: 3, count: 3, in: [{ kind: "front", front: "mediterranean" }] },
+        { kind: "place", type: "armor", strength: 4, count: 2, in: [{ kind: "front", front: "mediterranean" }] },
+        { kind: "place", type: "fleet", strength: 9, count: 4, in: [{ kind: "front", front: "mediterranean" }] },
+        { kind: "place", type: "air", strength: 5, count: 1, in: [{ kind: "front", front: "mediterranean" }] },
       ],
       forcePool: [inf(3, 4, 7), inf(1, 3, 3), airborne(3, 3, 1), armor(4, 5, 4), fleet(9, 10), air(5, 4, 4), replacement(6)],
       allowableBuilds: [], // "none (other than losses)"
@@ -108,8 +108,8 @@ export const SCENARIO_1944: Scenario = {
       controlledAtStart: [],
       // Free French units function as British in all respects (Ref 35.0), so they set up in
       // British-controlled territory, within the area the page names.
-      mayAlsoSetUpIn: [{ areas: [{ controlledBy: "britain" }] }],
-      setup: [{ kind: "all-in", types: "all", in: [{ front: "mediterranean" }] }],
+      mayAlsoSetUpIn: [{ areas: [{ kind: "controlled-by", owner: "britain" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "front", front: "mediterranean" }] }],
       forcePool: [inf(2, 3, 2)],
       allowableBuilds: [],
     }),
@@ -129,12 +129,12 @@ export const SCENARIO_1944: Scenario = {
       setup: [
         // "All fleets must start in Baltic-Sea, North-Sea and/or Atlantic ports [Exception: the German-controlled
         // Italian fleet must start in a German-controlled Mediterranean port]."
-        { kind: "all-in", types: ["fleet"], nationality: "own", in: [{ zone: "baltic-north-atlantic-ports" }, { box: "murmansk-box" }] },
-        { kind: "all-in", types: ["fleet"], nationality: "italy", in: [{ ports: "mediterranean" }] },
+        { kind: "all-in", types: ["fleet"], nationality: "own", in: [{ kind: "zone", id: "baltic-north-atlantic-ports" }, { kind: "box", box: "murmansk-box" }] },
+        { kind: "all-in", types: ["fleet"], nationality: "italy", in: [{ kind: "ports", front: "mediterranean" }] },
       ],
       mayAlsoSetUpIn: [
-        { areas: [{ country: "bulgaria" }, { country: "finland" }, { country: "hungary" }, { country: "rumania" }] },
-        { areas: [{ box: "murmansk-box" }], types: ["fleet", "air"] },
+        { areas: [{ kind: "country", id: "bulgaria" }, { kind: "country", id: "finland" }, { kind: "country", id: "hungary" }, { kind: "country", id: "rumania" }] },
+        { areas: [{ kind: "box", box: "murmansk-box" }], types: ["fleet", "air"] },
       ],
       forcePool: [inf(3, 3, 31), airborne(3, 3, 1), armor(5, 6, 2), armor(4, 6, 6), fleet(9, 2), ofNation(fleet(6, 1), "italy"), air(5, 4, 6)],
       allowableBuilds: [inf(1, 3, 6), armor(4, 6, 5), replacement(8)],

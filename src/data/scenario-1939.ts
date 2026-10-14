@@ -62,7 +62,7 @@ export const SCENARIO_1939: Scenario = {
   forces: {
     poland: nationSetup({
       controlledAtStart: ["poland"],
-      setup: [{ kind: "all-in", types: "all", in: [{ country: "poland" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "country", id: "poland" }] }],
       forcePool: [inf(2, 3, 3), inf(1, 3, 7), air(1, 4, 2)],
       allowableBuilds: [],
     }),
@@ -71,9 +71,9 @@ export const SCENARIO_1939: Scenario = {
       // Sicily, Sardinia and Rhodes are part of Italy on the map; Albania and Libya are their own countries.
       controlledAtStart: ["italy", "albania", "libya"],
       setup: [
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ country: "albania" }] },
-        { kind: "place", type: "infantry", strength: 1, count: 2, in: [{ country: "libya" }] },
-        { kind: "all-in", types: ["fleet"], in: [{ ports: "mediterranean" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "country", id: "albania" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 2, in: [{ kind: "country", id: "libya" }] },
+        { kind: "all-in", types: ["fleet"], in: [{ kind: "ports", front: "mediterranean" }] },
       ],
       forcePool: [inf(3, 3, 2), inf(1, 3, 6), armor(2, 5, 1), fleet(9, 4), air(5, 4, 2)],
       allowableBuilds: [inf(2, 3, 4), armor(2, 5, 1), fleet(9, 1), replacement(6)],
@@ -85,9 +85,9 @@ export const SCENARIO_1939: Scenario = {
       setup: [
         {
           kind: "place", type: "infantry", strength: 2, count: 1,
-          in: [{ country: "morocco" }, { country: "tunisia" }, { country: "algeria" }],
+          in: [{ kind: "country", id: "morocco" }, { kind: "country", id: "tunisia" }, { kind: "country", id: "algeria" }],
         },
-        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ country: "lebanon-syria" }] },
+        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ kind: "country", id: "lebanon-syria" }] },
       ],
       forcePool: [inf(2, 3, 12), armor(3, 5, 1), fleet(9, 3), air(5, 4, 2), replacement(2)],
       allowableBuilds: [inf(2, 3, 4), armor(3, 5, 2), replacement(2)],
@@ -97,18 +97,18 @@ export const SCENARIO_1939: Scenario = {
       // Cyprus, Gibraltar and Malta are part of Britain on the map.
       controlledAtStart: ["britain", "egypt", "iraq", "palestine", "transjordan"],
       setup: [
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ country: "palestine" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "country", id: "palestine" }] },
         // Malta (GG19).
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "GG19" }] },
-        { kind: "place", type: "air", strength: 1, count: 1, in: [{ hex: "GG19" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "GG19" }] },
+        { kind: "place", type: "air", strength: 1, count: 1, in: [{ kind: "hex", id: "GG19" }] },
         // Egypt.
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ country: "egypt" }] },
-        { kind: "place", type: "armor", strength: 2, count: 1, in: [{ country: "egypt" }] },
-        { kind: "place", type: "fleet", strength: 9, count: 1, in: [{ country: "egypt" }] },
-        { kind: "place", type: "air", strength: 1, count: 2, in: [{ country: "egypt" }] },
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "country", id: "egypt" }] },
+        { kind: "place", type: "armor", strength: 2, count: 1, in: [{ kind: "country", id: "egypt" }] },
+        { kind: "place", type: "fleet", strength: 9, count: 1, in: [{ kind: "country", id: "egypt" }] },
+        { kind: "place", type: "air", strength: 1, count: 2, in: [{ kind: "country", id: "egypt" }] },
         // Gibraltar (AA7).
-        { kind: "place", type: "air", strength: 1, count: 1, in: [{ hex: "AA7" }] },
-        { kind: "place", type: "fleet", strength: 9, count: 2, in: [{ hex: "AA7" }] },
+        { kind: "place", type: "air", strength: 1, count: 1, in: [{ kind: "hex", id: "AA7" }] },
+        { kind: "place", type: "fleet", strength: 9, count: 2, in: [{ kind: "hex", id: "AA7" }] },
       ],
       forcePool: [inf(3, 4, 3), inf(1, 3, 3), armor(4, 5, 1), armor(2, 5, 1), fleet(9, 6), air(5, 4, 2), air(1, 4, 4)],
       allowableBuilds: [inf(3, 4, 3), armor(4, 5, 2), fleet(9, 3), air(5, 4, 1), air(1, 4, 1), replacement(6)],
@@ -117,11 +117,11 @@ export const SCENARIO_1939: Scenario = {
     ussr: nationSetup({
       controlledAtStart: ["ussr"],
       setup: [
-        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ hex: "D44" }] }, // Leningrad
-        { kind: "place", type: "armor", strength: 3, count: 1, in: [{ hex: "H47" }] }, // Moscow
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "T37" }] }, // Odessa
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "O43" }] }, // Kharkov
-        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ hex: "U48" }] }, // Grozny
+        { kind: "place", type: "infantry", strength: 2, count: 1, in: [{ kind: "hex", id: "D44" }] }, // Leningrad
+        { kind: "place", type: "armor", strength: 3, count: 1, in: [{ kind: "hex", id: "H47" }] }, // Moscow
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "T37" }] }, // Odessa
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "O43" }] }, // Kharkov
+        { kind: "place", type: "infantry", strength: 1, count: 1, in: [{ kind: "hex", id: "U48" }] }, // Grozny
       ],
       forcePool: [inf(1, 3, 12), inf(2, 3, 5), armor(3, 5, 3), fleet(9, 3), air(5, 4, 2)],
       allowableBuilds: [inf(1, 3, 3), inf(2, 3, 5), inf(3, 3, 5), armor(3, 5, 3), air(5, 4, 1)],
@@ -136,10 +136,10 @@ export const SCENARIO_1939: Scenario = {
         { kind: "min-factors", front: "eastern", min: 20, alsoCountsAdjacentTo: "poland", excludeCountries: ["rumania", "turkey"] },
         // Peele's errata: the 20-factor allowance for Finland, Hungary, Rumania and Bulgaria is
         // removed, but no more than 5 factors may set up in Finland.
-        { kind: "max-factors", area: { country: "finland" }, max: 5 },
+        { kind: "max-factors", area: { kind: "country", id: "finland" }, max: 5 },
       ],
       // "May place ... in Finland (five maximum), Hungary, Rumania and/or Bulgaria."
-      mayAlsoSetUpIn: [{ areas: [{ country: "finland" }, { country: "hungary" }, { country: "rumania" }, { country: "bulgaria" }] }],
+      mayAlsoSetUpIn: [{ areas: [{ kind: "country", id: "finland" }, { kind: "country", id: "hungary" }, { kind: "country", id: "rumania" }, { kind: "country", id: "bulgaria" }] }],
       forcePool: [inf(3, 3, 8), armor(4, 6, 4), fleet(9, 2), air(5, 4, 4)],
       allowableBuilds: [inf(3, 3, 20), armor(4, 6, 8), airborne(3, 3, 1), fleet(9, 2), air(5, 4, 2), replacement(8)],
     }),
@@ -148,7 +148,7 @@ export const SCENARIO_1939: Scenario = {
       controlledAtStart: ["usa"],
       // All U.S. units set up in the U.S. Box in Spring '42 (the 1942 page spells out the turn;
       // the 1939 page's text is cut off in the scan).
-      setup: [{ kind: "all-in", types: "all", in: [{ box: "us-box" }] }],
+      setup: [{ kind: "all-in", types: "all", in: [{ kind: "box", box: "us-box" }] }],
       forcePool: [inf(3, 4, 10), armor(5, 6, 1), fleet(9, 4), air(5, 4, 2)],
       allowableBuilds: [], // "none (other than losses)"
     }),

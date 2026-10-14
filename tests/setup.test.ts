@@ -210,7 +210,7 @@ describe("opening setup: the requirements of each scenario page", () => {
 
   it("puts every U.S. counter in the U.S. Box when the USA sets up (1942)", () => {
     const f = setupOf(SCENARIO_1942, "usa");
-    expect(f.setup).toEqual([{ kind: "all-in", types: "all", in: [{ box: "us-box" }] }]);
+    expect(f.setup).toEqual([{ kind: "all-in", types: "all", in: [{ kind: "box", box: "us-box" }] }]);
   });
 });
 
@@ -220,7 +220,7 @@ describe("opening setup: requirements that the 1939 data cannot exercise on its 
     const scenario: Scenario = {
       ...SCENARIO_1939,
       deploymentOrder: ["germany"],
-      forces: { ...SCENARIO_1939.forces, germany: { ...g, setup: [...g.setup, { kind: "all-in", types: ["fleet"], in: [{ hex: "J30" }] }] } },
+      forces: { ...SCENARIO_1939.forces, germany: { ...g, setup: [...g.setup, { kind: "all-in", types: ["fleet"], in: [{ kind: "hex", id: "J30" }] }] } },
     };
     const ctx = ctxFor(scenario);
     const places = legalActions(ctx, newGame(scenario, 1)).flatMap((a) => (a.type === "SETUP_PLACE" && a.unit.type === "fleet" ? [a.at] : []));

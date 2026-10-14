@@ -53,7 +53,7 @@ function allowedPlacesUncached(ctx: GameContext, owner: ForceOwner, spec: UnitSp
   // A requirement may name an off-map box (the U.S. Box), which no territory covers.
   for (const r of f.setup) {
     if (r.kind === "min-factors" || r.kind === "max-factors" || r.kind === "min-ground-factors-near") continue;
-    for (const a of r.in) if ("box" in a) allowed = union(allowed, resolveArea(ctx, a));
+    for (const a of r.in) if (a.kind === "box") allowed = union(allowed, resolveArea(ctx, a));
   }
   let places = allowed.places;
   let unresolved = allowed.unresolved;
