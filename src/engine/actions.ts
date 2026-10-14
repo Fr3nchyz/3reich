@@ -59,7 +59,7 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
     case "ALLOCATE_LOSSES":
       return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(state, action));
     case "ADVANCE":
-      return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(state, action));
+      return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
     case "BUILD":
       return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
     case "GRANT_BRPS":

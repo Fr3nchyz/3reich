@@ -5,7 +5,7 @@ import { resolveOffensiveCombat } from "./combat";
 import { combatOf } from "./combat-record";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import { STACKING_LIMIT } from "./tables";
+import { stackingProblem } from "./placement";
 import type { GameState, Unit } from "./types";
 
 /**
@@ -54,17 +54,32 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
   return out;
 }
 
-/** Ground units that count toward the stacking limit (airborne never do, Ref 5.0). */
-const stacks = (u: Unit): boolean => u.type !== "airborne";
+/**
+ * Why these units may not all end in `to` (stacking and the Anglo-French rule of Ref 5.0, 26.0, as in setup),
+ * or null. Units are added one at a time so each sees the ones before it.
+ */
+function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string[], to: HexId): string | null {
+  let s = state;
+  for (const id of ids) {
+    const u = s.units[id]!;
+    const problem = stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, to);
+    if (problem) return problem;
+    s = { ...s, units: { ...s.units, [id]: { ...u, at: to } } };
+  }
+  return null;
+}
 
-/** Each way the survivors may advance: any set that keeps the hex within the stacking limit. */
-function legalAdvances(state: GameState): Action[] {
+/**
+ * Each way the survivors may advance: any set that fits the hex. Only the first 12 survivors are
+ * considered (at most six hexes of two units can attack one hex), which bounds the subsets listed.
+ */
+function legalAdvances(ctx: GameContext, state: GameState): Action[] {
   const out: Action[] = [];
   for (const chance of combatOf(state).advances) {
     const ids = chance.units.filter((id) => state.units[id]).slice(0, 12);
     for (let mask = 1; mask < 1 << ids.length; mask++) {
       const pick = ids.filter((_, i) => mask & (1 << i));
-      if (pick.filter((id) => stacks(state.units[id]!)).length <= STACKING_LIMIT) out.push({ type: "ADVANCE", side: state.activeSide, units: pick, to: chance.to });
+      if (!advanceProblem(ctx, state, pick, chance.to)) out.push({ type: "ADVANCE", side: state.activeSide, units: pick, to: chance.to });
     }
   }
   return out;
@@ -72,7 +87,7 @@ function legalAdvances(state: GameState): Action[] {
 
 /** The step's actions: the losses to choose while an Exchange waits, otherwise attacks and advances. */
 export function legalCombatActions(ctx: GameContext, state: GameState): Action[] {
-  return combatOf(state).pending ? legalAllocations(state) : [...legalAttacks(ctx, state), ...legalAdvances(state)];
+  return combatOf(state).pending ? legalAllocations(state) : [...legalAttacks(ctx, state), ...legalAdvances(ctx, state)];
 }
 
 export function applyAttack(ctx: GameContext, state: GameState, action: AttackAction): ActionResult {
@@ -80,11 +95,10 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (rec.pending) return { ok: false, error: "An Exchange is waiting for its losses to be chosen first." };
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   const ids = action.units;
-  if (ids.length === 0 || new Set(ids).size !== ids.length) return { ok: false, error: "An attack names one or more distinct units." };
-  const attackers = ids.map((id) => state.units[id]);
-  if (attackers.some((u) => u === undefined)) return { ok: false, error: "An attacking unit is not on the map." };
-  const units = attackers as Unit[];
-  const target = ctx.map.hexes[action.target];
+  if (!Array.isArray(ids) || ids.length === 0 || ids.some((id) => typeof id !== "string") || new Set(ids).size !== ids.length) return { ok: false, error: "An attack names one or more distinct units." };
+  if (ids.some((id) => !Object.hasOwn(state.units, id))) return { ok: false, error: "An attacking unit is not on the map." };
+  const units = ids.map((id) => state.units[id]!);
+  const target = typeof action.target === "string" && Object.hasOwn(ctx.map.hexes, action.target) ? ctx.map.hexes[action.target] : undefined;
   if (!target) return { ok: false, error: `${action.target} is not a hex on the map.` };
   const pool = attackerPool(ctx, state, state.activeSide, rec.attacked);
   const bad = units.find((u) => !pool.includes(u));
@@ -104,17 +118,17 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   return { ok: true, state: applied.state, events: [event, ...applied.events] };
 }
 
-export function applyAdvance(state: GameState, action: AdvanceAction): ActionResult {
+export function applyAdvance(ctx: GameContext, state: GameState, action: AdvanceAction): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   const rec = combatOf(state);
   const chance = rec.advances.find((a) => a.to === action.to);
   if (!chance) return { ok: false, error: `No unit may advance into ${action.to}: it was not left empty by a battle this turn, or the advance was made.` };
   const ids = action.units;
-  if (ids.length === 0 || new Set(ids).size !== ids.length || ids.some((id) => !chance.units.includes(id) || !state.units[id])) {
+  if (!Array.isArray(ids) || ids.length === 0 || new Set(ids).size !== ids.length || ids.some((id) => !chance.units.includes(id) || !Object.hasOwn(state.units, id))) {
     return { ok: false, error: `Only surviving units that attacked ${action.to} may advance into it.` };
   }
-  const here = Object.values(state.units).filter((u) => u.at === action.to && stacks(u)).length;
-  if (here + ids.filter((id) => stacks(state.units[id]!)).length > STACKING_LIMIT) return { ok: false, error: `${action.to} may hold only ${STACKING_LIMIT} ground units.` };
+  const problem = advanceProblem(ctx, state, ids, action.to);
+  if (problem) return { ok: false, error: problem };
   const from = [...new Set(ids.map((id) => state.units[id]!.at))];
   const units = { ...state.units };
   for (const id of ids) units[id] = { ...units[id]!, at: action.to };

@@ -111,7 +111,7 @@ export function applyAllocation(state: GameState, action: Extract<Action, { type
   if (!p) return { ok: false, error: "No Exchange is waiting for losses to be chosen." };
   if (action.side !== p.chooser) return { ok: false, error: `The ${p.chooser} player chooses these losses, not ${action.side}.` };
   const units = action.units;
-  if (new Set(units).size !== units.length || units.some((id) => !p.candidates.includes(id))) {
+  if (!Array.isArray(units) || new Set(units).size !== units.length || units.some((id) => !p.candidates.includes(id))) {
     return { ok: false, error: `Losses must be distinct units from the stack that loses: ${p.candidates.join(", ")}.` };
   }
   const sum = units.reduce((n, id) => n + p.values[id]!, 0);

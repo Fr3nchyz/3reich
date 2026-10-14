@@ -316,7 +316,7 @@ describe("advance after combat (TODO(verify): the rule text is not in the repo)"
   it("refuses units that did not attack, a third ground unit, and the wrong side", () => {
     const s = won();
     const crowded = { ...s, units: { ...s.units, g9: GER("g9", "L32"), g8: GER("g8", "L32"), g7: GER("g7", "M33") } };
-    expect(applyAction(CTX, crowded, { type: "ADVANCE", side: "axis", units: ["g1", "g2"], to: "M33" })).toMatchObject({ ok: false, error: expect.stringMatching(/hold only 2/) });
+    expect(applyAction(CTX, crowded, { type: "ADVANCE", side: "axis", units: ["g1", "g2"], to: "M33" })).toMatchObject({ ok: false, error: expect.stringMatching(/limit 2/) });
     expect(applyAction(CTX, s, { type: "ADVANCE", side: "axis", units: ["g9"], to: "M33" })).toMatchObject({ ok: false });
     expect(applyAction(CTX, s, { type: "ADVANCE", side: "allies", units: ["g1"], to: "M33" })).toMatchObject({ ok: false });
     expect(applyAction(CTX, s, { type: "ADVANCE", side: "axis", units: [], to: "M33" })).toMatchObject({ ok: false });
