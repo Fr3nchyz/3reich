@@ -190,6 +190,19 @@ Autosave, save slots and a save file, iPad support, a short in-app help page and
 
 ---
 
+## Next up, from play-test feedback (see FEEDBACK.md)
+
+1. Find and fix why Warsaw could no longer be attacked in later turns (reproduce first).
+2. Tap-to-attack with an odds preview, and a unit inspector on any hex.
+3. Choose which units of a stack move.
+4. Zoom buttons and a bigger maximum zoom; iPad-sized touch checks.
+5. Watch two computers play (in progress), then a "Send feedback" button and a short play-test card (French wording only if it helps Frank).
+6. Air units (spec first), then fleets.
+7. Map clarity pass against the board and DOS looks, after Frank's view.
+8. French interface: not a priority; Frank prefers to communicate in French but is fine with the English game for now.
+
+---
+
 ## Running this with several agents
 
 Independent work can run in parallel; anything that changes the shared types must be serial.
