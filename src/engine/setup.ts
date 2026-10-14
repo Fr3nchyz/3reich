@@ -2,6 +2,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { setupProblems } from "./requirements";
 import { placementProblem, placementPlaces, unitsOf, type UnitSpec } from "./placement";
+import { beginPlay } from "./turn";
 import type { ForceEntry, ForceOwner, GameState, Side, Unit } from "./types";
 
 /**
@@ -121,5 +122,6 @@ export function applySetupAction(ctx: GameContext, state: GameState, action: Set
   const index = state.setup!.index + 1;
   if (index < state.setup!.order.length) return { ok: true, state: { ...state, setup: { ...state.setup!, index } }, events };
   events.push({ type: "SETUP_COMPLETE" }, { type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side: state.firstSide });
-  return { ok: true, state: { ...state, phase: "player-turn", setup: null, activeSide: state.firstSide }, events };
+  const played = beginPlay(ctx, { ...state, phase: "player-turn", setup: null, activeSide: state.firstSide });
+  return { ok: true, state: played.state, events: [...events, ...played.events] };
 }

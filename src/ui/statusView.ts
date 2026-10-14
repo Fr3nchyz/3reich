@@ -1,6 +1,7 @@
 import type { Action } from "../engine/actions";
 import { initiativeTotals } from "../engine/game";
 import { POWER_NAMES, spendingLimit } from "../engine/nations";
+import { describeStep } from "../engine/sequence";
 import { cap, sideName } from "./format";
 import type { Session, SetupView } from "./session";
 import { setupPanel } from "./setupView";
@@ -11,7 +12,8 @@ function turnLine(s: Session): string {
   const { state } = s;
   if (state.phase === "game-over") return "Game over";
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
-  return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)`;
+  const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
+  return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }
 
 /** The nation table: status, BRPs, spend limit and growth. */
@@ -28,7 +30,10 @@ function nationTable(s: Session): string {
 
 /** One button per legal action (End turn, ...); data-action is the index into `actions`. */
 function turnButtons(actions: Action[]): string {
-  const label = (a: Action) => (a.type === "END_PLAYER_TURN" ? `End ${sideName(a.side)} turn` : a.type);
+  const label = (a: Action) => {
+    if (a.type === "END_PLAYER_TURN") return `End ${sideName(a.side)} turn`;
+    return a.type === "END_STEP" ? `Done with step ${a.step}` : a.type;
+  };
   return `<div class="actions controls">${actions.map((a, i) => `<button data-action="${i}">${label(a)}</button>`).join("")}</div>`;
 }
 

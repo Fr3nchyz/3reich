@@ -125,3 +125,31 @@ export const PLAYER_TURN_STEPS: readonly SequenceStep[] = [
 export function playerTurnStepIds(): string[] {
   return PLAYER_TURN_STEPS.flatMap((s) => (s.steps ? s.steps.map((x) => x.id) : [s.id]));
 }
+
+/** The first and last step of a Player Turn. */
+export const FIRST_STEP = "1";
+export const LAST_STEP = "10b";
+
+/** The step after `id` in a Player Turn, or undefined after the last one. */
+export function nextStepId(id: string): string | undefined {
+  const ids = playerTurnStepIds();
+  const i = ids.indexOf(id);
+  if (i < 0) throw new Error(`Unknown step ${id}`);
+  return ids[i + 1];
+}
+
+/** "6f: Conduct normal ground/air movement", for messages. */
+export function describeStep(id: string): string {
+  const all = PLAYER_TURN_STEPS.flatMap((s) => [s, ...(s.steps ?? [])]);
+  const step = all.find((s) => s.id === id);
+  return step ? `${id} (${step.title})` : id;
+}
+
+/**
+ * Steps whose rules are built, and so the only places the engine stops and waits for a player.
+ * Every other step is passed automatically and the passing is recorded (STEPS_PASSED), so a
+ * rule landing means adding its step here and giving it actions. "10b" is where a player ends
+ * the turn today. "II.B" decides the Initiative (Ref 11.1); it never waits.
+ * Year Start Sequence ("YSS") and the Russian-Winter roll ("II.A") are not built yet.
+ */
+export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", LAST_STEP]);

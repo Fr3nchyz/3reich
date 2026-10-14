@@ -284,7 +284,10 @@ describe("opening setup: finishing", () => {
     expect([state.activeSide, state.firstSide]).toEqual(["axis", "axis"]);
     expect(events.filter((e) => e.type === "SETUP_OWNER_DONE").map((e) => (e.type === "SETUP_OWNER_DONE" ? e.owner : ""))).toEqual(SCENARIO_1939.deploymentOrder);
     expect(events.filter((e) => e.type === "SETUP_COMPLETE")).toHaveLength(1);
-    expect(events.at(-1)).toEqual({ type: "PLAYER_TURN_STARTED", year: 1939, season: "fall", side: "axis" });
+    expect(events.at(-2)).toEqual({ type: "PLAYER_TURN_STARTED", year: 1939, season: "fall", side: "axis" });
+    // Steps 1 to 10a have no rules yet and are passed; the game waits at 10b.
+    expect(events.at(-1)).toMatchObject({ type: "STEPS_PASSED" });
+    expect(state.position).toEqual({ part: "player-turn", turn: 1, step: "10b" });
     // Every counter of every deploying owner is on the map; the USA, which sets up in 1942, has none.
     for (const o of SCENARIO_1939.deploymentOrder) {
       const placed = Object.values(state.units).filter((u) => u.owner === o).length;

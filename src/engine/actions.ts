@@ -1,16 +1,25 @@
 import type { GameContext } from "./context";
-import { determineInitiative, initiativeTotals, nextTurn, otherSide, runYearStartSequence, turnIndex } from "./game";
+import { describeStep, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
+import { advance, settle } from "./turn";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
 
 export type { Action, ActionResult, GameEvent } from "./action-types";
 
+/** The step a Player Turn is waiting at, or undefined when the state has no position (setup, game over, old saves). */
+function waitingStep(state: GameState): string | undefined {
+  const p = state.position;
+  return state.phase === "player-turn" && p?.part === "player-turn" ? p.step : undefined;
+}
+
 /** All actions the active player may take now. Empty when the game is over. */
 export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "game-over") return [];
   if (state.phase === "setup") return legalSetupActions(ctx, state);
-  return [{ type: "END_PLAYER_TURN", side: state.activeSide }];
+  const step = waitingStep(state);
+  if (step === undefined) return [];
+  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step }];
 }
 
 /** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
@@ -19,17 +28,36 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
   switch (action.type) {
     case "SETUP_PLACE":
     case "SETUP_REMOVE":
-    case "SETUP_DONE":
+    case "SETUP_DONE": {
+      if (state.phase === "player-turn") return { ok: false, error: `Setup is over; the game is at step ${describeStep(waitingStep(state) ?? "?")}.` };
       return applySetupAction(ctx, state, action);
+    }
     case "END_PLAYER_TURN":
-      if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
-      if (action.side !== state.activeSide) {
-        return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
-      }
-      return { ok: true, ...endPlayerTurn(state) };
+    case "END_STEP":
+      return applyMoveOn(ctx, state, action);
     default:
       return { ok: false, error: `Unknown action: ${JSON.stringify(action)}` };
   }
+}
+
+/** Done with the step the game waits at (END_STEP) or with the whole Player Turn (END_PLAYER_TURN, at its last step). */
+function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action, { type: "END_PLAYER_TURN" | "END_STEP" }>): ActionResult {
+  if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
+  const step = waitingStep(state);
+  if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
+  if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
+  if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {
+    return { ok: false, error: `The Player Turn ends at step ${describeStep(LAST_STEP)}; the game is at step ${describeStep(step)}.` };
+  }
+  if (action.type === "END_STEP" && step === LAST_STEP) {
+    return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
+  }
+  if (action.type === "END_STEP" && action.step !== step) {
+    return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
+  }
+  const left = advance(state);
+  const settled = settle(ctx, left.state);
+  return { ok: true, state: settled.state, events: [...left.events, ...settled.events] };
 }
 
 /** Re-apply a recorded list of actions. Throws if any action is illegal. */
@@ -43,37 +71,4 @@ export function replay(ctx: GameContext, initial: GameState, actions: readonly A
     events.push(...result.events);
   }
   return { state, events };
-}
-
-function endPlayerTurn(state: GameState): { state: GameState; events: GameEvent[] } {
-  // First player done: the second side takes its Player Turn.
-  if (state.activeSide === state.firstSide) {
-    const side = otherSide(state.firstSide);
-    return {
-      state: { ...state, activeSide: side },
-      events: [{ type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side }],
-    };
-  }
-
-  // Both sides done: the Game Turn ends.
-  if (turnIndex(state) >= turnIndex(state.lastTurn)) {
-    return {
-      state: { ...state, phase: "game-over" },
-      events: [{ type: "GAME_OVER", year: state.year, season: state.season }],
-    };
-  }
-
-  const turn = nextTurn(state);
-  let next: GameState = { ...state, ...turn };
-  if (turn.season === "spring") next = runYearStartSequence(next);
-  const firstSide = determineInitiative(next);
-  const totals = initiativeTotals(next);
-  next = { ...next, firstSide, activeSide: firstSide };
-  return {
-    state: next,
-    events: [
-      { type: "INITIATIVE_DETERMINED", ...turn, firstSide, ...totals },
-      { type: "PLAYER_TURN_STARTED", ...turn, side: firstSide },
-    ],
-  };
 }

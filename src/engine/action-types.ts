@@ -7,7 +7,10 @@ import type { ForceOwner, GameState, OffMapBox, Season, Side, UnitType } from ".
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
+  /** Done with the Player Turn; legal only at its last step (10b). */
   | { type: "END_PLAYER_TURN"; side: Side }
+  /** Done with a step that has rules built; `step` is the step being left, so a stale action is refused. */
+  | { type: "END_STEP"; side: Side; step: string }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -23,6 +26,8 @@ export type GameEvent =
   | { type: "SETUP_COMPLETE" }
   | { type: "INITIATIVE_DETERMINED"; year: number; season: Season; firstSide: Side; axis: number; allies: number }
   | { type: "PLAYER_TURN_STARTED"; year: number; season: Season; side: Side }
+  /** Steps with no rules built yet that the engine passed without asking (ids as on the card). */
+  | { type: "STEPS_PASSED"; steps: string[] }
   | { type: "GAME_OVER"; year: number; season: Season };
 
 export type ActionResult =

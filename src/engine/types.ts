@@ -69,6 +69,18 @@ export interface Unit {
  */
 export type Phase = "setup" | "player-turn" | "game-over";
 
+/**
+ * Where in the Game Turn the game is (Ops 5.0): the Year Start Sequence, the Russian-Winter
+ * roll (II.A), the order of the two sides (II.B), or a step of a Player Turn (`turn` 1 is the
+ * side with the Initiative). The game-level parts are passed through at once today; they are
+ * kept in the type so a saved game and later rules can name them.
+ */
+export type TurnPosition =
+  | { part: "year-start" }
+  | { part: "russian-winter" }
+  | { part: "turn-order" }
+  | { part: "player-turn"; turn: 1 | 2; step: string };
+
 /** Opening deployment: each owner sets up in the scenario's order of deployment (Ops 4.1, 7.0). */
 export interface SetupProgress {
   order: ForceOwner[];
@@ -226,6 +238,8 @@ export interface GameState {
   /** Side currently taking its Player Turn. */
   activeSide: Side;
   phase: Phase;
+  /** Null while `phase` is "setup"; otherwise where in the Game Turn the game stands. */
+  position: TurnPosition | null;
   nations: Record<PowerId, Nation>;
   /** Counters still in each owner's pool, and what each may still build. */
   pools: Partial<Record<ForceOwner, ForcePools>>;

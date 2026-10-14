@@ -2,6 +2,7 @@ import { MAP } from "../src/data/map";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { GameContext } from "../src/engine/context";
 import { newGame } from "../src/engine/game";
+import { beginPlay } from "../src/engine/turn";
 import type { GameState, Scenario } from "../src/engine/types";
 
 /** The map and a scenario, as every game is played on. */
@@ -13,5 +14,5 @@ export const CTX = ctxFor();
  * the counters are. (Setup itself is tested in setup.test.ts.)
  */
 export function started(scenario: Scenario, seed: number): GameState {
-  return { ...newGame(scenario, seed), phase: "player-turn", setup: null };
+  return beginPlay(ctxFor(scenario), { ...newGame(scenario, seed), phase: "player-turn", setup: null }).state;
 }
