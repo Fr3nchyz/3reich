@@ -47,6 +47,14 @@ export function minorAllyBrps(ctx: GameContext, state: GameState, id: PowerId): 
 }
 
 /** One nation's figures after the Year Start Sequence. */
+/**
+ * "Unused BRPs" is read as the nation's whole `brpTotal` when the sequence runs. That total includes the
+ * Minor-Allies' BRPs and any grants received, and it is what remains of the year's spending. The only
+ * text found (the paraphrase of Ref 9.2 in docs/RULES.md "Web research" and spec 02) says the Base grows
+ * by "unused BRPs from the previous year" times the rate; it does not say whether Minor-Ally BRPs or
+ * grants count as unused. TODO(verify). With KEEP_UNUSED_BRPS false the unused BRPs are then dropped
+ * (the destructive default, also TODO(verify)): only the grown Base carries into the new year.
+ */
 function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number } {
   const unused = n.brpTotal;
   const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
