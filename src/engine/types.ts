@@ -1,6 +1,12 @@
 import type { HexId } from "./hex";
 import type { Front } from "./map";
 
+/** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
+export type MinorCountry =
+  | "arabia" | "belgium" | "bulgaria" | "denmark" | "finland" | "greece" | "hungary"
+  | "ireland" | "luxembourg" | "netherlands" | "norway" | "persia" | "poland"
+  | "portugal" | "rumania" | "spain" | "sweden" | "turkey" | "yugoslavia";
+
 export type PowerId = "germany" | "italy" | "ussr" | "britain" | "france" | "usa";
 
 /** The game is played by two sides; each side takes one player turn per game turn. */
@@ -39,6 +45,13 @@ export interface Nation {
   brpTotal: number;
   /** Percent growth applied to unused BRPs at the Year Start Sequence (Ref 9.2). */
   growthRate: number;
+  /**
+   * Most the nation may spend in one Player Turn: half its total after the Year Start Sequence,
+   * fractions rounded down, fixed for the year (Ref 10.0). It does not fall as the nation spends.
+   */
+  spendLimit: number;
+  /** BRPs spent so far in the current Player Turn; reset when a Player Turn begins. */
+  spent: number;
 }
 
 /** Off-map boxes printed on the map. */
@@ -95,6 +108,9 @@ export interface SetupProgress {
  * chart instead (tables.ts).
  */
 export type ForceOwner = PowerId | "poland" | "free-france" | "vichy-france" | "finland" | "rumania" | "hungary" | "bulgaria";
+
+/** Anyone that can be at war: an owner of forces, or a minor country that has none in a scenario. */
+export type Combatant = ForceOwner | MinorCountry;
 
 /**
  * A stack of identical counters, as the scenario pages print them ("3-4 infantry x3").
@@ -200,7 +216,7 @@ export interface NationSetup extends ForcePools {
 /** Scenario rules that are clear enough to apply by machine. Prose rules go in `notes`. */
 export type ScenarioRule =
   /** A Major Power declares war automatically on a turn, paying the BRP cost. */
-  | { kind: "automatic-declaration"; by: PowerId; on: ForceOwner; turn: GameTurn; side: Side; brpCost: number }
+  | { kind: "automatic-declaration"; by: PowerId; on: Combatant; turn: GameTurn; side: Side; brpCost: number }
   /** A side may not attempt a Seaborne Invasion on that turn. */
   | { kind: "no-seaborne-invasion"; side: Side; turn: GameTurn }
   /** No BRP Base growth in the Year Start Sequence of this year. */
@@ -244,7 +260,7 @@ export interface GameState {
   /** Counters still in each owner's pool, and what each may still build. */
   pools: Partial<Record<ForceOwner, ForcePools>>;
   /** Pairs at war. Each pair is listed once, in the order the scenario gives it. */
-  wars: [ForceOwner, ForceOwner][];
+  wars: [Combatant, Combatant][];
   /** Strategic Warfare factors each Major Power has built. */
   strategicWarfare: Record<PowerId, StrategicWarfare>;
   /** Minor-Allies and whether each is active. */
@@ -274,7 +290,7 @@ export interface Scenario {
   /** Order in which owners set up their forces ("Order of deployment"). */
   deploymentOrder: ForceOwner[];
   /** Wars already under way when the scenario starts ("Situation at start"). */
-  warsAtStart: [ForceOwner, ForceOwner][];
+  warsAtStart: [Combatant, Combatant][];
   /** Axis Minor-Allies at the start. */
   minorAllies: MinorAlly[];
   /** Territory the pages name that the printed map does not outline. */

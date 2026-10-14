@@ -3,11 +3,11 @@ import { applyAction, type Action, type GameEvent } from "../engine/actions";
 import { AutoSetupError, autoSetupOwner } from "../engine/autosetup";
 import type { GameContext } from "../engine/context";
 import { newGame } from "../engine/game";
-import { OWNER_NAMES } from "../engine/nations";
+import { OWNER_NAMES, POWER_NAMES } from "../engine/nations";
 import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, Scenario, Side } from "../engine/types";
-import { cap, sideName } from "./format";
+import { cap, nameOf, sideName } from "./format";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -35,6 +35,8 @@ export interface Session {
   toast: string;
   /** The nation the map was last zoomed to, so it zooms once per nation and then stays where you put it. */
   focusedOwner: ForceOwner | null;
+  /** Whether the "Declare war" fold-out is open: it stays open while you make several declarations. */
+  declarationsOpen: boolean;
 }
 
 /** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
@@ -48,6 +50,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     mode: "place",
     toast: "",
     focusedOwner: null,
+    declarationsOpen: false,
   };
   computerSetup(session);
   return session;
@@ -68,6 +71,10 @@ function describeEvent(e: GameEvent): string | null {
       return `${sideName(e.side)} player turn begins.`;
     case "STEPS_PASSED":
       return null;
+    case "BRPS_CHANGED":
+      return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
+    case "WAR_DECLARED":
+      return `${POWER_NAMES[e.by]} declares war on ${nameOf(e.on)} (${e.cost} BRPs).`;
     case "GAME_OVER":
       return `The scenario ends after ${cap(e.season)} ${e.year}.`;
   }

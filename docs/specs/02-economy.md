@@ -1,6 +1,6 @@
 # 02. Economy: BRPs, the Year Start Sequence, declarations of war and construction
 
-Status: **draft for review. Nothing is built until you say "let's go".** Depends on spec 01 (turn steps).
+Status: **partly built** (part 1: the BRP ledger, the spending limit and declarations of war; see "As built" at the end). The Year Start Sequence, front options, construction, grants and the other parts wait for your "let's go". Depends on spec 01 (turn steps).
 
 ## Goal
 
@@ -75,3 +75,19 @@ The PC game adjusts BRP bases and growth, and adds counters to the Force Pools, 
 6. Construction: cost, date gating, the spending limit and placement are tested; building a unit before its date is refused.
 7. Replay of a recorded game reproduces every total exactly (no drift), and a property test shows total BRPs are conserved except through listed events.
 8. Mutation checks: changing a cost, a growth rate, the rounding, or removing a date gate each makes a test fail.
+
+## As built (part 1)
+
+- **Ledger** (`src/engine/brps.ts`): `spend` takes BRPs within the Player Turn's limit and refuses an overspend with a message naming the limit; `charge` is for charges the rules make by themselves (stops at zero); every change is a `BRPS_CHANGED` event with its reason.
+- **Spending limit** (Ref 10.0, from the rulebook text found online): half the nation's total at the start of the year, fractions rounded down, **fixed for the year** (`Nation.spendLimit`), not half of the current total. `Nation.spent` counts what has been spent in the current Player Turn and resets when a Player Turn begins. At scenario start the limit is half the printed total (10.0 says it applies in the first year too).
+- **Declarations of war** (`src/engine/war.ts`, step 1): `DECLARE_WAR { by, on }`, 35 BRPs against a Major Power, 10 against a minor country, within the limit. `by` is a Major Power of the side taking its turn (neutral Major Powers cannot declare yet). Targets are Major Powers of the other alignment (Germany and Italy are Axis; Britain, France, the U.S.A. and the U.S.S.R. are Allied, even while neutral), not out of the game and not Vichy, and minor countries that are not already at war with a Major Power and not active Minor-Allies. A scenario with the "no war on neutrals" rule (1944) offers none. Step 1 is waited at only while the side to move could declare something.
+- **Joining a side**: a neutral Major Power that is declared on, or that the scenario declares for, fights on its own side (Italy for the Axis; the U.S.A. and the U.S.S.R. for the Allies); it then counts as active for declarations and spending. When the war already exists at the scenario's date (Germany declared on the U.S.A. first), the U.S. joins the Allies without paying.
+- **Year Start Sequence and the limit**: the limit is fixed for the year, so when the Year Start Sequence is built it must set each nation's `spendLimit` to half its new total.
+- **Scenario declarations**: the U.S. in the Allied Spring 1942 turn (35 BRPs, charged outside the limit, the U.S. joins the Allies). `TODO(verify)`: whether such a charge counts towards the limit, and the U.S. units in the U.S. Box entering play.
+- **Initiative** now reads "the U.S.S.R. is at war with Germany" from the list of wars (Ref 11.1) instead of from its status.
+- **Not built yet** (`TODO(verify)` in `war.ts`): the minor's forces appearing when it is attacked (step 2); the rule that a declaration on a minor must be followed that turn by a move into it or an attack on it, or it is revoked and the BRPs are lost; the 35-BRP price when a declaration on a minor or colony brings war with a Major Power; neutral Major Powers joining a side.
+
+### What the rulebook text settles (Advanced Third Reich 9.0 to 11.7, found online; see docs/RULES.md "Web research")
+
+- Year Start Sequence (9.2): a nation's Base grows by its unused BRPs from the previous year times its Growth Rate (fractions rounded down); strategic-warfare losses below zero are the only way to reduce a Base; the initial total adds the BRPs of active Minor-Allies, of attacked minors the nation intervened in, and of conquered countries and colonies not held at scenario start; a conquered Major Power gives the conqueror half of its starting BRPs, rounded down; Germany gains 15 for each of Moscow and Leningrad it holds, and the U.S.S.R. loses 15 for each it does not hold (unless surrendered); the 1940 Base equals the 1939 Base. Four worked examples (Germany 195, 225, 285, 305) would let a test check the arithmetic, but the page quotes them only in part; they need the printed manual.
+- Spending limit (10.0): see above. Grants (11.71): up to 40 BRPs a turn to an allied Major Power, none by a Major Power not yet at war, and not more than half the yearly allotment on grants. Construction (11.6) costs per factor match `BUILD_COST_PER_FACTOR`; fleets only in 9-factor units at 27 BRPs; Turkey, Spain, Vichy France, Sweden and the Free French can never rebuild a fleet (11.62).

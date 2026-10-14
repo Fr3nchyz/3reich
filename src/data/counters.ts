@@ -7,6 +7,8 @@ export const nation = (id: PowerId, status: NationStatus, brp: number, growthRat
   brpBase: brp,
   brpTotal: total,
   growthRate,
+  spendLimit: Math.floor(total / 2),
+  spent: 0,
 });
 
 // Counter stacks as printed on the scenario pages: "3-4 infantry x3" is inf(3, 4, 3).

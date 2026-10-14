@@ -1,7 +1,8 @@
 import type { GameContext } from "./context";
-import { describeStep, LAST_STEP } from "./sequence";
+import { describeStep, FIRST_STEP, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
+import { applyDeclaration, legalDeclarations } from "./war";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
 
@@ -19,7 +20,8 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "setup") return legalSetupActions(ctx, state);
   const step = waitingStep(state);
   if (step === undefined) return [];
-  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step }];
+  const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
+  return [...(step === FIRST_STEP ? legalDeclarations(ctx, state) : []), moveOn];
 }
 
 /** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
@@ -35,6 +37,11 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
     case "END_PLAYER_TURN":
     case "END_STEP":
       return applyMoveOn(ctx, state, action);
+    case "DECLARE_WAR": {
+      const step = waitingStep(state);
+      if (step !== FIRST_STEP) return { ok: false, error: step === undefined ? "No game turn is in progress." : `Declarations of war are made in step ${describeStep(FIRST_STEP)}; the game is at step ${describeStep(step)}.` };
+      return applyDeclaration(ctx, state, action);
+    }
     default:
       return { ok: false, error: `Unknown action: ${JSON.stringify(action)}` };
   }
@@ -55,7 +62,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
   }
-  const left = advance(state);
+  const left = advance(ctx, state);
   const settled = settle(ctx, left.state);
   return { ok: true, state: settled.state, events: [...left.events, ...settled.events] };
 }

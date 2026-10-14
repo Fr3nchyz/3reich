@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
-import { applyAction } from "../src/engine/actions";
 import { initiativeTotals } from "../src/engine/game";
-import { CTX, started } from "./helpers";
+import { CTX, endTurn, started } from "./helpers";
 import type { GameState, PowerId } from "../src/engine/types";
 
 function withBrps(state: GameState, brps: Partial<Record<PowerId, number>>): GameState {
@@ -13,13 +12,13 @@ function withBrps(state: GameState, brps: Partial<Record<PowerId, number>>): Gam
 
 /** State at the start of the second (Allied) player turn of Fall 1939. */
 function alliedTurnFall1939(): GameState {
-  const r = applyAction(CTX, started(SCENARIO_1939, 1), { type: "END_PLAYER_TURN", side: "axis" });
+  const r = endTurn(CTX, started(SCENARIO_1939, 1));
   if (!r.ok) throw new Error(r.error);
   return r.state;
 }
 
 function endGameTurn(state: GameState): GameState {
-  const r = applyAction(CTX, state, { type: "END_PLAYER_TURN", side: state.activeSide });
+  const r = endTurn(CTX, state);
   if (!r.ok) throw new Error(r.error);
   return r.state;
 }
@@ -36,7 +35,7 @@ describe("initiative (Ref 11.1)", () => {
   });
 
   it("reports the comparison as an event", () => {
-    const r = applyAction(CTX, alliedTurnFall1939(), { type: "END_PLAYER_TURN", side: "allies" });
+    const r = endTurn(CTX, alliedTurnFall1939());
     expect(r.ok && r.events.find((e) => e.type === "INITIATIVE_DETERMINED")).toEqual({
       type: "INITIATIVE_DETERMINED", year: 1939, season: "winter", firstSide: "axis", axis: 225, allies: 210,
     });
@@ -48,10 +47,11 @@ describe("initiative (Ref 11.1)", () => {
     expect(initiativeTotals({ ...base, year: 1942, season: "summer" }).allies).toBe(480);
   });
 
-  it("counts Soviet BRPs once the USSR has joined the Allies", () => {
+  it("counts Soviet BRPs only once the USSR is at war with Germany", () => {
     const base = started(SCENARIO_1939, 1);
-    const joined = { ...base, nations: { ...base.nations, ussr: { ...base.nations.ussr, status: "allied" as const } } };
-    expect(initiativeTotals(joined).allies).toBe(300);
+    const allied = { ...base, nations: { ...base.nations, ussr: { ...base.nations.ussr, status: "allied" as const } } };
+    expect(initiativeTotals(allied).allies).toBe(210);
+    expect(initiativeTotals({ ...allied, wars: [...allied.wars, ["ussr", "germany"]] }).allies).toBe(300);
   });
 
   it("always adds Italy to the Axis total, even while neutral", () => {
