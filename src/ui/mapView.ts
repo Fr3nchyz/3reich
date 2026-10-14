@@ -4,6 +4,8 @@ import type { Unit } from "../engine/types";
 import { attachGestures } from "./gestures";
 import { highlightsMarkup, unitsMarkup } from "./mapCounters";
 import { cornersOf, hexCenter, points } from "./mapGeometry";
+import { overlayMarkup } from "./mapOverlay";
+import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
 
@@ -29,6 +31,8 @@ export interface MapView {
   setUnits(units: readonly Unit[]): void;
   /** Outline these hexes (places where the selected counter may go). */
   setHighlights(ids: Iterable<string>): void;
+  /** Draw who holds each hex and the Zones of Control (see overlayModel.ts); null clears the overlay. */
+  setOverlay(cells: OverlayCells | null): void;
   /** Zoom and pan to fit these hexes; with none, show the whole map. */
   focus(ids: Iterable<string>): void;
 }
@@ -47,6 +51,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const hover = svg.querySelector<SVGPolygonElement>("polygon.hover")!;
   const tint = svg.querySelector<SVGGElement>("g.front-tint")!;
   const unitLayer = svg.querySelector<SVGGElement>("g.units")!;
+  const overlayLayer = svg.querySelector<SVGGElement>("g.overlay")!;
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
 
   const viewport = createViewport(svg, whole);
@@ -63,6 +68,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
     setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
     setHighlights: (ids) => { highlightLayer.innerHTML = highlightsMarkup(map, ids); },
+    setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     focus: (ids) => {
       const centres = [...ids].filter((id) => map.hexes[id]).map((id) => hexCenter(hex(id)));
       viewport.focus(centres);
