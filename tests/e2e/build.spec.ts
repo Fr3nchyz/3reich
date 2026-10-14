@@ -20,6 +20,9 @@ test("1939, Axis: get to construction, pick a counter, tap a yellow hex, the cou
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await expect(page.locator(".log li").last()).toContainText("Axis choose the Offensive Option on the Eastern Front.");
   await page.locator(".actions button[data-action]").last().click();
+  // Step 6f (ground movement): move nothing.
+  await expect(page.locator(".turn")).toContainText("step 6f");
+  await page.locator(".actions button[data-action]").last().click();
   await expect(page.locator(".turn")).toContainText("step 8b");
   await expect(page.locator(".build h2")).toHaveText("Construction");
 

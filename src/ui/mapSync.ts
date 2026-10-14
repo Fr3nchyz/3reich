@@ -3,6 +3,7 @@ import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
 import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
+import { moveTargets } from "./moveTap";
 import { builds } from "./sessionActions";
 
 /** Brings the map in line with the session after each change: counters, zoom and highlights. */
@@ -10,7 +11,8 @@ import { builds } from "./sessionActions";
 /** The hexes to outline: your own counters when taking back, else where the chosen counter may go. */
 function highlightedHexes(s: Session, setup: SetupView | null): string[] {
   if (!setup) {
-    // Not setting up: the places a chosen build may go.
+    // Not setting up: where the stack chosen to move can go (step 6f), or the places a chosen build may go.
+    if (s.moveFrom) return moveTargets(s);
     const pick = s.build;
     return pick ? builds(s).filter((a) => a.owner === pick.owner && a.unit.type === pick.type && a.unit.strength === pick.strength && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
   }

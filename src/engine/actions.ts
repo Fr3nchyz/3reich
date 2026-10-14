@@ -5,6 +5,7 @@ import { advance, settle } from "./turn";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
+import { applyMove, legalMoves } from "./move-action";
 import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
@@ -23,6 +24,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "6f") return legalMoves(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
@@ -44,6 +46,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
 /** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
 export function applyAction(ctx: GameContext, state: GameState, action: Action): ActionResult {
   if (state.phase === "game-over") return { ok: false, error: "The game is over." };
+  if (typeof action !== "object" || action === null) return { ok: false, error: "An action is an object with a type." };
   switch (action.type) {
     case "SETUP_PLACE":
     case "SETUP_REMOVE":
@@ -56,6 +59,8 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return applyMoveOn(ctx, state, action);
     case "DECLARE_WAR":
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
+    case "MOVE":
+      return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));
     case "ATTACK":
       return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":
