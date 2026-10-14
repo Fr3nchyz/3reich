@@ -8,6 +8,7 @@ import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName } from "./format";
+import type { WatchInfo } from "./watchController";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -50,11 +51,15 @@ export interface Session {
   build: BuildPick | null;
   /** The hex of the stack chosen to move at step 6f (its destinations are outlined), or null. */
   moveFrom?: string | null;
+  /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
+  watch?: WatchInfo;
+  /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */
+  record?: Action[];
 }
 
-/** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
-export function createSession(scenario: Scenario, side: Side, seed: number): Session {
-  const session: Session = {
+/** A new game in `scenario` with the human on `side`, with nothing set up yet. */
+export function newSession(scenario: Scenario, side: Side, seed: number): Session {
+  return {
     ctx: { map: MAP, scenario },
     state: newGame(scenario, seed),
     humanSide: side,
@@ -67,6 +72,11 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
     foldOpen: false,
     build: null,
   };
+}
+
+/** A new game in `scenario` with the human on `side`; the computer's nations are already set up. */
+export function createSession(scenario: Scenario, side: Side, seed: number): Session {
+  const session = newSession(scenario, side, seed);
   computerSetup(session);
   return session;
 }
@@ -124,6 +134,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
       return false;
     }
     s.state = result.state;
+    s.record?.push(action);
     for (const e of result.events) {
       const line = describeEvent(e);
       if (line) s.log.push(line);

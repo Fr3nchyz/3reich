@@ -10,6 +10,7 @@ import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
 import { logHtml } from "./logView";
+import { panelHtml } from "./watchBar";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -89,9 +90,10 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       <p class="toast" role="status">${s.toast}</p>
-      ${computerToMove(s) ? `<p class="computer-status" role="status">Computer is playing the ${sideName(computerSide(s))} turn...</p>` : ""}
+      ${computerToMove(s) && !s.watch ? `<p class="computer-status" role="status">Computer is playing the ${sideName(computerSide(s))} turn...</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
       ${frontPrompt(s, actions)}

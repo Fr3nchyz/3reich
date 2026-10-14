@@ -17,7 +17,8 @@ const MAX_ACTIONS_PER_TICK = 300;
 /** The most time one tick may keep the page busy before it yields to the browser (a build step can run dozens of actions of tens of milliseconds each). */
 export const TICK_BUDGET_MS = 60;
 
-export const computerSide = (s: Session): Side => otherSide(s.humanSide);
+/** The side the computer plays: the one the player did not pick; when two computers play (watch mode), the side now acting (the one to choose the losses of a pending Exchange, else the side whose Player Turn it is). */
+export const computerSide = (s: Session): Side => (s.watch ? (combatOf(s.state).pending?.chooser ?? s.state.activeSide) : otherSide(s.humanSide));
 
 /**
  * Whether the computer is the one to move now: its Player Turn, or an Exchange (step 7h) whose losses it must choose
@@ -25,6 +26,7 @@ export const computerSide = (s: Session): Side => otherSide(s.humanSide);
  */
 export const computerToMove = (s: Session): boolean => {
   if (s.state.phase !== "player-turn") return false;
+  if (s.watch) return true;
   const pending = combatOf(s.state).pending;
   return pending ? pending.chooser === computerSide(s) : s.state.activeSide === computerSide(s);
 };
@@ -45,4 +47,15 @@ export function computerTick(s: Session, budgetMs = TICK_BUDGET_MS, now: () => n
     if (!run(s, decision.action)) return "stuck";
   }
   return placeOf(s.state) === here ? "more" : "done";
+}
+
+/** The result of one computer action: it was taken, or why it was not. */
+export type ActResult = { ok: true } | { ok: false; kind: "no-action" | "refused"; detail: string };
+
+/** The computer takes one action for the side now to move, logging its reason like computerTick does (one action, for the watch mode's finer steps). */
+export function computerAct(s: Session): ActResult {
+  const decision = chooseAction(s.ctx, s.state, { seed: s.seed });
+  if (!decision) return { ok: false, kind: "no-action", detail: "the computer has no action to take" };
+  s.log.push(`Computer (${sideName(computerSide(s))}): ${decision.why}`);
+  return run(s, decision.action) ? { ok: true } : { ok: false, kind: "refused", detail: s.toast || "the engine refused the action" };
 }
