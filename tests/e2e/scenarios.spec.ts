@@ -61,7 +61,7 @@ for (const [id, label] of SCENARIOS) {
       // Play into the next Game Turn: always the last button, which moves the game on.
       const turn = async () => (await page.locator(".turn").innerText()).split("—")[0]!.trim();
       const start = await turn();
-      for (let i = 0; i < 8 && (await turn()) === start; i++) await page.locator(".actions button[data-action]").last().click();
+      for (let i = 0; i < 14 && (await turn()) === start; i++) await page.locator(".actions button[data-action]").last().click();
       expect(await turn()).not.toBe(start);
 
       expect(errors).toEqual([]);

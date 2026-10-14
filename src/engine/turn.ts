@@ -1,11 +1,13 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
-import { determineInitiative, initiativeTotals, nextTurn, otherSide, runYearStartSequence, turnIndex } from "./game";
+import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { legalBuilds } from "./construction";
+import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 
 /**
@@ -48,7 +50,7 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
 
 /** A Player Turn begins: spending starts again from nothing and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, resetSpending(state));
+  return scheduledDeclarations(ctx, resetFrontOptions(resetSpending(state)));
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
@@ -56,8 +58,10 @@ export function advance(ctx: GameContext, state: GameState): Transition {
   const pos = state.position;
   if (!pos) throw new Error("advance: the game has no position (setup, or an old saved game).");
   switch (pos.part) {
-    case "year-start":
-      return { state: { ...runYearStartSequence(state), position: { part: "russian-winter" } }, events: [] };
+    case "year-start": {
+      const yss = runYearStartSequence(ctx, state);
+      return { state: { ...yss.state, position: { part: "russian-winter" } }, events: yss.events };
+    }
     case "russian-winter":
       return { state: { ...state, position: { part: "turn-order" } }, events: [] };
     case "turn-order": {
@@ -101,6 +105,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
   switch (id) {
     case FIRST_STEP:
       return legalDeclarations(ctx, state).length > 0;
+    case "3":
+      return atWarNow(state);
     case "8b":
       return legalBuilds(ctx, state).length > 0;
     case "9a":

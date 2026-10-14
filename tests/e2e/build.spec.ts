@@ -11,8 +11,14 @@ test("1939, Axis: get to construction, pick a counter, tap a yellow hex, the cou
   await page.locator("#newgame").click();
   for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
 
-  // Step 1 (declarations of war): declare nothing, move on to step 8b.
+  // Step 1 (declarations of war): declare nothing. Step 3 (Front Options): Germany's opening Eastern Front Offensive Option (free), then on to step 8b.
   await expect(page.locator(".turn")).toContainText("step 1");
+  await page.locator(".actions button[data-action]").last().click();
+  await expect(page.locator(".turn")).toContainText("step 3");
+  await expect(page.locator(".note").filter({ hasText: "Front Options (step 3)" })).toBeVisible();
+  await page.locator("summary", { hasText: "Choose a Front Option" }).click();
+  await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
+  await expect(page.locator(".log li").last()).toContainText("Axis choose the Offensive Option on the Eastern Front.");
   await page.locator(".actions button[data-action]").last().click();
   await expect(page.locator(".turn")).toContainText("step 8b");
   await expect(page.locator(".build h2")).toHaveText("Construction");

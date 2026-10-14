@@ -73,7 +73,7 @@ function tapToBuild(s: Session, h: MapHex): void {
 /** A turn button: apply one of the legal actions that were on offer. */
 export function takeAction(s: Session, action: Action): void {
   s.toast = "";
-  s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS";
+  s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
   run(s, action);
 }

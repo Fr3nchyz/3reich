@@ -73,10 +73,44 @@ describe("the status area in play", () => {
 
   it("shows only the move-on button once the steps with something to do are done", () => {
     const s = inPlay();
-    for (const step of ["1", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
+    for (const step of ["1", "3", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
     expect(html).toContain("step 10b (Save-Game prompt)");
     expect(html).not.toContain("Declare war");
     expect(html).toContain("End Axis turn");
+  });
+});
+
+describe("the Front Options prompt at step 3 (Ref 11.21)", () => {
+  function atStep3(): Session {
+    const s = inPlay();
+    takeAction(s, { type: "END_STEP", side: "axis", step: "1" });
+    expect(s.state.position).toMatchObject({ step: "3" });
+    return s;
+  }
+
+  it("asks for an Option per Front, with the cost, and lists the choices in a fold-out above the move-on button", () => {
+    const s = atStep3();
+    const html = statusHtml(s, null, legalActions(s.ctx, s.state));
+    expect(html).toContain("Front Options (step 3)");
+    expect(html).toMatch(/<summary>Choose a Front Option \(\d+ choices\)/);
+    expect(html).toContain("Western Front: Offensive Option (15 BRPs from Germany)");
+    expect(html).toContain("Eastern Front: Offensive Option</button>"); // Germany's opening one is free (Ref 29.0)
+    expect(html).toContain("Done with step 3");
+  });
+
+  it("logs a choice, keeps the fold-out open and shows what is chosen", () => {
+    const s = atStep3();
+    takeAction(s, { type: "SELECT_FRONT_OPTION", side: "axis", front: "western", option: "attrition" });
+    expect(s.log.at(-1)).toBe("Axis choose the Attrition Option on the Western Front.");
+    const html = statusHtml(s, null, legalActions(s.ctx, s.state));
+    expect(html).toContain("Chosen so far &mdash; Western: attrition");
+    expect(html).toMatch(/<details class="declarations" open>/);
+    expect(html).not.toContain("Western Front: Defensive Option");
+  });
+
+  it("is not shown at other steps", () => {
+    const s = inPlay();
+    expect(statusHtml(s, null, legalActions(s.ctx, s.state))).not.toContain("Front Options (step 3)");
   });
 });

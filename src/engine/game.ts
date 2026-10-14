@@ -67,6 +67,7 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     nextUnitId: 1,
     grants: [],
     noGrants: [],
+    frontOptions: {},
     fortresses: {},
     control: {},
     rngState: seed,
@@ -94,15 +95,4 @@ export function determineInitiative(state: GameState): Side {
   if (axis > allies) return "axis";
   if (allies > axis) return "allies";
   return state.firstSide;
-}
-
-/**
- * Year Start Sequence, run between each Winter and Spring Game Turn (Ops 5.1):
- * strategic warfare, BRP calculation, strategic-warfare construction.
- * TODO(Ref 9.0-9.3): not implemented yet; returns the state unchanged. When it is built it must also
- * set each nation's `spendLimit` to half its new total, rounded down (Ref 10.0): the limit is fixed
- * for the year, so nothing else updates it.
- */
-export function runYearStartSequence(state: GameState): GameState {
-  return state;
 }

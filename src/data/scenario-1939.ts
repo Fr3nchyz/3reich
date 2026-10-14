@@ -55,6 +55,9 @@ export const SCENARIO_1939: Scenario = {
     { kind: "no-seaborne-invasion", side: "allies", turn: { year: 1942, season: "summer" } },
     // "No BRP Base growth in the 1940 YSS." (There is no Year Start Sequence in 1939.)
     { kind: "no-brp-growth", year: 1940 },
+    // Ref 29.0: "Germany's opening Eastern Front Offensive Option is free." Read as the Axis Fall '39 turn.
+    // TODO(verify): whether it is free only on that first turn.
+    { kind: "free-front-option", side: "axis", front: "eastern", option: "offensive", turn: { year: 1939, season: "fall" } },
     // Ref 29.0: German units east of the Partition Line at the end of the Axis Fall '39 turn are eliminated.
     { kind: "eliminate-in-zone", zone: "poland-east-of-partition-line", side: "axis", turn: { year: 1939, season: "fall" } },
   ],
