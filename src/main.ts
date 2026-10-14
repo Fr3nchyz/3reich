@@ -7,7 +7,8 @@ import { SCENARIO_CAMPAIGN } from "./data/scenario-campaign";
 import { legalActions } from "./engine/actions";
 import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
-import { describeHex } from "./ui/format";
+import { describeHex, describeUnits } from "./ui/format";
+import type { MapHex } from "./engine/map";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
 import { createComputerLoop } from "./ui/computerLoop";
@@ -19,6 +20,10 @@ import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
+import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
+import { createWatchLoop } from "./ui/watchLoop";
+import { newWatchSession, takeOver } from "./ui/watchPlay";
+import { watchMenu } from "./ui/watchMenu";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
@@ -26,11 +31,15 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 /** The one game being played; start() replaces it. */
 let session: Session;
 
+/** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
+const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
+
 const computer = createComputerLoop(() => session, () => render());
+const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
-  onHover: (h) => { if (h) shell.info.textContent = describeHex(h); },
-  onHexClick: (h) => { shell.info.textContent = describeHex(h); tapHex(session, h); render(); },
+  onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
@@ -41,18 +50,55 @@ shell.scenario.innerHTML = SCENARIOS.map((s) => {
   const startable = setupStatus({ map: MAP, scenario: s }).startable;
   return `<option value="${s.id}" ${startable ? "" : "disabled"}>${s.name}${startable ? "" : " (not available yet)"}</option>`;
 }).join("");
-shell.newGame.addEventListener("click", () => start(SCENARIOS.find((s) => s.id === shell.scenario.value)!, shell.side.value as Side));
+shell.newGame.addEventListener("click", () => {
+  const scenario = SCENARIOS.find((s) => s.id === shell.scenario.value)!;
+  if (shell.side.value === "watch") startWatch(scenario);
+  else start(scenario, shell.side.value as Side);
+});
+bindBar(shell.watchBar, () => session, () => { watcher.reset(); render(); });
 
 // The UI owns the only nondeterministic choice: the seed. Everything after it is replayable.
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0]!;
+const menu = watchMenu(shell, newSeed);
 
-function start(scenario: Scenario, side: Side): void {
+function begin(scenario: Scenario, next: Session): void {
   computer.reset();
-  session = createSession(scenario, side, newSeed());
+  watcher.reset();
+  session = next;
   shell.scenario.value = scenario.id;
-  shell.side.value = side;
   view.focus([]);
   shell.status.innerHTML = ""; // a new game starts its status column and log at the top
+  render();
+}
+
+function start(scenario: Scenario, side: Side): void {
+  shell.side.value = side;
+  menu.refresh();
+  begin(scenario, createSession(scenario, side, newSeed()));
+}
+
+/** Two computers play and the player looks on (spec 06): the seed and the number of Game Turns come from the menu. */
+function startWatch(scenario: Scenario): void {
+  const options = menu.read();
+  if (!options) return; // the menu shows what is wrong with the seed or the number of Game Turns
+  menu.collapse();
+  begin(scenario, newWatchSession(scenario, options.seed, options.speed, options.turns));
+  // On a phone the menu above the map is tall: bring the map and the controls into view (a no-op in the two-column layout).
+  window.scrollTo(0, document.querySelector("header")!.offsetHeight);
+}
+
+/** "Stop watching": back to the setup menu with a fresh single-player game (spec 06); focus goes to the Mode menu, where a new game is chosen. */
+function stopWatching(): void {
+  start(session.ctx.scenario, "axis");
+  shell.side.focus();
+}
+
+/** "Take over as ...": the running watched game becomes a normal one, from where it stands. */
+function takeOverAs(side: Side): void {
+  watcher.reset();
+  takeOver(session, side);
+  shell.side.value = side;
+  menu.refresh();
   render();
 }
 
@@ -62,14 +108,19 @@ function render(): void {
   const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
   const mark = captureLog(shell.status);
   const focus = captureFocus(shell.status);
+  const watchPanel = shell.status.querySelector<HTMLElement>(".watch-panel");
   shell.status.innerHTML = statusHtml(session, setup, actions);
+  keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
   syncMap(view, session, setup);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
-  computer.kick();
+  drawBar(shell.watchBar, session);
+  bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
+  if (session.watch) watcher.kick();
+  else computer.kick();
 }
 
 start(SCENARIO_1939, "axis");

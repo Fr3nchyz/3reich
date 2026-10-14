@@ -22,7 +22,8 @@ export const TICK_BUDGET_MS = 60;
 const memories = new WeakMap<Session, AiMemory>();
 const moveTally = new WeakMap<Session, { moves: number; units: number }>();
 
-export const computerSide = (s: Session): Side => otherSide(s.humanSide);
+/** The side the computer plays: the one the player did not pick; when two computers play (watch mode), the side now acting (the one to choose the losses of a pending Exchange, else the side whose Player Turn it is). */
+export const computerSide = (s: Session): Side => (s.watch ? (combatOf(s.state).pending?.chooser ?? s.state.activeSide) : otherSide(s.humanSide));
 
 /**
  * Whether the computer is the one to move now: its Player Turn, or an Exchange (step 7h) whose losses it must choose
@@ -30,6 +31,7 @@ export const computerSide = (s: Session): Side => otherSide(s.humanSide);
  */
 export const computerToMove = (s: Session): boolean => {
   if (s.state.phase !== "player-turn") return false;
+  if (s.watch) return true;
   const pending = combatOf(s.state).pending;
   return pending ? pending.chooser === computerSide(s) : s.state.activeSide === computerSide(s);
 };
@@ -42,29 +44,41 @@ export function computerTick(s: Session, budgetMs = TICK_BUDGET_MS, now: () => n
   if (!computerToMove(s)) return "stuck";
   const here = placeOf(s.state);
   const started = now();
-  const memory = memories.get(s) ?? memories.set(s, createMemory()).get(s)!;
   let lastCost = 0;
   for (let i = 0; i < MAX_ACTIONS_PER_TICK && placeOf(s.state) === here && computerToMove(s); i++) {
     // Another action only if the last one's cost fits in what is left of the budget: one slow action never runs on top of a spent budget.
     if (i > 0 && (now() - started >= budgetMs || lastCost > budgetMs - (now() - started))) return "more";
     const before = now();
-    const decision = chooseAction(s.ctx, s.state, { seed: s.seed, memory });
-    if (!decision) return "stuck";
-    const who = `Computer (${sideName(computerSide(s))})`;
-    if (decision.action.type === "MOVE") {
-      // Up to 40 moves a turn would bury the log: they are written up in one line when the step ends.
-      const tally = moveTally.get(s) ?? { moves: 0, units: 0 };
-      moveTally.set(s, { moves: tally.moves + 1, units: tally.units + decision.action.units.length });
-    } else {
-      const tally = moveTally.get(s);
-      if (tally) {
-        s.log.push(`${who}: moved ${tally.units} unit${tally.units === 1 ? "" : "s"} in ${tally.moves} move${tally.moves === 1 ? "" : "s"}, each toward the nearest enemy-held capital or objective.`);
-        moveTally.delete(s);
-      }
-      s.log.push(`${who}: ${decision.why}`);
-    }
-    if (!run(s, decision.action)) return "stuck";
+    if (!computerAct(s).ok) return "stuck";
     lastCost = now() - before;
   }
   return placeOf(s.state) === here ? "more" : "done";
+}
+
+/** The result of one computer action: it was taken, or why it was not. */
+export type ActResult = { ok: true } | { ok: false; kind: "stuck" | "refused"; detail: string };
+
+/**
+ * The computer takes one action for the side now to move and logs its reason (the one place a computer action is chosen,
+ * logged and applied: the single-player ticks and the watch mode's finer steps both use it). When the player is playing, ground
+ * moves are written up in one line when the step ends; when two computers play and the player watches, each is logged as it happens.
+ */
+export function computerAct(s: Session): ActResult {
+  const memory = memories.get(s) ?? memories.set(s, createMemory()).get(s)!;
+  const decision = chooseAction(s.ctx, s.state, { seed: s.seed, memory });
+  if (!decision) return { ok: false, kind: "stuck", detail: "the computer has no action to take" };
+  const who = `Computer (${sideName(computerSide(s))})`;
+  if (decision.action.type === "MOVE" && !s.watch) {
+    // Up to 40 moves a turn would bury the log: they are written up in one line when the step ends.
+    const tally = moveTally.get(s) ?? { moves: 0, units: 0 };
+    moveTally.set(s, { moves: tally.moves + 1, units: tally.units + decision.action.units.length });
+  } else {
+    const tally = moveTally.get(s);
+    if (tally) {
+      s.log.push(`${who}: moved ${tally.units} unit${tally.units === 1 ? "" : "s"} in ${tally.moves} move${tally.moves === 1 ? "" : "s"}, each toward the nearest enemy-held capital or objective.`);
+      moveTally.delete(s);
+    }
+    s.log.push(`${who}: ${decision.why}`);
+  }
+  return run(s, decision.action) ? { ok: true } : { ok: false, kind: "refused", detail: s.toast || "the engine refused the action" };
 }

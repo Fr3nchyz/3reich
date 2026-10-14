@@ -36,7 +36,7 @@ header button { background: var(--card); }
 .legend { position: absolute; left: .5rem; top: .5rem; max-width: min(26rem, calc(100% - 1rem)); padding: .3rem .6rem; font-size: .8rem; line-height: 1.3; background: rgba(244, 239, 226, .92); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; pointer-events: none; }
 .legend[hidden] { display: none; }
 .legend p { margin: .1rem 0; }
-.hexinfo { position: absolute; left: .5rem; bottom: .5rem; right: .5rem; padding: .25rem .6rem; font-size: .95rem; background: rgba(47, 37, 34, .85); color: var(--edge-fg); border-radius: 4px; pointer-events: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hexinfo { position: absolute; left: .5rem; bottom: .5rem; right: .5rem; padding: .25rem .6rem; font-size: .95rem; background: rgba(47, 37, 34, .85); color: var(--edge-fg); border-radius: 4px; pointer-events: none; overflow: hidden; max-height: 4.6em; line-height: 1.3; }
 main { max-width: 56rem; margin: 1.25rem auto; padding: 0 1rem; display: flex; flex-direction: column; gap: .9rem; }
 main > * { margin: 0; }
 .turn { font-size: 1.15rem; font-weight: 700; padding: .55rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--accent); border-radius: 4px; }
@@ -141,3 +141,40 @@ main { margin-top: .75rem; }
   td, th { padding: .3rem .4rem; }
   th { font-size: .7rem; letter-spacing: 0; }
 }
+
+/* Watch two computers play (spec 06): the options in the menu, the control bar under the map, the panel above the log. */
+.watch-opts { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .9rem; flex: 1 1 100%; }
+.watch-opts[hidden], .watchbar[hidden] { display: none; }
+.watch-opts label { display: flex; align-items: center; gap: .4rem; font-size: .95rem; }
+.watch-opts input { font: inherit; min-height: 44px; padding: .2rem .5rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; }
+.watch-opts #seed { width: 9.5rem; }
+.watch-opts .watch-turns { width: 4.5rem; }
+.watch-help { font-size: .85rem; color: #cfc6b3; }
+.watchbar { padding: .3rem .5rem .4rem; background: var(--edge); border-top: 1px solid var(--border); }
+.watch-row { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; }
+.watch-row button { min-height: 44px; padding: .25rem .7rem; }
+.watch-row label { display: flex; align-items: center; gap: .3rem; font-size: .9rem; }
+.watch-row select { min-height: 44px; }
+.watch-status { margin: .3rem 0 0; font-size: .85rem; line-height: 1.3; color: var(--edge-fg); }
+.watch-panel { display: flex; flex-direction: column; gap: .6rem; }
+.watch-panel .note { margin: 0; }
+.watch-stuck { margin: 0; padding: .6rem .9rem; font-weight: 700; color: var(--ink); background: #ffd27a; border: 2px solid var(--accent); border-radius: 4px; }
+.watch-summary { padding: .6rem 1rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--gold); border-radius: 4px; }
+.watch-summary h2 { margin: 0 0 .3rem; font-size: 1.1rem; }
+.watch-summary p { margin: 0 0 .3rem; }
+.watch-summary ul { margin: .3rem 0 .3rem 1.2rem; padding: 0; columns: 2; }
+/* A watching phone gives the map less room to make space for the controls. */
+@media (max-width: 640px), (max-height: 480px) {
+  body.watching .map-wrap { height: 32vh; height: 32dvh; }
+}
+@media (max-height: 480px) {
+  body.watching .map-wrap { height: 36vh; height: 36dvh; }
+  .watch-status { font-size: .75rem; }
+}
+/* The mode menu stays as narrow as "Axis" / "Allies" were, so the header keeps its height; it opens up to show "Watch the computer play both sides" once that is chosen. */
+#side { width: 7.5rem; }
+#side.wide { width: auto; max-width: 100%; }
+.watch-opts input[aria-invalid="true"] { border: 2px solid var(--accent); background: #fff0e8; }
+.watch-error { flex: 1 1 100%; color: #ffd27a; font-weight: 600; }
+.watch-error:empty { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }

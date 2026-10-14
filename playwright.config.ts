@@ -4,8 +4,8 @@ import { defineConfig } from "@playwright/test";
 // PW_CHROMIUM_PATH points at a pre-installed Chromium (sandboxes); CI leaves it unset and uses the one
 // `npx playwright install chromium` fetched.
 const executablePath = process.env.PW_CHROMIUM_PATH || undefined;
-// An unusual port, and no reuse of a running server: a preview of some other build must never be tested by mistake.
-const PORT = 4789;
+// An unusual port (PW_PORT overrides it when workers share a machine), and no reuse of a running server: a preview of some other build must never be tested by mistake.
+const PORT = Number(process.env.PW_PORT) || 4789;
 
 export default defineConfig({
   testDir: "tests/e2e",
