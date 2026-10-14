@@ -22,6 +22,8 @@ export const ATTACK_SUPERIORITY = 3;
 export const ATTACK_MIN_COLUMN_SUPERIOR: OddsColumn = "1-1";
 export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
 export const ATTACK_MAX_PER_TURN = 40;
+/** Base score of a sweep of a hex with only air units or the like: below any real attack, so the units are first offered to real attacks. */
+export const SWEEP_SCORE = -1000;
 
 type Attack = Extract<Action, { type: "ATTACK" }>;
 type Advance = Extract<Action, { type: "ADVANCE" }>;
@@ -34,7 +36,15 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
   for (const a of legal) {
     if (a.type !== "ATTACK") continue;
     const units = a.units.map((id) => state.units[id]!);
-    const n = attackNumbers(ctx, state, units, defendersAt(state, units, a.target), a.target);
+    const defenders = defendersAt(state, units, a.target);
+    // Only air units or the like in the hex (rules: ALONE_NONGROUND_DESTROYED): no roll and no risk, but it must not take units a real
+    // attack could use, so it scores below every real attack (which scores 0 or more).
+    if (defenders.length === 0) {
+      // The fewest factors, so one weak unit, and infantry before anything else.
+      scored.set(a, SWEEP_SCORE + (units.every((u) => u.type === "infantry") ? 10 : 0) - units.reduce((n, u) => n + u.strength, 0) + (isObjective(ctx, a.target) ? 5 : 0));
+      continue;
+    }
+    const n = attackNumbers(ctx, state, units, defenders, a.target);
     const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
     if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
     scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
@@ -42,7 +52,9 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
   const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);
   if (!pick) return undefined;
   const units = pick.units.map((id) => state.units[id]!);
-  const n = attackNumbers(ctx, state, units, defendersAt(state, units, pick.target), pick.target);
+  const defenders = defendersAt(state, units, pick.target);
+  if (defenders.length === 0) return { action: pick, why: `Attacks ${pick.target}, where only air units or the like stand: they are destroyed without a roll.` };
+  const n = attackNumbers(ctx, state, units, defenders, pick.target);
   return { action: pick, why: `Attacks ${pick.target} with ${n.attackFactors} factors against ${n.defenseFactors}${n.multiplier > 1 ? ` (x${n.multiplier})` : ""}, odds ${n.column}.` };
 }
 

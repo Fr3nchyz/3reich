@@ -33,6 +33,17 @@ export const ONE_ATTACK_PER_HEX = true;
 export const ADVANCE_AFTER_COMBAT = true;
 
 /**
+ * Counters that cannot defend on the ground (air units, fleets, airbases, bridgeheads) and stand in a hex with no ground unit of their
+ * enemies' are destroyed when ground units attack that hex, and when a battle there eliminates the last ground defenders, so the hex is
+ * left empty and can be taken. Without a rule the hex could never be attacked, entered or advanced into (Warsaw: 2 infantry + 2 air units
+ * at the start, then the two air units stayed for ever). Confirmed by Amaury (product owner), not yet checked against the PC manual: air units
+ * alone in a hex are destroyed once the ground defenders are gone. Set false for "such counters stay and block the hex". Known side effect, TODO(verify): one infantry can wipe an
+ * ungarrisoned port's air units and fleets with no roll (for example Scapa Flow AA7, Wilhelmshaven, LL29 or N29 as the automatic setup leaves
+ * them), and the computer does the same to the human's air units and fleets; a rule on rebasing or capture is probably needed.
+ */
+export const ALONE_NONGROUND_DESTROYED = true;
+
+/**
  * Hook for supply: whether the unit may attack. Stays true on purpose: the rule text found (Ref 19.4, docs/RULES.md "Web research") lets an
  * unsupplied unit attack at full strength; it cannot move, advance after combat or be redeployed. `supplyStatus` (supply.ts) is separate.
  * TODO(verify, Ref 19.4): confirm against the PC manual; if unsupplied units cannot attack there, call `isUnitSupplied` here.
@@ -103,6 +114,14 @@ export function attackerPool(ctx: GameContext, state: GameState, side: Side, use
 /** The ground units in a hex that at least one of the attackers is at war with. */
 export const defendersAt = (state: GameState, attackers: readonly Unit[], at: HexId): Unit[] =>
   Object.values(state.units).filter((u) => u.at === at && isGroundCombatUnit(u) && attackers.some((a) => isEnemy(state, a.owner, u.owner)));
+
+/** The enemy counters that cannot fight on the ground and stand alone in the hex (no ground unit of anyone there): see ALONE_NONGROUND_DESTROYED. */
+export function lonersAt(state: GameState, attackers: readonly Unit[], at: HexId): Unit[] {
+  if (!ALONE_NONGROUND_DESTROYED) return [];
+  const here = Object.values(state.units).filter((u) => u.at === at);
+  // A ground unit of any owner in the hex (even a third party's, not at war with the attackers) protects the counters stacked with it.
+  return here.some(isGroundCombatUnit) ? [] : here.filter((u) => attackers.some((a) => isEnemy(state, a.owner, u.owner)));
+}
 
 export interface AttackNumbers {
   attackFactors: number;

@@ -326,7 +326,8 @@ describe("advance after combat (TODO(verify): the rule text is not in the repo)"
     expect(applyAction(CTX, s, { type: "ADVANCE", side: "axis", units: ["g1"], to: "L33" })).toMatchObject({ ok: false });
   });
   it("is not offered when the defenders' hex still holds a unit", () => {
-    const s = won([unit("p9", "poland", "air", 2, "M33")]);
+    // A unit of a power not at war with Germany does not defend and is not swept away, so the hex is not empty.
+    const s = won([unit("p9", "ussr", "infantry", 2, "M33")]);
     expect(legalActions(CTX, s).some((a) => a.type === "ADVANCE")).toBe(false);
   });
 });
