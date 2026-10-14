@@ -4,6 +4,7 @@ import { citySymbol } from "./mapCities";
 import { baysBetweenLand, fmt, hexCenter, hexCorners, midpoint, points, sideSegment, type Box, type Point } from "./mapGeometry";
 import { HATCH_DEFS } from "./mapOverlay";
 import { FRONT_TINT, SEA, landFill } from "./mapStyle";
+import { isWaterEdge, waterEdgePath } from "./waterEdges";
 
 /** The SVG text of each layer of the map, built once from the map data. */
 
@@ -88,7 +89,8 @@ export function buildSideLayers(map: MapData): SideLayers {
     const [x1, y1, x2, y2] = sideSegment(s.id);
     const line = `x1="${fmt(x1)}" y1="${fmt(y1)}" x2="${fmt(x2)}" y2="${fmt(y2)}"`;
     if (s.river) out.rivers += `<line ${line}/>`;
-    if (s.nationalBoundary) out.borders += `<line ${line}/>`;
+    // The heavy brown line is for borders that can be crossed on foot; a water edge is drawn as water.
+    if (s.nationalBoundary && !isWaterEdge(map, s)) out.borders += `<line ${line}/>`;
     if (s.frontBoundary) out.fronts += `<line ${line}/>`;
     if (s.qattara) out.blocked += `<line ${line}/>`;
     if (s.crossingArrow) {
@@ -102,11 +104,13 @@ export function buildSideLayers(map: MapData): SideLayers {
 /** The whole <svg>: every layer in drawing order, then the empty layers the view fills in later. */
 export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers: HexLayers): string {
   const sides = buildSideLayers(map);
+  const water = waterEdgePath(map);
   return `
     <svg class="map" viewBox="${box.x} ${box.y} ${box.w} ${box.h}" role="img" aria-label="Map of Europe">
       <g class="hexes">${hexLayers.hexes}</g>
       <g class="bays">${buildBays(map)}</g>
       <g class="front-tint" style="display:${showFronts ? "inline" : "none"}">${hexLayers.fronts}</g>
+      <g class="wateredges" aria-hidden="true"><path class="water-band" d="${water}"/><path class="water-ripple" d="${water}"/></g>
       ${HATCH_DEFS}
       <g class="overlay" aria-hidden="true"></g>
       <g class="rivers">${sides.rivers}</g>
