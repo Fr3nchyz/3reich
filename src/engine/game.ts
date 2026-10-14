@@ -69,6 +69,7 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     noGrants: [],
     frontOptions: {},
     fortresses: {},
+    control: {},
     rngState: seed,
   };
 }

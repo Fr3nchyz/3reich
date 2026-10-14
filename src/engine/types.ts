@@ -292,6 +292,11 @@ export interface GameState {
   frontOptions: Partial<Record<Front, FrontChoice>>;
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
+  /**
+   * Hexes whose controller differs from the scenario's "controlled at start" territory (Ref 7.0;
+   * see control.ts). Empty at the start: read control through `controllerOf`, not this record.
+   */
+  control: Record<HexId, ForceOwner>;
   /** Deterministic RNG state; advanced on every roll. */
   rngState: number;
 }
