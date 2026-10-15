@@ -16,7 +16,7 @@ You can open the game in a browser, pick any of the four scenarios (1939, Campai
 | Automated tests | 953 unit tests and about 180 browser tests (mouse and touch) |
 | Checks on every change | lint (300-line file limit), type check, tests with a coverage floor, production build, browser tests |
 | Code size | engine about 4,300 lines, screens about 2,600, computer opponent about 600 |
-| Specs | 01 turn steps (built), 02 economy (mostly built), 03 movement and supply (partly), 04 combat and victory (ground combat built), 05 computer opponent (partly), 06 watch mode (built), 07 tap-to-attack (approved; tickets 07-1 and 07-2 merged) |
+| Specs | 01 turn steps (built), 02 economy (mostly built), 03 movement and supply (partly), 04 combat and victory (ground combat built), 05 computer opponent (partly), 06 watch mode (built), 07 tap-to-attack (approved; tickets 07-1 and 07-2 merged), 09 air units (proposed 2026-10-15, awaiting review) |
 
 ## Against the plan (`docs/ROADMAP.md`)
 
