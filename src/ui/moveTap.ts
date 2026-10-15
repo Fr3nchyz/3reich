@@ -1,12 +1,13 @@
 import { legalActions, type Action } from "../engine/actions";
 import { turnKey } from "../engine/combat-record";
 import type { MapHex } from "../engine/map";
-import { computerToMove } from "./computerPlay";
 import { newChoice, withTicks } from "./moveDraft";
 import { defaultTicks, movedLine, selectionFor, toggled, type MoveSelection } from "./moveSelection";
 import * as T from "./moveText";
 import { placeName, stackSummary, unitsWithIds } from "./names";
+import { noteMove } from "./moveUndo";
 import { run, type Session } from "./session";
+import { atStep6f } from "./step6f";
 
 /**
  * The tap flow of ground movement at step 6f (spec 10, ticket 10-3): tap a stack of yours (or its row in the list) and it is chosen with every
@@ -17,11 +18,7 @@ import { run, type Session } from "./session";
 
 type Move = Extract<Action, { type: "MOVE" }>;
 
-/** Whether it is step 6f of a Player Turn the player plays (not watched, not the computer's). */
-export function atStep6f(s: Session): boolean {
-  const p = s.state.position;
-  return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "6f" && !s.watch && !computerToMove(s);
-}
+export { atStep6f };
 
 /** The moves on offer now, or none outside step 6f. */
 export function movesNow(s: Session): Move[] {
@@ -121,7 +118,10 @@ function moveTicked(s: Session, sel: MoveSelection, to: string): void {
   else if (!dest) s.toast = sel.alone.includes(to) && sel.further ? sel.further : T.CANNOT_GET_THERE;
   else {
     const line = movedLine(s.ctx, s.state, sel.ticked, to);
-    if (!run(s, { type: "MOVE", side: s.state.activeSide, units: sel.ticked, path: dest.path })) return;
+    const action: Move = { type: "MOVE", side: s.state.activeSide, units: sel.ticked, path: dest.path };
+    const [before, logLen] = [s.state, s.log.length];
+    if (!run(s, action)) return;
+    noteMove(s, before, logLen, action, line); // spec 10, 10-6: the history "Take back last move" replays
     const rest = defaultTicks(s.ctx, s.state, sel.hex);
     s.moveChosen = rest.length > 0 ? withTicks(s.moveChosen!, rest) : null;
     s.toast = rest.length > 0 ? `${line} ${T.stayingSentence(placeName(s.ctx.map, sel.hex), stackSummary(unitsWithIds(s.state, rest), true))}` : line;

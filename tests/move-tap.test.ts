@@ -69,7 +69,7 @@ function crafted(): Session {
 }
 const highlights = (s: Session): string[] => {
   let got: string[] = [];
-  const view = { setUnits() {}, focus() {}, setHighlights: (ids: Iterable<string>) => { got = [...ids]; } } as unknown as MapView;
+  const view = { setUnits() {}, focus() {}, setAttackMarks() {}, setHighlights: (ids: Iterable<string>) => { got = [...ids]; } } as unknown as MapView;
   syncMap(view, s, null);
   return got;
 };

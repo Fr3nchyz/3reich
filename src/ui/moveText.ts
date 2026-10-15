@@ -105,3 +105,11 @@ export const canMove = (n: number): string => `${n} ${n === 1 ? "unit" : "units"
 export const MARK_TICKED = "Ticked";
 export const MARK_FREE = "Not ticked";
 export const MARK_GREYED = "Cannot move";
+
+/** The button of step 6f that takes the last move back (a screen convenience, spec 10; not a game rule). */
+export const UNDO_BUTTON = "Take back last move";
+export const UNDO_NOTHING = "Nothing to take back yet: no move has been made in this step.";
+export const UNDO_HIDDEN = "A die was rolled, so earlier moves can no longer be taken back.";
+/** "Took back: Moved 2 German infantry from Lodz (N33) to Radom (N34)." (`line` is the sentence the move was told with). */
+export const tookBack = (line: string): string => `Took back: ${line}`;
+export const TOOK_BACK_PREFIX = "Took back: ";
