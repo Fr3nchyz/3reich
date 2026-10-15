@@ -8,6 +8,7 @@ import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
+import { placeName, stackSummary, unitName, unitsFromPlaces, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
 
 /**
@@ -81,7 +82,8 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
   return session;
 }
 
-function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>): string | null {
+/** `before` is the position the action was made in, where the counters it removes or moves are still found by id (names.ts). */
+function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>, before: GameState): string | null {
   switch (e.type) {
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
@@ -110,16 +112,16 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return sweepLine(ctx, e);
     case "COMBAT_RESOLVED":
       if (e.sweep) return null; // the line of the sweep says it
-      return `Attack on ${e.target}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
+      return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
       if (swept.has(e.unitId)) return null;
-      return `${OWNER_NAMES[e.owner]} unit ${e.unitId} at ${e.at} is eliminated.`;
+      return `Eliminated: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
     case "LOSSES_CHOSEN":
-      return `${sideName(e.side)} chooses losses: ${e.units.join(", ")}.`;
+      return `${sideName(e.side)} chooses losses: ${unitsFromPlaces(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
       return `${e.units.join(", ")} move from ${e.from} to ${e.to}.`;
     case "UNITS_ADVANCED":
-      return `${e.units.join(", ")} advance into ${e.to}.`;
+      return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
     case "HEX_CONTROL_CHANGED":
       return `${nameOf(e.to)} takes control of ${e.hex}.`;
     case "OVERSTACK_ELIMINATED":
@@ -132,6 +134,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
 /** Applies actions in order, logging what happened; stops at the first one the rules refuse. */
 export function run(s: Session, ...actions: Action[]): boolean {
   for (const action of actions) {
+    const before = s.state;
     const result = applyAction(s.ctx, s.state, action);
     if (!result.ok) {
       s.toast = result.error;
@@ -141,7 +144,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
     s.record?.push(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
     for (const e of result.events) {
-      const line = describeEvent(e, s.ctx, swept);
+      const line = describeEvent(e, s.ctx, swept, before);
       if (line) s.log.push(line);
     }
   }

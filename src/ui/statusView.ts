@@ -5,7 +5,10 @@ import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
 import { computerSide, computerToMove } from "./computerPlay";
+import type { GameContext } from "../engine/context";
+import type { GameState } from "../engine/types";
 import { cap, nameOf, sideName } from "./format";
+import { placeName, stackSummary, unitsFromPlaces, unitsWithIds } from "./names";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
@@ -34,8 +37,11 @@ function nationTable(s: Session): string {
       <tbody>${rows}</tbody></table>`;
 }
 
-/** What a button says: "End Axis turn", "Done with step 1", "Germany declares war on Norway (10 BRPs)". */
-function label(a: Action): string {
+/**
+ * What a button says: "End Axis turn", "Done with step 1", "Germany declares war on Norway (10 BRPs)", "Attack Warsaw (M35) with 3-4 German
+ * armor from Lodz (N33)". Combat buttons name places and counters, never ids (names.ts).
+ */
+function label(a: Action, ctx: GameContext, state: GameState): string {
   switch (a.type) {
     case "END_PLAYER_TURN":
       return `End ${sideName(a.side)} turn`;
@@ -48,11 +54,11 @@ function label(a: Action): string {
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     case "ATTACK":
-      return `Attack ${a.target} with ${a.units.join(", ")}`;
+      return `Attack ${placeName(ctx.map, a.target)} with ${unitsFromPlaces(ctx, state, a.units)}`;
     case "ALLOCATE_LOSSES":
-      return `Lose ${a.units.join(", ")}`;
+      return `Lose ${unitsFromPlaces(ctx, state, a.units)}`;
     case "ADVANCE":
-      return `Advance ${a.units.join(", ")} into ${a.to}`;
+      return `Advance ${stackSummary(unitsWithIds(state, a.units))} into ${placeName(ctx.map, a.to)}`;
     default:
       return a.type;
   }
@@ -63,8 +69,8 @@ function label(a: Action): string {
  * which there are many, sit in fold-outs above the buttons that move the game on. Builds are not buttons:
  * they have their own panel (buildView).
  */
-function turnButtons(actions: Action[], open: boolean): string {
-  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${label(a)}</button>`;
+function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): string {
+  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${label(a, ctx, state)}</button>`;
   const fold = (type: Action["type"], title: string) => {
     const group = actions.filter((a) => a.type === type);
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} choices)</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
@@ -99,7 +105,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${frontPrompt(s, actions)}
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
-      ${turnButtons(actions, s.foldOpen)}
+      ${turnButtons(actions, s.foldOpen, s.ctx, s.state)}
       ${logHtml(s.log)}
     </main>`;
 }
