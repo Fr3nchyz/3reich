@@ -1,44 +1,42 @@
-# Progress baseline (2026-10-13)
+# Progress baseline (2026-10-15)
 
-Measured on `main` after the merge of PRs #20 to #23. "The plan" is `docs/ROADMAP.md`. This page is the checkpoint to compare against next time.
+Measured on `main` after the merge of PR #51. "The plan" is `docs/ROADMAP.md`; "the designs" are the specs in `docs/specs/`. This page is the checkpoint to compare against next time. The previous baseline (2026-10-13) said about 15% of a game existed.
 
 ## In one paragraph
 
-The game can be opened in a browser, any of the four scenarios (1939, Campaign, 1942, 1944) can be chosen, and the player sets up their nations' forces on a corrected map by tapping, while the computer places the other side's forces. After setup the game starts, but nothing more can be done except ending turns: **movement, combat, supply, money (BRPs), declarations of war, and the computer opponent are not built yet.** The foundation is solid and heavily checked against the original game's own data; the playable game is still ahead.
+You can open the game in a browser, pick any of the four scenarios (1939, Campaign, 1942, 1944), set up your forces by tapping (the computer sets up the other side), and then play the ground war: declare war, build units, receive grants, move, attack, take losses and advance. The computer can play either side, and you can watch two computers play each other. Air units, fleets, supply penalties, minor-country activation, strategic warfare, victory and surrender are not built, so a game cannot yet be won or lost by the rules. Roughly a third of a complete game exists (an estimate, not a measurement).
 
 ## Measured facts
 
 | What | Value |
 |---|---|
-| Scenarios that can be set up | all four (1939, Campaign, 1942, 1944); automatic setup places 110, 110, 178 and 194 counters |
-| Map | 1,755 hexes, 5,079 hexsides; corrected against the original game's map data (17 coastal hexes turned to land, Sicily joined, two countries fixed, 26 lake/estuary sides no longer crossable) |
-| Rule tables checked against the original | combat results, attrition, odds rounding, interception, naval and air modifiers, minor-country forces: all match except naval advantage, which was corrected |
-| Automated tests | 328 passing; engine code 99.2% of lines covered |
-| Checks on every change | lint (300-line file limit), type check, tests with a coverage floor, production build, and a browser test (mouse and touch) |
-| Code size | about 3,900 lines of app, engine and data code (the engine is about 1,900), about 3,100 lines of tests |
-| Specs written (awaiting your review) | 01 turn steps, 02 economy, 03 movement and supply, 04 combat and victory, 05 computer opponent |
+| Scenarios | all four can be set up and played from; automatic setup places 110, 110, 178 and 194 counters |
+| Map | 1,755 hexes, 5,079 hexsides; corrected against the original game's map data; water edges drawn between land hexes that touch across a strait |
+| Steps of the Sequence of Play that wait for the player or computer | 9 of about 50: Year Start part B, Determination of Player-Turn Order, 1 (declarations of war), 3 (front options), 6f (ground movement), 7h (ground combat), 8b (construction), 9a (BRP grants), 10b (save prompt). The rest are passed automatically |
+| Automated tests | 953 unit tests and about 180 browser tests (mouse and touch) |
+| Checks on every change | lint (300-line file limit), type check, tests with a coverage floor, production build, browser tests |
+| Code size | engine about 4,300 lines, screens about 2,600, computer opponent about 600 |
+| Specs | 01 turn steps (built), 02 economy (mostly built), 03 movement and supply (partly), 04 combat and victory (ground combat built), 05 computer opponent (partly), 06 watch mode (built), 07 tap-to-attack (approved; tickets 07-1 and 07-2 merged) |
 
 ## Against the plan (`docs/ROADMAP.md`)
 
 | Phase | Status |
 |---|---|
 | 1 Housekeeping | Done |
-| 2 Read the original game's data | 2.1, 2.2, 2.3, 2.4, 2.8 done. **Not done:** 2.5 compare scenario files, 2.6 write up the PC-vs-board-game rule differences, 2.7 read the AI resources |
-| 3 Engine refactors | 3.2 setup split, 3.4 test gaps, 3.5 tooling, 3.6 UI split done; 3.3 done (tagged `Area` union, no `!` assertions left in setup). 3.1 turn-step cursor done (spec 01 built; see `docs/specs/01-turn-steps.md`, "As built") |
-| 4 Economy and turn skeleton | Part 1 built: BRP ledger, the yearly spending limit, declarations of war at step 1 (35 / 10 BRPs), the U.S. entering in Spring 1942, Initiative reading real wars. Part 2 built: construction at step 8b (costs, dates, home-territory placement as an approximation until supply and control exist) and BRP grants at 9a. Part 3 built: Year Start Sequence part B (Base growth, Minor-Ally BRPs, spending limit), Front Options at step 3, the minor countries' forces as counters (a data helper only: nothing calls it yet). Not built: strategic warfare (YSS A and C), conquest BRPs, setting up a minor's forces, Minor-Ally activation (spec 02, "As built") |
-| 5 Movement, ZOC, supply | Spec written (03). Built: hex control, stacking overstack and elimination, Zones of Control (5.1 to 5.3), ground movement at step 6f with a MOVE action and a tap flow (5.4), and supply tracing as pure queries (5.5, not yet wired to steps). Not built: air movement, supply penalties at the steps, redeployment, fortress changes (spec 03 "As built") |
-| 6 Combat, air, naval | Tables and resolvers exist and are verified; spec written (04); ground combat wired at step 7h (attack, Exchange losses, advance; spec 04 "As built"); air, naval, attrition, exploitation not built |
-| 7 Computer opponent | Started: layer 3 for the steps that wait today (declarations, construction, grants, end of turn) in `src/ai/`, and it plays the other side in the browser; it also moves toward enemy objectives and attacks at good odds, and `npm run selfplay` plays computer-against-computer games with reports; setup is still the placeholder, no evaluation or strength levels yet; the menu also offers "Watch the computer play both sides" (spec 06); see spec 05, "As built" |
-| 8 Play screens | Setup screen done (mouse and touch); everything else waits for rules |
+| 2 Read the original game's data | Done for the tables, map, start lines and scenarios. Not done: 2.5 compare scenario files, 2.6 write up PC-vs-board-game rule differences, 2.7 read the AI resources |
+| 3 Engine refactors and tooling | Done (formatter deliberately left out) |
+| 4 Economy and turn skeleton | Built: BRP ledger, spending limit, declarations of war, Initiative, Year Start part B, front options, construction, grants. Not built: strategic warfare, BRPs from conquest, setting up a minor's forces, Minor-Ally activation |
+| 5 Movement, ZOC, supply, control | Built: control, stacking, zones of control, ground movement. Supply is calculated (pure queries) but not wired into the turn. Not built: supply penalties, strategic redeployment, fortress changes, air movement |
+| 6 Combat, air, naval | Ground combat built (odds, Exchange losses, advance). Not built: attrition, exploitation, air, naval, strategic warfare, Russian winter, surrender, victory |
+| 7 Computer opponent | Declares, builds, grants, moves toward objectives, attacks at good odds; setup is still a placeholder; no evaluator, no strength levels |
+| 8 Play screens | Setup, map, movement, attack, log, watch mode done. Hex card, odds preview and tap-to-attack in progress (spec 07). Not done: zoom buttons, choose which units of a stack move, save and load, iPad pass |
 | Release 1 (1939 vs the computer) | Not reached |
-
-Roughly: the data, map, scenarios, setup and checking tools are done; the game rules themselves (phases 4 to 7) are the large remaining part.
 
 ## Known gaps and risks
 
-- **"Place the rest for me" bug:** fixed in a separate pull request (T08), waiting for your merge.
-- **Review coverage was uneven.** #19, #20, #21 and #23 each got an independent adversarial review and their findings were fixed; **#22 (the map corrections) was merged without its review finishing** (a usage limit interrupted it). The map changes were checked by their author against the game data and the scan, and CI is green, but no second pair of eyes finished the job. Reviews were done by a fresh instance of the same model, not a stronger one.
-- **Manual citations:** Ref 21.51 (naval) and Ref 20.44 (air) were checked against the Reference Manual text found online and are right (`RULES.md`, "Web research").
-- **Legal and policy:** PR #21 (merged) includes code that reads the rules out of the game's program file. The repo contains no game code, text or art, but the README's legal note still says the rules come from the manuals; that line needs your decision and an update.
-- **Open rule questions** (details in `docs/RULES.md`): who holds Greek hex EE27 in the original; why V39 is left out in 1944; Germany's Libya limit (7 factors, a reading of the page); six ground factors at each of Leningrad and Moscow; the Qattara no-setup rule; naval modifier for Vichy and Free French fleets; 25 coastal hexsides and a few beach details on the map.
-- **Visual style:** the map and counters now follow the owner's pick of the "printed board" look (pale country tints, terrain marks, cardboard counters with unit symbols). Menus and status panels follow the same look (dark board edge, paper panels, cardboard buttons).
+- **Review coverage was uneven.** #22 (the map corrections) was merged without its review finishing (a usage limit interrupted it). Later pull requests each got an independent adversarial review, by a fresh instance of the same model, not a stronger one.
+- **Legal and policy:** PR #21 includes code that reads the rule tables out of the game's program file. The repo contains no game code, text or art, but the README's legal note still says the rules come from the manuals; that line needs the owner's decision and an update.
+- **Open rule questions** (details in `docs/RULES.md` and `docs/FEEDBACK.md`): do friendly units cancel enemy zones of control and does every ground unit or only armor exert one; may an unsupplied unit attack; are unused BRPs kept at Year Start; may a hex be attacked more than once per turn; the fate of ports' air units and fleets when one infantry unit enters (air units alone in a hex are destroyed: confirmed by the product owner, not checked against the PC manual); who holds Greek hex EE27 in 1942; Germany's Libya limit; six ground factors at each of Leningrad and Moscow; naval modifier of Vichy and Free French fleets; a few coastal hexsides and beaches on the map.
+- **Computer play is weak:** in a 1939 self-play game nothing moves between Fall 1940 and Spring 1941, because its objectives lie behind neutral land or sea.
+- **Slow computer moves:** a rare computer action can hold the screen for about half a second.
+- **Visual style:** the map and counters follow the owner's pick of the "printed board" look. The owner still finds the map less clear than the board and the DOS game; waiting for Frank's view.
