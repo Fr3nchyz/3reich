@@ -3,7 +3,8 @@ import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
 import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
-import { moveTargets } from "./moveTap";
+import { moveFurther, moveTargets } from "./moveTap";
+import { shownOnMap } from "./attackSync";
 import { builds } from "./sessionActions";
 import { syncAttackMarks } from "./attackSync";
 import type { Action } from "../engine/actions";
@@ -14,7 +15,7 @@ import type { Action } from "../engine/actions";
 function highlightedHexes(s: Session, setup: SetupView | null): string[] {
   if (!setup) {
     // Not setting up: where the stack chosen to move can go (step 6f), or the places a chosen build may go.
-    if (s.moveFrom) return moveTargets(s);
+    if (s.moveChosen) return moveTargets(s);
     const pick = s.build;
     return pick ? builds(s).filter((a) => a.owner === pick.owner && a.unit.type === pick.type && a.unit.strength === pick.strength && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
   }
@@ -35,9 +36,19 @@ function followSetup(view: MapView, s: Session, mine: ForceOwner | null): void {
   }
 }
 
+/** Once, when a stack is chosen from the list: the map moves only if the hex or its destinations are out of sight. */
+function followChoice(view: MapView, s: Session, shown: (ids: readonly string[]) => boolean): void {
+  const c = s.moveChosen;
+  if (!c?.focus) return;
+  c.focus = false;
+  const ids = [c.hex, ...moveTargets(s)];
+  if (!shown(ids)) view.focus(ids);
+}
+
 export function syncMap(view: MapView, s: Session, setup: SetupView | null, actions?: readonly Action[]): void {
   view.setUnits(Object.values(s.state.units));
   followSetup(view, s, setup?.owner ?? null);
-  view.setHighlights(highlightedHexes(s, setup));
+  view.setHighlights(highlightedHexes(s, setup), moveFurther(s));
+  followChoice(view, s, shownOnMap);
   if (actions) syncAttackMarks(view, s, actions);
 }

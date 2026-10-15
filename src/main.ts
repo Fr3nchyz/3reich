@@ -1,5 +1,6 @@
 import "./style.css";
 import "./attack.css";
+import "./move.css";
 import { MAP } from "./data/map";
 import { SCENARIO_1939 } from "./data/scenario-1939";
 import { SCENARIO_1942 } from "./data/scenario-1942";
@@ -28,6 +29,7 @@ import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
 import { revealFresh, revealStep } from "./ui/reveal";
+import { revealMove } from "./ui/moveView";
 import { attacking } from "./ui/attackTap";
 import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
@@ -49,7 +51,7 @@ const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); revealCard(shell.status); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (session.moveChosen?.hex !== h.id) revealCard(shell.status); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
@@ -131,6 +133,7 @@ function render(): void {
   drawBar(shell.watchBar, session);
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
   revealFresh(shell.status, session, unseenChoice(session));
+  revealMove(shell.status, session);
   announceAttack(shell.live, session);
   const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
   if (now && !wasAttacking) revealStep(shell.status);

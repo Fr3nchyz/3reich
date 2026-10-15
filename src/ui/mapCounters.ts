@@ -60,13 +60,15 @@ export function unitsMarkup(map: MapData, units: readonly Unit[]): string {
   return out;
 }
 
-/** An outline around each of these hexes that is on the map (places where the selected counter may go). */
-export function highlightsMarkup(map: MapData, ids: Iterable<string>): string {
+/** An outline around each of these hexes that is on the map (places where the selected counter may go); `further` is the second shade (spec 10: where a faster unit alone could go). */
+export function highlightsMarkup(map: MapData, ids: Iterable<string>, further: Iterable<string> = []): string {
   let out = "";
-  for (const id of ids) {
-    if (!map.hexes[id]) continue;
+  const draw = (id: string, cls: string) => {
+    if (!map.hexes[id]) return;
     const [cx, cy] = hexCenter(hex(id));
-    out += `<polygon data-hl="${id}" points="${points(hexCorners(cx, cy))}"/>`;
-  }
+    out += `<polygon${cls} data-hl="${id}" points="${points(hexCorners(cx, cy))}"/>`;
+  };
+  for (const id of ids) draw(id, "");
+  for (const id of further) draw(id, ' class="further"');
   return out;
 }

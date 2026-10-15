@@ -2,6 +2,7 @@ import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
 import { bindAttack } from "./attackBind";
 import { bindChoice } from "./choiceBind";
+import { bindMove } from "./moveBind";
 import type { Session, SetupView, TapMode } from "./session";
 import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSpec, placeInBox, setMode, takeAction, undoLast } from "./sessionActions";
 
@@ -21,6 +22,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on<HTMLButtonElement>("button[data-box]", (b) => { if (owner) placeInBox(s, owner, spec, b.dataset.box as OffMapBox); });
   bindAttack(root, s, redraw);
   bindChoice(root, s, redraw);
+  bindMove(root, s, redraw);
   on("#hexcard-close", () => closeLook(s));
   root.querySelector(".hexcard")?.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Escape") { closeLook(s); redraw(); }

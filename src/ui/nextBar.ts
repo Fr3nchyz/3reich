@@ -2,6 +2,8 @@ import type { Action } from "../engine/actions";
 import { attackTargets } from "./attackDraft";
 import { atStep7h, attacking } from "./attackTap";
 import { openOffers } from "./choiceTap";
+import { atStep6f, selectionNow } from "./moveTap";
+import * as T from "./moveText";
 import { ownPending } from "./lossOptions";
 import { placeName } from "./names";
 import type { Session } from "./session";
@@ -12,11 +14,19 @@ import type { Session } from "./session";
  * and "Done with step 7h" never scrolls out of reach. No rule here: every sentence reads what the engine offers (legal actions, the pending Exchange).
  */
 
-/** Whether the bar and the cards of step 7h lead the status column: the player may attack now, or a battle result is still shown. */
-export const leadsStatus = (s: Session): boolean => attacking(s) || (atStep7h(s) && !!s.battle);
+/** Whether the bar and the cards lead the status column: the player may attack now, a battle result is still shown (step 7h), or the player moves (step 6f, spec 10). */
+export const leadsStatus = (s: Session): boolean => attacking(s) || (atStep7h(s) && !!s.battle) || atStep6f(s);
+
+/** The bar's sentence at step 6f: choose a stack, or tick the units and tap a yellow hex. */
+function moveNext(s: Session, actions: readonly Action[]): string {
+  const sel = selectionNow(s);
+  if (sel) return T.nextTick(sel.ticked.length);
+  return actions.some((a) => a.type === "MOVE") ? T.NEXT_CHOOSE : T.NEXT_NOTHING_TO_MOVE;
+}
 
 /** What the game waits for, in one sentence. */
 export function nextText(s: Session, actions: readonly Action[]): string {
+  if (atStep6f(s)) return moveNext(s, actions);
   if (!attacking(s)) return "Waiting for the computer to choose its losses.";
   if (ownPending(s.state, s.humanSide)) return "Next: choose your losses.";
   const offers = openOffers(s, actions);

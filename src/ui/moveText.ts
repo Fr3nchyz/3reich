@@ -84,3 +84,24 @@ export const stayingSentence = (place: string, units: string): string => `Stayin
 
 /** "Moved 3-4 German armor from Lodz (N33) to Radom (N34)." (`what` is the counters with their origin, from `unitsWhere`). */
 export const movedSentence = (what: string, to: string): string => `Moved ${what} to ${to}.`;
+
+/** A tap on a hex that is not one of the yellow hexes. */
+export const CANNOT_GET_THERE = "These units cannot get there together. The yellow hexes are the places they can.";
+/** A tap on a hex when no stack is chosen. */
+export const CHOOSE_FIRST = "Tap one of your stacks that can move, then a yellow hex.";
+
+/** What step 6f asks for, above the list of stacks (the old prompt line, reworded for the card). */
+export const MOVE_PROMPT = "Ground movement (step 6f): tap a stack of yours, tick the units to move, then tap a yellow hex. Each unit moves once. Press “Done with step 6f” when you have finished.";
+
+/** The line of the Next bar at step 6f. */
+export const NEXT_CHOOSE = "Next: tap a stack of yours to move, or finish step 6f.";
+export const NEXT_NOTHING_TO_MOVE = "Next: no unit can move now. Finish step 6f.";
+export const nextTick = (n: number): string => (n === 0 ? "Next: tick at least one unit, or cancel." : `Next: tap a yellow hex to move ${n === 1 ? "the unit" : "the units"}, or cancel.`);
+
+/** "2 units can move" / "1 unit can move" (a row of the list "Stacks that can move"). */
+export const canMove = (n: number): string => `${n} ${n === 1 ? "unit" : "units"} can move`;
+
+/** The mark in front of a unit line, for the eye and for a screen reader (colour is not the only cue). */
+export const MARK_TICKED = "Ticked";
+export const MARK_FREE = "Not ticked";
+export const MARK_GREYED = "Cannot move";
