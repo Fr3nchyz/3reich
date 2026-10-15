@@ -44,7 +44,11 @@ export interface Session {
   /** The game's seed; the computer's tie-breaks use it too, so a game replays the same. */
   seed: number;
   log: string[];
-  /** The side of the log entries that have one, by index (logSide.ts): for the colour of a line only, never saved. An entry not in it is plain. */
+  /**
+   * The side of the log entries that have one, by index (logSide.ts): for the colour of a line only, never saved. An entry not in it is plain.
+   * Invariant: `log` is append-only (logLine). Anything that replaces or empties it must clear this too, which resetLog does, or every mark
+   * would sit on the wrong line.
+   */
   logSides?: Map<number, Side>;
   /** The counter chosen to place next, if any. */
   selected: UnitSpec | null;
@@ -162,7 +166,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
     for (const e of result.events) {
       const line = describeEvent(e, s.ctx, swept, before);
-      if (line) logLine(s, line, eventSide(e, actor));
+      if (line) logLine(s, line, eventSide(e, actor, before));
     }
   }
   return true;

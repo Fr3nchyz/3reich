@@ -8,7 +8,7 @@ import type { ForceOwner, Side } from "../src/engine/types";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { sessionFromRecord } from "../src/ui/e2eLoad";
 import { LOG_LIMIT, logHtml } from "../src/ui/logView";
-import { actorSide, eventSide, logLine } from "../src/ui/logSide";
+import { actorSide, eventSide, logLine, resetLog } from "../src/ui/logSide";
 import { createSession, run, setupView, type Session } from "../src/ui/session";
 import { fillRest, finishOwner } from "../src/ui/sessionActions";
 import { newWatchSession, takeOver, watchSlice } from "../src/ui/watchPlay";
@@ -54,8 +54,6 @@ describe("the side of an action and of an event", () => {
     const moved: GameEvent = { type: "UNITS_MOVED", units: [], from: "A1", to: "A2", path: [] };
     expect(eventSide(moved, "axis")).toBe("axis");
     expect(eventSide(moved, "allies")).toBe("allies");
-    const eliminated: GameEvent = { type: "UNIT_ELIMINATED", unitId: "u", owner: "poland", at: "M35" };
-    expect(eventSide(eliminated, "axis"), "a line written because the attacker's action took the unit").toBe("axis");
     // The defender chooses its losses during the attacker's action: the line is the chooser's.
     expect(eventSide({ type: "LOSSES_CHOSEN", side: "allies", units: [] }, "axis")).toBe("allies");
     expect(eventSide({ type: "PLAYER_TURN_STARTED", year: 1939, season: "summer", side: "allies" }, "axis")).toBe("allies");
@@ -64,6 +62,49 @@ describe("the side of an action and of an event", () => {
     expect(eventSide({ type: "INITIATIVE_DETERMINED", year: 1939, season: "summer", firstSide: "axis", axis: 1, allies: 1 }, "axis")).toBeNull();
     expect(eventSide({ type: "SETUP_COMPLETE" }, "axis")).toBeNull();
     expect(eventSide({ type: "GAME_OVER", year: 1939, season: "summer" }, "axis")).toBeNull();
+  });
+
+  it("a line takes the side it concerns, not the side whose action set it off", () => {
+    // Red = Axis, blue = Allies: whoever's action it was, the unit's or nation's own side owns the line.
+    const gone: GameEvent = { type: "UNIT_ELIMINATED", unitId: "u", owner: "poland", at: "M35" };
+    expect(eventSide(gone, "axis"), "a Polish unit eliminated by an Axis attack is blue").toBe("allies");
+    expect(eventSide({ ...gone, owner: "germany" }, "axis"), "a German unit eliminated by an exchange is red").toBe("axis");
+    expect(eventSide({ ...gone, owner: "germany" }, "allies"), "...whoever's action it was").toBe("axis");
+    expect(eventSide({ type: "OVERSTACK_ELIMINATED", unitId: "u", owner: "france", at: "M35" }, "axis")).toBe("allies");
+    expect(eventSide({ type: "SETUP_OWNER_DONE", owner: "italy" }, "allies")).toBe("axis");
+    expect(eventSide({ type: "HEX_CONTROL_CHANGED", hex: "M35", from: "poland", to: "germany", unitId: "u" }, "axis")).toBe("axis");
+    expect(eventSide({ type: "HEX_CONTROL_CHANGED", hex: "M35", from: "germany", to: "ussr", unitId: "u" }, "allies")).toBe("allies");
+    const sweep = (...owners: ForceOwner[]): GameEvent => ({ type: "UNITS_SWEPT", hex: "M35", units: owners.map((owner, i) => ({ id: `u${i}`, owner, type: "air", strength: 3 })) });
+    expect(eventSide(sweep("poland", "france"), "axis"), "air or fleet units alone in a hex swept away: the owners'").toBe("allies");
+    expect(eventSide(sweep("poland", "germany"), "axis"), "owners of both sides: the actor's").toBe("axis");
+  });
+
+  it("the engine's own declaration of war takes the side of the nation declaring, not the side whose turn ended", () => {
+    const us: GameEvent = { type: "WAR_DECLARED", by: "usa", on: "germany", cost: 35 };
+    expect(eventSide(us, "axis"), "the U.S. joins when the Allied turn begins, written during the Axis END_PLAYER_TURN").toBe("allies");
+    expect(eventSide({ type: "WAR_DECLARED", by: "germany", on: "poland", cost: 0 }, "allies")).toBe("axis");
+  });
+
+  it("a building and a grant of BRPs take the side of the nation that builds or gives", () => {
+    const built: GameEvent = { type: "UNIT_BUILT", unitId: "u", owner: "britain", unitType: "infantry", strength: 3, at: "A1", cost: 3 };
+    expect(eventSide(built, "axis")).toBe("allies");
+    expect(eventSide({ ...built, owner: "italy" }, "allies")).toBe("axis");
+    const grant: GameEvent = { type: "BRPS_GRANTED", from: "britain", to: "france", amount: 2 };
+    expect(eventSide(grant, "axis")).toBe("allies");
+    expect(eventSide({ ...grant, from: "germany", to: "italy" }, "allies"), "the giver's side").toBe("axis");
+  });
+
+  it("a move or an advance takes the side of the units that make it, found in the position before the action", () => {
+    const s = inPlay("axis");
+    const of = (side: Side) => Object.values(s.state.units).find((u) => sideOfOwner(u.owner) === side)!.id;
+    const moved = (id: string): GameEvent => ({ type: "UNITS_MOVED", units: [id], from: "A1", to: "A2", path: [] });
+    expect(eventSide(moved(of("allies")), "axis", s.state)).toBe("allies");
+    expect(eventSide(moved(of("axis")), "allies", s.state)).toBe("axis");
+    expect(eventSide({ type: "UNITS_ADVANCED", units: [of("allies")], from: ["A1"], to: "A2" }, "axis", s.state)).toBe("allies");
+    expect(eventSide(moved("not-a-unit"), "allies", s.state), "an unknown unit keeps the actor's side").toBe("allies");
+    expect(eventSide(moved(of("axis")), "allies"), "no position given: the actor's").toBe("allies");
+    expect(eventSide({ type: "UNITS_MOVED", units: [of("axis"), of("allies")], from: "A1", to: "A2", path: [] }, "axis", s.state), "mixed units: the actor's").toBe("axis");
+    expect(eventSide({ type: "COMBAT_RESOLVED", side: "axis", target: "M35", attackers: [], attackFactors: 1, defenseFactors: 1, multiplier: 1, rounds: [], outcome: "exchange" }, "allies")).toBe("axis");
   });
 
   it("logLine marks an entry by its index and leaves a plain one unmarked, with the log itself only text", () => {
@@ -79,7 +120,39 @@ describe("the side of an action and of an event", () => {
   });
 });
 
+describe("the sides stay with their lines", () => {
+  it("resetLog replaces the log and clears the sides, so a new line is marked for its own index", () => {
+    const s = { log: ["a", "b"] } as Pick<Session, "log" | "logSides">;
+    logLine(s, "red", "axis");
+    logLine(s, "blue", "allies");
+    expect([...s.logSides!.keys()]).toEqual([2, 3]);
+    resetLog(s, ["fresh"]);
+    expect(s.log).toEqual(["fresh"]);
+    expect(s.logSides?.size ?? 0, "no mark is left for an entry that is gone").toBe(0);
+    logLine(s, "new", "allies");
+    expect([...s.logSides!]).toEqual([[1, "allies"]]);
+    expect(marked(s as Session).map((l) => l.side)).toEqual([null, "allies"]);
+  });
+
+  it("a watched game starts with its first line plain, whatever the session held before", () => {
+    const s = newWatchSession(SCENARIO_1939, 2, "turbo", null);
+    expect(sideOfLine(s, 0)).toBeNull();
+    for (const key of s.logSides?.keys() ?? []) expect(key, "every mark is on an entry of the log").toBeLessThan(s.log.length);
+  });
+});
+
 describe("the log of a game in the browser", () => {
+  it("a real game: the U.S. joining the war in Spring 1942 is an Allied line, Germany's declarations are Axis lines", () => {
+    const s = newWatchSession(SCENARIO_1939, 1, "turbo", null);
+    const found = () => s.log.findIndex((l) => l === "United States declares war on Germany (35 BRPs).");
+    for (let i = 0; i < 20000 && found() < 0 && s.state.phase !== "game-over"; i++) watchSlice(s);
+    expect(found(), "the game reaches Spring 1942 with two computers (seed 1)").toBeGreaterThan(0);
+    expect(sideOfLine(s, found())).toBe("allies");
+    const declared = marked(s).filter((l) => / declares war on /.test(l.text));
+    expect(declared.length).toBeGreaterThanOrEqual(2);
+    for (const l of declared) expect(l.side, l.text).toBe(l.text.startsWith("Germany") || l.text.startsWith("Italy") ? "axis" : "allies");
+  });
+
   it("the first line, the setup notes of the computer and of the player, and the turn beginning each belong to the right side", () => {
     const s = createSession(SCENARIO_1939, "axis", 3);
     expect(sideOfLine(s, 0), "the game started note is plain").toBeNull();

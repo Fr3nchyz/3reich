@@ -75,3 +75,34 @@ test("with nothing selected the target button shows a readable line for a few se
   await expect(note).toBeHidden();
   expect(await box(page.locator(".map-wrap")), "no layout shift when it goes").toEqual(before.map);
 });
+
+const SIZES = [[1024, 768], [1180, 820], [768, 1024], [390, 844], [844, 390], [568, 320]] as const;
+const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+for (const [width, height] of SIZES) {
+  test(`${width}x${height}: the nothing-selected line never covers the key, the buttons, the refused-move line or the zoom buttons`, async ({ page, hasTouch }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto("/");
+    await page.locator("#newgame").click();
+    for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
+    await expect(page.locator(".turn")).toContainText("step 1");
+    await page.evaluate(() => document.getElementById("wholemap")!.click());
+    await page.locator("#overlay").click(); // the key on
+    await expect(page.locator("#legend")).toBeVisible();
+    await page.evaluate(() => { document.getElementById("maptoast")!.textContent = "That stack cannot get there. The yellow hexes are the places it can."; });
+    if (hasTouch) await target(page).tap();
+    else await target(page).click();
+    const note = page.locator("#zoomnote");
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText("Nothing is selected. Choose one of your counters first.");
+    const n = await box(note);
+    const map = await box(page.locator(".map-wrap"));
+    expect(n.x >= map.x - 0.5 && n.x + n.width <= map.x + map.width + 0.5 && n.y >= map.y - 0.5 && n.y + n.height <= map.y + map.height + 0.5, "inside the map frame").toBe(true);
+    const others = ["#legend", "#overlay", "#maptoast", "#zoom button:nth-child(1)", "#zoom button:nth-child(2)", "#zoom button:nth-child(3)", "#zoom button:nth-child(4)"];
+    for (const sel of others) {
+      const r = await page.locator(sel).boundingBox(); // null: not shown, so not covered
+      if (r) expect(overlaps(n, r), `clear of ${sel}`).toBe(false);
+      if (sel === "#maptoast" && height >= 390) expect(r, "the refused-move line is still shown where the map has room").not.toBeNull();
+    }
+  });
+}

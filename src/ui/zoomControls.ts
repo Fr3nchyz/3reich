@@ -37,6 +37,16 @@ export function zoomSaid(level: number): string {
 export const REPEAT_GAP_MS = 60;
 
 export const NOTHING_SELECTED = "Nothing is selected. Choose one of your counters first.";
+/** Watching: there are no counters of yours to choose, but a tapped hex is shown on the hex card and the button zooms to it. */
+export const NOTHING_SELECTED_WATCHING = "Nothing is selected. Tap a hex to look at it, then press this again.";
+/** Setup: the hex card is not shown, so a tap on a hex only places a counter; what the button can zoom to is the chosen counter's places. */
+export const NOTHING_SELECTED_SETUP = "Nothing is selected. Pick a counter to place first.";
+
+/** The words for pressing the target button with nothing to zoom to, true for what the game is doing now. */
+export function nothingSelectedText(s: Pick<Session, "state" | "watch">): string {
+  if (s.state.phase === "setup") return NOTHING_SELECTED_SETUP;
+  return s.watch ? NOTHING_SELECTED_WATCHING : NOTHING_SELECTED;
+}
 
 /** How long the message for "nothing is selected" stays on the map before it goes by itself. */
 export const NOTE_MS = 4000;
@@ -64,6 +74,7 @@ export function bindZoom(
   looked: () => Looked | null,
   later: (run: () => void) => void = (run) => { setTimeout(run, REPEAT_GAP_MS); },
   after: Timer = (run, ms) => { setTimeout(run, ms); },
+  nothing: () => string = () => NOTHING_SELECTED,
 ): void {
   let turn = 0;
   let noteTurn = 0;
@@ -79,10 +90,11 @@ export function bindZoom(
     shell.zoomNote.textContent = text;
     if (text) after(() => { if (mine === noteTurn) shell.zoomNote.textContent = ""; }, NOTE_MS);
   };
+  let nothingSaid = "";
   const selected = (): string => {
     const look = looked();
     const target = zoomToSelection(view, look);
-    if (target === "none") return NOTHING_SELECTED;
+    if (target === "none") return (nothingSaid = nothing());
     return target === "hex" ? `Zoomed to the hex ${look!.name}` : "Zoomed to the selected counter";
   };
   const actions: Record<string, () => string> = {
@@ -96,6 +108,6 @@ export function bindZoom(
     if (!action) return;
     const said = actions[action]!();
     say(said);
-    note(said === NOTHING_SELECTED ? said : "");
+    note(said === nothingSaid ? said : "");
   });
 }

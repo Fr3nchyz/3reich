@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MapView } from "../src/ui/mapView";
 import type { Session } from "../src/ui/session";
-import { NOTE_MS, NOTHING_SELECTED, ZOOM_BUTTONS, bindZoom, lookedHex, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
+import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
 import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, panBox, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
 
 /** The zoom buttons (spec 08): the maths behind them, the limits, and what a press does and says. */
@@ -216,6 +216,34 @@ describe("the buttons", () => {
     expect(none.timers.map((t) => t.ms)).toEqual([NOTE_MS]);
     none.timers[0]!.run();
     expect(none.zoomNote.textContent).toBe("");
+  });
+
+  it("the words say what is true for the game now: playing, watching, or setting up", () => {
+    const at = (phase: string, watch: boolean) => nothingSelectedText({ state: { phase }, watch: watch ? {} : undefined } as unknown as Session);
+    expect(at("player-turn", false)).toBe(NOTHING_SELECTED);
+    expect(at("player-turn", true)).toBe("Nothing is selected. Tap a hex to look at it, then press this again.");
+    expect(at("setup", false)).toBe("Nothing is selected. Pick a counter to place first.");
+    expect(at("setup", true), "no hex card during setup, even when watching").toBe(NOTHING_SELECTED_SETUP);
+    expect(NOTHING_SELECTED_WATCHING).not.toContain("counters");
+    expect(NOTHING_SELECTED, "playing: your counters are what you choose").toContain("counters");
+  });
+
+  it("the line given for the game now is the one said, shown on the map and read aloud", () => {
+    let words = NOTHING_SELECTED_WATCHING;
+    const calls: string[] = [];
+    const view = { focusOutlined: () => false, focus: () => calls.push("focus") } as unknown as MapView;
+    let onClick: (e: unknown) => void = () => undefined;
+    const zoomSay = { textContent: "" } as HTMLElement;
+    const zoomNote = { textContent: "" } as HTMLElement;
+    bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay, zoomNote }, view, () => null, (run) => run(), () => undefined, () => words);
+    const press = () => onClick({ target: { closest: () => ({ dataset: { zoom: "selected" } }) } });
+    press();
+    expect(zoomNote.textContent).toBe(NOTHING_SELECTED_WATCHING);
+    expect(zoomSay.textContent).toBe(NOTHING_SELECTED_WATCHING);
+    words = NOTHING_SELECTED_SETUP;
+    press();
+    expect(zoomNote.textContent).toBe(NOTHING_SELECTED_SETUP);
+    expect(calls, "the map does not move").toEqual([]);
   });
 
   it("an old timer never clears a newer message, and another press clears a shown one", () => {
