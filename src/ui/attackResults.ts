@@ -1,4 +1,4 @@
-import { exchangeCost, type ExchangeCost } from "../engine/attack-losses";
+import { exchangeCost, minimalSets, type ExchangeCost } from "../engine/attack-losses";
 import { FORCED_COUNTERATTACK_COLUMN, OFFENSIVE_CRT, oddsColumn, type CrtResult, type OddsColumn } from "../engine/combat";
 import type { Unit } from "../engine/types";
 
@@ -66,13 +66,17 @@ function mergeRolls(column: OddsColumn): Map<CrtResult, number[]> {
   return out;
 }
 
+/** Whether the side that removes the factors has a real choice: more than one set of its units is just enough (the engine picks the set itself when there is only one). */
+export const hasChoice = (c: ExchangeCost): boolean => minimalSets(Object.keys(c.values), c.values, c.required).length > 1;
+
 /** An Exchange in words, for the original attack (defenders at the multiple) or for a counterattack (basic factors, multiple 1). */
 export function exchangeWords(c: ExchangeCost, multiple: number): string {
   if (c.chooser === null) return `Exchange: the sides are equal at ${c.attackTotal} factors, so both lose every unit.`;
   const worth = multiple > 1 && c.chooser === "defenders" ? `, each of their units counting ${multipleWord(multiple)}` : "";
-  if (c.attackersLoseAll) return `Exchange: you lose all ${c.attackTotal} of your factors; they lose at least ${c.required} factors${worth} and they choose which units.`;
+  const choice = hasChoice(c);
+  if (c.attackersLoseAll) return `Exchange: you lose all ${c.attackTotal} of your factors; they lose at least ${c.required} factors${worth}${choice ? " and they choose which units" : " (only one set of their units is enough, so nothing is left to choose)"}.`;
   const counted = multiple > 1 ? ` (their ${c.defenseTotal} counted ${multipleWord(multiple)})` : "";
-  return `Exchange: they lose all${counted}; you lose at least ${c.required} of your factors and you choose which units.`;
+  return `Exchange: they lose all${counted}; you lose at least ${c.required} of your factors${choice ? " and you choose which units" : " (only one set of your units is enough, so nothing is left to choose)"}.`;
 }
 
 /** The defenders' counterattack after a CA: which column they roll on and what each roll does (Ref 12.2; combat.ts `resolveOffensiveCombat`). */
@@ -100,6 +104,18 @@ const TITLES: Readonly<Record<CrtResult, string>> = {
   CA3: "Counterattack 3",
 };
 
+/**
+ * What an Exchange leaves behind in the hex: when the defenders can all go, the enemy air units and fleets alone in the hex are destroyed
+ * too (`lonersAt`, as after a D), and when the attackers also keep survivors they may advance into the empty hex.
+ */
+function exchangeAftermath(c: ExchangeCost, i: ResultInput): string {
+  const canEmpty = c.defendersLoseAll || (c.chooser === "defenders" && minimalSets(Object.keys(c.values), c.values, c.required).some((set) => set.length === i.defenders.length));
+  if (!canEmpty) return "";
+  const loners = i.alsoDestroyed.length > 0 ? ` ${c.defendersLoseAll ? "These enemy counters in the hex go too, with no roll" : "If their losses leave the hex empty, these enemy counters go too, with no roll"}: ${i.alsoDestroyed.join(", ")}.` : "";
+  const advance = c.defendersLoseAll && !c.attackersLoseAll && i.emptyAfterWin ? " The hex is left empty and your survivors may advance." : "";
+  return `${loners}${advance}`;
+}
+
 /** One row per distinct result of the column, with its cost in plain words. */
 export function resultRows(i: ResultInput): ResultRow[] {
   const att = sum(i.attackers);
@@ -114,7 +130,7 @@ export function resultRows(i: ResultInput): ResultRow[] {
     }
     if (result === "Ex") {
       const exchange = exchangeCost(i.attackers, i.defenders, i.multiplier);
-      return { ...base, exchange, text: exchangeWords(exchange, i.multiplier) };
+      return { ...base, exchange, text: `${exchangeWords(exchange, i.multiplier)}${exchangeAftermath(exchange, i)}` };
     }
     const counter = counterOf(result, i);
     return { ...base, counter, text: counter.text };
