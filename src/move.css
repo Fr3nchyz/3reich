@@ -1,0 +1,29 @@
+/* The Move card and the list "Stacks that can move" of step 6f (spec 10). Cardboard look like the attack card; every button is at least 44 px. */
+.moves { display: flex; flex-direction: column; gap: .9rem; }
+.movecard, .movelist { padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; scroll-margin-top: 5rem; }
+.movecard { border-left: 6px solid var(--gold); }
+.movelist { border-left: 6px solid #b58a14; }
+.movecard h2, .movelist h2 { margin: 0; font-size: 1.1rem; }
+.movecard h2:focus { outline: none; }
+.movecard h3 { margin: .7rem 0 .2rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+.movecard p, .movelist p { margin: .2rem 0; }
+.movelist .note { margin: .2rem 0 0; color: var(--ink); }
+.move-tools { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .7rem; }
+.move-summary { flex: 1 1 auto; font-weight: 700; }
+.move-tools button { min-width: 56px; min-height: 44px; flex: none; }
+.move-lines { list-style: none; padding: 0; margin: .3rem 0 .5rem; gap: .5rem; }
+.move-lines li { display: flex; flex: 1 1 100%; }
+.move-lines .chip { display: flex; flex-direction: column; align-items: flex-start; text-align: left; min-height: 56px; width: 100%; padding: .35rem .8rem; }
+.move-lines .chip-mark { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 700; color: var(--ink-soft); }
+.move-lines .chip[aria-pressed="true"] .chip-mark { color: var(--accent); }
+.move-lines .chip-name { font-weight: 700; }
+.move-lines .chip.greyed { background: #ddd6c3; color: #4f473e; border-style: dashed; cursor: default; box-shadow: none; }
+.move-lines .chip small { color: var(--ink-soft); }
+.move-lines .chip.greyed small { color: #4f473e; }
+.move-live { color: var(--ink); }
+.stack-rows { list-style: none; margin: .5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.stack-row { width: 100%; min-height: 56px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .1rem .75rem; text-align: left; line-height: 1.3; }
+.stack-row .row-name { font-weight: 700; }
+.stack-row .row-count { font-weight: 400; font-size: .9rem; color: var(--ink-soft); }
+/* The second shade of yellow: hexes a faster ticked unit could reach alone. Paler fill and a dashed outline, so it is not the colour alone. */
+svg.map .highlights polygon.further { fill: rgba(255, 224, 80, .14); stroke: #e0a526; stroke-width: 1; stroke-dasharray: 2 1.6; }

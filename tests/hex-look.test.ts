@@ -121,7 +121,7 @@ describe("looking is passive", () => {
     const m = movesNow(s)[0]!;
     const from = s.state.units[m.units[0]!]!.at;
     tapHex(s, hexOf(s, from));
-    expect(s.moveFrom).toBe(from);
+    expect(s.moveChosen?.hex).toBe(from);
     const targets = moveTargets(s);
     expect(targets.length).toBeGreaterThan(0);
     const before = without(s);
@@ -144,7 +144,7 @@ describe("looking is passive", () => {
     const targets = moveTargets(s);
     tapHex(s, hexOf(s, "M35"));
     expect(s.lookedAt).toBe("M35");
-    expect(s.moveFrom).toBe(from);
+    expect(s.moveChosen?.hex).toBe(from);
     expect(moveTargets(s)).toEqual(targets);
     expect(html(s)).toContain("Warsaw (M35)");
   });
@@ -154,11 +154,11 @@ describe("looking is passive", () => {
     toStep(s, "6f");
     const from = s.state.units[movesNow(s)[0]!.units[0]!]!.at;
     tapHex(s, hexOf(s, from));
-    expect(s.moveFrom).toBe(from);
+    expect(s.moveChosen?.hex).toBe(from);
     expect(cardFor(s)?.hex).toBe(from);
     expect(cardFor(s)?.counters.length).toBeGreaterThan(0);
     tapHex(s, hexOf(s, from));
-    expect(s.moveFrom).toBeNull();
+    expect(s.moveChosen ?? null).toBeNull();
     expect(cardFor(s)?.hex).toBe(from);
   });
 

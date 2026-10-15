@@ -5,7 +5,7 @@ import { moveListStats } from "../src/engine/move-action";
 import type { MapView } from "../src/ui/mapView";
 import { syncMap } from "../src/ui/mapSync";
 import { at6f, inf } from "./helpers-move";
-import { moveTargets, movesNow } from "../src/ui/moveTap";
+import { moveTargets, movesNow, toggleTick } from "../src/ui/moveTap";
 import { createSession, setupView, type Session } from "../src/ui/session";
 import { fillRest, finishOwner, tapHex, takeAction } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
@@ -28,16 +28,16 @@ const hexOf = (s: Session, id: string) => s.ctx.map.hexes[id]!;
 describe("tapping a stack and then a destination (step 6f)", () => {
   it("outlines the destinations of the tapped stack and moves it on the second tap", () => {
     const s = atMovement();
-    const m = movesNow(s).find((a) => a.units.length === 1)!;
+    const m = [...movesNow(s)].sort((a, b) => b.units.length - a.units.length)[0]!; // the whole movable stack of a hex
     const unit = s.state.units[m.units[0]!]!;
     tapHex(s, hexOf(s, unit.at));
-    expect(s.moveFrom).toBe(unit.at);
+    expect(s.moveChosen?.hex).toBe(unit.at);
+    expect(s.moveChosen?.ticked.sort()).toEqual([...m.units].sort()); // every unit that can move starts ticked (spec 10, decision 1)
     const targets = moveTargets(s);
     expect(targets).toContain(m.path[m.path.length - 1]);
     tapHex(s, hexOf(s, m.path[m.path.length - 1]!));
     expect(s.toast).not.toMatch(/cannot/);
-    expect(s.moveFrom).toBeNull();
-    expect(s.state.units[unit.id]!.at).toBe(m.path[m.path.length - 1]);
+    for (const id of m.units) expect(s.state.units[id]!.at).toBe(m.path[m.path.length - 1]);
   });
 
   it("tapping a hex that is not a destination of the chosen stack explains and keeps the choice", () => {
@@ -46,7 +46,7 @@ describe("tapping a stack and then a destination (step 6f)", () => {
     const from = s.state.units[m.units[0]!]!.at;
     tapHex(s, hexOf(s, from));
     tapHex(s, Object.values(s.ctx.map.hexes).find((h) => !h.land)!);
-    expect(s.moveFrom).toBe(from);
+    expect(s.moveChosen?.hex).toBe(from);
     expect(s.toast).toMatch(/cannot get there/);
   });
 
@@ -62,7 +62,7 @@ describe("tapping a stack and then a destination (step 6f)", () => {
 function crafted(): Session {
   const s = atMovement();
   s.state = at6f([inf("u1", "germany", "L32", 3, 4), inf("u2", "germany", "L32", 2, 1), inf("u3", "germany", "L33", 3, 3)]);
-  s.moveFrom = null;
+  s.moveChosen = null;
   s.toast = "";
   s.log = [];
   return s;
@@ -75,19 +75,21 @@ const highlights = (s: Session): string[] => {
 };
 
 describe("the tap flow in detail", () => {
-  it("moves the whole stack when it can, and says so when only part of it can go", () => {
+  it("moves the whole stack when it can; a hex only the faster unit reaches is not yellow for both (the old 'biggest part' is gone)", () => {
     const whole = crafted();
     tapHex(whole, hexOf(whole, "L32"));
     tapHex(whole, hexOf(whole, "L31"));
     expect(whole.state.units.u1!.at).toBe("L31");
     expect(whole.state.units.u2!.at).toBe("L31");
-    expect(whole.toast).toBe("");
+    expect(whole.toast).toBe("Moved 3-4 German infantry, 2-1 German infantry from L32 to Berlin (L31).");
+    expect(whole.moveChosen).toBeNull(); // nobody there can move any more
     const part = crafted();
     tapHex(part, hexOf(part, "L32"));
-    tapHex(part, hexOf(part, "L35")); // three hexes: only the 4-factor unit has the points
-    expect(part.state.units.u1!.at).toBe("L35");
+    tapHex(part, hexOf(part, "L35")); // three hexes: only the 4-factor unit has the points; the pair is told so and nothing moves
+    expect(part.state.units.u1!.at).toBe("L32");
     expect(part.state.units.u2!.at).toBe("L32");
-    expect(part.toast).toMatch(/^Only 3-4 German infantry could get there; the rest of the stack stays\.$/);
+    expect(part.toast).toMatch(/^The 3-4 German infantry alone could go up to 4 hexes\./);
+    expect(part.moveChosen?.hex).toBe("L32");
   });
 
   it("logs the move", () => {
@@ -101,16 +103,18 @@ describe("the tap flow in detail", () => {
     const s = crafted();
     tapHex(s, hexOf(s, "L32"));
     tapHex(s, hexOf(s, "L32"));
-    expect(s.moveFrom).toBeNull();
+    expect(s.moveChosen).toBeNull();
     expect(s.toast).toBe("");
   });
 
   it("tapping another stack of yours chooses it, even when it stands on a yellow hex", () => {
     const s = crafted();
     tapHex(s, hexOf(s, "L32"));
-    expect(moveTargets(s)).toContain("L33"); // u3's hex is a destination of the first stack (it has room for one more)
+    expect(moveTargets(s)).not.toContain("L33"); // room for one more only: not for the pair
+    toggleTick(s, "u2");
+    expect(moveTargets(s)).toContain("L33"); // u3's hex is a destination of u1 alone
     tapHex(s, hexOf(s, "L33"));
-    expect(s.moveFrom).toBe("L33");
+    expect(s.moveChosen?.hex).toBe("L33");
     expect(s.state.units.u1!.at).toBe("L32");
   });
 
@@ -118,7 +122,7 @@ describe("the tap flow in detail", () => {
     const s = crafted();
     tapHex(s, hexOf(s, "L35"));
     expect(s.toast).toMatch(/Tap one of your stacks/);
-    expect(s.moveFrom).toBeNull();
+    expect(s.moveChosen ?? null).toBeNull();
   });
 
   it("outlines the chosen stack's destinations on the map and nothing before it is chosen", () => {
@@ -133,7 +137,7 @@ describe("the tap flow in detail", () => {
     const s = crafted();
     tapHex(s, hexOf(s, "L32"));
     takeAction(s, { type: "END_STEP", side: "axis", step: "6f" });
-    expect(s.moveFrom).toBeNull();
+    expect(s.moveChosen).toBeNull();
   });
 
   it("lists the moves once per game state: selecting, outlining and moving cost one listing", () => {

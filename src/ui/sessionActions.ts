@@ -6,7 +6,7 @@ import type { ForceOwner, OffMapBox } from "../engine/types";
 import { computerToMove } from "./computerPlay";
 import { normaliseAttack, tapToAttack } from "./attackTap";
 import { normaliseChoice } from "./choiceTap";
-import { tapToMove } from "./moveTap";
+import { normaliseMove, tapToMove } from "./moveTap";
 import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
@@ -25,6 +25,7 @@ export function normaliseMode(s: Session): void {
   if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
   normaliseAttack(s);
   normaliseChoice(s);
+  normaliseMove(s);
 }
 
 type Build = Extract<Action, { type: "BUILD" }>;
@@ -98,7 +99,7 @@ export function takeAction(s: Session, action: Action): void {
   s.toast = "";
   s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
-  s.moveFrom = null;
+  s.moveChosen = null;
   run(s, action);
 }
 

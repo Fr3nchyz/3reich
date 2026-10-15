@@ -86,7 +86,7 @@ export function confirmAttack(s: Session): void {
   const units = p.attackers.filter((c) => c.state === "chosen").map((c) => c.id);
   s.toast = "";
   s.build = null;
-  s.moveFrom = null;
+  s.moveChosen = null;
   if (run(s, { type: "ATTACK", side: s.state.activeSide, units, target: d.target })) s.attack = null;
 }
 

@@ -31,8 +31,8 @@ export interface MapViewOptions {
 export interface MapView {
   setFronts(on: boolean): void;
   setUnits(units: readonly Unit[]): void;
-  /** Outline these hexes (places where the selected counter may go). */
-  setHighlights(ids: Iterable<string>): void;
+  /** Outline these hexes (places where the selected counter may go); `further` are drawn in a second shade (spec 10: where a faster unit alone could go). */
+  setHighlights(ids: Iterable<string>, further?: Iterable<string>): void;
   /** Draw who holds each hex and the Zones of Control (see overlayModel.ts); null clears the overlay. */
   setOverlay(cells: OverlayCells | null): void;
   /** Mark the hexes of an attack (spec 07): dashed targets, one thick chosen target, solid gold attacker hexes. Pure data; the marks never take taps. */
@@ -87,7 +87,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   return {
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
     setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
-    setHighlights: (ids) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined); },
+    setHighlights: (ids, further) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined, further); },
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     setAttackMarks: drawMarks,
     clearAttackMarks: () => drawMarks(null),
