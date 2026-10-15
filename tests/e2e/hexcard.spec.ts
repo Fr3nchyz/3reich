@@ -178,6 +178,9 @@ for (const [width, height, twoColumns] of LAYOUTS) {
     await tapAt(page, hasTouch, spot);
     await expect(card(page)).toBeVisible();
     await expect(card(page)).toBeInViewport({ ratio: 0.99 });
+    // The card sits below the step buttons.
+    const lastButton = (await page.locator("main .actions button[data-action]").last().boundingBox())!;
+    expect((await card(page).boundingBox())!.y, "below the step buttons").toBeGreaterThan(lastButton.y);
     const c = (await card(page).boundingBox())!;
     expect(c.y, "not hidden behind the pinned map").toBeGreaterThanOrEqual(twoColumns ? 0 : dock.y + dock.height - 1);
     if (twoColumns) expect(c.x, "in the column beside the map").toBeGreaterThanOrEqual(dock.x + dock.width - 1);
@@ -204,3 +207,21 @@ test("watching two computers: a tap fills the card, read-only", async ({ page, h
   await expect(card(page)).toContainText(/\d+ counters?|No counters here\./);
   expect(await page.locator("#w-status").innerText(), "looking plays nothing").toBe(before);
 });
+
+// The card never pushes the step prompt and its buttons down (iPad portrait is the main case).
+for (const [width, height] of [[768, 1024], [1024, 768], [390, 844]] as const) {
+  test(`${width}x${height}: opening the card leaves the step buttons where they were`, async ({ page, hasTouch }) => {
+    await startPlay(page, [width, height]);
+    const offset = () =>
+      page.locator("main").evaluate((m) => {
+        const b = [...m.querySelectorAll<HTMLElement>(".actions button[data-action]")].pop()!;
+        return Math.round(b.getBoundingClientRect().top - m.getBoundingClientRect().top);
+      });
+    const before = await offset();
+    await tapHexId(page, hasTouch, "M35");
+    await expect(card(page)).toBeVisible();
+    expect(await offset(), "the buttons are not displaced").toBe(before);
+    await page.locator("#hexcard-close").click();
+    expect(await offset()).toBe(before);
+  });
+}

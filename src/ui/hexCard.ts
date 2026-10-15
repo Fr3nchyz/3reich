@@ -4,7 +4,8 @@ import { controllerOf } from "../engine/control";
 import { GROUND_COMBAT_TYPES } from "../engine/attack-rules";
 import { movesOf } from "../engine/move-record";
 import { OWNER_NAMES } from "../engine/nations";
-import type { GameState, Unit, UnitType } from "../engine/types";
+import type { ForceOwner, GameState, Unit, UnitType } from "../engine/types";
+import type { HexFeature, LandTerrain } from "../engine/terrain";
 import { cap } from "./format";
 import { factorsOf, nationAdjective, placeName } from "./names";
 
@@ -42,8 +43,15 @@ export interface HexCard {
   count: string;
 }
 
-/** A printed country id in words: "baltic-states" becomes "Baltic states". */
-const countryWords = (c: string): string => cap(c.replace(/-/g, " "));
+/** The map's country ids that are not an owner of forces and need more than a capital letter. */
+const COUNTRY_WORDS: Readonly<Record<string, string>> = { "baltic-states": "Baltic States", "lebanon-syria": "Lebanon-Syria" };
+
+/** A printed country id in words, the way the holder line names the same nation: "ussr" is "Soviet Union", "britain" is "Great Britain". */
+export const countryName = (c: string): string => (c in OWNER_NAMES ? OWNER_NAMES[c as ForceOwner] : COUNTRY_WORDS[c] ?? cap(c));
+
+const TERRAIN_WORDS: Readonly<Record<LandTerrain, string>> = { plain: "Plain", mountains: "Mountains", swamp: "Swamp", "qattara-depression": "Qattara Depression" };
+
+const FEATURE_WORDS: Readonly<Record<HexFeature, string>> = { beach: "beach", city: "city", port: "port", capital: "capital", "capital-port": "capital and port", objective: "objective" };
 
 /** Whether a counter of this kind fights when it is attacked on the ground (GROUND_COMBAT_TYPES, spec 04; Replacement is TODO(verify) there). */
 const defends = (type: UnitType): boolean => GROUND_COMBAT_TYPES.includes(type);
@@ -51,17 +59,17 @@ const defends = (type: UnitType): boolean => GROUND_COMBAT_TYPES.includes(type);
 function title(ctx: GameContext, id: string): string {
   const h = ctx.map.hexes[id];
   if (!h || h.name?.trim()) return placeName(ctx.map, id);
-  const kind = h.land ? `${cap(h.land)} hex` : "Sea hex";
-  return `${kind}${h.country ? ` in ${countryWords(h.country)}` : ""} (${id})`;
+  const kind = h.land ? `${TERRAIN_WORDS[h.land]} hex` : "Sea hex";
+  return `${kind}${h.country ? `, ${countryName(h.country)}` : ""} (${id})`;
 }
 
 function terrain(ctx: GameContext, state: GameState, id: string): string {
   const h = ctx.map.hexes[id];
   if (!h) return "";
-  const parts = [h.land ? cap(h.land) : "Sea", h.land && h.sea ? "coastal" : "", h.country ? countryWords(h.country) : "", `${cap(h.front)} Front`];
+  const parts = [h.land ? TERRAIN_WORDS[h.land] : "Sea", h.land && h.sea ? "coastal" : "", h.country ? countryName(h.country) : "", `${cap(h.front)} Front`];
   // Fortress status is read from the position, the way the defence multiplier reads it (a printed fortress that has not taken effect is not announced).
-  if (state.fortresses[id] === true) parts.push(h.fortress ? `fortress (${h.fortress})` : "fortress");
-  if (h.features.length) parts.push(h.features.join(", "));
+  if (state.fortresses[id] === true) parts.push("fortress");
+  parts.push(...h.features.map((f) => FEATURE_WORDS[f]));
   return `${parts.filter(Boolean).join(", ")}.`;
 }
 

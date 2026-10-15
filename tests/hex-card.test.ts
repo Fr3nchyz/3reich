@@ -3,8 +3,9 @@ import { MAP } from "../src/data/map";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { turnKey } from "../src/engine/combat-record";
 import { controllerOf } from "../src/engine/control";
+import { OWNER_NAMES } from "../src/engine/nations";
 import type { GameState, Unit, UnitType } from "../src/engine/types";
-import { hexCard } from "../src/ui/hexCard";
+import { countryName, hexCard } from "../src/ui/hexCard";
 import { board, counter } from "./board";
 import { CTX } from "./helpers";
 
@@ -91,7 +92,7 @@ describe("a hex without counters", () => {
 
   it("names a hex that has no printed name by its terrain and country, with the coordinate in brackets", () => {
     expect(MAP.hexes["M34"]?.name).toBeUndefined();
-    expect(hexCard(CTX, board([]), "M34").title).toBe("Plain hex in Poland (M34)");
+    expect(hexCard(CTX, board([]), "M34").title).toBe("Plain hex, Poland (M34)");
   });
 
   it("calls a sea hex a sea hex and has no holder", () => {
@@ -122,7 +123,7 @@ describe("whose hex it is", () => {
 
   it("writes a country named with a hyphen in words", () => {
     const baltic = Object.values(MAP.hexes).find((h) => h.country === "baltic-states" && !h.name)!;
-    expect(hexCard(CTX, board([]), baltic.id).title).toContain("Baltic states");
+    expect(hexCard(CTX, board([]), baltic.id).title).toContain("Baltic States");
   });
 
   it("announces a fortress only when the position says it has the status (the way the defence multiplier reads it)", () => {
@@ -153,5 +154,45 @@ describe("the card is only a reading", () => {
   it("does not depend on the dice generator", () => {
     const a = board([counter("u1", "poland", "infantry", 2, WARSAW, 3)]);
     expect(hexCard(CTX, { ...a, rngState: 12345 }, WARSAW)).toEqual(hexCard(CTX, a, WARSAW));
+  });
+});
+
+describe("the words on the card, for every hex of the map", () => {
+  const ids = Object.keys(MAP.hexes);
+  const allFortresses = Object.fromEntries(ids.map((id) => [id, true]));
+  const state = { ...board([]), fortresses: allFortresses };
+
+  it("never prints a raw id: no lowercase hyphenated word, no 'undefined', no stray separators", () => {
+    for (const id of ids) {
+      const c = hexCard(CTX, state, id);
+      for (const text of [c.title, c.terrain, c.holder]) {
+        expect(text, `${id}: ${text}`).not.toMatch(/[a-z]+-[a-z]+/);
+        expect(text, `${id}: ${text}`).not.toMatch(/undefined|null|\[object|,,|, \.|\s\s/);
+        expect(text, `${id}: ${text}`).not.toMatch(/\bUssr\b/);
+      }
+      expect(c.title, id).toContain(`(${id})`);
+    }
+  });
+
+  it("names a country the way the holder line names the same nation", () => {
+    let compared = 0;
+    for (const id of ids) {
+      const h = MAP.hexes[id]!;
+      const who = controllerOf(CTX, state, id);
+      if (!h.country || !who || h.country !== who) continue;
+      const c = hexCard(CTX, state, id);
+      expect(c.holder, id).toBe(`Held by ${OWNER_NAMES[who]}.`);
+      expect(c.terrain, id).toContain(`${OWNER_NAMES[who]},`);
+      compared++;
+    }
+    expect(compared).toBeGreaterThan(500);
+    expect(countryName("ussr")).toBe("Soviet Union");
+    expect(countryName("britain")).toBe("Great Britain");
+  });
+
+  it("writes every terrain, feature and country id of the map in words", () => {
+    const text = ids.map((id) => hexCard(CTX, state, id)).map((c) => `${c.title} | ${c.terrain}`).join("\n");
+    for (const word of ["Qattara Depression", "capital and port", "Lebanon-Syria", "Baltic States", "Mountains", "Swamp", "fortress"]) expect(text).toContain(word);
+    expect(text).not.toMatch(/west-wall|maginot|sevastopol|permanent|capital-port|qattara-depression|lebanon-syria|baltic-states/);
   });
 });

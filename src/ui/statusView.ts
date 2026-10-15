@@ -98,7 +98,6 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
-      ${hexCardHtml(s)}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       <p class="toast" role="status">${s.toast}</p>
@@ -109,6 +108,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
       ${turnButtons(actions, s.foldOpen, s.ctx, s.state)}
+      ${hexCardHtml(s)}
       ${logHtml(s.log)}
     </main>`;
 }
