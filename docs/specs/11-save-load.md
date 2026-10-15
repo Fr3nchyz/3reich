@@ -1,6 +1,22 @@
 # 11. Save and load: autosave, saved games, a save file
 
-Status: proposed 2026-10-15. ROADMAP phase 8.5 ("Save, load, autosave, export file") and part of Release 1 ("autosave, save slots and a save file, iPad"). Builds on spec 01 (the steps, step 10b), spec 05 (the computer) and spec 06 (watch mode saves a record file already). Words and sketches only; the build plan (part K) is the next step. Nothing here changes a game rule.
+Status: approved 2026-10-15 with the decisions below (nothing built yet); first proposed 2026-10-15. ROADMAP phase 8.5 ("Save, load, autosave, export file") and part of Release 1 ("autosave, save slots and a save file, iPad"). Builds on spec 01 (the steps, step 10b), spec 05 (the computer) and spec 06 (watch mode saves a record file already). Words and sketches only; the build plan (part K) is the next step. Nothing here changes a game rule.
+
+
+## Decisions (product owner, 2026-10-15)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Old saves after an update | Continue from where the game stood, with today's rules, and say so plainly. Best-effort loading beats losing hours of play on a minor update. |
+| 2 | Autosave | Always on, no switch. |
+| 3 | Resume | A card that never blocks; a new game is one tap away. |
+| 4 | Named saves | 12 slots, plus Autosave, Turn backup and Earlier game. |
+| 5 | Turn backup | Keep it: a safety net against a catastrophic misclick. |
+| 6 | Reminder to save to a file | Once per session, at the end of a turn (step 10b), to avoid alert fatigue. |
+| 7 | File type | Plain `.json`: readable everywhere and easy to share for bug reports. |
+| 8 | Home Screen app | Show a one-line warning: Safari and the Home Screen app use separate storage, so saves do not transfer automatically. |
+
+The engine and platform facts (E1 to E8) stay `TODO(verify)`.
 
 ## Summary
 
