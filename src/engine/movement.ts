@@ -31,6 +31,25 @@ export const TERRAIN_MOVE_COST: Readonly<Record<LandTerrain, number>> = { plain:
 /** Each unit moves at most once in a Player Turn. TODO(verify, Ref 5.45f): set false to let a unit move again with the points it has. */
 export const ONE_MOVE_PER_TURN = true;
 
+/**
+ * A stack moves at its slowest unit's factor (`stackMovement`). TODO(verify, Ref 5.45f; spec 10 engine fact 8, docs/RULES.md "Ground movement open items"):
+ * the rule text does not settle it; it is the same as moving each unit alone to the same hex, and nothing says a stack is one move.
+ * A marker for the assumption (read by `stackMovement` and by the tests that name it), not a switch: no other reading is encoded.
+ */
+export const STACK_MOVES_AT_SLOWEST_UNIT = true;
+
+/**
+ * Units of different nations (Germans with Italians, say) may move as one group. TODO(verify, spec 10 engine fact 3): only British and French
+ * are kept apart before 1942 (Ref 26.0, in stacking). Set false to refuse a group of more than one owner (checked where it ends, `endProblem`).
+ */
+export const MIXED_NATIONS_MOVE_TOGETHER = true;
+
+/**
+ * Stacking at the end of a move is checked one unit at a time, each seeing the ones before it (`endProblem`). TODO(verify, spec 10 engine fact 9):
+ * it matters only for the London limit (three if all British) and the Anglo-French rule. A marker for the assumption, not a switch.
+ */
+export const STACKING_CHECKED_ONE_AT_A_TIME = true;
+
 /** A unit may not enter land of a minor country that is not at war with it, or land held by a power that takes no side and is not at war with it. TODO(verify). */
 export const NEUTRAL_LAND_CLOSED = true;
 
@@ -55,7 +74,7 @@ export function movableUnits(ctx: GameContext, state: GameState): Unit[] {
   return Object.values(state.units).filter((u) => movableProblem(ctx, state, u) === null).sort((a, b) => order(a) - order(b));
 }
 
-/** The points a stack moves with: the slowest unit's. */
+/** The points a stack moves with: the slowest unit's (`STACK_MOVES_AT_SLOWEST_UNIT`, TODO(verify)). */
 export const stackMovement = (units: readonly Unit[]): number => Math.min(...units.map(movementFactor));
 
 const occupancy = new WeakMap<GameState["units"], Map<HexId, Unit[]>>();
@@ -92,9 +111,10 @@ export const entryCost = (ctx: GameContext, hex: HexId): number => TERRAIN_MOVE_
 
 /**
  * Why these units, standing together, may not all end in `to` (stacking and the Anglo-French rule of Ref 5.0, 26.0, as
- * in setup), or null. They are added one at a time, so each sees the ones before it; units already there count.
+ * in setup), or null. They are added one at a time, so each sees the ones before it; units already there count (`STACKING_CHECKED_ONE_AT_A_TIME`, TODO(verify)).
  */
 export function endProblem(ctx: GameContext, state: GameState, units: readonly Unit[], to: HexId): string | null {
+  if (!MIXED_NATIONS_MOVE_TOGETHER && new Set(units.map((u) => u.owner)).size > 1) return "Units of different nations do not move as one group.";
   // Stacking looks only at the units in the hex, so the rest are left out of the state it is asked about.
   let s = { ...state, units: Object.fromEntries(occupants(state, to).map((u) => [u.id, u])) };
   for (const u of units) {
