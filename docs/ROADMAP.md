@@ -161,7 +161,7 @@ Counters on the map and the setup screen exist. Each rule phase adds its screen.
 | 8.2 | BRP and status panels, declaration-of-war dialog | 4 |
 | 8.3 | Select, move, see legal destinations | 5 |
 | 8.4 | Combat selection and result display | 6 |
-| 8.5 | Save, load, autosave, export file | `replay` already exists |
+| 8.5 | Save, load, autosave, export file (spec: [11-save-load](specs/11-save-load.md), proposed) | `replay` already exists |
 | 8.6 | iPad pass: gestures, safe areas, installable | 8.3 |
 
 ---
@@ -197,7 +197,7 @@ Autosave, save slots and a save file, iPad support, a short in-app help page and
 3. Choose which units of a stack move.
 4. Zoom buttons and a bigger maximum zoom; iPad-sized touch checks.
 5. Watch two computers play (in progress), then a "Send feedback" button and a short play-test card (French wording only if it helps Frank).
-6. Air units (spec first), then fleets.
+6. Air units (spec: [09-air-units](specs/09-air-units.md), proposed), then fleets (spec 10).
 7. Map clarity pass against the board and DOS looks, after Frank's view.
 8. French interface: not a priority; Frank prefers to communicate in French but is fine with the English game for now.
 
