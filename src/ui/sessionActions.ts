@@ -40,9 +40,23 @@ export function buildInBox(s: Session, box: OffMapBox): void {
   if (s.build) run(s, { type: "BUILD", owner: s.build.owner, unit: { type: s.build.type, strength: s.build.strength }, at: box });
 }
 
-/** A tap on a map hex during setup: place the chosen counter there, or take the top one back. */
+/**
+ * Looking at a hex (spec 07, part A) is separate from what a tap does: it only sets `lookedAt`, which the hex card reads. It never
+ * touches the stack chosen to move, the chosen build, the chosen setup counter or the game, and it is not done during setup.
+ */
+export function lookAt(s: Session, hex: string): void {
+  if (s.state.phase !== "setup") s.lookedAt = hex;
+}
+
+/** The hex card's close button. */
+export function closeLook(s: Session): void {
+  s.lookedAt = null;
+}
+
+/** A tap on a map hex: it looks at the hex, and does what the step asks (move, build, place or take back a counter). */
 export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
+  lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
     if (!computerToMove(s) && !tapToMove(s, h)) tapToBuild(s, h);
     return;
