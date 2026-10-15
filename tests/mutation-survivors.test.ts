@@ -9,6 +9,7 @@ import { resolveOffensiveCombat } from "../src/engine/combat";
 import { combatOf } from "../src/engine/combat-record";
 import { applyGrant, grantRoom } from "../src/engine/grants";
 import { reachableHexes } from "../src/engine/movement";
+import { enemyZocFor } from "../src/engine/zoc";
 import { rollD6 } from "../src/engine/rng";
 import { angloFrenchHexes } from "../src/engine/stacking";
 import { applyDeclaration, declarationTargets } from "../src/engine/war";
@@ -71,6 +72,9 @@ describe("only Major Powers in the war attack (spec 04 and the Ref 12.1 attacker
 });
 
 describe("ground movement stops at an enemy ZOC but goes on from a hex that has none (Ref 6.0)", () => {
+  // TODO(verify, Ref 6.0): these two tests pin the CURRENT assumptions, not settled rules. docs/RULES.md lists as open
+  // whether a friendly unit cancels the enemy ZOC in its own hex (ZOC_POLICY.friendlyUnitNegates) and the cost of
+  // entering terrain (every hex costs 1 for now); the paths below rest on both.
   it("a German stack at M32, next to a Polish unit, reaches M31 and M30 beyond it; ZOC hexes can be entered", () => {
     const g = counter("g1", "germany", "infantry", 3, "M32", 3);
     const p = counter("p1", "poland", "infantry", 2, "M33", 3);
@@ -80,6 +84,22 @@ describe("ground movement stops at an enemy ZOC but goes on from a hex that has 
     expect(reach.has("L33")).toBe(true); // a hex inside the Polish ZOC can be entered
     expect(reach.has("L32")).toBe(true);
     expect(reach.has("K32")).toBe(true); // ...and from L32, outside the ZOC, the stack goes on
+  });
+
+  // TODO(verify, Ref 6.0): pins behaviour under the ALTERNATIVE setting of an open question (a friendly unit does not
+  // cancel the enemy ZOC in its hex), so that a stack that starts in an enemy ZOC still leaves it ("may leave one
+  // freely"). It asserts no settled rule; it exists so the start-hex test in reachableHexes is not hidden by the policy.
+  it("with friendlyUnitNegates false, a stack that starts inside the enemy ZOC still moves out", () => {
+    const g = counter("g1", "germany", "infantry", 3, "M32", 3);
+    const p = counter("p1", "poland", "infantry", 2, "M33", 3);
+    const s = board([g, p], SCENARIO_1939, { activeSide: "axis" });
+    const zoc = enemyZocFor(CTX, s, "axis", { friendlyUnitNegates: false });
+    expect(zoc.has("M32")).toBe(true); // the start hex is in the ZOC under this setting
+    const reach = reachableHexes(CTX, s, [g], zoc);
+    expect(reach.has("M31")).toBe(true);
+    expect(reach.has("M30")).toBe(true);
+    expect(reach.has("L33")).toBe(true); // a ZOC hex is entered...
+    for (const [hex, path] of reach) for (const step of path.slice(0, -1)) expect(zoc.has(step), `${hex} via ${step}`).toBe(false); // ...and not left
   });
 });
 
@@ -101,6 +121,17 @@ describe("BRP grants (Ref 11.71)", () => {
     expect(grantRoom(s, "usa", "britain")).toBeGreaterThan(0);
     expect(grantRoom(s, "britain", "ussr")).toBeGreaterThan(0); // the block is one-way
     expect(grantRoom(s, "ussr", "usa")).toBeGreaterThan(0); // and it names one receiver, not all of them
+  });
+
+  // TODO(verify, Ref 11.71): the grant rules come from web-sourced rulebook text (docs/RULES.md "Web research", spec 02), not the
+  // PC manual. The 40-BRP cap is per receiver (the Western Allies together for the U.S.S.R.), not per giver.
+  it("the 40-BRP cap is counted per receiver: a grant to one ally does not use up the room for another", () => {
+    const first = applyGrant(allied42(), { type: "GRANT_BRPS", from: "usa", to: "britain", amount: 30 });
+    if (!first.ok) throw new Error(first.error);
+    expect(grantRoom(first.state, "usa", "britain")).toBe(10);
+    expect(grantRoom(first.state, "usa", "ussr")).toBe(40);
+    const second = applyGrant(first.state, { type: "GRANT_BRPS", from: "usa", to: "ussr", amount: 40 });
+    expect(second.ok).toBe(true);
   });
 
   it("the no-handing-back record holds each pair once, however many grants are made", () => {
@@ -197,6 +228,8 @@ describe("building counters at step 8b (Ref 11.6)", () => {
     expect(Object.keys(state.units).length).toBe(Object.keys(before.units).length + 2);
   });
 
+  // Pins the error wording only: a second check (no Allowable Build for that nation) would refuse the build anyway, so this
+  // test notices a change to the side check through its message, not through a different outcome.
   it("a nation on the side that is not moving may not build", () => {
     const r = applyBuild(CTX, at8b(), { type: "BUILD", owner: "britain", unit: { type: "infantry", strength: 3 }, at: "K24" });
     expect(r).toMatchObject({ ok: false });
@@ -205,6 +238,8 @@ describe("building counters at step 8b (Ref 11.6)", () => {
 });
 
 describe("declaring war (Ref 13.0, 10.0)", () => {
+  // Pins the error wording only: declarationTargets would refuse the declaration anyway, so a change to the side check in
+  // applyDeclaration is noticed through its message, not through a different outcome.
   it("only a nation on the side to move may declare", () => {
     const s = { ...atStart(SCENARIO_1939, 1), activeSide: "axis" as const };
     const r = applyDeclaration(CTX, s, { type: "DECLARE_WAR", by: "britain", on: "germany" });

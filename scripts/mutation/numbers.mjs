@@ -1,3 +1,6 @@
+// !!! WARNING: this script REWRITES the source file in place, one mutant at a time, and restores it in a `finally` block.
+// !!! Run it only in a throwaway worktree, never while editing, and never alongside another test run in the same checkout.
+// !!! If it is killed half-way, restore the file with: git checkout -- src
 // Number-literal mutation harness (a companion to Stryker, which does not change numbers).
 // Usage: node scripts/mutation/numbers.mjs <src/engine/file.ts> [--every N] [--offset K] [--lines L1,L2] [--out report.json]
 // For each whole-number literal in code (never in a comment, string, or type) it writes the file with that number
