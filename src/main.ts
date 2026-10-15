@@ -1,4 +1,5 @@
 import "./style.css";
+import "./attack.css";
 import { MAP } from "./data/map";
 import { SCENARIO_1939 } from "./data/scenario-1939";
 import { SCENARIO_1942 } from "./data/scenario-1942";
@@ -26,6 +27,8 @@ import { createWatchLoop } from "./ui/watchLoop";
 import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
+import { revealFresh } from "./ui/reveal";
+import { announceAttack } from "./ui/attackAnnounce";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
@@ -116,12 +119,14 @@ function render(): void {
   keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
-  syncMap(view, session, setup);
+  syncMap(view, session, setup, actions);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
   drawBar(shell.watchBar, session);
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
+  revealFresh(shell.status, session);
+  announceAttack(shell.live, session);
   if (session.watch) watcher.kick();
   else computer.kick();
 }

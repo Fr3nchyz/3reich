@@ -15,6 +15,7 @@ import { setupPanel } from "./setupView";
 import { logHtml } from "./logView";
 import { panelHtml } from "./watchBar";
 import { hexCardHtml } from "./hexCardView";
+import { attackHtml } from "./attackView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -77,8 +78,8 @@ function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: 
     const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} choices)</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE");
-  return `${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}<div class="actions controls">${rest.map(button).join("")}</div>`
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK");
+  return `${fold("ATTACK", "All attacks as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}<div class="actions controls">${rest.map(button).join("")}</div>`
 }
 
 /** What step 3 asks for, and what is already chosen. */
@@ -108,6 +109,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
       ${turnButtons(actions, s.foldOpen, s.ctx, s.state)}
+      ${attackHtml(s, actions)}
       ${hexCardHtml(s)}
       ${logHtml(s.log)}
     </main>`;
