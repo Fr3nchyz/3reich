@@ -8,21 +8,25 @@ import { movesOf } from "../engine/move-record";
 import { endProblem, movableUnits, reachableHexes } from "../engine/movement";
 import type { GameState, Unit } from "../engine/types";
 import { enemyZocFor } from "../engine/zoc";
-import { distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective } from "./geo";
+import { distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective, stagingTargets } from "./geo";
 import type { AiMemory } from "./memory";
 import { best } from "./random";
 import type { AiConfig, Decision } from "./types";
 
 /**
  * Step 6f, ground movement. COMPUTER POLICY, not rules (spec 05; every number is TODO(verify), to be tuned by play-testing).
- * Stacks are taken one after another, the ones farthest from their target first. Each unit heads for one enemy-held capital or
+ * Stacks are taken one after another, the ones farthest from their target first (nearest first was tried and lost ground: fewer
+ * objectives taken in the 1939 scenario). Each unit heads for one enemy-held capital or
  * objective, the nearest when it first looks and the same one afterwards until it is reached or lost (so units do not dither
  * between two). A stack takes the move, among those the engine allows it (the cheapest route to each reachable hex, as in
  * `legalActions`), that brings it closest to that target, at least MOVE_MIN_PROGRESS hexes closer; ties go to the larger stack,
  * then to the seed. It does not go back to a hex it left in the last MOVE_NO_RETURN_TURNS Game Turns, keeps a garrison on its
  * own capital, does not end next to enemy ground factors worth more than MOVE_MAX_ENEMY_RATIO times its own there, and stops
  * after MOVE_MAX_UNITS_PER_TURN units have moved. Only the stacks looked at are searched, so a decision costs a few
- * milliseconds, not the whole move list. When no stack qualifies it ends the step. Supply is not considered.
+ * milliseconds, not the whole move list. A stack with no way to any enemy objective (they lie behind a neutral country's land, a sea or
+ * a closed border) does not stand still: it heads for the capitals and objectives of a neutral Major Power the computer plans to declare
+ * war on (`plannedTargets` in declare.ts), counting that country's land as open, so it waits at the border for the declaration; the
+ * engine still lets it move only where it may enter now. When no stack qualifies it ends the step. Supply is not considered.
  */
 export const MOVE_MIN_PROGRESS = 1;
 export const MOVE_MAX_UNITS_PER_TURN = 40;
@@ -47,6 +51,8 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
   const turn = turnIndex(state);
   if (mem && mem.distancesTurn !== turn) {
     mem.distances.clear();
+    mem.nearest.clear();
+    mem.staging.clear();
     mem.distancesTurn = turn;
   }
   const zoc = enemyZocFor(ctx, state, side);
@@ -59,13 +65,30 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
     exposed.get(hex) ?? exposed.set(hex, neighborIds(ctx, hex).reduce((n, h) => n + factors((at.get(h) ?? []).filter((u) => { const s = sideInWar(state, u.owner); return s !== null && s !== side; })), 0)).get(hex)!;
 
   // Per owner: the nearest enemy objective of every hex; per (owner, target): the distance to it.
-  const nearestBy = new Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>();
+  // Kept in the memory for the Game Turn while the set of enemy-held objectives stays the same (a capture changes the key).
+  const nearestBy = mem?.nearest ?? new Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>();
+  const heldKey = [...held].join(",");
   const nearestFor = (owner: string) => {
-    let hit = nearestBy.get(owner);
+    const key = `${owner}|${heldKey}`;
+    let hit = nearestBy.get(key);
     if (!hit) {
       const from = new Map<HexId, HexId>();
       hit = { dist: distanceToEnemyObjective(ctx, state, owner as Unit["owner"], side, from), from };
-      nearestBy.set(owner, hit);
+      nearestBy.set(key, hit);
+    }
+    return hit;
+  };
+  // Where a unit with no way to an enemy objective waits: the nearest objective of a country the computer plans to declare war on.
+  let staging: ReturnType<typeof stagingTargets> | undefined;
+  const stagingBy = mem?.staging ?? new Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>();
+  const stageFor = (owner: string) => {
+    staging ??= stagingTargets(ctx, state, side);
+    const key = `${owner}|${staging.sources.join(",")}|${[...staging.open].join(",")}`;
+    let hit = stagingBy.get(key);
+    if (!hit) {
+      const from = new Map<HexId, HexId>();
+      hit = { dist: groundDistances(ctx, state, owner as Unit["owner"], staging.sources, from, staging.open), from };
+      stagingBy.set(key, hit);
     }
     return hit;
   };
@@ -81,18 +104,27 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
   // The groups of unmoved ground units standing together, with where each is heading, the farthest from it first.
   const groups = new Map<string, Unit[]>();
   for (const u of movableUnits(ctx, state)) groups.set(u.at, [...(groups.get(u.at) ?? []), u]);
-  const work: { units: Unit[]; target: HexId; d0: number }[] = [];
+  const work: { units: Unit[]; target: HexId; d0: number; field: () => Map<HexId, number>; staged: boolean }[] = [];
   for (const [hex, units] of groups) {
-    const near = nearestFor(units[0]!.owner);
+    const owner = units[0]!.owner;
+    const near = nearestFor(owner);
     const target = targetOf(units[0]!, near.from, held, mem);
-    const d0 = target === undefined ? undefined : target === near.from.get(hex) ? near.dist.get(hex) : distanceTo(units[0]!.owner, target).get(hex);
-    if (target !== undefined && d0 !== undefined && d0 > 0) work.push({ units, target, d0 });
+    // The distance to the unit's own target, not to the nearest objective of each hex: progress is measured toward one goal.
+    const d0 = target === undefined ? undefined : target === near.from.get(hex) ? near.dist.get(hex) : distanceTo(owner, target).get(hex);
+    if (target !== undefined && d0 !== undefined) {
+      if (d0 > 0) work.push({ units, target, d0, field: () => distanceTo(owner, target), staged: false });
+      continue;
+    }
+    const wait = stageFor(owner);
+    const place = wait.from.get(hex);
+    const dw = wait.dist.get(hex);
+    if (place !== undefined && dw !== undefined && dw > 0) work.push({ units, target: place, d0: dw, field: () => wait.dist, staged: true });
   }
   work.sort((a, b) => b.d0 - a.d0 || (a.units[0]!.at < b.units[0]!.at ? -1 : 1));
 
-  for (const { units, target, d0 } of work) {
+  for (const { units, target, d0, field: fieldOf, staged } of work) {
     const from = units[0]!.at;
-    const field = distanceTo(units[0]!.owner, target);
+    const field = fieldOf();
     const features = ctx.map.hexes[from]?.features ?? [];
     const holds = (features.includes("capital") || features.includes("capital-port")) && controllingSide(ctx, state, from) === side;
     const candidates: { move: Move; progress: number }[] = [];
@@ -112,13 +144,15 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
     const pick = best(candidates, score, cfg.seed, (c) => `${c.move.units.join(",")}>${c.move.path[c.move.path.length - 1]}`)!;
     if (mem) {
       for (const id of pick.move.units) {
-        mem.targets.set(id, target);
+        if (!staged) mem.targets.set(id, target);
         mem.left.set(id, [...(mem.left.get(id) ?? []).filter((l) => turn - l.turn < MOVE_NO_RETURN_TURNS), { hex: from, turn }]);
       }
     }
     const to = pick.move.path[pick.move.path.length - 1]!;
     const left = d0 - pick.progress;
-    return { action: pick.move, why: `Moves ${pick.move.units.length === 1 ? "a unit" : `${pick.move.units.length} units`} from ${from} to ${to}, ${pick.progress} hex${pick.progress === 1 ? "" : "es"} closer to the enemy-held objective ${target} (${left} to go).` };
+    const who = pick.move.units.length === 1 ? "a unit" : `${pick.move.units.length} units`;
+    const near = `${pick.progress} hex${pick.progress === 1 ? "" : "es"} closer to`;
+    return { action: pick.move, why: staged ? `Moves ${who} from ${from} to ${to}, ${near} ${target} (${left} to go), an objective of a power it plans to declare war on: no enemy objective is within reach, so it waits at the border.` : `Moves ${who} from ${from} to ${to}, ${near} the enemy-held objective ${target} (${left} to go).` };
   }
   return undefined;
 }

@@ -26,8 +26,10 @@ Examples: `npm run selfplay -- --scenario 1942 --turns end --seed 1` (about 25 s
 For each game, in the output folder:
 
 - `<scenario>-seed<n>.json`: the recorded action list (setup and play, in order) with the scenario and seed. Replay it with the engine: `replay(ctx, newGame(scenario, seed), recording.actions)` gives the identical final state (a test checks this for every scenario).
-- `<scenario>-seed<n>.md`: a Markdown report with a final summary, the list of anomalies, and per Game Turn: BRP totals per nation, BRPs spent (by nation and by war / construction / grants / Front Options), wars declared, units built, grants, units moved, ground combats (attacker eliminated / defender eliminated / Exchange), units and factors lost per side, hexes that changed hands, hexes and capitals/objectives held per side, units and factors per side, and the Front Options chosen.
+- `<scenario>-seed<n>.md`: a Markdown report with a final summary, the list of anomalies, and per Game Turn: BRP totals per nation, BRPs spent (by nation and by war / construction / grants / Front Options), wars declared, units built, grants, units moved (and by which side, with each side's ground units), ground combats (attacker eliminated / defender eliminated / Exchange), units and factors lost per side, hexes that changed hands, hexes and capitals/objectives held per side, units and factors per side, and the Front Options chosen.
 - `comparison-<scenario>-seed<n>x<k>.md`: the one-page table of all games of the run (also printed), with the runtime of each.
+
+The report's summary also lists the *idle* Player Turns: those in which a side with 10 or more ground units on the map neither moved a unit nor attacked (the comparison table counts them). It counts every ground unit, including ones that can reach nothing (a garrison on an island), so a few idle Allied turns are normal; a long run of idle turns for a side with units on the main front is what to look into. The summary also lists *churn*: a side that moves 5 or more units without a single attack for 3 or more Game Turns in a row, which is what a computer that marches without fighting looks like (a march to a border before a declaration of war shows up here too).
 
 ## Anomalies
 

@@ -1,9 +1,9 @@
 import type { Action } from "../engine/actions";
 import { turnIndex } from "../engine/game";
 import { BRP_COSTS } from "../engine/tables";
-import { atWar, sideOfPower } from "../engine/war";
+import { ALIGNMENT, atWar, sideOfPower } from "../engine/war";
 import { combatantName, POWER_NAMES } from "../engine/nations";
-import type { GameState, GameTurn, PowerId } from "../engine/types";
+import type { GameState, GameTurn, PowerId, Side } from "../engine/types";
 import type { Decision } from "./types";
 
 /**
@@ -46,4 +46,22 @@ export function plannedReserve(state: GameState, by: PowerId): number {
   const me = state.nations[by];
   if (!me || sideOfPower(me) === null || BRP_COSTS.declareWarOnMajorPower > me.spendLimit) return 0;
   return DECLARATION_PLANS.filter((p) => p.by === by && !atWar(state, by, p.on)).length * BRP_COSTS.declareWarOnMajorPower;
+}
+
+/**
+ * Staging (computer policy, TODO(verify): not a rule, spec 05): units with no way to an enemy objective wait at the border of a neutral
+ * Major Power the side plans to declare war on. It starts STAGING_LEAD_TURNS Game Turns before the plan's date, so a unit does not
+ * walk to a border long before the declaration is plausible. Set STAGING_ENABLED false to switch it off.
+ */
+export const STAGING_ENABLED = true;
+export const STAGING_LEAD_TURNS = 2;
+
+/** The neutral Major Powers that `side` has a declaration plan against and is within STAGING_LEAD_TURNS of making. */
+export function plannedTargets(state: GameState, side: Side, enabled: boolean = STAGING_ENABLED): PowerId[] {
+  const out = new Set<PowerId>();
+  if (!enabled) return [];
+  for (const p of DECLARATION_PLANS) {
+    if (ALIGNMENT[p.by] === side && state.nations[p.on]?.status === "neutral" && turnIndex(state) >= turnIndex(p.from) - STAGING_LEAD_TURNS) out.add(p.on);
+  }
+  return [...out];
 }

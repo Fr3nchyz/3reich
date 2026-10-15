@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseAction } from "../src/ai";
-import { distanceToEnemyObjective, isObjective, objectiveHexes } from "../src/ai/geo";
+import { distanceToEnemyObjective, groundDistances, isObjective, objectiveHexes } from "../src/ai/geo";
 import { createMemory } from "../src/ai/memory";
 import { MOVE_MAX_UNITS_PER_TURN } from "../src/ai/move";
 import { turnIndex } from "../src/engine/game";
@@ -50,6 +50,10 @@ describe("neutral land (geo.ts)", () => {
 });
 
 describe("step 6f: movement toward the nearest enemy objective", () => {
+  it("moves at most MOVE_MAX_UNITS_PER_TURN = 40 units per Player Turn: 80 was tried and cost the Axis objectives in the 1942 scenario", () => {
+    expect(MOVE_MAX_UNITS_PER_TURN).toBe(40);
+  });
+
   it("moves to the legal hex nearest the enemy objective, taken from the legal list", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 3)]);
     const d = decide(s);
@@ -106,6 +110,23 @@ describe("step 6f: movement toward the nearest enemy objective", () => {
     expect(decide(capped).action.type).toBe("END_STEP");
   });
 
+  it("takes the stack farthest from its target first, so under the cap the farther one moves", () => {
+    const base = at6f([inf("near", "germany", "M34", 3, 3), inf("far", "germany", "L32", 3, 3)]);
+    const capped: GameState = { ...base, moves: { turn: turnKey(base), moved: Array.from({ length: MOVE_MAX_UNITS_PER_TURN - 1 }, (_, i) => `x${i}`) } };
+    expect((decide(capped).action as Move).units).toEqual(["far"]);
+  });
+
+  it("measures progress toward the unit's own target, not toward whichever objective is nearest to the hex it would reach", () => {
+    // From K28 the nearest objective is Warsaw, but N26 (a move away) is nearer another objective and no nearer Warsaw: it must not be chosen for that.
+    for (const [from, mp] of [["K28", 3], ["L28", 2], ["M28", 2]] as const) {
+      const s = at6f([inf("u1", "germany", from, 3, mp)]);
+      const toWarsaw = groundDistances(CTX, s, "germany", ["M35"]);
+      const d = decide(s).action as Move;
+      expect(d.type).toBe("MOVE");
+      expect(toWarsaw.get(dest(d)), from).toBeLessThan(toWarsaw.get(from)!);
+    }
+  });
+
   it("is deterministic for a seed and every move it makes is accepted by the engine", () => {
     let s = at6f([inf("u1", "germany", "L32", 3, 3), inf("u2", "germany", "M31", 3, 3), inf("u3", "germany", "N32", 2, 4, "armor")]);
     expect(JSON.stringify(decide(s, 3).action)).toBe(JSON.stringify(decide(s, 3).action));
@@ -160,9 +181,10 @@ describe("step 6f: a unit keeps its target and does not go back (computer memory
     expect(d.action.type).toBe("MOVE");
   });
 
-  it("the unit cap holds over a whole step: 45 units that can all advance move 40", () => {
-    const hexes = Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany" && h.id !== "L31").map((h) => h.id).sort().slice(0, 45);
-    let s = at6f(hexes.map((h, i) => inf(`u${i + 1}`, "germany", h, 1, 3)));
+  it(`the unit cap holds over a whole step: with ${MOVE_MAX_UNITS_PER_TURN - 3} units already moved, ten units that can all advance move three`, () => {
+    const hexes = Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany" && h.id !== "L31").map((h) => h.id).sort().slice(0, 10);
+    const base = at6f(hexes.map((h, i) => inf(`u${i + 1}`, "germany", h, 1, 3)));
+    let s: GameState = { ...base, moves: { turn: turnKey(base), moved: Array.from({ length: MOVE_MAX_UNITS_PER_TURN - 3 }, (_, i) => `x${i}`) } };
     const mem = createMemory();
     let moves = 0;
     for (let i = 0; i < 100; i++) {
@@ -173,7 +195,7 @@ describe("step 6f: a unit keeps its target and does not go back (computer memory
       s = r.state;
       moves += d.action.units.length;
     }
-    expect(moves).toBe(MOVE_MAX_UNITS_PER_TURN);
+    expect(moves).toBe(3);
     expect(movesOf(s).moved).toHaveLength(MOVE_MAX_UNITS_PER_TURN);
   });
 });
