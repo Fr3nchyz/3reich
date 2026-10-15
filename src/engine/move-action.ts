@@ -42,7 +42,7 @@ function groups(ctx: GameContext, state: GameState): Unit[][] {
 }
 
 /** Each place this group can end, with the path to it, by the cheapest route that is allowed. */
-function destinations(ctx: GameContext, state: GameState, units: readonly Unit[], zoc: ReadonlySet<HexId>): [HexId, HexId[]][] {
+export function destinations(ctx: GameContext, state: GameState, units: readonly Unit[], zoc: ReadonlySet<HexId>): [HexId, HexId[]][] {
   return [...reachableHexes(ctx, state, units, zoc)].filter(([hex]) => endProblem(ctx, state, units, hex) === null).sort(([a], [b]) => (a < b ? -1 : 1));
 }
 
@@ -79,7 +79,7 @@ export function hasMoveWork(ctx: GameContext, state: GameState): boolean {
 }
 
 /** The reasons the units named cannot move together, or the units themselves. */
-function resolveUnits(ctx: GameContext, state: GameState, ids: unknown): { units: Unit[] } | { error: string } {
+export function resolveUnits(ctx: GameContext, state: GameState, ids: unknown): { units: Unit[] } | { error: string } {
   if (!allStrings(ids) || ids.length === 0 || new Set(ids).size !== ids.length) return { error: "A move names one or more distinct units." };
   if (ids.some((id) => !Object.hasOwn(state.units, id))) return { error: "A moving unit is not on the map." };
   const units = ids.map((id) => state.units[id]!);
