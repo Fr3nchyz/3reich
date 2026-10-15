@@ -67,6 +67,38 @@ function finishWithRecord(state: GameState, attackers: readonly string[], target
   return withRecord(state, { pending: null, advances });
 }
 
+/** What an Exchange costs each side (Ref 12.2). */
+export interface ExchangeCost {
+  /** The attackers' factors, and the defenders' at the multiple given. */
+  attackTotal: number;
+  defenseTotal: number;
+  /** The side with fewer factors loses every unit it has in the battle; with equal totals both do. */
+  attackersLoseAll: boolean;
+  defendersLoseAll: boolean;
+  /** The larger side picks which of its units go; null when both lose everything (equal totals), so nobody picks. */
+  chooser: "attackers" | "defenders" | null;
+  /** The factors the chooser must remove at least (the smaller side's total); 0 when nobody picks. */
+  required: number;
+  /** What each of the chooser's units counts for: its strength, times the multiple for defenders; empty when nobody picks. */
+  values: Record<string, number>;
+}
+
+/**
+ * The arithmetic of an Exchange, apart from the dice: the side with fewer factors is eliminated, the larger removes at least that many
+ * (Ref 12.2). `multiple` is the factor the defenders count at: their terrain multiple in the original attack, 1 in a counterattack.
+ * TODO(verify): the defenders' multiplied value is also what they remove when they are the larger side.
+ */
+export function exchangeCost(attackers: readonly Unit[], defenders: readonly Unit[], multiple: number): ExchangeCost {
+  const attackTotal = attackers.reduce((n, u) => n + u.strength, 0);
+  const defenseTotal = defenders.reduce((n, u) => n + u.strength * multiple, 0);
+  const attackersLoseAll = attackTotal <= defenseTotal;
+  const defendersLoseAll = defenseTotal <= attackTotal;
+  if (attackersLoseAll && defendersLoseAll) return { attackTotal, defenseTotal, attackersLoseAll, defendersLoseAll, chooser: null, required: 0, values: {} };
+  const choosing = attackersLoseAll ? defenders : attackers;
+  const values = Object.fromEntries(choosing.map((u) => [u.id, attackersLoseAll ? u.strength * multiple : u.strength]));
+  return { attackTotal, defenseTotal, attackersLoseAll, defendersLoseAll, chooser: attackersLoseAll ? "defenders" : "attackers", required: attackersLoseAll ? attackTotal : defenseTotal, values };
+}
+
 export interface Battle {
   outcome: CombatOutcome;
   side: Side;
@@ -96,20 +128,15 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
     const done = finishBattle(gone.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...gone.events, ...done.events] };
   }
-  const m = b.outcome.multipliedDefense ? b.multiplier : 1;
-  const attackTotal = b.attackers.reduce((n, u) => n + u.strength, 0);
-  const defenseTotal = b.defenders.reduce((n, u) => n + u.strength * m, 0);
-  const attackersLose = attackTotal <= defenseTotal;
-  const defendersLose = defenseTotal <= attackTotal;
-  const wholly = eliminate(state, [...(attackersLose ? attackerIds : []), ...(defendersLose ? ids(b.defenders) : [])]);
+  const cost = exchangeCost(b.attackers, b.defenders, b.outcome.multipliedDefense ? b.multiplier : 1);
+  const wholly = eliminate(state, [...(cost.attackersLoseAll ? attackerIds : []), ...(cost.defendersLoseAll ? ids(b.defenders) : [])]);
   // The larger side (both, if equal) removes at least as many factors as the smaller side has; with equal totals that is everything.
-  if (attackersLose && defendersLose) {
+  if (cost.chooser === null) {
     const done = finishBattle(wholly.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...done.events] };
   }
-  const choosing = attackersLose ? b.defenders : b.attackers;
-  const required = attackersLose ? attackTotal : defenseTotal;
-  const values = Object.fromEntries(choosing.map((u) => [u.id, attackersLose ? u.strength * m : u.strength]));
+  const { required, values } = cost;
+  const choosing = cost.chooser === "defenders" ? b.defenders : b.attackers;
   const candidates = ids(choosing);
   const sets = minimalSets(candidates, values, required);
   if (sets.length === 1) {
@@ -117,7 +144,7 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
     const done = finishBattle(rest.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...rest.events, ...done.events] };
   }
-  const pending: PendingLosses = { chooser: attackersLose ? (b.side === "axis" ? "allies" : "axis") : b.side, target: b.target, candidates, values, required, attackers: attackerIds };
+  const pending: PendingLosses = { chooser: cost.chooser === "defenders" ? (b.side === "axis" ? "allies" : "axis") : b.side, target: b.target, candidates, values, required, attackers: attackerIds };
   return { state: withRecord(wholly.state, { pending }), events: wholly.events };
 }
 

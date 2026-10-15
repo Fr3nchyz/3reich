@@ -1,5 +1,5 @@
 import type { GameContext } from "./context";
-import { defenseMultiplier } from "./terrain";
+import { defenseBasis, type DefenseBasis } from "./terrain";
 import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
 import type { Front } from "./map";
 import { sideOfOwner } from "./setup";
@@ -127,6 +127,8 @@ export interface AttackNumbers {
   attackFactors: number;
   defenseFactors: number;
   multiplier: number;
+  /** Why the defence is multiplied that much (terrain.ts `defenseBasis`): for the preview to say in words. */
+  basis: DefenseBasis;
   column: OddsColumn | null;
 }
 
@@ -137,8 +139,8 @@ export function attackNumbers(ctx: GameContext, state: GameState, attackers: rea
     const side = ctx.map.hexsides[hexsideId(hex(a.at), hex(target))];
     return side !== undefined && (side.river === true || side.crossingArrow === true);
   });
-  const multiplier = defenseMultiplier({ terrain: h.land ?? "plain", features: h.features, fortress: state.fortresses[target] === true, behindRiverOrArrow: behind });
+  const { multiplier, basis } = defenseBasis({ terrain: h.land ?? "plain", features: h.features, fortress: state.fortresses[target] === true, behindRiverOrArrow: behind });
   const attackFactors = attackers.reduce((n, u) => n + u.strength, 0);
   const defenseFactors = defenders.reduce((n, u) => n + u.strength, 0);
-  return { attackFactors, defenseFactors, multiplier, column: oddsColumn(attackFactors, defenseFactors * multiplier) };
+  return { attackFactors, defenseFactors, multiplier, basis, column: oddsColumn(attackFactors, defenseFactors * multiplier) };
 }
