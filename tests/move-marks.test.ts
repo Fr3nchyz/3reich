@@ -59,11 +59,15 @@ describe("what is drawn", () => {
     expect(count(unitsMarkup(MAP, units), /data-mark=|class="ring"|class="veil"/g)).toBe(0);
   });
 
-  it("the ring sits inside the counter's own group, so a counter above it covers it as it covers the cardboard", () => {
-    const svg = unitsMarkup(MAP, units, marks);
-    const group = svg.split("<g data-at=").find((g) => g.includes('data-mark="ticked"'))!;
-    expect(group).toContain('class="ring"');
-    expect(group).not.toContain('class="veil"');
+  it("the ring sits inside the counter's own group (u1, drawn first), the veil in u2's: a counter above covers a mark as it covers the cardboard", () => {
+    const groups = unitsMarkup(MAP, units, marks).split("<g data-at=").slice(1).filter((g) => g.startsWith('"L32"'));
+    expect(groups).toHaveLength(2);
+    expect(groups[0]).toContain('data-mark="ticked"');
+    expect(groups[0]).toContain('class="ring"');
+    expect(groups[0]).not.toContain('class="veil"');
+    expect(groups[1]).toContain('data-mark="left"');
+    expect(groups[1]).toContain('class="veil"');
+    expect(groups[1]).not.toContain('class="ring"');
   });
 
   it("the chosen hex is a thick outline in the marks layer, once, and a hex off the map draws nothing", () => {

@@ -5,7 +5,7 @@ import type { GameState } from "../src/engine/types";
 import { onMoveKey } from "../src/ui/moveBind";
 import { moveAnnouncement, moveHtml } from "../src/ui/moveView";
 import { chooseStack, movableStacks, moveTargets, selectionNow, toggleTick } from "../src/ui/moveTap";
-import { revealedHidden, takeBack, takeBackReason } from "../src/ui/moveUndo";
+import { noteMove, revealedHidden, takeBack, takeBackReason } from "../src/ui/moveUndo";
 import { run, type Session } from "../src/ui/session";
 import { takeAction, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
@@ -105,7 +105,7 @@ describe("taking back the last move", () => {
 describe("what clears or blocks it", () => {
   it("nothing moved yet: the button has a plain reason; it never says an id", () => {
     const s = crafted();
-    expect(takeBackReason(s)).toBe("Nothing to take back yet: no move has been made in this step.");
+    expect(takeBackReason(s)).toBe("Nothing to take back: no move made yet.");
     expect(takeBack(s)).toBe(false);
   });
 
@@ -131,6 +131,21 @@ describe("what clears or blocks it", () => {
     const before: GameState = s.state;
     expect(revealedHidden(before, { ...before, rngState: before.rngState + 1 })).toBe(true);
     expect(revealedHidden(before, before)).toBe(false);
+  });
+
+  it("a move that rolled a die is recorded as the new start: nothing before it can be taken back, a move after it can", () => {
+    const s = crafted();
+    moveInto(s, "L32", "K33", ["u2"]);
+    const [before, logLen] = [s.state, s.log.length];
+    const action = { type: "MOVE" as const, side: before.activeSide, units: ["u3"], path: ["L34"] };
+    s.state = { ...before, rngState: before.rngState + 1 }; // as if the engine had read a die for this move
+    noteMove(s, before, logLen, action, "Moved something.");
+    expect(takeBackReason(s)).toBe("A die was rolled: earlier moves cannot be taken back.");
+    expect(takeBack(s)).toBe(false);
+    moveInto(s, "L32", "K32");
+    expect(takeBackReason(s)).toBeNull();
+    expect(takeBack(s)).toBe(true);
+    expect(takeBackReason(s)).toMatch(/^A die was rolled/);
   });
 
   it("not available to a watched game or on the computer's turn", () => {
@@ -174,7 +189,7 @@ describe("the button on the page", () => {
     let html = page(s);
     expect(html).toContain('id="move-undo"');
     expect(html).toMatch(/id="move-undo"[^>]*aria-disabled="true"/);
-    expect(html).toContain("Nothing to take back yet");
+    expect(html).toContain("Nothing to take back: no move made yet.");
     moveInto(s, "L32", "K33", ["u2"]);
     html = page(s);
     expect(html).not.toMatch(/id="move-undo"[^>]*aria-disabled/);
@@ -196,7 +211,7 @@ describe("the button on the page", () => {
   it("is not on the page at another step or in setup", () => {
     const s = crafted();
     s.state = at6f([inf("u1", "germany", "L32", 3, 4)]);
-    s.state = { ...s.state, position: { part: "player-turn", turn: 1, step: "7h" } as GameState["position"] };
+    s.state = { ...s.state, position: { part: "player-turn", turn: 1, step: "7h" } };
     expect(page(s)).not.toContain("move-undo");
   });
 

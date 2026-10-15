@@ -33,7 +33,7 @@ export interface MoveUndo {
   /** The position and the log length after the last move: the history holds only while the session is still there. */
   tip: GameState;
   tipLog: number;
-  /** Something hidden was revealed by the last move (a die was rolled): the moves before it cannot be taken back. */
+  /** `base` is the position just after a move that revealed something hidden (a die was rolled): the moves before it cannot be taken back, which the reason says when nothing later is left. */
   hidden: boolean;
 }
 
@@ -57,7 +57,7 @@ export function noteMove(s: Session, before: GameState, logLen: number, action: 
     s.undo = { base: s.state, steps: [], tip: s.state, tipLog: s.log.length, hidden: true };
     return;
   }
-  s.undo = { base, steps: [...(u?.steps ?? []), { action, line, logLen }], tip: s.state, tipLog: s.log.length, hidden: false };
+  s.undo = { base, steps: [...(u?.steps ?? []), { action, line, logLen }], tip: s.state, tipLog: s.log.length, hidden: u?.hidden ?? false };
 }
 
 /** Why there is nothing to take back, or null when there is. */
@@ -98,7 +98,7 @@ export function takeBack(s: Session): boolean {
   s.log.length = last.logLen;
   if (s.logSides) for (const i of [...s.logSides.keys()]) if (i >= last.logLen) s.logSides.delete(i);
   s.moveChosen = null;
-  s.undo = { base: u.base, steps: kept, tip: state, tipLog: s.log.length, hidden: false };
+  s.undo = { base: u.base, steps: kept, tip: state, tipLog: s.log.length, hidden: u.hidden };
   s.toast = T.tookBack(last.line);
   return true;
 }
