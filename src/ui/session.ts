@@ -9,6 +9,8 @@ import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
+import type { AttackDraft } from "./attackDraft";
+import { trackBattle, type BattleResult } from "./resultModel";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
 
@@ -55,6 +57,10 @@ export interface Session {
   moveFrom?: string | null;
   /** The hex last tapped to look at (spec 07, part A): the hex card shows it. Screen state only, never saved; closing the card clears it. */
   lookedAt?: string | null;
+  /** The attack being put together at step 7h (spec 07, part B): the hex and the chosen units. Screen state, never saved. */
+  attack?: AttackDraft | null;
+  /** The last battle of the player's own attack, for the result card (spec 07, State 3). Screen state, never saved. */
+  battle?: BattleResult | null;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */
@@ -145,6 +151,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
     }
     s.state = result.state;
     s.record?.push(action);
+    if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
     for (const e of result.events) {
       const line = describeEvent(e, s.ctx, swept, before);
