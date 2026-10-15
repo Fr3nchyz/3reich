@@ -140,6 +140,15 @@ describe("gestures on the map", () => {
     expect(calls).toHaveLength(2);
   });
 
+  it("ignores a Safari gesture whose scale is not a usable number, and keeps going from the last good one", () => {
+    const { fire, calls } = setup();
+    fire("gesturestart", { scale: 1 });
+    for (const scale of [NaN, Infinity, 0, -2, undefined]) fire("gesturechange", { scale, clientX: 5, clientY: 5 });
+    expect(calls).toEqual([]);
+    fire("gesturechange", { scale: 2, clientX: 5, clientY: 5 });
+    expect(calls).toEqual(["zoom 5,5 x0.500"]);
+  });
+
   it("ignores moves of a pointer that is not down", () => {
     const { ptr, calls } = setup();
     ptr("pointermove", 9, 10, 10);

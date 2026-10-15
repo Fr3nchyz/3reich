@@ -21,17 +21,17 @@ export const padBox = (b: Box, pad: number): Box => ({ x: b.x - pad, y: b.y - pa
 
 /** The box zoomed by `factor` (above 1 shows more) about map point (mx, my), within the limits set by `whole`. */
 export function zoomBox(vb: Box, whole: Box, mx: number, my: number, factor: number): Box {
+  if (![mx, my, factor, vb.x, vb.y, vb.w, vb.h].every(Number.isFinite) || factor <= 0 || vb.w <= 0) return vb; // an odd value from a gesture must never reach the viewBox
   const w = Math.min(whole.w * MAX_ZOOM_OUT, Math.max(whole.w / MAX_ZOOM_IN, vb.w * factor));
   const k = w / vb.w;
   return { x: mx - (mx - vb.x) * k, y: my - (my - vb.y) * k, w, h: vb.h * k };
 }
 
 /** The box dragged by (dx, dy) screen pixels on a screen of width x height pixels. */
-export const panBox = (vb: Box, dx: number, dy: number, width: number, height: number): Box => ({
-  ...vb,
-  x: vb.x - (dx / width) * vb.w,
-  y: vb.y - (dy / height) * vb.h,
-});
+export const panBox = (vb: Box, dx: number, dy: number, width: number, height: number): Box =>
+  [dx, dy, width, height].every(Number.isFinite) && width > 0 && height > 0
+    ? { ...vb, x: vb.x - (dx / width) * vb.w, y: vb.y - (dy / height) * vb.h }
+    : vb;
 
 /** The box that fits these hex centres with a margin, in the shape of the screen (`aspect` = width / height) so nothing is letterboxed. */
 export function fitBox(centres: readonly Point[], aspect: number, pad = FOCUS_MARGIN): Box {

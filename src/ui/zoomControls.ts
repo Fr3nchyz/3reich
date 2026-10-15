@@ -23,13 +23,24 @@ export const ZOOM_BUTTONS = [
 export function zoomSaid(level: number): string {
   if (level >= MAX_ZOOM_IN - 0.01) return "Zoomed in as far as it goes";
   if (level <= 1 / MAX_ZOOM_OUT + 0.01) return "Zoomed out as far as it goes";
-  return `Zoom ${String(Math.round(level * 10) / 10)} times`;
+  const n = Math.round(level * 10) / 10;
+  if (n < 1) return "Zoomed out a little past the whole map";
+  return n === 1 ? "Zoom 1 time" : `Zoom ${String(n)} times`;
 }
+
+/** Wait before a spoken line is set again, so that the same words twice are two changes to the status line and are read twice. */
+export const REPEAT_GAP_MS = 60;
 
 export const NOTHING_SELECTED = "Nothing is selected. Choose one of your counters first.";
 
-export function bindZoom(shell: Pick<Shell, "zoom" | "zoomSay">, view: MapView): void {
-  const say = (text: string) => { shell.zoomSay.textContent = text; };
+export function bindZoom(shell: Pick<Shell, "zoom" | "zoomSay">, view: MapView, later: (run: () => void) => void = (run) => { setTimeout(run, REPEAT_GAP_MS); }): void {
+  let turn = 0;
+  /** Clears the status line, then sets the words a moment later: a screen reader only speaks a change, and a second press at a limit says the same words. */
+  const say = (text: string) => {
+    const mine = ++turn;
+    shell.zoomSay.textContent = "";
+    later(() => { if (mine === turn) shell.zoomSay.textContent = text; });
+  };
   const actions: Record<string, () => string> = {
     in: () => zoomSaid(view.zoomBy(1 / BUTTON_ZOOM_STEP)),
     out: () => zoomSaid(view.zoomBy(BUTTON_ZOOM_STEP)),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MapView } from "../src/ui/mapView";
 import { NOTHING_SELECTED, ZOOM_BUTTONS, bindZoom, zoomSaid } from "../src/ui/zoomControls";
-import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
+import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, panBox, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
 
 /** The zoom buttons (spec 08): the maths behind them, the limits, and what a press does and says. */
 
@@ -15,6 +15,12 @@ describe("zoomLevel", () => {
     expect(zoomLevel(wholeOnScreen(whole, wide), whole, wide)).toBeCloseTo(1);
     const tall: Size = { w: 650, h: 1000 };
     expect(zoomLevel(wholeOnScreen(whole, tall), whole, tall)).toBeCloseTo(1);
+  });
+
+  it("reads a box that does not have the screen's shape by the scale it is drawn at (the smaller one), not the larger", () => {
+    // A box half as wide as the screen's shape but as tall: drawn at the height-limited scale, so it is the whole map, not twice in.
+    expect(zoomLevel({ x: 0, y: 0, w: 650, h: 1000 }, whole, screen)).toBeCloseTo(1);
+    expect(zoomLevel({ x: 0, y: 0, w: 1300, h: 500 }, whole, screen)).toBeCloseTo(1);
   });
 
   it("is the limits at the limits: 12 closest, a little under 1 farthest", () => {
@@ -40,6 +46,29 @@ describe("the step of a button", () => {
     expect(zoomLevel(b, whole, screen)).toBeCloseTo(8);
     for (let i = 0; i < 6; i++) b = zoomBox(b, fit, 650, 500, 1 / BUTTON_ZOOM_STEP);
     expect(zoomLevel(b, whole, screen)).toBeCloseTo(MAX_ZOOM_IN);
+  });
+});
+
+describe("odd numbers never reach the box", () => {
+  const vb = { x: 100, y: 100, w: 650, h: 500 };
+  const fit = wholeOnScreen(whole, screen);
+  it("zoomBox returns the old box for a NaN, infinite or non-positive input", () => {
+    for (const bad of [NaN, Infinity, -Infinity]) {
+      expect(zoomBox(vb, fit, bad, 5, 0.5)).toBe(vb);
+      expect(zoomBox(vb, fit, 5, bad, 0.5)).toBe(vb);
+      expect(zoomBox(vb, fit, 5, 5, bad)).toBe(vb);
+    }
+    expect(zoomBox(vb, fit, 5, 5, 0)).toBe(vb);
+    expect(zoomBox(vb, fit, 5, 5, -1)).toBe(vb);
+    expect(zoomBox(vb, fit, 5, 5, 0.5), "a good input still zooms").not.toBe(vb);
+  });
+
+  it("panBox returns the old box for a NaN or infinite drag or a screen with no size", () => {
+    expect(panBox(vb, NaN, 0, 650, 500)).toBe(vb);
+    expect(panBox(vb, 0, Infinity, 650, 500)).toBe(vb);
+    expect(panBox(vb, 10, 10, 0, 500)).toBe(vb);
+    expect(panBox(vb, 10, 10, 650, NaN)).toBe(vb);
+    expect(panBox(vb, 65, 0, 650, 500).x).toBeCloseTo(vb.x - 65);
   });
 });
 
@@ -105,7 +134,10 @@ describe("the viewport behind the buttons", () => {
 
 describe("zoomSaid", () => {
   it("tells the level in words and the two ends of the range", () => {
-    expect(zoomSaid(1)).toBe("Zoom 1 times");
+    expect(zoomSaid(1)).toBe("Zoom 1 time");
+    expect(zoomSaid(1.04)).toBe("Zoom 1 time");
+    expect(zoomSaid(1.5)).toBe("Zoom 1.5 times");
+    expect(zoomSaid(0.9)).toBe("Zoomed out a little past the whole map");
     expect(zoomSaid(2)).toBe("Zoom 2 times");
     expect(zoomSaid(3.04)).toBe("Zoom 3 times");
     expect(zoomSaid(MAX_ZOOM_IN)).toBe("Zoomed in as far as it goes");
@@ -132,7 +164,7 @@ describe("the buttons", () => {
     let onClick: (e: unknown) => void = () => undefined;
     const zoom = { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement;
     const zoomSay = { textContent: "" } as HTMLElement;
-    bindZoom({ zoom, zoomSay }, view);
+    bindZoom({ zoom, zoomSay }, view, (run) => run());
     const press = (action: string | null) => onClick({ target: { closest: () => (action ? { dataset: { zoom: action } } : null) } });
     return { calls, zoomSay, press };
   }
@@ -156,6 +188,25 @@ describe("the buttons", () => {
     const no = bound({ outlined: false });
     no.press("selected");
     expect(no.zoomSay.textContent).toBe(NOTHING_SELECTED);
+  });
+
+  it("say the same words again for a second press: the line is cleared first and set a moment later", () => {
+    const writes: string[] = [];
+    const zoomSay = { set textContent(v: string) { writes.push(v); } } as HTMLElement;
+    const view = { zoomBy: () => 12 } as unknown as MapView;
+    let onClick: (e: unknown) => void = () => undefined;
+    const later: (() => void)[] = [];
+    bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay }, view, (run) => later.push(run));
+    const press = () => onClick({ target: { closest: () => ({ dataset: { zoom: "in" } }) } });
+    press();
+    later.shift()!();
+    press();
+    expect(writes, "cleared, then said").toEqual(["", "Zoomed in as far as it goes", ""]);
+    later.shift()!();
+    expect(writes.at(-1)).toBe("Zoomed in as far as it goes");
+    press(); press(); // two quick presses: only the last words are set
+    later.splice(0).forEach((run) => run());
+    expect(writes.filter((w) => w !== "")).toHaveLength(3);
   });
 
   it("ignore a click that is not on one of the buttons", () => {

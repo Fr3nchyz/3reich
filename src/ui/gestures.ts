@@ -62,7 +62,8 @@ export function attachGestures(svg: SVGSVGElement, viewport: Viewport, onTap?: (
     e.preventDefault();
     const { scale, clientX, clientY } = e as GestureLike;
     // A trackpad pinch arrives only as this event; a touch pinch arrives as pointers too and is already handled above.
-    if (pointers.size === 0 && scale > 0) viewport.zoomAt(clientX, clientY, seen / scale);
+    if (!Number.isFinite(scale) || scale <= 0) return; // an odd reading from the browser is ignored, never passed on
+    if (pointers.size === 0) viewport.zoomAt(clientX, clientY, seen / scale);
     seen = scale;
   });
   svg.addEventListener("gestureend", (e) => e.preventDefault());
