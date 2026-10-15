@@ -6,7 +6,7 @@ import { OWNER_NAMES } from "../engine/nations";
 import type { DefenseBasis } from "../engine/terrain";
 import type { GameState, Unit } from "../engine/types";
 import { multipleWord, resultRows, type ResultRow } from "./attackResults";
-import { placeName, stackSummary, unitName } from "./names";
+import { nationAdjective, placeName, stackSummary, unitName } from "./names";
 
 /**
  * The attack preview (spec 07, parts B and E): everything the attack card shows before the button, as plain data. A pure function of the
@@ -111,6 +111,8 @@ const MULTIPLIER_REASONS: Readonly<Record<DefenseBasis, string>> = {
 
 const RISKY: readonly OddsColumn[] = ODDS_COLUMNS.slice(0, ODDS_COLUMNS.indexOf("1-1"));
 
+const NONE_CHOSEN = "No unit is chosen to attack.";
+
 const atStep7h = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && s.position.step === "7h";
 
 interface Candidate {
@@ -127,9 +129,41 @@ function candidatesFor(ctx: GameContext, state: GameState, target: string): Cand
       if (spent.includes(unit.id)) return { unit, reason: "has already attacked this turn" };
       if (!crossable(ctx, unit.at, target)) return { unit, reason: "cannot attack across the hexside between the two hexes" };
       // The listing of `legalActions` only holds units that meet an enemy here, so a unit at war with nobody in the hex is not offered.
-      if (defendersAt(state, [unit], target).length === 0 && lonersAt(state, [unit], target).length === 0) return { unit, reason: "is not at war with anyone in this hex" };
+      if (defendersAt(state, [unit], target).length === 0 && lonersAt(state, [unit], target).length === 0) return { unit, reason: noTargetReason(state, unit, target) };
       return { unit, reason: null };
     });
+}
+
+/**
+ * Why a unit has nothing to attack in the hex. The usual reason is that it is at war with nobody there; the other is that the only enemies
+ * are air units or fleets, which a ground unit of any nation standing with them protects (`lonersAt`): then the card names that unit.
+ */
+function noTargetReason(state: GameState, unit: Unit, target: string): string {
+  const here = Object.values(state.units).filter((u) => u.at === target);
+  const guard = here.find(isGroundCombatUnit);
+  if (guard && here.some((u) => !isGroundCombatUnit(u) && isEnemy(state, unit.owner, u.owner))) return `cannot attack here: the enemy air and fleet counters are protected by a ${nationAdjective(guard)} ground unit that stands with them and that you are not at war with`;
+  return "is not at war with anyone in this hex";
+}
+
+/** "has already attacked" said of one counter, or of several ("have already attacked"). */
+const plural = (reason: string): string => reason.replace(/^has /, "have ").replace(/^is /, "are ");
+
+/** The sentences about chosen units that cannot attack: grouped by counter and reason, in agreement ("The 2-3 German infantry counter has ...", "2 of the 2-3 German infantry counters have ..."). */
+function greyedProblems(chosen: readonly { unit: Unit; reason: string }[]): string[] {
+  const groups = new Map<string, { name: string; reason: string; n: number }>();
+  for (const { unit, reason } of chosen) {
+    const key = `${unitName(unit)}|${reason}`;
+    const g = groups.get(key) ?? { name: unitName(unit), reason, n: 0 };
+    groups.set(key, { ...g, n: g.n + 1 });
+  }
+  return [...groups.values()].map((g) => (g.n === 1 ? `The ${g.name} counter ${g.reason}.` : `${g.n} x ${g.name} counters ${plural(g.reason)}.`));
+}
+
+/** "the unit next to it has already attacked this turn; the 2 units next to it are not at war with anyone in this hex". */
+function reasonsIn(cands: readonly Candidate[]): string {
+  const counts = new Map<string, number>();
+  for (const c of cands) counts.set(c.reason!, (counts.get(c.reason!) ?? 0) + 1);
+  return [...counts].map(([reason, n]) => (n === 1 ? `the unit next to it ${reason}` : `the ${n} units next to it ${plural(reason)}`)).join("; ");
 }
 
 /** The default choice (spec 07 decision 4): every unit that can attack; for a hex with only air units or the like, the weakest single unit, infantry first. */
@@ -182,12 +216,16 @@ function riverWarnings(ctx: GameContext, state: GameState, cands: Candidate[], c
   return out;
 }
 
+const factorsWord = (n: number): string => `${n} factor${n === 1 ? "" : "s"}`;
+
 function buttonFor(place: string, chosen: Unit[], numbers: PreviewNumbers | null, sweep: Sweep | null, loners: Unit[], problems: string[]): AttackButton {
-  if (problems.length > 0) return { text: chosen.length === 0 && problems.length === 1 ? "Choose at least one unit to attack with" : problems[0]!, risky: false, disabled: true };
+  if (problems.length > 0) return { text: chosen.length === 0 && problems.length === 1 && problems[0] === NONE_CHOSEN ? "Choose at least one unit to attack with" : problems[0]!, risky: false, disabled: true };
   if (sweep) return { text: `Destroy ${stackSummary(loners)} in ${place}`, risky: false, disabled: false };
-  const by = `with ${chosen.length === 1 ? "1 unit" : `${chosen.length} units`} (${numbers!.attackFactors} factors)`;
-  const risky = numbers!.column === null || RISKY.includes(numbers!.column);
-  return { text: risky ? `Attack ${place} ${by} at ${numbers!.column ?? "no roll"} (risky)` : `Attack ${place} ${by}`, risky, disabled: false };
+  const by = `with ${chosen.length === 1 ? "1 unit" : `${chosen.length} units`} (${factorsWord(numbers!.attackFactors)})`;
+  // With no roll the loss is certain, which is not a gamble: the amber warning stays, the word "risky" does not.
+  if (numbers!.column === null) return { text: `Attack ${place} ${by}: no roll, your attackers are eliminated (certain loss)`, risky: true, disabled: false };
+  const risky = RISKY.includes(numbers!.column);
+  return { text: risky ? `Attack ${place} ${by} at ${numbers!.column} (risky)` : `Attack ${place} ${by}`, risky, disabled: false };
 }
 
 export function attackPreview(ctx: GameContext, state: GameState, target: string, chosenIds: readonly string[]): AttackPreview {
@@ -196,13 +234,17 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
   const problems = ctx.map.hexes[target] ? hexProblems(ctx, state, target, cands) : [`${target} is not a hex on the map.`];
   const free = cands.filter((c) => c.reason === null).map((c) => c.unit);
   const chosen = free.filter((u) => chosenIds.includes(u.id));
+  const stuck: { unit: Unit; reason: string }[] = [];
   for (const id of problems.length > 0 ? [] : chosenIds) {
     const u = state.units[id];
     const c = cands.find((x) => x.unit.id === id);
-    if (u && c?.reason) problems.push(`${unitName(u)} ${c.reason}.`);
-    else if (u && !c) problems.push(`${unitName(u)} is not next to ${place}.`);
+    if (u && c?.reason) stuck.push({ unit: u, reason: c.reason });
+    else if (u && !c) problems.push(`The ${unitName(u)} counter is not next to ${place}.`);
   }
-  if (chosen.length === 0 && problems.length === 0) problems.push("No unit is chosen to attack.");
+  problems.push(...greyedProblems(stuck));
+  // Nothing next to the hex can attack it: say the real reason (counted by reason), not "choose a unit".
+  if (problems.length === 0 && free.length === 0) problems.push(`Nothing can attack ${place} now: ${reasonsIn(cands)}.`);
+  if (chosen.length === 0 && problems.length === 0) problems.push(NONE_CHOSEN);
 
   // Before anything is chosen the hex is described as seen by everyone who could attack.
   const scope = chosen.length > 0 ? chosen : free;

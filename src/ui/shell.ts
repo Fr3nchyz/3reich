@@ -1,4 +1,6 @@
-/** The page around the game: header controls, the map, the hex info overlay and the status area. */
+import { ZOOM_BUTTONS } from "./zoomControls";
+
+/** The page around the game: header controls, the map, the zoom buttons, the hex info overlay and the status area. */
 
 const SHELL = `
   <header>
@@ -20,6 +22,8 @@ const SHELL = `
   <div class="map-dock">
     <div class="map-wrap">
       <div id="map" class="map-fill"></div>
+      <div id="zoom" class="zoom" role="group" aria-label="Map zoom">${ZOOM_BUTTONS}</div>
+      <p id="zoomsay" class="sr-only" role="status" aria-live="polite"></p>
       <div id="hexinfo" class="hexinfo">Tap or hover a hex</div>
       <div id="legend" class="legend" role="note" hidden></div>
       <div id="maptoast" class="map-toast" aria-hidden="true"></div>
@@ -36,18 +40,24 @@ const SHELL = `
       <p id="w-announce" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </div>
-  <section id="status" tabindex="-1"></section>`;
+  <section id="status" tabindex="-1"></section>
+  <p id="a11y-live" class="sr-only" role="status" aria-live="polite"></p>`;
 
 export interface Shell {
   map: HTMLElement;
   /** The hex info overlay, inside the map so that changing its text can never shift the layout. */
   info: HTMLElement;
   status: HTMLElement;
+  /** A polite live line for screen readers, outside the redrawn status area (the attack card's odds, spec 07 part D). */
+  live: HTMLElement;
   scenario: HTMLSelectElement;
   side: HTMLSelectElement;
   newGame: HTMLElement;
   fronts: HTMLInputElement;
   wholeMap: HTMLElement;
+  /** The zoom buttons over the map (see zoomControls.ts), and the line that tells a screen reader what a press did. */
+  zoom: HTMLElement;
+  zoomSay: HTMLElement;
   /** The button that switches the control overlay on and off, and the key shown over the map while it is on. */
   overlay: HTMLButtonElement;
   legend: HTMLElement;
@@ -77,11 +87,14 @@ export function mountShell(app: HTMLElement): Shell {
     map: el("map"),
     info: el("hexinfo"),
     status: el("status"),
+    live: el("a11y-live"),
     scenario: el<HTMLSelectElement>("scenario"),
     side: el<HTMLSelectElement>("side"),
     newGame: el("newgame"),
     fronts: el<HTMLInputElement>("fronts"),
     wholeMap: el("wholemap"),
+    zoom: el("zoom"),
+    zoomSay: el("zoomsay"),
     overlay: el<HTMLButtonElement>("overlay"),
     legend: el("legend"),
     mapToast: el("maptoast"),
