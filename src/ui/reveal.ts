@@ -42,8 +42,12 @@ export function revealStep(root: HTMLElement): void {
   const top = root.querySelector(".turn");
   const list = root.querySelector("#attacks-title");
   if (!(top instanceof HTMLElement)) return;
-  const shown = list instanceof HTMLElement && list.getBoundingClientRect().top >= topEdge(top) && list.getBoundingClientRect().bottom + ROW_PEEK <= bottomEdge(top);
-  if (!shown) top.scrollIntoView({ block: "start" });
+  const shown = () => list instanceof HTMLElement && list.getBoundingClientRect().top >= topEdge(top) && list.getBoundingClientRect().bottom + ROW_PEEK <= bottomEdge(top);
+  if (shown()) return;
+  top.scrollIntoView({ block: "start" });
+  // A short screen (a phone on its side): the turn line can go, the bar and the list matter more.
+  const bar = root.querySelector(".nextbar");
+  if (!shown() && bar instanceof HTMLElement) bar.scrollIntoView({ block: "start" });
 }
 
 /** Focuses `heading` and brings its card into view with `show`. */
