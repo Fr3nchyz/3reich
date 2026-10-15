@@ -67,7 +67,7 @@ export function furtherSentence(alone: readonly { name: string; points: number }
   for (const a of alone) by.set(`${a.name}|${a.points}`, { ...a, n: (by.get(`${a.name}|${a.points}`)?.n ?? 0) + 1 });
   const clause = ({ name, points, n }: { name: string; points: number; n: number }) =>
     n === 1 ? `the ${name} alone could go up to ${reach(points)}` : `${n} x ${name} could each go up to ${reach(points)} alone`;
-  return `${[...by.values()].map((c) => cap(clause(c))).join("; ")}.`;
+  return `${cap([...by.values()].map(clause).join("; "))}.`;
 }
 
 /** "Untick the 2-3 German infantry to let it go further." (`faster` is how many counters would gain, for "it" or "them"). */

@@ -7,10 +7,12 @@ import { enemyZocFor } from "./zoc";
 
 /**
  * Where any chosen part of a stack can go (spec 10, ticket 10-1): a read-only query for the screen's Move card. It asks the
- * same two questions legalMoves asks, with the same helpers (reachableHexes for the slowest unit's reach, endProblem for
+ * same two questions legalMoves asks, with the same helpers (reachableHexes for the group's reach at the slowest unit's factor, endProblem for
  * where all of them may end), so for the whole movable stack of a hex, or for one unit, it lists exactly the MOVE actions
  * legalActions lists; it also answers for the sets in between, which legalActions leaves out to stay short (Ref 5.45f, 5.0, 6.0).
- * It never changes a state and reads no dice.
+ * It never changes a state and reads no dice. The rules it relies on that the rule text leaves open stay `TODO(verify)` in movement.ts: the group
+ * moves at its slowest unit's factor (`STACK_MOVES_AT_SLOWEST_UNIT`), nations mix freely in a group (`MIXED_NATIONS_MOVE_TOGETHER`) and stacking is
+ * counted one unit at a time (`STACKING_CHECKED_ONE_AT_A_TIME`); one move per unit per Player Turn is `ONE_MOVE_PER_TURN`.
  */
 
 export interface MoveDestination {

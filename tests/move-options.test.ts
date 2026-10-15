@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, legalActions } from "../src/engine/actions";
 import { moveOptionsFor, type MoveOptions } from "../src/engine/move-options";
-import { movableUnits } from "../src/engine/movement";
-import { adjacentHexes, zocPathProblem } from "../src/engine/zoc";
-import { CTX } from "./helpers";
+import { MIXED_NATIONS_MOVE_TOGETHER, STACKING_CHECKED_ONE_AT_A_TIME, STACK_MOVES_AT_SLOWEST_UNIT, movableUnits, reachableHexes } from "../src/engine/movement";
+import { adjacentHexes, enemyZocFor, zocPathProblem } from "../src/engine/zoc";
+import { SCENARIO_1942 } from "../src/data/scenario-1942";
+import { CTX, ctxFor } from "./helpers";
 import { at6f, inf, movesIn } from "./helpers-move";
 import { realPositions, type Position } from "./helpers-positions";
 
@@ -94,8 +95,11 @@ describe("real positions from computer self-play (all four scenarios)", () => {
       for (const ids of stacks(p).filter((s) => s.length > 1)) {
         const o = must(moveOptionsFor(p.ctx, p.state, ids));
         const wholeReach = new Map(o.destinations.map((d) => [d.to, d.path]));
+        const reach = reachableHexes(p.ctx, p.state, o.units, enemyZocFor(p.ctx, p.state, p.state.activeSide));
         for (const hex of o.tooFull) {
           expect(wholeReach.has(hex), "a full hex is never a destination").toBe(false);
+          const r = applyAction(p.ctx, p.state, { type: "MOVE", side: p.state.activeSide, units: ids, path: reach.get(hex)! });
+          expect(r.ok, `${p.label}: ${ids.join(",")} to the full hex ${hex}`).toBe(false);
           full++;
         }
         // From an edge of the reach, one more hex is beyond the points of the slowest unit.
@@ -135,8 +139,14 @@ describe("real positions from computer self-play (all four scenarios)", () => {
   });
 });
 
-describe("faster and slower units (Ref 5.45f: a stack moves at its slowest unit's factor)", () => {
+// TODO(verify, Ref 5.45f; spec 10 engine fact 8): the rule text does not say a stack moves at its slowest unit's factor. These tests check that the code does what
+// the current assumption (STACK_MOVES_AT_SLOWEST_UNIT) says, not that the rule is settled.
+describe("faster and slower units under the current assumption that a stack moves at its slowest unit's factor (TODO(verify), open in docs/RULES.md)", () => {
   const s = at6f([inf("u1", "germany", "L32", 3, 4, "armor"), inf("u2", "germany", "L32", 2, 3)]);
+
+  it("names its open assumptions as constants (TODO(verify) in movement.ts)", () => {
+    expect([STACK_MOVES_AT_SLOWEST_UNIT, MIXED_NATIONS_MOVE_TOGETHER, STACKING_CHECKED_ONE_AT_A_TIME]).toEqual([true, true, true]);
+  });
 
   it("the pair goes as far as the slower unit; the faster one alone goes further, so both shades of yellow can be told apart", () => {
     const pair = must(moveOptionsFor(CTX, s, ["u1", "u2"]));
@@ -180,6 +190,26 @@ describe("stacking at the end (Ref 5.0, 26.0)", () => {
   it("British and French together are refused as a pair before 1942 only where they would meet others; Anglo-French may not end beside each other's units", () => {
     const st = at6f([inf("u1", "britain", "P22"), inf("u2", "france", "O23")], "allies");
     expect(dests(must(moveOptionsFor(CTX, st, ["u1"])))).not.toContain("O23");
+  });
+});
+
+describe("open assumptions kept as named constants (TODO(verify), spec 10 engine facts 3 and 9)", () => {
+  it("a German and an Italian unit may move as one group (MIXED_NATIONS_MOVE_TOGETHER, fact 3): the listing offers the pair and the query agrees", () => {
+    const ctx = ctxFor(SCENARIO_1942);
+    const st = at6f([inf("u1", "germany", "L32"), inf("u2", "italy", "L32")], "axis", SCENARIO_1942);
+    const pair = movesIn(legalActions(ctx, st)).filter((a) => a.units.length === 2);
+    expect(pair.length).toBeGreaterThan(0);
+    const o = must(moveOptionsFor(ctx, st, ["u1", "u2"]));
+    expect(o.destinations.map((d) => d.path)).toEqual(pair.map((a) => a.path));
+  });
+
+  it("stacking is counted one unit at a time (STACKING_CHECKED_ONE_AT_A_TIME, fact 9): two British may join one British unit in London (three), a third may not", () => {
+    const london = "K23";
+    const next = adjacentHexes(CTX, london).find((h) => CTX.map.hexes[h]?.land)!;
+    const st = at6f([inf("b1", "britain", next), inf("b2", "britain", next), inf("b3", "britain", london)], "allies");
+    expect(dests(must(moveOptionsFor(CTX, st, ["b1", "b2"])))).toContain(london);
+    const four = at6f([inf("b1", "britain", next), inf("b2", "britain", next), inf("b3", "britain", london), inf("b4", "britain", london)], "allies");
+    expect(dests(must(moveOptionsFor(CTX, four, ["b1", "b2"])))).not.toContain(london);
   });
 });
 

@@ -71,7 +71,11 @@ describe("the card for a stack with units of different speed (Ref 5.45f)", () =>
     expect(c.destinations.length).toBeGreaterThan(card(["u1", "u2"]).destinations.length);
   });
 
-  it("ticking a unit again puts the list back, and the order of the ticks does not matter", () => {
+  it("a tap on a ticked line unticks only that unit, a tap on an unticked line adds it (both directions), and the order of the ticks does not matter", () => {
+    expect(toggled(["u1", "u2", "u3"], "u2")).toEqual(["u1", "u3"]);
+    expect(toggled(["u1", "u3"], "u2")).toEqual(["u1", "u3", "u2"]);
+    expect(toggled(["u1"], "u1")).toEqual([]);
+    expect(toggled(["u1", "u2"], "u2")).toEqual(["u1"]);
     expect(toggled(toggled(["u1", "u2"], "u2"), "u2")).toEqual(["u1", "u2"]);
     expect(toggled([], "u1")).toEqual(["u1"]);
     expect(card(["u2", "u1"])).toEqual(card(["u1", "u2"]));
@@ -164,6 +168,35 @@ describe("stacking and identical counters (Ref 5.0)", () => {
     expect(c).toMatchObject({ status: "nowhere", advice: "These units cannot all go anywhere together.", destinations: [], together: null });
   });
 
+  it("an equal-speed pair beside a lone friendly unit: the hex too full for both is not 'further', so no second shade and no untick advice", () => {
+    const s = at6f([inf("u1", "germany", "L32"), inf("u2", "germany", "L32"), inf("u3", "germany", "L33")]);
+    const c = card(["u1", "u2"], s, "L32");
+    expect(c.room).not.toBeNull();
+    expect(c.further).toBeNull();
+    expect(c.alone).toEqual([]);
+  });
+
+  it("equal speed is never 'faster', even when another nation's restriction keeps the group out of land one unit could enter alone", () => {
+    // Italy is made an active Axis power and Germany is at war with Belgium; Italy is not, so Belgian land is closed to the Italian and to the pair (NEUTRAL_LAND_CLOSED, TODO(verify)).
+    const base = at6f([inf("u1", "germany", "M24"), inf("u2", "italy", "M24")]);
+    const st = { ...base, nations: { ...base.nations, italy: { ...base.nations.italy, status: "axis" as const } }, wars: [...base.wars, ["germany", "belgium"] as [string, string]] } as typeof base;
+    const alone = moveOptionsFor(CTX, st, ["u1"]);
+    expect(alone.ok && alone.destinations.map((d) => d.to)).toContain("L25");
+    const c = card(["u1", "u2"], st, "M24");
+    expect(c.destinations.map((d) => d.to)).not.toContain("L25");
+    expect(c.further).toBeNull();
+    expect(c.alone).toEqual([]);
+  });
+
+  it("a faster unit's hex that is only too full for the group is not shaded as 'further'; hexes beyond the group's reach still are", () => {
+    // The armor (4) and infantry (3) at L32; a friendly unit at L33 makes L33 too full for the pair, though the armor alone could end there.
+    const s = at6f([inf("u1", "germany", "L32", 3, 4, "armor"), inf("u2", "germany", "L32"), inf("u3", "germany", "L33")]);
+    const c = card(["u1", "u2"], s, "L32");
+    expect(c.alone).not.toContain("L33");
+    expect(c.alone.length).toBeGreaterThan(0);
+    expect(c.room).toBe("1 hex within reach cannot take both of them.");
+  });
+
   it("when everyone ticked has the same movement there is no 'set by' and no 'further'", () => {
     const s = at6f([inf("u1", "germany", LODZ), inf("u2", "germany", LODZ)]);
     const c = card(["u1", "u2"], s);
@@ -186,7 +219,7 @@ describe("the words", () => {
     expect(T.togetherSentence(["a"], 1, ["a"])).toBe("The a can go up to 1 hex.");
     expect(T.untickAdvice(["x"], 2)).toBe("Untick the x to let them go further.");
     expect(T.listOf(["a", "b", "c"])).toBe("a, b and c");
-    expect(T.furtherSentence([{ name: "A", points: 4 }, { name: "B", points: 5 }])).toBe("The A alone could go up to 4 hexes; The B alone could go up to 5 hexes.");
+    expect(T.furtherSentence([{ name: "A", points: 4 }, { name: "B", points: 5 }])).toBe("The A alone could go up to 4 hexes; the B alone could go up to 5 hexes.");
     expect(T.furtherSentence([{ name: "A", points: 4 }, { name: "A", points: 4 }])).toBe("2 x A could each go up to 4 hexes alone.");
   });
 

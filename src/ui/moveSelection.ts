@@ -131,8 +131,10 @@ export function selectionFor(ctx: GameContext, state: GameState, hex: HexId, tic
   const reached = new Set(group.destinations.map((d) => d.to));
   const tickedUnits = group.units;
   const slowest = tickedUnits.filter((u) => movementFactor(u) === group.points);
-  const faster = tickedUnits.filter((u) => movementFactor(u) > group.points && alone.get(u.id)!.destinations.some((d) => !reached.has(d.to)));
-  const extra = new Set(faster.flatMap((u) => alone.get(u.id)!.destinations.map((d) => d.to).filter((h) => !reached.has(h))));
+  // Further than the group, not merely a hex within its reach that is too full for all of them (that is told by `room`).
+  const beyond = (u: Unit) => alone.get(u.id)!.destinations.map((d) => d.to).filter((h) => !reached.has(h) && !group.tooFull.includes(h));
+  const faster = tickedUnits.filter((u) => movementFactor(u) > group.points && beyond(u).length > 0);
+  const extra = new Set(faster.flatMap(beyond));
   const fits = new Set(ticked.flatMap((id) => alone.get(id)!.destinations.map((d) => d.to)));
   const crowded = ticked.length > 1 ? group.tooFull.filter((h) => fits.has(h)) : [];
   const further = faster.length > 0 ? `${T.furtherSentence(faster.map((u) => ({ name: unitName(u), points: movementFactor(u) })))} ${T.untickAdvice(slowest.map((u) => unitName(u)), faster.length)}` : null;
