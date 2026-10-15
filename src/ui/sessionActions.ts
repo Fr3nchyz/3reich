@@ -4,6 +4,7 @@ import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
 import { computerToMove } from "./computerPlay";
+import { normaliseAttack, tapToAttack } from "./attackTap";
 import { tapToMove } from "./moveTap";
 import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
@@ -21,6 +22,7 @@ export function normaliseMode(s: Session): void {
   if (s.mode === "remove" && !Object.values(s.state.units).some((u) => u.owner === owner)) s.mode = "place";
   // A chosen build is dropped once it is no longer on offer (step left, counter used up, BRPs spent).
   if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
+  normaliseAttack(s);
 }
 
 type Build = Extract<Action, { type: "BUILD" }>;
@@ -58,7 +60,7 @@ export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
   lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
-    if (!computerToMove(s) && !tapToMove(s, h)) tapToBuild(s, h);
+    if (!computerToMove(s) && !tapToMove(s, h) && !tapToAttack(s, h)) tapToBuild(s, h);
     return;
   }
   const owner = currentSetupOwner(s.state);
