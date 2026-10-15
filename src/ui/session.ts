@@ -53,6 +53,8 @@ export interface Session {
   build: BuildPick | null;
   /** The hex of the stack chosen to move at step 6f (its destinations are outlined), or null. */
   moveFrom?: string | null;
+  /** The hex last tapped to look at (spec 07, part A): the hex card shows it. Screen state only, never saved; closing the card clears it. */
+  lookedAt?: string | null;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */
