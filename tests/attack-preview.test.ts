@@ -41,6 +41,15 @@ describe("the six results (Ref 12.1)", () => {
     expect(p.results).toEqual([]);
     expect(p.button).toMatchObject({ risky: true, disabled: false });
   });
+
+  // Follow-up 1 of the review of 07-4: "(1 factors)" and a certain loss is not called "risky".
+  it("the button says '1 factor', and a no-roll attack is a certain loss, not a risk", () => {
+    const p = preview(at7h([GER("g1", "M32", 1), POL("p1", "M33", 4)]), "M33", ["g1"]);
+    expect(p.button.text).toBe("Attack Poznan (M33) with 1 unit (1 factor): no roll, your attackers are eliminated (certain loss)");
+    expect(p.button.text).not.toContain("risky");
+    expect(p.button.risky).toBe(true); // still amber: the player is warned
+    expect(preview(at7h([GER("g1", "M32", 2), POL("p1", "M33", 3)]), "M33", ["g1"]).button.text).toBe("Attack Poznan (M33) with 1 unit (2 factors) at 1-3 (risky)");
+  });
 });
 
 describe("odds rounding (Ref 12.1)", () => {
@@ -94,13 +103,13 @@ describe("the cost of an Exchange, in both directions (Ref 12.2)", () => {
     const row = exchangeRow(preview(s, "M33", ["g1", "g2"]));
     expect(row.exchange).toEqual(exchangeCost([s.units.g1!, s.units.g2!], [s.units.p1!, s.units.p2!], 2));
     expect(row.exchange).toMatchObject({ attackersLoseAll: true, chooser: "defenders", required: 4 });
-    expect(row.text).toBe("Exchange: you lose all 4 of your factors; they lose at least 4 factors, each of their units counting doubled and they choose which units.");
+    expect(row.text).toBe("Exchange: you lose all your 4 factors; they lose at least 4 factors, each of their units counting doubled and they choose which units.");
   });
   it("attackers larger: the defenders lose all, the attackers remove at least the multiplied defence", () => {
     const s = at7h([GER("g1", "M32", 3), GER("g2", "M32", 2), POL("p1", "M33"), POL("p2", "M33")]);
     const row = exchangeRow(preview(s, "M33", ["g1", "g2"]));
     expect(row.exchange).toMatchObject({ defendersLoseAll: true, chooser: "attackers", required: 4 });
-    expect(row.text).toBe("Exchange: they lose all (their 4 counted doubled); you lose at least 4 of your factors and you choose which units.");
+    expect(row.text).toBe("Exchange: they lose all (their 4 counted doubled); you lose at least 4 of your factors (only one set of your units is enough, so nothing is left to choose). The hex is left empty and your survivors may advance.");
   });
   it("equal totals: both lose everything", () => {
     const s = at7h([GER("g1", "M32", 2), GER("g2", "M32", 2), POL("p1", "M33", 2)]);
@@ -177,7 +186,7 @@ describe("candidates and why one is greyed (spec 07 part A)", () => {
     const p = preview(s, "M33", ["g1", "g2"]);
     expect(p.attackers.map((c) => [c.state, c.reason])).toEqual([["chosen", null], ["greyed", "has already attacked this turn"]]);
     expect(p.numbers?.attackFactors).toBe(3);
-    expect(p.problems).toEqual(["2 German infantry has already attacked this turn."]);
+    expect(p.problems).toEqual(["The 2 German infantry counter has already attacked this turn."]);
     expect(p.button.disabled).toBe(true);
   });
   it("a unit across a coast is greyed: ground units may not attack over that hexside", () => {
@@ -238,5 +247,59 @@ describe("problems and the button", () => {
     for (const [a, d] of [[2, 2], [2, 3], [2, 4], [1, 4]] as const) expect(risky(a, d).risky, `${a} against ${d * 2}`).toBe(true);
     expect(risky(2, 3).text).toBe("Attack Poznan (M33) with 1 unit (2 factors) at 1-3 (risky)");
     expect(risky(2, 1).text).toBe("Attack Poznan (M33) with 1 unit (2 factors)");
+  });
+});
+
+describe("wording fixes from the review of 07-4", () => {
+  it("chosen units that have attacked: agreement for one counter and for several", () => {
+    const s = spent(at7h([GER("g1", "M32", 3), GER("g2", "N32", 2), GER("g3", "N32", 2), POL("p1", "M33")]), ["g2", "g3"]);
+    expect(preview(s, "M33", ["g1", "g2"]).problems).toEqual(["The 2 German infantry counter has already attacked this turn."]);
+    expect(preview(s, "M33", ["g1", "g2", "g3"]).problems).toEqual(["2 x 2 German infantry counters have already attacked this turn."]);
+  });
+
+  it("every unit greyed: the button says the real reason, not 'choose a unit'", () => {
+    const s = spent(at7h([GER("g1", "M32", 3), GER("g2", "N32", 2), POL("p1", "M33")]), ["g1", "g2"]);
+    const p = preview(s, "M33", []);
+    expect(p.problems).toEqual(["Nothing can attack Poznan (M33) now: the 2 units next to it have already attacked this turn."]);
+    expect(p.button).toEqual({ text: p.problems[0], risky: false, disabled: true });
+  });
+
+  it("enemy air units protected by a third-party ground unit: greyed with that reason, and the button says it", () => {
+    // Italian infantry (not at war with Germany) stands with Polish air units: the air units are not alone, so they cannot be swept.
+    const s = at7h([GER("g1", "M32"), unit("it", "italy", "infantry", 3, "M33"), POL("a1", "M33", 1, "air")]);
+    const p = preview(s, "M33", []);
+    expect(p.attackers[0]).toMatchObject({ state: "greyed", reason: expect.stringContaining("protected by a Italian ground unit") });
+    expect(p.button.text).toContain("Nothing can attack Poznan (M33) now");
+    expect(p.button.text).toContain("protected by");
+    expect(p.button.text).not.toContain("Choose at least one unit");
+  });
+
+  it("the Exchange row mentions the air units and fleets swept when the defenders go, and the advance", () => {
+    const air = [POL("a1", "M35", 1, "air"), POL("a2", "M35", 1, "air")];
+    const s = at7h([GER("g1", "M34", 3), GER("g2", "N34", 3), POL("p1", "M35"), ...air]);
+    const row = preview(s, "M35", ["g1", "g2"]).results.find((r) => r.result === "Ex")!;
+    expect(row.exchange).toMatchObject({ defendersLoseAll: true, chooser: "attackers" });
+    expect(row.text).toContain("These enemy counters in the hex go too, with no roll: 1 Polish air, 1 Polish air");
+    expect(row.text).toContain("your survivors may advance");
+    // The D row says the same, so the two rows agree about what is left.
+    expect(preview(s, "M35", ["g1", "g2"]).results.find((r) => r.result === "D")!.text).toContain("1 Polish air, 1 Polish air");
+  });
+
+  it("'you choose' only when there is a real choice of units", () => {
+    const one = preview(at7h([GER("g1", "M32", 4), POL("p1", "M33")]), "M33", ["g1"]).results.find((r) => r.result === "Ex")!;
+    expect(one.exchange).toMatchObject({ chooser: "attackers", required: 2 });
+    expect(one.text).toContain("nothing is left to choose");
+    expect(one.text).not.toContain("you choose");
+    const two = preview(at7h([GER("g1", "M32", 4), GER("g2", "M32", 4), POL("p1", "M33")]), "M33", ["g1", "g2"]).results.find((r) => r.result === "Ex")!;
+    expect(two.text).toContain("you choose which units");
+    const theirs = preview(at7h([GER("g1", "M32", 2), POL("p1", "M33", 2)]), "M33", ["g1"]); // 2 against 4: they lose at least 2 of 2 (1 unit)
+    expect(theirs.results.find((r) => r.result === "Ex")!.text).toContain("nothing is left to choose");
+  });
+
+  it("a hex left empty by a win says the survivors may advance (emptyAfterWin); with a third-party unit staying it does not", () => {
+    const plain = preview(at7h([GER("g1", "M32", 4), POL("p1", "M33")]), "M33", ["g1"]).results.find((r) => r.result === "D")!;
+    expect(plain.text).toContain("The hex is left empty and your survivors may advance.");
+    const guarded = preview(at7h([GER("g1", "M32", 4), POL("p1", "M33"), unit("it", "italy", "infantry", 3, "M33")]), "M33", ["g1"]).results.find((r) => r.result === "D")!;
+    expect(guarded.text).not.toContain("may advance");
   });
 });

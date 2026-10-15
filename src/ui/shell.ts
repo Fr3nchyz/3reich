@@ -40,13 +40,16 @@ const SHELL = `
       <p id="w-announce" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </div>
-  <section id="status" tabindex="-1"></section>`;
+  <section id="status" tabindex="-1"></section>
+  <p id="a11y-live" class="sr-only" role="status" aria-live="polite"></p>`;
 
 export interface Shell {
   map: HTMLElement;
   /** The hex info overlay, inside the map so that changing its text can never shift the layout. */
   info: HTMLElement;
   status: HTMLElement;
+  /** A polite live line for screen readers, outside the redrawn status area (the attack card's odds, spec 07 part D). */
+  live: HTMLElement;
   scenario: HTMLSelectElement;
   side: HTMLSelectElement;
   newGame: HTMLElement;
@@ -84,6 +87,7 @@ export function mountShell(app: HTMLElement): Shell {
     map: el("map"),
     info: el("hexinfo"),
     status: el("status"),
+    live: el("a11y-live"),
     scenario: el<HTMLSelectElement>("scenario"),
     side: el<HTMLSelectElement>("side"),
     newGame: el("newgame"),
