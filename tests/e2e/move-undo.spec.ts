@@ -51,7 +51,7 @@ async function emptyYellow(page: Page, avoid: readonly string[]): Promise<{ id: 
     return null;
   }, avoid);
   if (!found) throw new Error("no yellow hex is visible");
-  return found as { id: string; pt: Pt };
+  return found;
 }
 const stackHexes = (page: Page) => page.locator("button.stack-row").evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.stack!));
 

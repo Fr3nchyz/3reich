@@ -22,9 +22,9 @@ describe("which hexes the attack marks cover", () => {
 
   it("never lists a hex that is not on the map, and an empty or missing input draws nothing", () => {
     const c = attackMarkCells(MAP, { targets: ["M35", "ZZ99"], chosen: "ZZ99", attackers: ["nope"] });
-    expect(c).toEqual({ targets: ["M35"], chosen: null, attackers: [] });
-    expect(attackMarkCells(MAP, null)).toEqual({ targets: [], chosen: null, attackers: [] });
-    expect(attackMarkCells(MAP, {})).toEqual({ targets: [], chosen: null, attackers: [] });
+    expect(c).toEqual({ targets: ["M35"], chosen: null, attackers: [], from: null });
+    expect(attackMarkCells(MAP, null)).toEqual({ targets: [], chosen: null, attackers: [], from: null });
+    expect(attackMarkCells(MAP, {})).toEqual({ targets: [], chosen: null, attackers: [], from: null });
     expect(attackMarksMarkup(MAP, null)).toBe("");
   });
 
