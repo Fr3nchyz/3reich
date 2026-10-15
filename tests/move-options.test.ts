@@ -42,7 +42,7 @@ describe("real positions from computer self-play (all four scenarios)", () => {
       for (const a of movesIn(LEGAL.get(p)!)) {
         const key = a.units.join(",");
         if (!asked.has(key)) asked.set(key, must(moveOptionsFor(p.ctx, p.state, a.units)));
-        expect(asked.get(key)!.ok && asked.get(key)!.destinations, p.label).toContainEqual({ to: a.path[a.path.length - 1], path: a.path });
+        expect(must(asked.get(key)!).destinations, p.label).toContainEqual({ to: a.path[a.path.length - 1], path: a.path });
         checked++;
       }
     }

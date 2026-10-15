@@ -308,6 +308,12 @@ Ref 5.0 and 26.0 (stacking, Anglo-French), 5.45f and 5.45g (movement, overstack)
 - B2. Should `moveOptionsFor` live in `move-action.ts` (122 lines, lint limit 300) or its own file? Proposed its own file.
 - B3. Reaching step 6f in e2e takes a dozen clicks (as in `move.spec.ts`); a shortcut belongs to a separate ticket.
 
+## As built (tickets 10-1 and 10-2)
+
+- **10-1** `src/engine/move-options.ts`: `moveOptionsFor(ctx, state, unitIds)` returns `{ ok, units, from, points, destinations: [{ to, path }], tooFull }` for any non-empty subset of the movable units of one hex, or `{ ok: false, error }`. It reuses `destinations` (now exported, with `resolveUnits`, from `move-action.ts`; nothing else there changed) so it is the code `legalMoves` runs; `tooFull` lists hexes in reach where the group may not all end. `legalActions` is unchanged: self-play for 1939 seed 1 and campaign seed 2 is byte-identical before and after. Tests: `tests/move-options.test.ts` (real self-play positions from all four scenarios).
+- **10-2** `src/ui/moveSelection.ts` (`defaultTicks`, `toggled`, `selectionFor`, `movedLine`) and `src/ui/moveText.ts` (every sentence): lines are ticked, free or greyed with a reason, ground layer first; `destinations` is the yellow, `alone` the second shade (hexes a faster ticked unit reaches alone). A unit with no hex to go to alone is greyed and not ticked by default. Tests: `tests/move-selection.test.ts`, including a no-id check over real positions.
+- Still `TODO(verify)`: one move per Player Turn (Ref 5.45f), every terrain costs 1 so "hexes" equals movement points (Ref 4.5; `POINTS_ARE_HEXES` switches the words), replacements do not move (engine fact 7), mixed nations move as one group (fact 3), group at the slowest factor (fact 8), stacking counted one unit at a time (fact 9).
+
 ## Done when
 
 1. Frank can tick the counters of a hex he wants to move, see the yellow hexes change with the ticks, tap one, and exactly those counters move; the rest stay and can still be moved this turn. No coordinate and no unit number is needed on the way.
