@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { baysBetweenLand, hexCenter } from "../src/ui/mapView";
 import { hex } from "../src/engine/hex";
+import { attackMarksMarkup } from "../src/ui/mapMarks";
+import { buildHexLayers, svgMarkup } from "../src/ui/mapLayers";
 
 const towards = (from: string) => baysBetweenLand(MAP).filter((b) => b.hex === from).map((b) => b.toward).sort();
 
@@ -50,5 +52,26 @@ describe("water between land hexes that touch across the sea", () => {
       expect(dApex).toBeLessThan(dMid);
       expect(dApex).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("the attack marks layer (spec 07, 07-5)", () => {
+  const layers = buildHexLayers(MAP);
+  const page = svgMarkup(MAP, layers.bounds, false, layers);
+  const order = [...page.matchAll(/<g class="([a-z-]+)"/g)].map((m) => m[1]);
+
+  it("starts empty and sits above the yellow highlights and below the counters, hidden from assistive tech", () => {
+    expect(order.indexOf("attack-marks")).toBeGreaterThan(order.indexOf("highlights"));
+    expect(order.indexOf("attack-marks")).toBeGreaterThan(order.indexOf("wateredges"));
+    expect(order.indexOf("attack-marks")).toBeLessThan(order.indexOf("units"));
+    expect(page).toContain('<g class="attack-marks" aria-hidden="true"></g>');
+  });
+
+  it("draws outlines for the hexes it is given and nothing once cleared", () => {
+    const drawn = attackMarksMarkup(MAP, { targets: ["M35", "N33"], chosen: "N33", attackers: ["L34"] });
+    expect(drawn).toContain('data-mk-target="M35"');
+    expect(drawn).toContain('data-mk-chosen="N33"');
+    expect(drawn).toContain('data-mk-attacker="L34"');
+    expect(attackMarksMarkup(MAP, { targets: [] })).toBe("");
   });
 });
