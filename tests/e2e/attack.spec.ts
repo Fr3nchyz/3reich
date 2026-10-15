@@ -106,12 +106,23 @@ test("a win: the result card names what was lost, offers the advance with names,
   await expect(result).toContainText("They lost: 2-3 Polish infantry, 1-3 Polish infantry.");
   await expect(result).toContainText("You lost nothing.");
   await expect(result).toContainText("Krakow (P33) is empty. Your surviving units can advance into it");
-  await expect(result.locator("h2")).toBeFocused();
-  const advance = page.getByRole("button", { name: "Advance 2 x 4-6 German armor from P32 into Krakow (P33)", exact: true });
-  await expect(advance).toBeVisible();
+  // The advance is asked for in a card of its own, first under the Next bar, with the heading focused; chips name the units, no ids.
+  const adv = page.locator(".advancecard");
+  await expect(adv.locator("h2")).toHaveText("Advance into Krakow (P33)?");
+  await expect(adv.locator("h2")).toBeFocused();
+  await expect(adv.locator("button.pick")).toHaveCount(2);
+  await expect(adv.locator("button.pick").first()).toContainText("4-6 German armor");
+  await expect(adv.locator("button.pick").first()).toContainText("from P32");
+  await expect(adv.locator("button[data-advancego]")).toHaveText("Advance 2 units into Krakow (P33)");
+  await expect(adv.locator("button[data-advancestay]")).toHaveText("Stay");
   clean(await page.locator("main").innerText());
-  await advance.click();
+  // The old coded button is still in a fold-out, with its readable label.
+  const fold = page.locator("details.declarations", { hasText: "All advances as a list" });
+  await expect(fold.locator("button", { hasText: "Advance 2 x 4-6 German armor from P32 into Krakow (P33)" })).toHaveCount(1);
+  await adv.locator("button[data-advancego]").click();
   await expect(page.locator(".log li").filter({ hasText: /^2 x 4-6 German armor advance into Krakow \(P33\)\./ })).toHaveCount(1);
+  await expect(page.locator(".advancecard")).toHaveCount(0);
+  await expect(page.locator(".resultcard")).toContainText("You advanced 2 x 4-6 German armor into it.");
   await expect(page.locator("button", { hasText: /^Advance / })).toHaveCount(0);
   await expect(page.locator("g.attack-marks .mk-target")).toHaveCount(1); // Warsaw is still there to attack
   expect(errors).toEqual([]);
@@ -261,9 +272,9 @@ for (const size of SIZES) {
     expect(map.height, "the map is still on screen").toBeGreaterThan(size[1] * 0.25);
     expect(map.y + map.height).toBeGreaterThan(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size[0]);
-    const done = (await page.getByRole("button", { name: "Done with step 7h", exact: true }).boundingBox())!;
+    const bar = (await page.locator(".nextbar").boundingBox())!;
     const cardTop = (await card(page).boundingBox())!.y;
-    expect(done.y + done.height, "the card sits below the step buttons").toBeLessThanOrEqual(cardTop);
+    expect(bar.y + bar.height, "the Next bar does not cover the card").toBeLessThanOrEqual(cardTop + 1);
     for (const b of await page.locator(".attacks button:visible").all()) {
       const box = (await b.boundingBox())!;
       const name = (await b.innerText()).slice(0, 30);

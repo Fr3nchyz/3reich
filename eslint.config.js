@@ -5,7 +5,7 @@ import tseslint from "typescript-eslint";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig(
-  { ignores: ["dist/", "coverage/", "playwright-report/", "test-results/"] },
+  { ignores: ["dist/", "dist-e2e/", "coverage/", "playwright-report/", "test-results/"] },
   js.configs.recommended,
   tseslint.configs.recommended,
   // Type-aware rules (they need the TypeScript program) only where tsconfig.json covers the files.

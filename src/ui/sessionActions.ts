@@ -5,6 +5,7 @@ import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
 import { computerToMove } from "./computerPlay";
 import { normaliseAttack, tapToAttack } from "./attackTap";
+import { normaliseChoice } from "./choiceTap";
 import { tapToMove } from "./moveTap";
 import { buildKey, parseBuildKey } from "./buildView";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
@@ -23,6 +24,7 @@ export function normaliseMode(s: Session): void {
   // A chosen build is dropped once it is no longer on offer (step left, counter used up, BRPs spent).
   if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
   normaliseAttack(s);
+  normaliseChoice(s);
 }
 
 type Build = Extract<Action, { type: "BUILD" }>;

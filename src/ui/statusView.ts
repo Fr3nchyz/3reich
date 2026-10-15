@@ -16,6 +16,7 @@ import { logHtml } from "./logView";
 import { panelHtml } from "./watchBar";
 import { hexCardHtml } from "./hexCardView";
 import { attackHtml } from "./attackView";
+import { leadsStatus, nextBarHtml } from "./nextBar";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -68,18 +69,25 @@ export function buttonLabels(actions: Action[], ctx: GameContext, state: GameSta
 /**
  * One button per legal action; data-action is the index into `actions`. Declarations of war and grants, of
  * which there are many, sit in fold-outs above the buttons that move the game on. Builds are not buttons:
- * they have their own panel (buildView).
+ * they have their own panel (buildView). The losses and the advance after a battle are the cards of choiceView.ts, with their
+ * old buttons in fold-outs for a keyboard.
  */
-function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): string {
+/** The folds of the combat buttons: their inner row is not `.actions`, so the buttons that move the game on stay the last `.actions` buttons in the page (the browser tests click that one). */
+const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE"];
+
+function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string } {
   const shown = buttonLabels(actions, ctx, state);
   const text = new Map(shown.map((l) => [l.action, l.text]));
   const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
   const fold = (type: Action["type"], title: string) => {
     const group = actions.filter((a) => a.type === type && text.has(a));
-    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
+    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK");
-  return `${fold("ATTACK", "All attacks as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}<div class="actions controls">${rest.map(button).join("")}</div>`
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE");
+  return {
+    folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
+    rest: rest.map(button).join(""),
+  };
 }
 
 /** What step 3 asks for, and what is already chosen. */
@@ -96,20 +104,24 @@ const movePrompt = (actions: Action[]): string =>
 /** The whole status area. `setup` is set while a nation of yours is setting up. */
 export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
   const totals = initiativeTotals(s.state);
+  const { folds, rest } = turnButtons(actions, s.foldOpen, s.ctx, s.state);
+  const toast = `<p class="toast" role="status">${s.toast}</p>`;
+  // Step 7h: the bar, the message and the cards come first, so the next thing to do is in view; everything else follows.
+  const lead = leadsStatus(s);
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
-      <p class="toast" role="status">${s.toast}</p>
+      ${lead ? "" : toast}
       ${computerToMove(s) && !s.watch ? `<p class="computer-status" role="status">Computer is playing the ${sideName(computerSide(s))} turn...</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
       ${frontPrompt(s, actions)}
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
-      ${turnButtons(actions, s.foldOpen, s.ctx, s.state)}
-      ${attackHtml(s, actions)}
+      ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
       ${logHtml(s.log)}
     </main>`;

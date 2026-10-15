@@ -4,9 +4,9 @@ import { newSession, run, type Session } from "./session";
 
 /**
  * TEST ONLY (spec 07, open builder question B3). The browser tests reach step 7h of a 1939 game by loading a recorded list of actions instead
- * of clicking through a dozen steps. main.ts listens for the "e2e-load" event on the document only when the page address carries `?e2e`; the
+ * of clicking through a dozen steps. main.ts listens for the "e2e-load" event on the document only in the e2e build (`vite build --mode e2e`, so the code is absent from the production bundle) and only when the page address carries `?e2e`; the
  * event's detail is an `E2eLoad`. Every action goes through `run`, hence `applyAction`, like any tap would; a refused action throws. Nothing here
- * is reachable from the screen, and a normal page address never installs the listener.
+ * is reachable from the screen, and a normal build does not contain this code at all.
  */
 
 export interface E2eLoad {

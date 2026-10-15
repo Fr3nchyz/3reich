@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-// The smoke test drives the production build served by `vite preview`.
+// The browser tests drive a build made for them (`vite build --mode e2e`, into dist-e2e) served by `vite preview`: it differs from the production build
+// only by the test-only game loader (src/ui/e2eLoad.ts), which the production bundle does not contain (scripts/check-no-e2e.mjs checks that).
 // PW_CHROMIUM_PATH points at a pre-installed Chromium (sandboxes); CI leaves it unset and uses the one
 // `npx playwright install chromium` fetched.
 const executablePath = process.env.PW_CHROMIUM_PATH || undefined;
@@ -26,9 +27,9 @@ export default defineConfig({
     { name: "touch", use: { browserName: "chromium", viewport: { width: 1024, height: 768 }, hasTouch: true } },
   ],
   webServer: {
-    command: `npm run preview -- --port ${PORT} --strictPort`,
+    command: `npx vite build --mode e2e --outDir dist-e2e --emptyOutDir && npx vite preview --outDir dist-e2e --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });
