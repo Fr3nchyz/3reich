@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseAction } from "../src/ai";
-import { plannedTargets } from "../src/ai/declare";
+import { plannedTargets, STAGING_LEAD_TURNS } from "../src/ai/declare";
 import { enemyObjectives, groundDistances, stagingTargets } from "../src/ai/geo";
 import { createMemory } from "../src/ai/memory";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
@@ -20,7 +20,7 @@ const dest = (a: Move) => a.path[a.path.length - 1]!;
 
 /** The position with every enemy objective that a unit at L32 could walk to already German-held. */
 function westWon(units = [inf("u1", "germany", "L32", 3, 3)]): GameState {
-  let s = at6f(units);
+  let s: GameState = { ...at6f(units), year: 1941, season: "spring" };
   for (let i = 0; i < 10; i++) {
     const hit = enemyObjectives(CTX, s, "axis").filter((h) => groundDistances(CTX, s, "germany", [h]).has("L32"));
     if (hit.length === 0) return s;
@@ -33,19 +33,25 @@ const newTurn = (s: GameState): GameState => ({ ...s, moves: undefined });
 const nextToSoviets = (hex: string) => neighborIds(CTX, hex).some((n) => controllerOf(CTX, at6f([]), n) === "ussr");
 
 describe("planned targets and waiting places (declare.ts, geo.ts)", () => {
-  it("the Axis plans against the neutral U.S.S.R. in 1939; the Allies have no plan; no one is neutral in 1942", () => {
-    const s = at6f([]);
+  it("the Axis plans against the neutral U.S.S.R. (from STAGING_LEAD_TURNS before Summer 1941, not earlier); the Allies have no plan; no one is neutral in 1942", () => {
+    const s: GameState = { ...at6f([]), year: 1941, season: "spring" };
     expect(plannedTargets(s, "axis")).toEqual(["ussr"]);
+    expect(STAGING_LEAD_TURNS).toBe(2);
+    expect(plannedTargets({ ...s, year: 1940, season: "winter" }, "axis")).toEqual(["ussr"]); // two Game Turns before Summer 1941
+    expect(plannedTargets({ ...s, year: 1940, season: "fall" }, "axis")).toEqual([]);
+    expect(plannedTargets(at6f([]), "axis")).toEqual([]); // Fall 1939: far too early to wait at a border
     expect(plannedTargets(s, "allies")).toEqual([]);
     expect(plannedTargets(newGame(SCENARIO_1942, 1), "axis")).toEqual([]);
   });
 
   it("the waiting places are the Soviet-held capitals and objectives, and the U.S.S.R.'s land counts as open for them", () => {
-    const { sources, open } = stagingTargets(CTX, at6f([]), "axis");
+    const early = { ...at6f([]), year: 1941, season: "spring" as const };
+    const { sources, open } = stagingTargets(CTX, early, "axis");
     expect(open).toEqual(new Set(["ussr"]));
     expect(sources).toContain("N49"); // Moscow
-    expect(sources.every((h) => controllerOf(CTX, at6f([]), h) === "ussr")).toBe(true);
-    expect(stagingTargets(CTX, at6f([]), "allies").sources).toEqual([]);
+    expect(sources.every((h) => controllerOf(CTX, early, h) === "ussr")).toBe(true);
+    expect(stagingTargets(CTX, early, "allies").sources).toEqual([]);
+    expect(stagingTargets(CTX, at6f([]), "axis").sources).toEqual([]);
   });
 
   it("ground distance stops at a neutral border unless that country is named open", () => {
@@ -53,6 +59,9 @@ describe("planned targets and waiting places (declare.ts, geo.ts)", () => {
     const shut = groundDistances(CTX, s, "germany", ["N49"]);
     const open = groundDistances(CTX, s, "germany", ["N49"], undefined, new Set(["ussr"]));
     expect(shut.has("L32")).toBe(false);
+    // The same for a minor country (Belgium is neutral, with no controller): named open, its land is a way through.
+    expect(groundDistances(CTX, s, "germany", ["O22"]).has("M26")).toBe(false);
+    expect(groundDistances(CTX, s, "germany", ["O22"], undefined, new Set(["belgium"])).has("M26")).toBe(true);
     expect(open.get("L32")).toBeGreaterThan(5);
     expect(open.get("N49")).toBe(0);
   });
@@ -71,7 +80,11 @@ describe("step 6f: units with no enemy objective in reach wait at the border of 
     expect(d.action.type).toBe("MOVE");
     expect(d.why).toMatch(/plans to declare war on.*waits at the border/);
     const field = groundDistances(CTX, s, "germany", stagingTargets(CTX, s, "axis").sources, undefined, new Set(["ussr"]));
-    expect(field.get(dest(d.action as Move))!).toBeLessThan(field.get("L32")!);
+    const to = dest(d.action as Move);
+    expect(field.get(to)!).toBeLessThan(field.get("L32")!);
+    // The reason gives the exact figures of the staging distance (an off-by-one in it shows here).
+    expect(d.why).toContain(`${field.get("L32")! - field.get(to)!} hex`);
+    expect(d.why).toContain(`(${field.get(to)} to go)`);
   });
 
   it("walks up to the border, stops beside it without entering Soviet land, and then stays", () => {
@@ -94,6 +107,18 @@ describe("step 6f: units with no enemy objective in reach wait at the border of 
     expect(controllerOf(CTX, s, at)).not.toBe("ussr");
     expect(nextToSoviets(at)).toBe(true);
     expect(decide(newTurn(s)).action.type).toBe("END_STEP"); // at the border: nothing closer to go
+  });
+
+  it("a staged unit does not keep the waiting place as its target (a real objective later replaces it at once)", () => {
+    const mem = createMemory();
+    expect(decide(westWon(), mem).action.type).toBe("MOVE");
+    expect(mem.targets.has("u1")).toBe(false);
+    expect(mem.left.get("u1")).toEqual([{ hex: "L32", turn: expect.any(Number) }]); // where it has been is still kept
+  });
+
+  it("does not wait at the border before the plan is near: in Fall 1939 the same unit stays", () => {
+    const early: GameState = { ...westWon(), year: 1939, season: "fall" };
+    expect(decide(early).action.type).toBe("END_STEP");
   });
 
   it("an enemy objective in reach still comes first", () => {

@@ -15,8 +15,8 @@ import type { AiConfig, Decision } from "./types";
 
 /**
  * Step 6f, ground movement. COMPUTER POLICY, not rules (spec 05; every number is TODO(verify), to be tuned by play-testing).
- * Stacks are taken one after another, the ones nearest their target first (they free the hexes the ones behind move into, and
- * they are the ones the cap on units moved must not leave out). Each unit heads for one enemy-held capital or
+ * Stacks are taken one after another, the ones farthest from their target first (nearest first was tried and lost ground: fewer
+ * objectives taken in the 1939 scenario). Each unit heads for one enemy-held capital or
  * objective, the nearest when it first looks and the same one afterwards until it is reached or lost (so units do not dither
  * between two). A stack takes the move, among those the engine allows it (the cheapest route to each reachable hex, as in
  * `legalActions`), that brings it closest to that target, at least MOVE_MIN_PROGRESS hexes closer; ties go to the larger stack,
