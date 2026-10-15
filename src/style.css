@@ -96,6 +96,15 @@ svg.map .overlay .ctl-allies { fill: #1f8a70; fill-opacity: .16; stroke: #1f8a70
 svg.map .overlay .ctl-neutral { fill: none; stroke: #6a6055; stroke-width: .7; stroke-dasharray: .8 1.2; stroke-linecap: round; stroke-opacity: .8; }
 svg.map #zoc-hatch line { stroke: #b3202a; stroke-width: .7; }
 svg.map .highlights polygon { fill: rgba(255, 224, 80, .38); stroke: #ffe050; stroke-width: 1; }
+/* Attack marks (spec 07): widths and dashes are screen pixels (non-scaling stroke), so they read at any zoom. Dashed red = can be attacked; thick = the chosen target; solid gold with a diamond = attacking from here. */
+svg.map .attack-marks { pointer-events: none; }
+svg.map .attack-marks * { pointer-events: none; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+svg.map .attack-marks .mk-target { fill: rgba(196, 18, 31, .1); stroke: #c4121f; stroke-width: 2px; stroke-dasharray: 4 3; }
+svg.map .attack-marks .mk-case { fill: none; stroke: #fff; stroke-width: 5.5px; }
+svg.map .attack-marks .mk-case.dark { stroke: #3a2a00; stroke-width: 4.5px; }
+svg.map .attack-marks .mk-chosen { fill: rgba(196, 18, 31, .18); stroke: #8c0c16; stroke-width: 3.5px; }
+svg.map .attack-marks .mk-attacker { fill: rgba(240, 180, 0, .14); stroke: #f0b400; stroke-width: 2.5px; }
+svg.map .attack-marks .pip { fill: #f0b400; stroke: #3a2a00; stroke-width: 1px; }
 svg.map .bays path { fill: #bcd6e6; stroke: none; }
 svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 .icon { vertical-align: middle; }

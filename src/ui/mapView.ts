@@ -5,6 +5,8 @@ import { attachGestures } from "./gestures";
 import { highlightsMarkup, unitsMarkup } from "./mapCounters";
 import { cornersOf, hexCenter, points } from "./mapGeometry";
 import { overlayMarkup } from "./mapOverlay";
+import type { AttackMarksInput } from "./attackMarks";
+import { attackMarksMarkup } from "./mapMarks";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
@@ -33,6 +35,9 @@ export interface MapView {
   setHighlights(ids: Iterable<string>): void;
   /** Draw who holds each hex and the Zones of Control (see overlayModel.ts); null clears the overlay. */
   setOverlay(cells: OverlayCells | null): void;
+  /** Mark the hexes of an attack (spec 07): dashed targets, one thick chosen target, solid gold attacker hexes. Pure data; the marks never take taps. */
+  setAttackMarks(marks: AttackMarksInput): void;
+  clearAttackMarks(): void;
   /** Zoom and pan to fit these hexes; with none, show the whole map. */
   focus(ids: Iterable<string>): void;
   /** Zoom by `factor` (above 1 shows more) about the middle of the map; returns the zoom level after (1 = the whole map just fits). */
@@ -57,6 +62,15 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const unitLayer = svg.querySelector<SVGGElement>("g.units")!;
   const overlayLayer = svg.querySelector<SVGGElement>("g.overlay")!;
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
+  const marksLayer = svg.querySelector<SVGGElement>("g.attack-marks")!;
+  /** Redrawn only when the marks change, so a repeated call costs no DOM work. */
+  let marksDrawn = "";
+  const drawMarks = (marks: AttackMarksInput | null): void => {
+    const markup = attackMarksMarkup(map, marks);
+    if (markup !== marksDrawn) { marksDrawn = markup; marksLayer.innerHTML = markup; }
+  };
+  // Test hook until the attack flow (07-6) calls the methods: an "attack-marks" event on the map whose detail is the marks, or null to clear.
+  svg.addEventListener("attack-marks", (e) => drawMarks((e as CustomEvent<AttackMarksInput | null>).detail));
 
   const viewport = createViewport(svg, whole);
   let outlined: string[] = [];
@@ -75,6 +89,8 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
     setHighlights: (ids) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined); },
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
+    setAttackMarks: drawMarks,
+    clearAttackMarks: () => drawMarks(null),
     focus: (ids) => viewport.focus(centresOf(ids)),
     zoomBy: (factor) => { viewport.zoomMiddle(factor); return viewport.level(); },
     focusOutlined: () => {
