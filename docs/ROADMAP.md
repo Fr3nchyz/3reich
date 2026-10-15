@@ -193,7 +193,7 @@ Autosave, save slots and a save file, iPad support, a short in-app help page and
 ## Next up, from play-test feedback (see FEEDBACK.md)
 
 1. Find and fix why Warsaw could no longer be attacked in later turns (reproduce first).
-2. Tap-to-attack with an odds preview, and a unit inspector on any hex.
+2. Tap-to-attack with an odds preview, and a unit inspector on any hex (spec: [07-tap-to-attack](specs/07-tap-to-attack.md), proposed).
 3. Choose which units of a stack move.
 4. Zoom buttons and a bigger maximum zoom; iPad-sized touch checks.
 5. Watch two computers play (in progress), then a "Send feedback" button and a short play-test card (French wording only if it helps Frank).
