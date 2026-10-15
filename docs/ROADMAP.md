@@ -192,14 +192,17 @@ Autosave, save slots and a save file, iPad support, a short in-app help page and
 
 ## Next up, from play-test feedback (see FEEDBACK.md)
 
-1. Find and fix why Warsaw could no longer be attacked in later turns (reproduce first).
-2. Tap-to-attack with an odds preview, and a unit inspector on any hex (spec: [07-tap-to-attack](specs/07-tap-to-attack.md), proposed).
-3. Choose which units of a stack move.
-4. Zoom buttons and a bigger maximum zoom; iPad-sized touch checks.
-5. Watch two computers play (in progress), then a "Send feedback" button and a short play-test card (French wording only if it helps Frank).
-6. Air units (spec: [09-air-units](specs/09-air-units.md), proposed), then fleets (spec 10).
+Done: the Warsaw fix, tap-to-attack with an odds preview and a hex card, iPad zoom, watch mode, choosing which units of a stack move (first part). Order from here, by the owner (2026-10-15):
+
+1. Finish choosing units of a stack (spec 10, tickets 10-5 to 10-9: ring marks, take back, why-not sentences, layout and keyboard checks).
+2. Make the watch-mode "turbo repaint" browser test reliable and shorten the slow step-7h computer decision.
+3. Air units (spec: [09-air-units](specs/09-air-units.md), approved), then fleets (spec 12, not written).
+4. Computer opponent: a stall-breaking rule, then an evaluator and difficulty levels.
+5. Small follow-ups from reviews (see `docs/FEEDBACK.md`).
+6. A "Send feedback" button and a short play-test card (French wording only if it helps Frank).
 7. Map clarity pass against the board and DOS looks, after Frank's view.
 8. French interface: not a priority; Frank prefers to communicate in French but is fine with the English game for now.
+9. Save and load (spec: [11-save-load](specs/11-save-load.md), approved): last, by the owner's choice. Until then a game must be played in one sitting.
 
 ---
 
