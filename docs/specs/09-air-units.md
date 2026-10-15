@@ -2,6 +2,15 @@
 
 Status: **proposed 2026-10-15, for the product owner's review. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
 
+
+## Decisions (product owner, 2026-10-15)
+
+| # | Question | Decision |
+|---|---|---|
+| D1 / P1 | Air units and fleets left in a hex when its ground defenders are gone or it is taken | **Follow the manual: displace.** Air units go to the nearest friendly base within 8 hexes and are eliminated only if there is none; airbase counters go to their Capital; fleets in a captured port go to the nearest friendly port within sea range, or are eliminated if there is none. This replaces the "air alone is destroyed" rule that was confirmed from the Warsaw play-test (`ALONE_NONGROUND_DESTROYED`). Option B of rule R9 is chosen. |
+
+How it was settled: the product owner researched it outside the project and returned the same reading as the manual text recorded in R9 (air: Ref 20.51; air committed to defensive air support shares the battle's fate; fleets: displaced to the nearest friendly port). **Rule numbers are still to be checked against the printed Reference Manual and the PC game (ask Frank what the DOS game does to planes in a captured city)**: the citations returned by the outside source do not all match the spec's own (for example the spec has 12.4 as the Attrition retreat rule and fleet displacement as 21.1). Until checked, they stay `TODO(verify)`, and `NONGROUND_ON_CAPTURE = "displace" | "destroy"` keeps the old behaviour one line away. Fleets: spec 12 (naval, not yet written) owns port displacement; until it is built the Warsaw sweep keeps destroying fleets.
+
 ## Summary (read this first)
 
 - **Today** air units are only pictures on the map. They cannot be selected, moved, based or used, and they add nothing to a battle. Frank could see them (the hex card lists them) but not use them.
@@ -12,8 +21,8 @@ Status: **proposed 2026-10-15, for the product owner's review. Nothing is built 
   4. **Counter-air** (planes against planes on the ground) and **interception of defensive air support**.
   5. **Airdrops** by paratroops.
   6. **A computer that uses air** in a plain, safe way.
-- **One rule decision for you (D1).** The rules say an air unit whose base is captured is **moved to the nearest friendly base**, not destroyed. Our "air units alone in a hex are destroyed" rule (the Warsaw fix, `ALONE_NONGROUND_DESTROYED`) does not match that text. The spec recommends replacing it, which also removes the "one infantry wipes a port" side effect. See rule R9 and open question P1.
-- **Out of scope:** fleets and everything at sea (spec 10), strategic warfare (separate), supply wiring, Strategic Redeployment, exploitation (the exploitation air steps stay passed until exploitation is built).
+- **One rule decision for you (D1), now answered: displace (see "Decisions").** The rules say an air unit whose base is captured is **moved to the nearest friendly base**, not destroyed. Our "air units alone in a hex are destroyed" rule (the Warsaw fix, `ALONE_NONGROUND_DESTROYED`) does not match that text. The spec recommends replacing it, which also removes the "one infantry wipes a port" side effect. See rule R9 and open question P1.
+- **Out of scope:** fleets and everything at sea (spec 12), strategic warfare (separate), supply wiring, Strategic Redeployment, exploitation (the exploitation air steps stay passed until exploitation is built).
 - **Size:** 18 small tickets (09-0 to 09-17) in 4 waves. Frank gets what he asked for (air factors in an attack) after tickets 09-7 and 09-14; seeing range and rebasing comes earlier (09-3, 09-13). Releases B and C (counter-air, interception, airdrops) can wait.
 - **Rules check:** 22 `TODO(verify)` items are listed in part J. The most important: one mission per **Game Turn** or per **Player Turn** (the two manuals differ), who picks air losses, and what "legal odds" means for committed ground support.
 
@@ -32,7 +41,7 @@ Status: **proposed 2026-10-15, for the product owner's review. Nothing is built 
 | **DAS Interception** | The attacker's unused planes try to shoot down the defender's DAS planes. |
 | **Phasing Player / Non-Phasing Player** | The side whose turn it is / the other side. The Non-Phasing Player acts in some air steps (DAS). |
 | **Game Turn** | One season: both sides take a Player Turn. |
-| **"Interception" in this game** | Two different things: planes or fleets stopping a **fleet** at sea (the interception table, spec 10), and planes stopping **DAS** (this spec; no table, it is air combat). |
+| **"Interception" in this game** | Two different things: planes or fleets stopping a **fleet** at sea (the interception table, spec 12), and planes stopping **DAS** (this spec; no table, it is air combat). |
 
 ## Goal
 
@@ -70,7 +79,7 @@ flowchart LR
   S7d --> S7e["7e Phasing side<br/>intercepts DAS"]
   S7e --> S7g["7g Airdrops"]
   S7g --> S7h["7h Ground combat<br/>GS and DAS counted"]
-  S7h --> S7i["7i Air attacks on ports<br/>(fleets: spec 10)"]
+  S7h --> S7i["7i Air attacks on ports<br/>(fleets: spec 12)"]
 ```
 
 Steps 6c and 6d (fleet interceptions in the movement phase) and 7k to 7n (exploitation air steps) stay "passed" in this spec.
@@ -170,7 +179,7 @@ Used by Counter-Air and DAS Interception. Both forces are the air factors that *
 
 - **Who picks which units lose factors.** The manual does not say. Options: (a) the loser's owner picks, with the same "pending choice" pattern as Exchange losses (`ALLOCATE_LOSSES`); (b) automatic, fewest units broken, smallest first. **Recommended: (a) for people, (b) as the computer's rule**, and a constant `AIR_LOSS_CHOICE = "owner"` that can be switched to automatic. `TODO(verify)`: the PC dialog (Ops 5.46h) lets the player type the exact factors for a ground-combat loss, so owner choice is likely.
 - Breaking down: removing k factors from a unit leaves the largest counter size not above (strength - k) (so a unit can lose more than k). Whether the total lost may exceed the amount owed because of break-down is `TODO(verify)`; the errata example says it does.
-- Fleets-at-sea and port attacks use a different roll table (Ref 20.431, 20.45): spec 10.
+- Fleets-at-sea and port attacks use a different roll table (Ref 20.431, 20.45): spec 12.
 
 ### R8. Ground Support (Ref 20.41, 12.1, 12.2; Ops 5.46b, 5.46k)
 
@@ -190,7 +199,7 @@ Used by Counter-Air and DAS Interception. Both forces are the air factors that *
 - **What we do today.** `ALONE_NONGROUND_DESTROYED` (confirmed by the product owner for Warsaw, never checked against the PC manual): air units, fleets and airbases alone in a hex are destroyed, by an attack with no roll. Known side effect: one infantry unit can wipe an ungarrisoned port. `entryProblem` blocks movement into any hex with an enemy counter, which is why the sweep is needed at all.
 - **Options.**
   - **A. Keep.** Nothing changes; the sweep stays; air units remain "targets".
-  - **B. Follow the manual (recommended).** A ground move may enter a hex that holds no enemy ground unit; enemy air in it is then displaced to the nearest friendly base within 8 hexes (flight route, R4), or eliminated if there is none; airbase counters go to their Capital (R2); an advance after combat does the same. Fleets keep today's sweep until spec 10 (port displacement is a naval rule, Ref 21.1). The sweep attack becomes a plain move, so Warsaw is taken by walking in or by advancing after the infantry are gone.
+  - **B. Follow the manual (recommended).** A ground move may enter a hex that holds no enemy ground unit; enemy air in it is then displaced to the nearest friendly base within 8 hexes (flight route, R4), or eliminated if there is none; airbase counters go to their Capital (R2); an advance after combat does the same. Fleets keep today's sweep until spec 12 (port displacement is a naval rule, Ref 21.1). The sweep attack becomes a plain move, so Warsaw is taken by walking in or by advancing after the infantry are gone.
   - **C. Hybrid.** Keep the sweep, but displace instead of destroy when a base exists.
 - **Recommended: B**, with a constant `NONGROUND_ON_CAPTURE = "displace" | "destroy"` so the old behaviour can be restored in one line. This needs your decision because you confirmed the other rule (question P1). The preview's "sweep" wording and `tests/warsaw-playtest.test.ts` change with it.
 - Owner's choice between equidistant bases: `TODO(verify)`; first slice breaks ties by the lowest hex id and says so in the log.
@@ -213,7 +222,7 @@ Used by Counter-Air and DAS Interception. Both forces are the air factors that *
 - Phasing air within 4 hexes of an enemy city or airbase hex may fly there and fight the planes based there that have not flown (R7). Resolved at 7c, before DAS is committed. A Front Offensive Option is needed.
 - Malta-based air may decline; the decline counts as a mission (Ref 20.42, 33.0). **Not in the first slice** (needs a prompt for the Non-Phasing side at 7c); `TODO(verify)`: a decline hook.
 - **Several attacks on one hex** pool into one combat? The manual speaks of "one or more air units ... may fly to that hex" so one combat per target hex. Recommended: one combat per hex per step.
-- Counter-Air of a port also protects fleets there (20.45): spec 10.
+- Counter-Air of a port also protects fleets there (20.45): spec 12.
 
 ### R13. Airdrops (Ref 23.1, 4.51, 12.21, 12.1; errata 31.1, 31.5; Ops 5.46g, 5.46n)
 
@@ -315,7 +324,7 @@ column       = oddsColumn(attackTotal, defenseTotal)
 
 | Step | Waits when | Actions | Notes |
 |---|---|---|---|
-| 6c, 6d | never (stay passed) | | Fleet interceptions only; no fleets move in this spec. Spec 10. |
+| 6c, 6d | never (stay passed) | | Fleet interceptions only; no fleets move in this spec. Spec 12. |
 | 6f | already waits | `STAGE_AIR`, `PLACE_AIRBASE`, `SPLIT_AIR`, `COMBINE_AIR` added | `hasMoveWork` also true if an air unit could stage or an airbase be placed. The step stays gated on there being something to do. |
 | 7b | the side has an unflown plane within 4 hexes of a legal target (or an air unit to split) | `DESIGNATE_AIR` | Missions need the Option hook (R14). |
 | 7c | a Counter-Air mission is designated, or air losses are pending | `RESOLVE_COUNTER_AIR`, `ALLOCATE_AIR_LOSSES` | |
@@ -323,7 +332,7 @@ column       = oddsColumn(attackTotal, defenseTotal)
 | 7e | a DAS is committed and the active side has an unflown plane within 4 hexes of it, or losses are pending | `DESIGNATE_DAS_INTERCEPT`, `RESOLVE_DAS_INTERCEPTIONS`, `ALLOCATE_AIR_LOSSES` | |
 | 7g | an airborne unit is eligible to drop | `AIRDROP` | Release C. |
 | 7h | already waits | `ATTACK` and the rest, now with air | A dropped unit may attack its own hex ("on top"): `attackerPool` allows `at === target` for it. |
-| 7i | never in this spec | | Air attacks on ports: spec 10 (they roll against fleets). |
+| 7i | never in this spec | | Air attacks on ports: spec 12 (they roll against fleets). |
 | 7k to 7n | never | | Exploitation is not built. The same actions are meant to be reused there. |
 
 `IMPLEMENTED_STEPS` gains `7b 7c 7d 7e 7g` ticket by ticket, each with a `hasWork` case in `turn.ts`.
@@ -433,7 +442,7 @@ The computer plays by `legalActions` only (spec 05). Its air policy is the compu
 | Table or constant | Status |
 |---|---|
 | `airAdvantageDrm`, `airNationalityDrm` (Ref 20.44) | Verified against the chart screen and the program (docs/GAME_DATA.md). Reused as they are. |
-| `interceptionRolls`, naval DRMs | Verified, belong to fleets (spec 10). Not used here. |
+| `interceptionRolls`, naval DRMs | Verified, belong to fleets (spec 12). Not used here. |
 | Ranges 4, 8 and 6; caps 3 and 3; capacity 5; three airbases; counter sizes; Malta 5 | **New named constants, not yet checked against the program.** Ticket 09-0. |
 | Two-city hexes | Not in our map data. Candidate source: `BINMAP.BIN` byte 17 bits 2 and 3 (set on five hexes, meaning unknown, docs/GAME_DATA.md). Ticket 09-0 checks the guess; until then 5 per city. |
 
@@ -545,7 +554,7 @@ flowchart LR
 
 | Not here | Why | Room left |
 |---|---|---|
-| Fleets, fleet movement, interception of fleets (6c, 6d, 7d naval half, 7e naval half), shore bombardment, sea transport, seaborne invasion, air attacks on ports and fleets at sea (7i, Ref 20.431, 20.45, 20.52), displacement of fleets | Spec 10 | The air range and flight-route functions are reused. The Warsaw sweep keeps destroying fleets until then. |
+| Fleets, fleet movement, interception of fleets (6c, 6d, 7d naval half, 7e naval half), shore bombardment, sea transport, seaborne invasion, air attacks on ports and fleets at sea (7i, Ref 20.431, 20.45, 20.52), displacement of fleets | Spec 12 | The air range and flight-route functions are reused. The Warsaw sweep keeps destroying fleets until then. |
 | Strategic warfare: SAC, interceptor and flak factors, the German 5-4 removed when SAC hurts (Ref 9.1) | Separate spec (spec 04 "Strategic warfare") | Air units are plain counters there; the removal is a Year Start effect. |
 | Exploitation air steps (7k to 7n), Breakthrough, vacant-hex attack (Ref 12.32) | Exploitation is not built | The actions are written to be reusable with a different step. |
 | Strategic Redeployment of air and airbases (Ref 11.72, step 9e); unsupplied airbase relocation trigger (9h) | Spec 03 5.6 and supply wiring | Flight route and `relocateAirbase` exist. |

@@ -1,4 +1,5 @@
 import "./style.css";
+import "./attack.css";
 import { MAP } from "./data/map";
 import { SCENARIO_1939 } from "./data/scenario-1939";
 import { SCENARIO_1942 } from "./data/scenario-1942";
@@ -18,6 +19,7 @@ import { normaliseMode, tapHex } from "./ui/sessionActions";
 import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
+import { bindZoom } from "./ui/zoomControls";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
@@ -25,12 +27,18 @@ import { createWatchLoop } from "./ui/watchLoop";
 import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
+import { revealFresh, revealStep } from "./ui/reveal";
+import { attacking } from "./ui/attackTap";
+import { announceAttack } from "./ui/attackAnnounce";
+import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
 
 /** The one game being played; start() replaces it. */
 let session: Session;
+/** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
+let wasAttacking = false;
 
 /** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
 const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
@@ -44,6 +52,7 @@ const view = renderMap(shell.map, MAP, {
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
+bindZoom(shell, view);
 const overlay = bindOverlay(shell, view, () => session);
 
 /** The scenarios whose setup can be played now; the others wait for map data the printed card lacks. */
@@ -114,14 +123,20 @@ function render(): void {
   keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
-  syncMap(view, session, setup);
+  syncMap(view, session, setup, actions);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
   drawBar(shell.watchBar, session);
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
+  revealFresh(shell.status, session);
+  announceAttack(shell.live, session);
+  const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
+  if (now && !wasAttacking) revealStep(shell.status);
+  wasAttacking = now;
   if (session.watch) watcher.kick();
   else computer.kick();
 }
 
+installE2eLoad(document, location.search, SCENARIOS, (scenario, next) => { shell.side.value = next.humanSide; menu.refresh(); begin(scenario, next); });
 start(SCENARIO_1939, "axis");

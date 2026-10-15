@@ -5,6 +5,8 @@ import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
 import { moveTargets } from "./moveTap";
 import { builds } from "./sessionActions";
+import { syncAttackMarks } from "./attackSync";
+import type { Action } from "../engine/actions";
 
 /** Brings the map in line with the session after each change: counters, zoom and highlights. */
 
@@ -33,8 +35,9 @@ function followSetup(view: MapView, s: Session, mine: ForceOwner | null): void {
   }
 }
 
-export function syncMap(view: MapView, s: Session, setup: SetupView | null): void {
+export function syncMap(view: MapView, s: Session, setup: SetupView | null, actions?: readonly Action[]): void {
   view.setUnits(Object.values(s.state.units));
   followSetup(view, s, setup?.owner ?? null);
   view.setHighlights(highlightedHexes(s, setup));
+  if (actions) syncAttackMarks(view, s, actions);
 }
