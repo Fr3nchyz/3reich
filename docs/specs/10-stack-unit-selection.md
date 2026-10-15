@@ -1,6 +1,20 @@
 # 10. Choosing which units of a stack move
 
-Status: proposed 2026-10-15, from the play-test (docs/FEEDBACK.md, entry 2: "when you have 2 units on a hex they stay grouped when moving"). Roadmap "Next up" item 3. Builds on spec 03 (ground movement, built), spec 07 (the hex card, part A, now built as ticket 07-3, and the way the attack card keeps a draft; the map marks, 07-5, and the tap-to-attack flow, 07-6, are not built yet) and spec 08 (zoom buttons; its "zoom to the selected counter" fits the yellow hexes this spec draws). Words and sketches only; the build plan is part H. Nothing is built until the product owner says "let's go".
+Status: approved 2026-10-15 with the decisions below (nothing built yet); first proposed 2026-10-15, from the play-test (docs/FEEDBACK.md, entry 2: "when you have 2 units on a hex they stay grouped when moving"). Roadmap "Next up" item 3. Builds on spec 03 (ground movement, built), spec 07 (the hex card, part A, now built as ticket 07-3, and the way the attack card keeps a draft; the map marks, 07-5, and the tap-to-attack flow, 07-6, are not built yet) and spec 08 (zoom buttons; its "zoom to the selected counter" fits the yellow hexes this spec draws). Words and sketches only; the build plan is part H. Nothing is built until the product owner says "let's go".
+
+
+## Decisions (product owner, 2026-10-15)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Default ticks | Every unit that can move starts ticked (one tap fewer for the common whole-stack move). |
+| 2 | "2 of 4" | The rules limit a hex to two ground units; the other counters in a stack of four are air or naval. Frank wants to pick only the ground ones, so the card must make the ground layer easy to pick and treat air and naval lines as separate. |
+| 3 | Take back | Yes: repeatable until the step ends, or until something hidden is revealed (a combat roll). Hidden afterwards. |
+| 4 | After a partial move | The hex stays chosen and the rest stay ticked. |
+| 5 | Faster unit's extra reach | A **second shade of yellow** (rejected option 7 is now chosen); keep the one-sentence line as the text equivalent so colour is not the only cue. |
+| 6 | Destination list for keyboard and small hexes (ticket 10-7) | Later. The map-based move is solved first. |
+
+The engine facts listed under "Engine facts to confirm" stay `TODO(verify)`; the stacking-limit wording in answer 2 came from the owner's outside research and is checked against the rules text before the ticket that depends on it.
 
 ## Summary
 
