@@ -1,6 +1,19 @@
 # 07. Tap to attack, with an odds preview, and a unit inspector
 
-Status: proposed 2026-10-15, from the play-test (docs/FEEDBACK.md, entry 2). Builds on spec 04 (ground combat, already built) and spec 06 (watch mode). Waiting for the product owner's review; nothing is built until "let's go". This page is words and sketches only.
+Status: proposed 2026-10-15, from the play-test (docs/FEEDBACK.md, entry 2). Builds on spec 04 (ground combat, already built) and spec 06 (watch mode). Approved by the product owner on 2026-10-15 with the decisions below. This page is words and sketches only; the build plan (part H) is the next step.
+
+## Decisions (product owner, 2026-10-15)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | One press or two? | One press. No "Are you sure?" pop-up. When the odds are worse than 1-1 the button turns amber and says so ("Attack at 1-3 (risky)"). |
+| 2 | Chances in percent? | Not now. The six-roll table is enough. Ticket 07-8 stays on the shelf and is not built unless asked for later. |
+| 3 | Keep the old attack buttons? | Yes, in a fold-out, with readable labels. |
+| 4 | Default units | Yes: every unit that can attack is chosen by default, and the player can remove units to split the attack. For a hex with only air units, the weakest single unit. |
+| 5 | Hex card in setup | As proposed: not shown during setup, only from the first Player Turn. |
+| 6 | Phone placement | The main device is an iPad, so design and test the iPad first (both ways round). The phone only has to stay usable: the card goes under the pinned map as proposed. |
+| 7 | Coordinates | Place name first, coordinate in brackets: "Warsaw (M35)". Frank can change this later. |
+| 8 | Wording | Faithful to the board game: Exchange, Counterattack, Eliminated (not "wiped out"). Open for Frank's opinion. |
 
 ## Goal
 
@@ -22,8 +35,8 @@ Frank should be able to play the fighting step on an iPad without knowing a sing
 
 - **Factors**: the numbers on a counter. A "3-4" infantry has 3 combat factors and 4 movement. Only the first number counts in a battle.
 - **Defence multiplier**: the defender's factors are doubled in plain country, tripled in mountains, swamp or behind a river, quadrupled in a fortress. Only the best one applies (`defenseMultiplier`, Ref 4.5, 12.1).
-- **Odds column**: attack factors against the defender's multiplied factors, as a ratio, for example 3-1 or 1-2. A weaker attack is rounded in the defender's favour. Weaker than 1-4 means the attackers are wiped out with no roll (`oddsColumn`).
-- **Results** (one die, 1 to 6, read on the column): A = attackers wiped out, D = defenders wiped out, Ex = Exchange, CA / CA1 / CA2 / CA3 = the defender counterattacks and the battle goes on (`OFFENSIVE_CRT`, Ref 12.1 to 12.2).
+- **Odds column**: attack factors against the defender's multiplied factors, as a ratio, for example 3-1 or 1-2. A weaker attack is rounded in the defender's favour. Weaker than 1-4 means the attackers are eliminated with no roll (`oddsColumn`).
+- **Results** (one die, 1 to 6, read on the column): A = attackers eliminated, D = defenders eliminated, Ex = Exchange, CA / CA1 / CA2 / CA3 = the defender counterattacks and the battle goes on (`OFFENSIVE_CRT`, Ref 12.1 to 12.2).
 - **Column shift**: the engine has none today. Terrain changes the defender's factors, not the column. See "What the preview shows", last bullet.
 
 ## Part A. The hex card (the unit inspector)
@@ -135,8 +148,8 @@ stateDiagram-v2
 | IF YOU ROLL       WHAT HAPPENS                       |
 |   1 or 4   Exchange: they lose all, you lose 4+      |
 |   2 or 3   Counterattack: they strike back           |
-|   5        Your attackers are wiped out              |
-|   6        The defenders are wiped out               |
+|   5        Your attackers are eliminated              |
+|   6        The defenders are eliminated               |
 |                                                      |
 | One try: this hex cannot be attacked again this turn.|
 | [  Attack Warsaw with 3 units (7 factors)  ]         |
@@ -184,21 +197,21 @@ Everything below comes from the engine; the screen invents no rule.
 
 - **Defenders**: the ground units of the hex that are at war with at least one chosen attacker (`defendersAt`), their factors, and the defender multiplier with its **reason in words** ("mountains: tripled", "behind a river: tripled, all your attackers are across it", "fortress: quadrupled", "plain country: doubled"). Counters that cannot defend on the ground (air, fleets) are listed under the defenders as "do not defend".
 - **Attackers**: the chosen units with their factors. The total is shown. Units that cannot attack are listed greyed with a reason: "has already attacked this turn" (`combatOf(state).attacked`).
-- **Odds line**: "5 against 4, column 1-1", or "attackers are wiped out with no roll (weaker than 1-4)" when `oddsColumn` is null. The wording mentions that a weaker attack is rounded against the attacker.
+- **Odds line**: "5 against 4, column 1-1", or "attackers are eliminated with no roll (weaker than 1-4)" when `oddsColumn` is null. The wording mentions that a weaker attack is rounded against the attacker.
 - **A river warning**: the river bonus applies only if every attacker is across a river hexside (`attackNumbers`). Adding one unit from a hex with no river can turn x3 into x2. The preview recomputes on every tap, and the card says "adding Plock's infantry removes the river bonus" when the multiplier drops. This is the most surprising thing the odds can do, so it gets its own line.
 - **Six results**: one row per die roll 1 to 6 (rows with the same result are merged: "rolls 5 and 6"), read from `OFFENSIVE_CRT[column]`:
 
 | Result | Plain words | What it costs (all numbers computed, not guessed) |
 |---|---|---|
-| A | "Your attackers are wiped out." | You lose every chosen unit (N units, F factors). They lose nothing. |
-| D | "The defenders are wiped out." | They lose every defender. You lose nothing. If the hex is empty you may advance. Air units or fleets alone in the hex go too (`lonersAt`, see below). |
+| A | "Your attackers are eliminated." | You lose every chosen unit (N units, F factors). They lose nothing. |
+| D | "The defenders are eliminated." | They lose every defender. You lose nothing. If the hex is empty you may advance. Air units or fleets alone in the hex go too (`lonersAt`, see below). |
 | Ex | "Exchange." | The smaller side loses everything; the larger side loses at least as many factors and chooses which units. With the defender counted at its multiplied factors. Shown as: "you lose all 5 factors, they lose at least 5 factors (they choose)" or "they lose all, you lose at least 4 of your factors (you choose)". Both lose everything when equal. TODO(verify) Ref 12.2: whether a larger defender removes factors at the multiplied value (built that way, `applyOutcome`). |
 | CA | "The defender counterattacks; the fight goes on." | Nothing is lost yet. The defender rolls on column X, taken from `FORCED_COUNTERATTACK_COLUMN` (CA1 = 1-1, CA2 = 1-2, CA3 = 1-3) or, for a plain CA, from `oddsColumn(defender basic factors, your factors)`. There, A wipes out the defenders, D wipes out you, Ex is an Exchange counted in basic factors, and another CA repeats your attack. |
 
 - **Hexes with no ground defender.** If the hex holds only air units, fleets, airbases or bridgeheads, the card says "No roll. These N counters are destroyed" and the button reads "Destroy 2 Polish air units in Warsaw". This is `ALONE_NONGROUND_DESTROYED`, confirmed by the product owner and still TODO(verify) against the PC manual (docs/RULES.md). Only the **weakest single unit, infantry first** is chosen by default here (the way the computer sweeps), so the player does not spend a whole army on it; more can be added, with no effect on the result.
-- **After a win**: "If the defenders are wiped out, these also go: ..." lists non-ground enemy counters in the hex, computed with `lonersAt` on a copy of the position without the defenders.
+- **After a win**: "If the defenders are eliminated, these also go: ..." lists non-ground enemy counters in the hex, computed with `lonersAt` on a copy of the position without the defenders.
 - **Column shift**: there is none in the engine and nothing in docs/RULES.md about one, so the screen shows none. The preview model carries a list of "modifiers" (a label, and whether it adds factors or moves the column) that stays empty today; air support, shore bombardment or anything else that later comes from spec 04 plugs into that list and the card shows it with no redesign. TODO(verify) whether the PC game has any column shift for a ground attack; if it does, it is a rules ticket first.
-- **Chances in percent** (optional, ticket 07-8): "about 1 chance in 3 that you are wiped out, 1 in 2 that they are, the rest Exchange". It is exact arithmetic on the same tables: the first roll, the counterattack roll, and the "repeat" case folded in. No dice are rolled to compute it. See open question 2.
+- **Chances in percent** (optional, ticket 07-8): "about 1 chance in 3 that you are eliminated, 1 in 2 that they are, the rest Exchange". It is exact arithmetic on the same tables: the first roll, the counterattack roll, and the "repeat" case folded in. No dice are rolled to compute it. See open question 2.
 
 ### The labels on the existing buttons
 
@@ -269,7 +282,7 @@ Nothing else. In particular the preview does **not** call `resolveOffensiveComba
 **The preview model** (a pure function in `src/ui/attackPreview.ts`, no DOM, returns plain data; same for the hex card in `src/ui/hexCard.ts`):
 
 - In: the context, the state, the target hex, the ids of the chosen attackers.
-- Out: target name, defenders (with factors), non-defenders, all candidate attackers (chosen, free, or greyed with a reason), the numbers (attack factors, defence factors, multiplier and its reason, defence total, column or "wiped out with no roll"), the six result rows with their plain text and costs, the sweep case, the modifiers list (empty), a list of problems (for example "no unit chosen"), and the text of the button.
+- Out: target name, defenders (with factors), non-defenders, all candidate attackers (chosen, free, or greyed with a reason), the numbers (attack factors, defence factors, multiplier and its reason, defence total, column or "eliminated with no roll"), the six result rows with their plain text and costs, the sweep case, the modifiers list (empty), a list of problems (for example "no unit chosen"), and the text of the button.
 - Out of scope for the model: the dice, the screen, and any rule not already in the engine.
 
 ## Part F. Tests
@@ -279,7 +292,7 @@ Nothing else. In particular the preview does **not** call `resolveOffensiveComba
 | Test | What it proves |
 |---|---|
 | Numbers equal the battle | For several positions and every eligible subset, `applyAction(ATTACK)` yields a `COMBAT_RESOLVED` whose attack factors, defence factors, multiplier and first-round column equal the preview's. |
-| Six results | For each of the 8 columns the six rows equal `OFFENSIVE_CRT`; a column of null gives "wiped out, no roll". |
+| Six results | For each of the 8 columns the six rows equal `OFFENSIVE_CRT`; a column of null gives "eliminated, no roll". |
 | Odds rounding | 5 against 12 gives 1-3; 6 against 5 gives 1-1; more than 5-1 caps at 5-1 (as the table tests do). |
 | Multiplier reasons | Plain x2, mountains x3, swamp x3, river x3 only when every chosen attacker is across it, fortress x4, and best-not-sum. Removing the one attacker not across a river changes x2 to x3 and the model says so. |
 | Exchange cost | Attack smaller, larger and equal to the multiplied defence; the cost equals `PendingLosses.required` in real battles found by scanning seeds. |
@@ -376,7 +389,7 @@ Ref 12.1 (ground combat, odds), 12.2 (Exchange, counterattack), 4.5 and 4.51 (te
 5. **Hex card in setup.** Proposed: not shown during setup, only from the first Player Turn, to keep the setup screen as it is.
 6. **Where the card sits on a phone.** Proposed: under the pinned map in the status column. The alternative is a sheet sliding over the bottom of the map, which hides part of it.
 7. **Coordinates.** Proposed: place name first and the coordinate in brackets ("Warsaw (M35)"), so Frank, who knows the DOS game, can still match what he sees. Or names only?
-8. **Wording.** "Exchange", "counterattack" and "wiped out" are used on the card. If Frank prefers the board game's words, say so.
+8. **Wording.** "Exchange", "counterattack" and "eliminated" are used on the card. Decided: the board game's words (see "Decisions").
 
 **Rules to check against the PC manual (marked TODO(verify); they are already in docs/RULES.md or are carried here)**
 
