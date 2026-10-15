@@ -14,6 +14,8 @@ import { fmt, hexCenter, hexCorners, points, type Point } from "./mapGeometry";
 export const TARGET_INSET = 0.9;
 export const ATTACKER_INSET = 0.86;
 export const CHOSEN_INSET = 0.8;
+/** The hex a move is chosen from (spec 10, 10-5): a thick dark outline, a little wider than the yellow hexes' inset marks. */
+export const FROM_INSET = 0.92;
 /** The attacker's small mark: a diamond this far below the hex centre, this big, so the gold ring has a second cue that is not its colour. */
 const PIP_DROP = 7.7;
 const PIP_SIZE = 1.9;
@@ -41,6 +43,10 @@ export function attackMarksMarkup(map: MapData, input: AttackMarksInput | null |
   if (cells.chosen) {
     const pts = inset(cells.chosen, CHOSEN_INSET);
     out += `<polygon class="mk-case" points="${pts}"/><polygon class="mk-chosen" data-mk-chosen="${cells.chosen}" points="${pts}"/>`;
+  }
+  if (cells.from) {
+    const pts = inset(cells.from, FROM_INSET);
+    out += `<polygon class="mk-case" points="${pts}"/><polygon class="mk-from" data-mk-from="${cells.from}" points="${pts}"/>`;
   }
   return out;
 }

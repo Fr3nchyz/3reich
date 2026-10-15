@@ -27,3 +27,10 @@
 .stack-row .row-count { font-weight: 400; font-size: .9rem; color: var(--ink-soft); }
 /* The second shade of yellow: hexes a faster ticked unit could reach alone. Paler fill and a dashed outline, so it is not the colour alone. */
 svg.map .highlights polygon.further { fill: rgba(255, 224, 80, .14); stroke: #e0a526; stroke-width: 1; stroke-dasharray: 2 1.6; }
+/* Marks on the map for the Move card (spec 10, 10-5). Widths are screen pixels (non-scaling stroke). Shapes differ so colour is never the only cue:
+   the chosen hex = a thick dark outline, a ticked counter = a gold ring (dark case under it), a left-behind counter = a pale veil and a bar across it. */
+svg.map .attack-marks .mk-from { fill: rgba(40, 30, 10, .08); stroke: #2b1d00; stroke-width: 4px; }
+svg.map .units .ring-case, svg.map .units .dash-case { fill: none; stroke: #2b1d00; stroke-width: 4.5px; vector-effect: non-scaling-stroke; pointer-events: none; }
+svg.map .units .ring { fill: none; stroke: #f5c400; stroke-width: 2.4px; vector-effect: non-scaling-stroke; pointer-events: none; }
+svg.map .units .veil { fill: #f4ecd6; opacity: .62; pointer-events: none; }
+svg.map .units .dash { fill: none; stroke: #fff; stroke-width: 2.2px; stroke-linecap: round; vector-effect: non-scaling-stroke; pointer-events: none; }

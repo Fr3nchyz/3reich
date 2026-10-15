@@ -6,6 +6,7 @@ import { highlightsMarkup, unitsMarkup } from "./mapCounters";
 import { cornersOf, hexCenter, points } from "./mapGeometry";
 import { overlayMarkup } from "./mapOverlay";
 import type { AttackMarksInput } from "./attackMarks";
+import type { UnitMarks } from "./moveMarks";
 import { attackMarksMarkup } from "./mapMarks";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
@@ -30,7 +31,8 @@ export interface MapViewOptions {
 
 export interface MapView {
   setFronts(on: boolean): void;
-  setUnits(units: readonly Unit[]): void;
+  /** Draw the counters; `marks` (spec 10, 10-5) rings the ticked ones and dashes the left-behind ones of the hex chosen to move from. */
+  setUnits(units: readonly Unit[], marks?: UnitMarks): void;
   /** Outline these hexes (places where the selected counter may go); `further` are drawn in a second shade (spec 10: where a faster unit alone could go). */
   setHighlights(ids: Iterable<string>, further?: Iterable<string>): void;
   /** Draw who holds each hex and the Zones of Control (see overlayModel.ts); null clears the overlay. */
@@ -86,7 +88,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
 
   return {
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
-    setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
+    setUnits: (units, marks) => { unitLayer.innerHTML = unitsMarkup(map, units, marks); },
     setHighlights: (ids, further) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined, further); },
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     setAttackMarks: drawMarks,
