@@ -30,22 +30,30 @@ export interface DefenseSituation {
   seaborneInvasion?: boolean;
 }
 
+/** Why a defence is multiplied the way it is: the single best benefit that applies (they never add up). */
+export type DefenseBasis = "fortress" | "mountains" | "swamp" | "river-or-arrow" | "beach-invasion" | "plain";
+
 /**
- * Multiplier applied to each defending ground unit. Defence is at least doubled in any
+ * Multiplier applied to each defending ground unit, with the reason. Defence is at least doubled in any
  * terrain; tripled in mountains, swamp, behind a river/crossing arrow, or on a beach
  * against Seaborne Invasion; quadrupled in a fortress. Benefits are not cumulative:
  * the single best applies (a unit on a mountain behind a river is only tripled).
  * The multipliers match the game's own terrain effects chart screen (TABLE11.TAB); the
  * chart does not mention cumulation, which comes from the Reference Manual.
+ * The order below is the order of priority; `defenseMultiplier` returns this function's number, so there is one source of truth.
  */
-export function defenseMultiplier(s: DefenseSituation): number {
+export function defenseBasis(s: DefenseSituation): { multiplier: number; basis: DefenseBasis } {
   const features = s.features ?? [];
-  if (s.fortress) return 4;
-  if (s.terrain === "mountains" || s.terrain === "swamp") return 3;
-  if (s.behindRiverOrArrow) return 3;
-  if (s.seaborneInvasion && features.includes("beach")) return 3;
-  return 2;
+  if (s.fortress) return { multiplier: 4, basis: "fortress" };
+  if (s.terrain === "mountains") return { multiplier: 3, basis: "mountains" };
+  if (s.terrain === "swamp") return { multiplier: 3, basis: "swamp" };
+  if (s.behindRiverOrArrow) return { multiplier: 3, basis: "river-or-arrow" };
+  if (s.seaborneInvasion && features.includes("beach")) return { multiplier: 3, basis: "beach-invasion" };
+  return { multiplier: 2, basis: "plain" };
 }
+
+/** Multiplier applied to each defending ground unit (see `defenseBasis` for the rule and the reason). */
+export const defenseMultiplier = (s: DefenseSituation): number => defenseBasis(s).multiplier;
 
 /**
  * Hex features that can never be chosen for occupation after Attrition combat
