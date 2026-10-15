@@ -1,6 +1,6 @@
 # 09. Air units: bases, staging, air support in battle, counter-air and airdrops
 
-Status: **proposed 2026-10-15, for the product owner's review. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
+Status: **approved 2026-10-15 with the decision below (D1: displace). Nothing is built yet.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
 
 
 ## Decisions (product owner, 2026-10-15)
