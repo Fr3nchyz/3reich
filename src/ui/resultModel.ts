@@ -3,6 +3,7 @@ import type { CombatRound } from "../engine/combat";
 import { turnKey } from "../engine/combat-record";
 import { sideOfOwner } from "../engine/setup";
 import type { GameState, Side, Unit } from "../engine/types";
+import { unitsWithIds } from "./names";
 
 /**
  * What the last battle of the player's own attack did, built from the events the session already logs (COMBAT_RESOLVED, UNIT_ELIMINATED,
@@ -26,6 +27,8 @@ export interface BattleResult {
   lostDefenders: Unit[];
   /** Air units, fleets and the like destroyed alone in the hex after the battle. */
   swept: Unit[];
+  /** Survivors who advanced into the emptied hex (spec 07, State 4). */
+  advanced: Unit[];
   /** Just made: the card's heading takes the keyboard focus on the next draw, once. */
   fresh: boolean;
 }
@@ -40,10 +43,12 @@ export function trackBattle(prev: BattleResult | null, events: readonly GameEven
   let battle: BattleResult | null = prev;
   if (started) {
     battle = started.side === mySide
-      ? { turn: turnKey(before), side: started.side, target: started.target, attackFactors: started.attackFactors, defenseFactors: started.defenseFactors, multiplier: started.multiplier, rounds: started.rounds, outcome: started.outcome, sweep: started.sweep === true, lostAttackers: [], lostDefenders: [], swept: [], fresh: true }
+      ? { turn: turnKey(before), side: started.side, target: started.target, attackFactors: started.attackFactors, defenseFactors: started.defenseFactors, multiplier: started.multiplier, rounds: started.rounds, outcome: started.outcome, sweep: started.sweep === true, lostAttackers: [], lostDefenders: [], swept: [], advanced: [], fresh: true }
       : null;
   }
   if (!battle) return null;
+  const moved = events.flatMap((e) => (e.type === "UNITS_ADVANCED" && e.to === battle!.target ? unitsWithIds(before, e.units) : []));
+  if (moved.length > 0) battle = { ...battle, advanced: [...battle.advanced, ...moved] };
   const sweptIds = new Set(events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
   const gone = events.flatMap((e) => (e.type === "UNIT_ELIMINATED" && before.units[e.unitId] ? [before.units[e.unitId]!] : []));
   if (gone.length === 0) return battle;

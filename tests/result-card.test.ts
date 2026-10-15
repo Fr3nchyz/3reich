@@ -10,6 +10,7 @@ import { createSession, type Session } from "../src/ui/session";
 import { normaliseMode, takeAction } from "../src/ui/sessionActions";
 import { resultCardHtml } from "../src/ui/resultView";
 import { attackHtml } from "../src/ui/attackView";
+import { choiceHtml } from "../src/ui/choiceView";
 import { GER, POL, at7h } from "./preview-helpers";
 import { CTX } from "./helpers";
 
@@ -21,6 +22,7 @@ function session(units: Unit[], seed: number): Session {
   s.log = [];
   return s;
 }
+const plain = (h: string) => h.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 const text = (s: Session) => resultCardHtml(s).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 
 /** Attacks Poznan (M33) from M32 with 3 + 3 against one Polish 1 (doubled to 2): 3-1; finds a seed where `want` happens. */
@@ -50,7 +52,8 @@ describe("the result card", () => {
 
   it("an Exchange the player must settle: the card says so, and after the choice names what was lost", () => {
     const s = find((x) => combatOf(x.state).pending !== null);
-    expect(text(s)).toContain("Choose your losses: at least 2 factors must go. Each button above is one way to do it.");
+    expect(text(s)).toContain("The Exchange takes at least 2 factors of yours: you choose which units go.");
+    expect(plain(choiceHtml(s, legalActions(s.ctx, s.state)))).toContain("Choose your losses");
     expect(text(s)).not.toContain("You lost nothing.");
     const ways = legalActions(s.ctx, s.state).filter((a) => a.type === "ALLOCATE_LOSSES");
     expect(ways.length).toBeGreaterThan(1);

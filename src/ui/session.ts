@@ -10,6 +10,7 @@ import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from ".
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
 import type { AttackDraft } from "./attackDraft";
+import type { ChoiceDraft } from "./choiceTap";
 import { trackBattle, type BattleResult } from "./resultModel";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
@@ -61,6 +62,8 @@ export interface Session {
   attack?: AttackDraft | null;
   /** The last battle of the player's own attack, for the result card (spec 07, State 3). Screen state, never saved. */
   battle?: BattleResult | null;
+  /** The units picked for the losses of an Exchange or an advance after a battle (spec 07, State 4). Screen state, never saved. */
+  choice?: ChoiceDraft | null;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */

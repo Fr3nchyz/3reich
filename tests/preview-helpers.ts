@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { sessionFromRecord } from "../src/ui/e2eLoad";
+import type { Session } from "../src/ui/session";
+import type { Action } from "../src/engine/actions";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { combatOf, turnKey } from "../src/engine/combat-record";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
@@ -14,3 +18,9 @@ export function at7h(units: Unit[], seed = 1, extra: Partial<GameState> = {}): G
 /** The position with these units marked as having attacked, and these hexes as attacked, this Player Turn. */
 export const spent = (s: GameState, attacked: string[], targets: string[] = []): GameState => ({ ...s, combat: { ...combatOf(s), turn: turnKey(s), attacked, targets } });
 
+
+/** The recorded game of the browser tests (tests/e2e/fixtures/axis-at-7h.json) at step 7h of the first Axis turn, with this seed for the dice. The position is the same for every seed. */
+export function e2eFixtureSession(seed: number): Session {
+  const f = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "utf8")) as { actions: Action[] };
+  return sessionFromRecord(SCENARIO_1939, "axis", seed, f.actions);
+}
