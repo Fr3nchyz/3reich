@@ -35,6 +35,10 @@ export interface MapView {
   setOverlay(cells: OverlayCells | null): void;
   /** Zoom and pan to fit these hexes; with none, show the whole map. */
   focus(ids: Iterable<string>): void;
+  /** Zoom by `factor` (above 1 shows more) about the middle of the map; returns the zoom level after (1 = the whole map just fits). */
+  zoomBy(factor: number): number;
+  /** Zoom and pan to fit the hexes now outlined (where the chosen stack or counter can go); false, and no change, when none are. */
+  focusOutlined(): boolean;
 }
 
 /** The map hex drawn under a screen point, if any. */
@@ -55,6 +59,8 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
 
   const viewport = createViewport(svg, whole);
+  let outlined: string[] = [];
+  const centresOf = (ids: Iterable<string>) => [...ids].filter((id) => map.hexes[id]).map((id) => hexCenter(hex(id)));
   const { onHexClick } = opts;
   attachGestures(svg, viewport, onHexClick && ((x, y) => { const h = hexAt(map, x, y); if (h) onHexClick(h); }));
   svg.addEventListener("mouseover", (e) => {
@@ -67,11 +73,14 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   return {
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
     setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
-    setHighlights: (ids) => { highlightLayer.innerHTML = highlightsMarkup(map, ids); },
+    setHighlights: (ids) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined); },
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
-    focus: (ids) => {
-      const centres = [...ids].filter((id) => map.hexes[id]).map((id) => hexCenter(hex(id)));
-      viewport.focus(centres);
+    focus: (ids) => viewport.focus(centresOf(ids)),
+    zoomBy: (factor) => { viewport.zoomMiddle(factor); return viewport.level(); },
+    focusOutlined: () => {
+      const centres = centresOf(outlined);
+      if (centres.length > 0) viewport.focus(centres);
+      return centres.length > 0;
     },
   };
 }

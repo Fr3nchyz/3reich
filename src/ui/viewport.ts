@@ -9,6 +9,8 @@ import { SIZE, type Box, type Point } from "./mapGeometry";
 export const MAX_ZOOM_OUT = 1.2;
 /** ... and down to this fraction of it (zoomed in). */
 export const MAX_ZOOM_IN = 12;
+/** One press of a zoom button doubles (or halves) the size. */
+export const BUTTON_ZOOM_STEP = 2;
 /** Space left around the hexes when the whole map is shown. */
 export const MAP_MARGIN = SIZE;
 /** Space left around the hexes when the view is fitted to a few of them. */
@@ -60,6 +62,17 @@ export function wholeOnScreen(whole: Box, s: Size): Box {
 }
 
 /**
+ * How far in the box is, as a multiple of the whole map just fitting this screen: 1 shows the whole map,
+ * 12 (MAX_ZOOM_IN) is the closest, a little under 1 is zoomed out past it. Reads a letterboxed box by the scale it is drawn at.
+ */
+export const zoomLevel = (vb: Box, whole: Box, s: Size): number => Math.min(s.w / vb.w, s.h / vb.h) / fitScale(whole, s);
+
+/** The box with its size held inside the zoom limits (about its own centre); a box already inside them is unchanged. */
+export function clampBox(vb: Box, whole: Box, s: Size): Box {
+  return zoomBox(vb, wholeOnScreen(whole, s), vb.x + vb.w / 2, vb.y + vb.h / 2, 1);
+}
+
+/**
  * The box after the map's screen area changed from `from` to `to` (a window dragged across the two-column
  * breakpoint, browser zoom, a tablet turned over). The same map point stays at the centre and the same
  * share of the whole map stays in view (zoom measured against the whole map just fitting), and the box
@@ -77,8 +90,12 @@ export interface Viewport {
   zoomAt(clientX: number, clientY: number, factor: number): void;
   /** Drag the map by (dx, dy) screen pixels. */
   panBy(dx: number, dy: number): void;
-  /** Fit the view to these hex centres; with none, show the whole map. */
+  /** Fit the view to these hex centres; with none, show the whole map. The zoom stays inside the limits. */
   focus(centres: readonly Point[]): void;
+  /** Zoom by `factor` (above 1 shows more) about the middle of the map. */
+  zoomMiddle(factor: number): void;
+  /** The zoom as `zoomLevel` reads it (1 = the whole map just fits); 1 while the map has no size. */
+  level(): number;
 }
 
 export function createViewport(svg: SVGSVGElement, whole: Box): Viewport {
@@ -125,8 +142,16 @@ export function createViewport(svg: SVGSVGElement, whole: Box): Viewport {
     focus(centres) {
       const m = measure();
       if (centres.length === 0) vb = m ? wholeOnScreen(whole, m.size) : { ...whole };
-      else vb = fitBox(centres, m ? m.size.w / m.size.h : whole.w / whole.h);
+      else vb = m ? clampBox(fitBox(centres, m.size.w / m.size.h), whole, m.size) : fitBox(centres, whole.w / whole.h);
       apply();
+    },
+    zoomMiddle(factor) {
+      const r = svg.getBoundingClientRect();
+      this.zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor);
+    },
+    level() {
+      const m = measure();
+      return m ? zoomLevel(vb, whole, m.size) : 1;
     },
   };
 }
