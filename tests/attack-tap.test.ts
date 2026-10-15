@@ -9,7 +9,7 @@ import { syncAttackMarks } from "../src/ui/attackSync";
 import type { MapView } from "../src/ui/mapView";
 import { cancelAttack, confirmAttack, normaliseAttack, openAttack, targetsNow, toggleAttacker } from "../src/ui/attackTap";
 import { createSession, type Session } from "../src/ui/session";
-import { normaliseMode, takeAction, tapHex } from "../src/ui/sessionActions";
+import { lookAt, normaliseMode, takeAction, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import { newWatchSession } from "../src/ui/watchPlay";
 import { GER, POL, at7h, spent } from "./preview-helpers";
@@ -293,6 +293,11 @@ describe("what the status area shows at step 7h", () => {
     openAttack(open, "M35");
     tapHex(open, hexOf(open, "M33")); // another red hex: moves the draft, no sentence
     expect(text(html(open))).not.toContain("None of your units");
+    const other = session(TWO_TARGETS);
+    openAttack(other, "M35");
+    lookAt(other, "M33"); // looking at a hex that can be attacked (the draft is on M35): the card says nothing about why not
+    expect(text(html(other))).toContain("Poznan (M33)");
+    expect(text(html(other))).not.toMatch(/No unit is chosen|None of your units|not at war|Attacks are made/);
   });
 });
 
