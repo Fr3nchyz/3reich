@@ -48,7 +48,6 @@ const stackHexes = (page: Page) => page.locator("button.stack-row").evaluateAll(
 
 /** The id of a yellow hex with no stack of ours on it, and where to tap it. */
 async function emptyYellow(page: Page, avoid: readonly string[]): Promise<{ id: string; pt: Pt }> {
-  await page.evaluate(() => window.scrollTo(0, 0));
   const found = await page.locator("svg.map").evaluate((svg, skip) => {
     const box = svg.getBoundingClientRect();
     for (const h of svg.querySelectorAll("g.highlights polygon:not(.further)")) {
@@ -227,5 +226,104 @@ for (const size of SIZES) {
       expect(gap, "buttons do not touch").toBeGreaterThanOrEqual(8);
     }
     await page.screenshot({ path: `test-results/move-${size[0]}x${size[1]}.png` });
+  });
+}
+
+/** The screen point of a hex without moving the page (the map is pinned or in its own column, so a finger never needs the page scrolled). */
+const here = (page: Page, id: string): Promise<Pt> =>
+  page.locator(`svg.map polygon[data-id="${id}"]`).evaluate((p) => {
+    const r = p.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2] as const;
+  });
+
+/** The card's heading, Cancel, All and None are on screen and the sticky Next bar does not cover them. */
+async function cardInReach(page: Page, what: string): Promise<void> {
+  for (const sel of ["#move-title", "#move-cancel", "#move-all", "#move-none"]) await expect(page.locator(sel), `${what}: ${sel} is in view`).toBeInViewport({ ratio: 1 });
+  const bar = (await page.locator(".nextbar").boundingBox())!;
+  const head = (await page.locator("#move-title").boundingBox())!;
+  expect(bar.y + bar.height, `${what}: the Next bar does not cover the card heading`).toBeLessThanOrEqual(head.y + 1);
+  await expect(page.locator(".nextbar"), `${what}: the Next bar is in view`).toBeInViewport({ ratio: 1 });
+}
+
+for (const size of [[390, 844], [1024, 768], [1180, 820]] as const) {
+  test(`${size[0]}x${size[1]}: the card stays where it is after a partial move, a refused tap and a tap on the second shade; Escape still cancels`, async ({ page, hasTouch }) => {
+    await load(page, size);
+    const stacks = await stackHexes(page);
+    await tapAt(page, hasTouch, await here(page, "J36"));
+    await expect(card(page)).toBeVisible();
+    await cardInReach(page, "opened");
+    const top = await page.evaluate(() => window.scrollY);
+
+    // A tap on an enemy hex is refused; the page does not move.
+    await tapAt(page, hasTouch, await here(page, "M35"));
+    await expect(page.locator("#maptoast")).toContainText("cannot get there");
+    await cardInReach(page, "after a refused tap");
+    expect(await page.evaluate(() => window.scrollY)).toBe(top);
+
+    // Untick the infantry; the armor's own reach beyond the group is the second shade: a tap on it moves nothing.
+    await press(lines(page).filter({ hasText: "infantry" }), hasTouch);
+    await page.evaluate((y) => window.scrollTo(0, y), top); // Playwright scrolls a line into view on a phone; a person's page stays where it was
+    await tapAt(page, hasTouch, await here(page, "M35"));
+    await cardInReach(page, "after unticking and a refused tap");
+    expect(await page.evaluate(() => window.scrollY)).toBe(top);
+
+    // Partial move: the armor goes, the infantry stays; the card is still there and in reach.
+    const dest = await emptyYellow(page, stacks);
+    await tapAt(page, hasTouch, dest.pt);
+    await expect(moveLog(page).first()).toBeVisible();
+    await expect(lines(page)).toHaveCount(1);
+    await cardInReach(page, "after a partial move");
+    expect(await page.evaluate(() => window.scrollY)).toBe(top);
+
+    // Escape cancels even though the focus is not in the card (a tap on the map took it).
+    await tapAt(page, hasTouch, await here(page, "M35"));
+    await page.keyboard.press("Escape");
+    await expect(card(page)).toHaveCount(0);
+  });
+}
+
+test("a toast from a refused tap is gone after All, None or Cancel", async ({ page, hasTouch }) => {
+  await load(page);
+  await tapHexId(page, hasTouch, "J36");
+  await press(page.locator("#move-none"), hasTouch);
+  await tapHexId(page, hasTouch, "M35");
+  await expect(page.locator("#maptoast")).toHaveText("Tick at least one unit.");
+  await press(page.locator("#move-all"), hasTouch);
+  await expect(page.locator("#maptoast")).toHaveText("");
+  await expect(page.locator(".toast")).toHaveText("");
+  await press(page.locator("#move-none"), hasTouch);
+  await tapHexId(page, hasTouch, "M35");
+  await press(page.locator("#move-cancel"), hasTouch);
+  await expect(page.locator("#maptoast")).toHaveText("");
+  await expect(page.locator(".toast")).toHaveText("");
+});
+
+/** A real game of 1939 as Axis, played to step 6f the way a person does (steps 1 and 3 by their buttons). */
+async function arriveAt6f(page: Page, size: Pt): Promise<void> {
+  await page.setViewportSize({ width: size[0], height: size[1] });
+  await page.goto("/");
+  await page.locator("#scenario").selectOption("1939");
+  await page.locator("#side").selectOption("axis");
+  await page.locator("#newgame").click();
+  for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
+  await expect(page.locator(".turn")).toContainText("step 1");
+  await page.locator(".nextbar button[data-action], .actions button[data-action]").last().click();
+  await expect(page.locator(".turn")).toContainText("step 3");
+  await page.locator("summary", { hasText: "Choose a Front Option" }).click();
+  await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
+  await page.locator(".actions button[data-action]").last().click();
+  await expect(page.locator(".turn")).toContainText("step 6f");
+}
+
+for (const size of [[1024, 768], [1180, 820], [768, 1024], [390, 844]] as const) {
+  test(`${size[0]}x${size[1]}: arriving at step 6f brings the Next bar and the list of stacks into view`, async ({ page }) => {
+    await arriveAt6f(page, size);
+    const bar = page.locator(".nextbar");
+    await expect(bar).toBeInViewport({ ratio: 1 });
+    await expect(page.locator("#stacks-title")).toBeInViewport({ ratio: 1 });
+    const barBox = (await bar.boundingBox())!;
+    const first = (await page.locator("button.stack-row").first().boundingBox())!;
+    expect(first.y, "the first row is not under the Next bar").toBeGreaterThanOrEqual(barBox.y + barBox.height);
+    expect(first.y, "the first row is on screen").toBeLessThan(size[1]);
   });
 }
