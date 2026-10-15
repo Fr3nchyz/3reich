@@ -72,13 +72,16 @@ export function buttonLabels(actions: Action[], ctx: GameContext, state: GameSta
  * they have their own panel (buildView). The losses and the advance after a battle are the cards of choiceView.ts, with their
  * old buttons in fold-outs for a keyboard.
  */
+/** The folds of the combat buttons: their inner row is not `.actions`, so the buttons that move the game on stay the last `.actions` buttons in the page (the browser tests click that one). */
+const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE"];
+
 function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string } {
   const shown = buttonLabels(actions, ctx, state);
   const text = new Map(shown.map((l) => [l.action, l.text]));
   const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
   const fold = (type: Action["type"], title: string) => {
     const group = actions.filter((a) => a.type === type && text.has(a));
-    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
+    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${group.map(button).join("")}</div></details>`;
   };
   const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE");
   return {

@@ -13,6 +13,7 @@ import { MAX_GROUPS, lossModel, ownPending } from "../src/ui/lossOptions";
 import { nextText } from "../src/ui/nextBar";
 import { createSession, type Session } from "../src/ui/session";
 import { attackHtml } from "../src/ui/attackView";
+import { statusHtml } from "../src/ui/statusView";
 import { resultCardHtml } from "../src/ui/resultView";
 import { CTX } from "./helpers";
 import { GER, POL, at7h } from "./preview-helpers";
@@ -253,6 +254,48 @@ describe("the whole sequence on the recorded game: attack, Exchange, losses, adv
     pickLossWay(s, 0);
     confirmLosses(s);
     expect(plain(attackHtml(s, acts(s)))).not.toMatch(/above|below/);
+  });
+});
+
+describe("the status column at step 7h", () => {
+  it("leads with the Next bar and the pending choice, then the result; the nation table and the old buttons come after", () => {
+    const s = e2eFixtureSession(27);
+    openAttack(s, "M35");
+    confirmAttack(s);
+    const html = statusHtml(s, null, acts(s));
+    const at = (needle: string) => html.indexOf(needle);
+    expect(at('class="turn"')).toBeLessThan(at("nextbar"));
+    expect(at("nextbar")).toBeLessThan(at("choicecard"));
+    expect(at("choicecard")).toBeLessThan(at("resultcard"));
+    expect(at("resultcard")).toBeLessThan(at("<table"));
+    expect(at("<table")).toBeLessThan(at("All ways to lose, as a list"));
+    expect(html).not.toContain('<div class="actions controls">'); // the step's own buttons are in the bar, once
+  });
+
+  it("the old coded buttons for the losses and the advance sit in fold-outs whose row is not `.actions` (the page's last `.actions` button moves the game on)", () => {
+    const s = e2eFixtureSession(27);
+    openAttack(s, "M35");
+    confirmAttack(s);
+    const html = statusHtml(s, null, acts(s));
+    expect(html).toMatch(/<details class="declarations"><summary>All ways to lose, as a list \(2 choices\)<\/summary><div class="fold-buttons controls">/);
+    expect(html.match(/class="actions controls/g)).toHaveLength(1); // only the Next bar
+    expect(html).toContain("Lose 4-6 German armor from L35");
+  });
+
+  it("a battle shown while the computer chooses its losses has a bar with words and no buttons", () => {
+    const pol = [POL("p1", "M33", 1), POL("p2", "M33", 1), POL("p3", "M33", 1), POL("p4", "M33", 1)];
+    for (let seed = 1; seed < 400; seed++) {
+      const s = createSession(SCENARIO_1939, "axis", seed);
+      s.state = at7h([GER("g1", "M32", 3), GER("g2", "M32", 3), ...pol], seed);
+      openAttack(s, "M33");
+      confirmAttack(s);
+      if (combatOf(s.state).pending?.chooser !== "allies") continue;
+      const html = statusHtml(s, null, []);
+      expect(plain(html)).toContain("Waiting for the computer to choose its losses.");
+      expect(html).not.toContain("data-action");
+      return;
+    }
+    throw new Error("no seed");
   });
 });
 

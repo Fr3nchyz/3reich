@@ -80,3 +80,4 @@
 @media (max-height: 480px) { .nextbar { position: static; } }
 /* No message: the line takes no room under the bar (it still announces a refusal when there is one). */
 .nextbar + .toast:empty { min-height: 0; height: 0; overflow: hidden; margin-bottom: -.9rem; }
+.declarations .fold-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin: .4rem 0 .6rem; }
