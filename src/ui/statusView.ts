@@ -123,6 +123,6 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${buildPanel(s, actions)}
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
-      ${logHtml(s.log)}
+      ${logHtml(s.log, s.logSides)}
     </main>`;
 }

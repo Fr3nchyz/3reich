@@ -1,3 +1,4 @@
+import type { Side } from "../engine/types";
 import { escape } from "./mapGeometry";
 
 /**
@@ -51,9 +52,12 @@ export function restoreLog(status: HTMLElement, mark: LogMark): void {
   ol.scrollTop = logScrollTop(mark.top, added, shift);
 }
 
-/** The panel's HTML: numbered from the newest entry down, so an entry keeps its number as more arrive. */
-export function logHtml(log: readonly string[]): string {
+/** The class of an entry's side (the colour and the border style are in style.css); none for a plain line. */
+const sideClass = (side: Side | undefined): string => (side ? ` class="log-${side}"` : "");
+
+/** The panel's HTML: numbered from the newest entry down, so an entry keeps its number as more arrive. `sides` marks the entries (by index in `log`) that belong to a side. */
+export function logHtml(log: readonly string[], sides?: ReadonlyMap<number, Side>): string {
   const shown = logEntries(log);
   const more = log.length > shown.length ? `<li class="log-more">Older entries (${log.length - shown.length}) are not shown.</li>` : "";
-  return `<ol class="log" reversed start="${log.length}" data-total="${log.length}" tabindex="0" aria-label="Activity log, newest first">${shown.map((l) => `<li>${escape(l)}</li>`).join("")}${more}</ol>`;
+  return `<ol class="log" reversed start="${log.length}" data-total="${log.length}" tabindex="0" aria-label="Activity log, newest first">${shown.map((l, i) => `<li${sideClass(sides?.get(log.length - 1 - i))}>${escape(l)}</li>`).join("")}${more}</ol>`;
 }

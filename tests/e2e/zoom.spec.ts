@@ -49,7 +49,7 @@ for (const [width, height] of [...IPADS, ...PHONES]) {
   test(`${width}x${height}: four named buttons of at least 44 px sit on the map, clear of everything else on it`, async ({ page }) => {
     await start(page, width, height);
     const names = await page.locator("#zoom button").evaluateAll((bs) => bs.map((b) => b.getAttribute("aria-label")));
-    expect(names).toEqual(["Zoom in", "Zoom out", "Show the whole map", "Zoom to the selected counter"]);
+    expect(names).toEqual(["Zoom in", "Zoom out", "Show the whole map", "Zoom to the selected hex or counter"]);
     await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
     // Make the other things on the map show: the key, a long refused-move line.
     await page.locator("#overlay").click();

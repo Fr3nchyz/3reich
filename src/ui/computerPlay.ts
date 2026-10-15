@@ -4,6 +4,7 @@ import { combatOf } from "../engine/combat-record";
 import { otherSide } from "../engine/game";
 import type { Side } from "../engine/types";
 import { sideName } from "./format";
+import { logLine } from "./logSide";
 import { run, type Session } from "./session";
 
 /**
@@ -67,7 +68,8 @@ export function computerAct(s: Session): ActResult {
   const memory = memories.get(s) ?? memories.set(s, createMemory()).get(s)!;
   const decision = chooseAction(s.ctx, s.state, { seed: s.seed, memory });
   if (!decision) return { ok: false, kind: "stuck", detail: "the computer has no action to take" };
-  const who = `Computer (${sideName(computerSide(s))})`;
+  const side = computerSide(s);
+  const who = `Computer (${sideName(side)})`;
   if (decision.action.type === "MOVE" && !s.watch) {
     // Up to 40 moves a turn would bury the log: they are written up in one line when the step ends.
     const tally = moveTally.get(s) ?? { moves: 0, units: 0 };
@@ -75,10 +77,10 @@ export function computerAct(s: Session): ActResult {
   } else {
     const tally = moveTally.get(s);
     if (tally) {
-      s.log.push(`${who}: moved ${tally.units} unit${tally.units === 1 ? "" : "s"} in ${tally.moves} move${tally.moves === 1 ? "" : "s"}, each toward the nearest enemy-held capital or objective.`);
+      logLine(s, `${who}: moved ${tally.units} unit${tally.units === 1 ? "" : "s"} in ${tally.moves} move${tally.moves === 1 ? "" : "s"}, each toward the nearest enemy-held capital or objective.`, side);
       moveTally.delete(s);
     }
-    s.log.push(`${who}: ${decision.why}`);
+    logLine(s, `${who}: ${decision.why}`, side);
   }
   return run(s, decision.action) ? { ok: true } : { ok: false, kind: "refused", detail: s.toast || "the engine refused the action" };
 }

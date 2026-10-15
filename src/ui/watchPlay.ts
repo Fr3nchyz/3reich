@@ -2,6 +2,7 @@ import type { Scenario, Side } from "../engine/types";
 import { computerAct } from "./computerPlay";
 import { cap, sideName } from "./format";
 import { describeStep } from "../engine/sequence";
+import { resetLog } from "./logSide";
 import { newSession, placeTheRest, type Session } from "./session";
 import {
   actionsPerSlice, afterAction, createWatchInfo, markStuck, overOf, shouldRun, SLICE_MS, stuckMessage, type Speed, type WatchInfo,
@@ -17,7 +18,7 @@ const MAX_SETUP_OWNERS = 20;
 export function newWatchSession(scenario: Scenario, seed: number, speed: Speed, turns: number | null): Session {
   const s = newSession(scenario, "axis", seed);
   s.record = [];
-  s.log = [`${scenario.name} started with seed ${seed}: the computer plays both sides and you watch.`];
+  resetLog(s, [`${scenario.name} started with seed ${seed}: the computer plays both sides and you watch.`]);
   for (let guard = 0; guard < MAX_SETUP_OWNERS && s.state.phase === "setup"; guard++) if (!placeTheRest(s)) break;
   s.watch = createWatchInfo(s.state, s.record.length, speed, turns);
   if (s.state.phase === "setup") s.watch = markStuck(s.watch, "setup", "the automatic setup did not finish");

@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { MapView } from "../src/ui/mapView";
-import { NOTHING_SELECTED, ZOOM_BUTTONS, bindZoom, zoomSaid } from "../src/ui/zoomControls";
+import type { Session } from "../src/ui/session";
+import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
 import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, panBox, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
 
 /** The zoom buttons (spec 08): the maths behind them, the limits, and what a press does and says. */
@@ -148,13 +149,13 @@ describe("zoomSaid", () => {
 describe("the buttons", () => {
   it("are four real buttons, each with a name for a screen reader and a tooltip", () => {
     const buttons = [...ZOOM_BUTTONS.matchAll(/<button type="button" data-zoom="(\w+)" aria-label="([^"]+)" title="([^"]+)">/g)];
-    expect(buttons.map((m) => [m[1], m[2]])).toEqual([["in", "Zoom in"], ["out", "Zoom out"], ["whole", "Show the whole map"], ["selected", "Zoom to the selected counter"]]);
+    expect(buttons.map((m) => [m[1], m[2]])).toEqual([["in", "Zoom in"], ["out", "Zoom out"], ["whole", "Show the whole map"], ["selected", "Zoom to the selected hex or counter"]]);
     for (const m of buttons) expect(m[3]).toBe(m[2]);
     expect(ZOOM_BUTTONS.match(/<button/g)).toHaveLength(4);
     expect(ZOOM_BUTTONS, "the pictures are hidden from screen readers").not.toMatch(/<svg(?![^>]*aria-hidden="true")/);
   });
 
-  function bound(opts: { outlined: boolean }) {
+  function bound(opts: { outlined: boolean; looked?: Looked | null }) {
     const calls: string[] = [];
     const view = {
       zoomBy: (f: number) => { calls.push(`zoomBy ${f}`); return 4; },
@@ -164,9 +165,11 @@ describe("the buttons", () => {
     let onClick: (e: unknown) => void = () => undefined;
     const zoom = { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement;
     const zoomSay = { textContent: "" } as HTMLElement;
-    bindZoom({ zoom, zoomSay }, view, (run) => run());
+    const zoomNote = { textContent: "" } as HTMLElement;
+    const timers: { run: () => void; ms: number }[] = [];
+    bindZoom({ zoom, zoomSay, zoomNote }, view, () => opts.looked ?? null, (run) => run(), (run, ms) => timers.push({ run, ms }));
     const press = (action: string | null) => onClick({ target: { closest: () => (action ? { dataset: { zoom: action } } : null) } });
-    return { calls, zoomSay, press };
+    return { calls, zoomSay, zoomNote, timers, press };
   }
 
   it("zoom in halves the box, zoom out doubles it, whole shows the whole map, and each says what it did", () => {
@@ -190,13 +193,97 @@ describe("the buttons", () => {
     expect(no.zoomSay.textContent).toBe(NOTHING_SELECTED);
   });
 
+  it("with no outlined hex the target button zooms to the hex on the hex card and says which", () => {
+    const hexCard = bound({ outlined: false, looked: { id: "M35", name: "Warsaw (M35)" } });
+    hexCard.press("selected");
+    expect(hexCard.calls).toEqual(["focusOutlined", "focus 1"]);
+    expect(hexCard.zoomSay.textContent).toBe("Zoomed to the hex Warsaw (M35)");
+    expect(hexCard.zoomNote.textContent, "the map needs no extra message when it moves").toBe("");
+  });
+
+  it("outlined hexes win over the hex on the hex card", () => {
+    const both = bound({ outlined: true, looked: { id: "M35", name: "Warsaw (M35)" } });
+    both.press("selected");
+    expect(both.calls).toEqual(["focusOutlined"]);
+    expect(both.zoomSay.textContent).toBe("Zoomed to the selected counter");
+  });
+
+  it("with nothing selected the message is also shown on the map, goes by itself after NOTE_MS, and the view does not move", () => {
+    const none = bound({ outlined: false });
+    none.press("selected");
+    expect(none.calls).toEqual(["focusOutlined"]);
+    expect(none.zoomNote.textContent).toBe(NOTHING_SELECTED);
+    expect(none.timers.map((t) => t.ms)).toEqual([NOTE_MS]);
+    none.timers[0]!.run();
+    expect(none.zoomNote.textContent).toBe("");
+  });
+
+  it("the words say what is true for the game now: playing, watching, or setting up", () => {
+    const at = (phase: string, watch: boolean) => nothingSelectedText({ state: { phase }, watch: watch ? {} : undefined } as unknown as Session);
+    expect(at("player-turn", false)).toBe(NOTHING_SELECTED);
+    expect(at("player-turn", true)).toBe("Nothing is selected. Tap a hex to look at it, then press this again.");
+    expect(at("setup", false)).toBe("Nothing is selected. Pick a counter to place first.");
+    expect(at("setup", true), "no hex card during setup, even when watching").toBe(NOTHING_SELECTED_SETUP);
+    expect(NOTHING_SELECTED_WATCHING).not.toContain("counters");
+    expect(NOTHING_SELECTED, "playing: your counters are what you choose").toContain("counters");
+  });
+
+  it("the line given for the game now is the one said, shown on the map and read aloud", () => {
+    let words = NOTHING_SELECTED_WATCHING;
+    const calls: string[] = [];
+    const view = { focusOutlined: () => false, focus: () => calls.push("focus") } as unknown as MapView;
+    let onClick: (e: unknown) => void = () => undefined;
+    const zoomSay = { textContent: "" } as HTMLElement;
+    const zoomNote = { textContent: "" } as HTMLElement;
+    bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay, zoomNote }, view, () => null, (run) => run(), () => undefined, () => words);
+    const press = () => onClick({ target: { closest: () => ({ dataset: { zoom: "selected" } }) } });
+    press();
+    expect(zoomNote.textContent).toBe(NOTHING_SELECTED_WATCHING);
+    expect(zoomSay.textContent).toBe(NOTHING_SELECTED_WATCHING);
+    words = NOTHING_SELECTED_SETUP;
+    press();
+    expect(zoomNote.textContent).toBe(NOTHING_SELECTED_SETUP);
+    expect(calls, "the map does not move").toEqual([]);
+  });
+
+  it("an old timer never clears a newer message, and another press clears a shown one", () => {
+    const none = bound({ outlined: false });
+    none.press("selected");
+    none.press("selected");
+    none.timers[0]!.run();
+    expect(none.zoomNote.textContent, "the first press's timer is stale").toBe(NOTHING_SELECTED);
+    none.timers[1]!.run();
+    expect(none.zoomNote.textContent).toBe("");
+    none.press("selected");
+    none.press("in");
+    expect(none.zoomNote.textContent, "a different press takes the message away").toBe("");
+  });
+
+  it("clears the shown message on real timers after NOTE_MS (the default timer)", () => {
+    vi.useFakeTimers();
+    try {
+      const view = { focusOutlined: () => false } as unknown as MapView;
+      let onClick: (e: unknown) => void = () => undefined;
+      const zoomNote = { textContent: "" } as HTMLElement;
+      bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay: { textContent: "" } as HTMLElement, zoomNote }, view, () => null);
+      onClick({ target: { closest: () => ({ dataset: { zoom: "selected" } }) } });
+      expect(zoomNote.textContent).toBe(NOTHING_SELECTED);
+      vi.advanceTimersByTime(NOTE_MS - 1);
+      expect(zoomNote.textContent, "still there just before").toBe(NOTHING_SELECTED);
+      vi.advanceTimersByTime(1);
+      expect(zoomNote.textContent).toBe("");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("say the same words again for a second press: the line is cleared first and set a moment later", () => {
     const writes: string[] = [];
     const zoomSay = { set textContent(v: string) { writes.push(v); } } as HTMLElement;
     const view = { zoomBy: () => 12 } as unknown as MapView;
     let onClick: (e: unknown) => void = () => undefined;
     const later: (() => void)[] = [];
-    bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay }, view, (run) => later.push(run));
+    bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay, zoomNote: { textContent: "" } as HTMLElement }, view, () => null, (run) => later.push(run));
     const press = () => onClick({ target: { closest: () => ({ dataset: { zoom: "in" } }) } });
     press();
     later.shift()!();
@@ -214,5 +301,40 @@ describe("the buttons", () => {
     press(null);
     expect(calls).toEqual([]);
     expect(zoomSay.textContent).toBe("");
+  });
+});
+
+describe("what the target button zooms to", () => {
+  const stub = (outlined: boolean) => {
+    const focused: string[][] = [];
+    return { focused, view: { focusOutlined: () => outlined, focus: (ids: Iterable<string>) => focused.push([...ids]) } };
+  };
+  const warsaw = { id: "M35", name: "Warsaw (M35)" };
+
+  it("is the outlined hexes first, then the hex on the hex card, else nothing", () => {
+    const a = stub(true);
+    expect(zoomToSelection(a.view, warsaw)).toBe("outlined");
+    expect(a.focused, "the outlined hexes were fitted by focusOutlined itself").toEqual([]);
+    const b = stub(false);
+    expect(zoomToSelection(b.view, warsaw)).toBe("hex");
+    expect(b.focused).toEqual([["M35"]]);
+    const c = stub(false);
+    expect(zoomToSelection(c.view, null)).toBe("none");
+    expect(c.focused).toEqual([]);
+  });
+
+  it("reads the hex card's hex from the session: none during setup or after the card is closed, else the hex with its name", () => {
+    const at = (phase: string, lookedAt: string | null) => ({ state: { phase }, lookedAt, ctx: { map: { hexes: { M35: { name: "Warsaw" } } } } }) as unknown as Session;
+    expect(lookedHex(at("setup", "M35"))).toBeNull();
+    expect(lookedHex(at("player-turn", null))).toBeNull();
+    expect(lookedHex(at("player-turn", "M35"))).toEqual({ id: "M35", name: "Warsaw (M35)" });
+  });
+
+  it("a fit to one hex stays inside the zoom limits (the same clamp every fit uses)", () => {
+    const svg = fakeSvg(screen);
+    const v = createViewport(svg as unknown as SVGSVGElement, whole);
+    v.focus([[650, 500]]);
+    expect(v.level()).toBeLessThanOrEqual(MAX_ZOOM_IN + 1e-9);
+    expect(v.level()).toBeGreaterThan(1);
   });
 });
