@@ -18,6 +18,8 @@ function setup() {
     zoomAt: (x, y, f) => calls.push(`zoom ${x},${y} x${f.toFixed(3)}`),
     panBy: (dx, dy) => calls.push(`pan ${dx},${dy}`),
     focus: () => undefined,
+    zoomMiddle: () => undefined,
+    level: () => 1,
   };
   attachGestures(svg, viewport, (x, y) => taps.push([x, y]));
   const ptr = (type: string, id: number, x: number, y: number) => fire(type, { type, pointerId: id, clientX: x, clientY: y });
@@ -69,6 +71,82 @@ describe("gestures on the map", () => {
     ptr("pointerup", 1, 100, 100);
     expect(calls.filter((c) => c.startsWith("zoom"))).toEqual(["zoom 200,100 x0.500"]);
     expect(taps).toEqual([]);
+  });
+
+  it("reads the gap between the fingers when the second one lands, so the first move of a pinch counts", () => {
+    const { ptr, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointerdown", 2, 200, 100); // gap 100
+    ptr("pointermove", 2, 300, 100); // gap 200 at once: zoomed, about the new middle (200, 100), after a pan of the middle (50)
+    expect(calls).toEqual(["pan 50,0", "zoom 200,100 x0.500"]);
+  });
+
+  it("moves the map when two fingers travel together and does not zoom it", () => {
+    const { ptr, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointerdown", 2, 200, 100);
+    ptr("pointermove", 1, 140, 100); // gap 60 ...
+    ptr("pointermove", 2, 240, 100); // ... and back to 100
+    const zooms = calls.filter((c) => c.startsWith("zoom")).map((c) => Number(c.split("x")[1]));
+    expect(zooms.reduce((a, b) => a * b, 1)).toBeCloseTo(1);
+    expect(calls.filter((c) => c.startsWith("pan")).map((c) => Number(c.split(" ")[1]!.split(",")[0])).reduce((a, b) => a + b, 0)).toBeCloseTo(40);
+  });
+
+  it("ignores a pinch whose fingers touch (no division by zero)", () => {
+    const { ptr, calls } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointerdown", 2, 100, 100);
+    ptr("pointermove", 2, 150, 100);
+    expect(calls.filter((c) => c.startsWith("zoom"))).toEqual([]);
+  });
+
+  it("starts a fresh pinch when a third finger lifts, and a lone finger afterwards pans without a tap", () => {
+    const { ptr, calls, taps } = setup();
+    ptr("pointerdown", 1, 100, 100);
+    ptr("pointerdown", 2, 200, 100);
+    ptr("pointerdown", 3, 400, 100);
+    ptr("pointermove", 3, 450, 100); // three fingers: no pinch
+    ptr("pointerup", 3, 450, 100);
+    ptr("pointermove", 2, 300, 100); // back to two: the gap is read from the lift, so the first move counts
+    expect(calls.filter((c) => c.startsWith("zoom"))).toEqual(["zoom 200,100 x0.500"]);
+    ptr("pointerup", 2, 300, 100);
+    ptr("pointermove", 1, 120, 100);
+    ptr("pointerup", 1, 120, 100);
+    expect(taps).toEqual([]);
+  });
+
+  it("keeps Safari from zooming the page: the gesture events and a two-finger touchmove are cancelled", () => {
+    const { fire } = setup();
+    for (const type of ["gesturestart", "gesturechange", "gestureend"]) {
+      let stopped = false;
+      fire(type, { scale: 1, clientX: 0, clientY: 0, preventDefault: () => { stopped = true; } });
+      expect(stopped, type).toBe(true);
+    }
+    const stopIf = (touches: number) => { let stopped = false; fire("touchmove", { touches: { length: touches }, preventDefault: () => { stopped = true; } }); return stopped; };
+    expect(stopIf(2)).toBe(true);
+    expect(stopIf(1), "one finger is left alone").toBe(false);
+  });
+
+  it("zooms the map for a trackpad pinch (a gesture with no pointers down), but not for a touch pinch, which the pointers already handle", () => {
+    const { fire, ptr, calls } = setup();
+    fire("gesturestart", { scale: 1 });
+    fire("gesturechange", { scale: 2, clientX: 50, clientY: 60 });
+    fire("gesturechange", { scale: 3, clientX: 50, clientY: 60 });
+    expect(calls).toEqual(["zoom 50,60 x0.500", "zoom 50,60 x0.667"]);
+    ptr("pointerdown", 1, 0, 0);
+    ptr("pointerdown", 2, 100, 0);
+    fire("gesturestart", { scale: 1 });
+    fire("gesturechange", { scale: 2, clientX: 50, clientY: 0 });
+    expect(calls).toHaveLength(2);
+  });
+
+  it("ignores a Safari gesture whose scale is not a usable number, and keeps going from the last good one", () => {
+    const { fire, calls } = setup();
+    fire("gesturestart", { scale: 1 });
+    for (const scale of [NaN, Infinity, 0, -2, undefined]) fire("gesturechange", { scale, clientX: 5, clientY: 5 });
+    expect(calls).toEqual([]);
+    fire("gesturechange", { scale: 2, clientX: 5, clientY: 5 });
+    expect(calls).toEqual(["zoom 5,5 x0.500"]);
   });
 
   it("ignores moves of a pointer that is not down", () => {

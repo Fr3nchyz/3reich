@@ -28,12 +28,12 @@ header button { background: var(--card); }
 #newgame, #done, main > .actions button:last-child { background: var(--accent); color: var(--accent-fg); border-color: #4d0f13; }
 #newgame:hover:not(:disabled), #done:hover:not(:disabled), main > .actions button:last-child:hover:not(:disabled) { background: #a3262d; }
 .map-wrap { position: relative; height: 46vh; height: 46dvh; border-bottom: 3px solid var(--border); background: #bcd6e6; }
-.map-fill { position: absolute; inset: 0; }
+.map-fill { position: absolute; inset: 0; touch-action: none; }
 .map-tools { display: flex; align-items: center; gap: .5rem; padding: .25rem .5rem; background: var(--edge); border-bottom: 3px solid var(--border); }
 .map-tools button { min-height: 44px; padding: .25rem .8rem; font-size: .9rem; }
 .map-tools button[aria-pressed="true"] { border-color: var(--accent); background: #fff7d6; box-shadow: 0 0 0 2px var(--gold); }
 .map-dock .map-wrap { border-bottom: 0; }
-.legend { position: absolute; left: .5rem; top: .5rem; max-width: min(26rem, calc(100% - 1rem)); padding: .3rem .6rem; font-size: .8rem; line-height: 1.3; background: rgba(244, 239, 226, .92); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; pointer-events: none; }
+.legend { position: absolute; left: .5rem; top: .5rem; max-width: min(26rem, calc(100% - 4.5rem)); padding: .3rem .6rem; font-size: .8rem; line-height: 1.3; background: rgba(244, 239, 226, .92); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; pointer-events: none; }
 .legend[hidden] { display: none; }
 .legend p { margin: .1rem 0; }
 .hexinfo { position: absolute; left: .5rem; bottom: .5rem; right: .5rem; padding: .25rem .6rem; font-size: .95rem; background: rgba(47, 37, 34, .85); color: var(--edge-fg); border-radius: 4px; pointer-events: none; overflow: hidden; max-height: 4.6em; line-height: 1.3; }
@@ -67,7 +67,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .setup button, .controls button { min-height: 44px; }
 .fan-note { color: #cfc6b3; }
 
-svg.map { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+svg.map { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 svg.map .hexes polygon { stroke: #6b655a; stroke-width: .3; stroke-linejoin: round; }
 svg.map .hexes polygon.sea { stroke: #a9c7da; }
 svg.map .hexes path { pointer-events: none; }
@@ -112,7 +112,7 @@ svg.map .bays line { stroke: #6b655a; stroke-width: .3; }
 html { scroll-padding-top: var(--dock-h, 56dvh); }
 .map-dock { position: sticky; top: 0; z-index: 10; background: var(--edge); }
 /* A rejected move is told over the map too: the panel that holds the message may be scrolled out of sight. */
-.map-toast { display: block; position: absolute; left: .5rem; right: .5rem; bottom: 3rem; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; background: rgba(47, 37, 34, .92); color: #ffd27a; border-radius: 4px; pointer-events: none; }
+.map-toast { display: block; position: absolute; left: .5rem; right: 4rem; bottom: 3rem; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; background: rgba(47, 37, 34, .92); color: #ffd27a; border-radius: 4px; pointer-events: none; }
 .map-toast:empty { display: none; }
 main { margin-top: .75rem; }
 /* Phone, portrait or landscape: tighter header and key. */
@@ -120,14 +120,14 @@ main { margin-top: .75rem; }
   header { padding: .35rem .75rem; gap: .35rem .9rem; }
   header h1 { font-size: 1.15rem; }
   .map-tools { padding: .15rem .5rem; }
-  .legend { font-size: .7rem; left: .35rem; top: .35rem; max-width: calc(100% - .7rem); }
+  .legend { font-size: .7rem; left: .35rem; top: .35rem; max-width: calc(100% - 4rem); }
 }
 /* Short screens (a phone on its side): the map block is about 40% of the height, the toggle sits over the map's corner. */
 @media (max-height: 480px) {
   .map-wrap { height: 40vh; height: 40dvh; }
   .map-dock { border-bottom: 3px solid var(--border); }
   .map-tools { position: absolute; top: .35rem; right: .35rem; padding: 0; background: none; border: 0; }
-  .legend { top: .35rem; left: .35rem; max-width: calc(100% - 9.5rem); font-size: .65rem; }
+  .legend { top: .35rem; left: .35rem; max-width: calc(100% - 13rem); font-size: .65rem; }
   .map-toast { bottom: 2.4rem; }
 }
 @media (max-width: 640px) {
@@ -187,6 +187,19 @@ main { margin-top: .75rem; }
 .watch-error { flex: 1 1 100%; color: #ffd27a; font-weight: 600; }
 .watch-error:empty { display: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Zoom buttons (spec 08): a column in the map's top-right corner, 44 px each, clear of the key (top left), the hex info and the refused-move line (bottom). */
+.zoom { position: absolute; right: .5rem; top: .5rem; z-index: 2; display: flex; flex-direction: column; gap: 6px; touch-action: manipulation; }
+.zoom button { width: 44px; height: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; background: rgba(244, 239, 226, .94); touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.zoom button:active:not(:disabled) { margin-top: 0; border-bottom-width: 1px; }
+.zoom button:hover:not(:disabled) { background: #fff; }
+.zoom svg { display: block; pointer-events: none; }
+button, select, summary { touch-action: manipulation; }
+/* A phone on its side is too short for a column: the buttons lie in a row along the bottom-right, and the lines there make room. */
+@media (max-height: 480px) {
+  .zoom { top: auto; bottom: .5rem; flex-direction: row; }
+  .hexinfo, .map-toast { right: calc(4 * 44px + 3 * 6px + 1rem); }
+}
 
 /* The hex card (spec 07, part A): the counters of the hex last tapped, at the top of the status column. */
 .hexcard { padding: .6rem 1rem .8rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--gold); border-radius: 4px; }

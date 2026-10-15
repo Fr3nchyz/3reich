@@ -1,4 +1,6 @@
-/** The page around the game: header controls, the map, the hex info overlay and the status area. */
+import { ZOOM_BUTTONS } from "./zoomControls";
+
+/** The page around the game: header controls, the map, the zoom buttons, the hex info overlay and the status area. */
 
 const SHELL = `
   <header>
@@ -20,6 +22,8 @@ const SHELL = `
   <div class="map-dock">
     <div class="map-wrap">
       <div id="map" class="map-fill"></div>
+      <div id="zoom" class="zoom" role="group" aria-label="Map zoom">${ZOOM_BUTTONS}</div>
+      <p id="zoomsay" class="sr-only" role="status" aria-live="polite"></p>
       <div id="hexinfo" class="hexinfo">Tap or hover a hex</div>
       <div id="legend" class="legend" role="note" hidden></div>
       <div id="maptoast" class="map-toast" aria-hidden="true"></div>
@@ -48,6 +52,9 @@ export interface Shell {
   newGame: HTMLElement;
   fronts: HTMLInputElement;
   wholeMap: HTMLElement;
+  /** The zoom buttons over the map (see zoomControls.ts), and the line that tells a screen reader what a press did. */
+  zoom: HTMLElement;
+  zoomSay: HTMLElement;
   /** The button that switches the control overlay on and off, and the key shown over the map while it is on. */
   overlay: HTMLButtonElement;
   legend: HTMLElement;
@@ -82,6 +89,8 @@ export function mountShell(app: HTMLElement): Shell {
     newGame: el("newgame"),
     fronts: el<HTMLInputElement>("fronts"),
     wholeMap: el("wholemap"),
+    zoom: el("zoom"),
+    zoomSay: el("zoomsay"),
     overlay: el<HTMLButtonElement>("overlay"),
     legend: el("legend"),
     mapToast: el("maptoast"),
