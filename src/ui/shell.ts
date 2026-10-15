@@ -24,6 +24,7 @@ const SHELL = `
       <div id="map" class="map-fill"></div>
       <div id="zoom" class="zoom" role="group" aria-label="Map zoom">${ZOOM_BUTTONS}</div>
       <p id="zoomsay" class="sr-only" role="status" aria-live="polite"></p>
+      <p id="zoomnote" class="zoom-note" aria-hidden="true"></p>
       <div id="hexinfo" class="hexinfo">Tap or hover a hex</div>
       <div id="legend" class="legend" role="note" hidden></div>
       <div id="maptoast" class="map-toast" aria-hidden="true"></div>
@@ -58,6 +59,8 @@ export interface Shell {
   /** The zoom buttons over the map (see zoomControls.ts), and the line that tells a screen reader what a press did. */
   zoom: HTMLElement;
   zoomSay: HTMLElement;
+  /** The same line shown on the map for a few seconds when the target button has nothing to zoom to (aria-hidden: zoomSay is the one read aloud). */
+  zoomNote: HTMLElement;
   /** The button that switches the control overlay on and off, and the key shown over the map while it is on. */
   overlay: HTMLButtonElement;
   legend: HTMLElement;
@@ -95,6 +98,7 @@ export function mountShell(app: HTMLElement): Shell {
     wholeMap: el("wholemap"),
     zoom: el("zoom"),
     zoomSay: el("zoomsay"),
+    zoomNote: el("zoomnote"),
     overlay: el<HTMLButtonElement>("overlay"),
     legend: el("legend"),
     mapToast: el("maptoast"),

@@ -11,6 +11,8 @@
   --accent-fg: #fbf6ea;
   --card: #e8dfc9;        /* cardboard */
   --gold: #e0a526;
+  --side-axis: #a3161f;   /* log lines of the Axis: 6.8:1 on --paper, 5.9:1 on --card */
+  --side-allies: #1f4e9c; /* log lines of the Allies: 7.0:1 on --paper, 6.0:1 on --card */
   --sans: "Helvetica Neue", Arial, "Segoe UI", sans-serif;
 }
 * { box-sizing: border-box; }
@@ -63,6 +65,10 @@ td, th { padding: .4rem .75rem; text-align: left; border-bottom: 1px solid var(-
 th { background: var(--card); font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
 tbody tr:last-child td { border-bottom: 0; }
 .log { margin: 0; padding: .6rem 1rem .6rem 3rem; max-height: min(14rem, 40dvh); overflow-y: auto; overscroll-behavior: contain; font-size: .9rem; }
+.log li.log-axis, .log li.log-allies { padding-left: .4rem; border-left: 4px solid; }
+/* Not by colour alone: Axis has a solid bar, the Allies a dashed one. */
+.log li.log-axis { color: var(--side-axis); border-left-style: solid; }
+.log li.log-allies { color: var(--side-allies); border-left-style: dashed; }
 .log .log-more { list-style: none; color: var(--ink-soft); }
 .setup button, .controls button { min-height: 44px; }
 .fan-note { color: #cfc6b3; }
@@ -195,6 +201,9 @@ main { margin-top: .75rem; }
 .zoom button:hover:not(:disabled) { background: #fff; }
 .zoom svg { display: block; pointer-events: none; }
 button, select, summary { touch-action: manipulation; }
+/* The line shown for a few seconds when the target button has nothing to zoom to: left of the zoom column, over the map, never in the flow (spec 08 As built). */
+.zoom-note { position: absolute; right: calc(44px + 1rem); top: .5rem; z-index: 2; max-width: min(16rem, calc(100% - 44px - 2rem)); margin: 0; padding: .3rem .6rem; font-size: .9rem; font-weight: 600; line-height: 1.3; background: rgba(47, 37, 34, .94); color: #ffd27a; border-radius: 4px; pointer-events: none; }
+.zoom-note:empty { display: none; }
 /* A phone on its side is too short for a column: the buttons lie in a row along the bottom-right, and the lines there make room. */
 @media (max-height: 480px) {
   .zoom { top: auto; bottom: .5rem; flex-direction: row; }

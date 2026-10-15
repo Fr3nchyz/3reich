@@ -9,6 +9,7 @@ import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
+import { actorSide, eventSide, logLine } from "./logSide";
 import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
 import { trackBattle, type BattleResult } from "./resultModel";
@@ -43,6 +44,8 @@ export interface Session {
   /** The game's seed; the computer's tie-breaks use it too, so a game replays the same. */
   seed: number;
   log: string[];
+  /** The side of the log entries that have one, by index (logSide.ts): for the colour of a line only, never saved. An entry not in it is plain. */
+  logSides?: Map<number, Side>;
   /** The counter chosen to place next, if any. */
   selected: UnitSpec | null;
   mode: TapMode;
@@ -155,10 +158,11 @@ export function run(s: Session, ...actions: Action[]): boolean {
     s.state = result.state;
     s.record?.push(action);
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
+    const actor = actorSide(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
     for (const e of result.events) {
       const line = describeEvent(e, s.ctx, swept, before);
-      if (line) s.log.push(line);
+      if (line) logLine(s, line, eventSide(e, actor));
     }
   }
   return true;

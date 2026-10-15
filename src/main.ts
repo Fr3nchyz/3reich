@@ -19,7 +19,7 @@ import { normaliseMode, tapHex } from "./ui/sessionActions";
 import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
-import { bindZoom } from "./ui/zoomControls";
+import { bindZoom, lookedHex } from "./ui/zoomControls";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
@@ -53,7 +53,7 @@ const view = renderMap(shell.map, MAP, {
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
-bindZoom(shell, view);
+bindZoom(shell, view, () => lookedHex(session));
 const overlay = bindOverlay(shell, view, () => session);
 
 /** The scenarios whose setup can be played now; the others wait for map data the printed card lacks. */
