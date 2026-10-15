@@ -1,6 +1,7 @@
 import { legalActions, type Action } from "../engine/actions";
 import type { MapHex } from "../engine/map";
 import { run, type Session } from "./session";
+import { stackSummary, unitsWithIds } from "./names";
 
 /**
  * The tap flow of ground movement at step 6f: tap a stack of yours (its destinations are outlined), then
@@ -56,6 +57,6 @@ export function tapToMove(s: Session, h: MapHex): boolean {
   }
   const stack = new Set(moves.filter((m) => startOf(s, m) === s.moveFrom).flatMap((m) => m.units)).size;
   s.moveFrom = null;
-  if (run(s, here[0]) && here[0].units.length < stack) s.toast = `Only ${here[0].units.join(", ")} could get there; the rest of the stack stays.`;
+  if (run(s, here[0]) && here[0].units.length < stack) s.toast = `Only ${stackSummary(unitsWithIds(s.state, here[0].units))} could get there; the rest of the stack stays.`;
   return true;
 }

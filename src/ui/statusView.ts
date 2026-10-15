@@ -5,7 +5,10 @@ import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
 import { computerSide, computerToMove } from "./computerPlay";
+import type { GameContext } from "../engine/context";
+import type { GameState } from "../engine/types";
 import { cap, nameOf, sideName } from "./format";
+import { combatLabel, labelled } from "./actionLabels";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
@@ -34,8 +37,11 @@ function nationTable(s: Session): string {
       <tbody>${rows}</tbody></table>`;
 }
 
-/** What a button says: "End Axis turn", "Done with step 1", "Germany declares war on Norway (10 BRPs)". */
-function label(a: Action): string {
+/**
+ * What a button says: "End Axis turn", "Done with step 1", "Germany declares war on Norway (10 BRPs)", "Attack Warsaw (M35) with 3-4 German
+ * armor from Lodz (N33)". Combat buttons name places and counters, never ids (names.ts).
+ */
+function label(a: Action, ctx: GameContext, state: GameState): string {
   switch (a.type) {
     case "END_PLAYER_TURN":
       return `End ${sideName(a.side)} turn`;
@@ -47,15 +53,14 @@ function label(a: Action): string {
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
-    case "ATTACK":
-      return `Attack ${a.target} with ${a.units.join(", ")}`;
-    case "ALLOCATE_LOSSES":
-      return `Lose ${a.units.join(", ")}`;
-    case "ADVANCE":
-      return `Advance ${a.units.join(", ")} into ${a.to}`;
     default:
-      return a.type;
+      return combatLabel(a, ctx, state) ?? a.type;
   }
+}
+
+/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels, identical actions appear once, and no two read alike. */
+export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
+  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**
@@ -63,13 +68,15 @@ function label(a: Action): string {
  * which there are many, sit in fold-outs above the buttons that move the game on. Builds are not buttons:
  * they have their own panel (buildView).
  */
-function turnButtons(actions: Action[], open: boolean): string {
-  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${label(a)}</button>`;
+function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): string {
+  const shown = buttonLabels(actions, ctx, state);
+  const text = new Map(shown.map((l) => [l.action, l.text]));
+  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
   const fold = (type: Action["type"], title: string) => {
-    const group = actions.filter((a) => a.type === type);
+    const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} choices)</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE");
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE");
   return `${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}<div class="actions controls">${rest.map(button).join("")}</div>`
 }
 
@@ -99,7 +106,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${frontPrompt(s, actions)}
       ${movePrompt(actions)}
       ${buildPanel(s, actions)}
-      ${turnButtons(actions, s.foldOpen)}
+      ${turnButtons(actions, s.foldOpen, s.ctx, s.state)}
       ${logHtml(s.log)}
     </main>`;
 }
