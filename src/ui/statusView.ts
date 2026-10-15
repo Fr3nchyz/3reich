@@ -14,6 +14,7 @@ import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
 import { logHtml } from "./logView";
 import { panelHtml } from "./watchBar";
+import { hexCardHtml } from "./hexCardView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -97,6 +98,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${hexCardHtml(s)}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       <p class="toast" role="status">${s.toast}</p>
