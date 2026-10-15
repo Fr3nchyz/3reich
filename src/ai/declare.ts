@@ -57,9 +57,9 @@ export const STAGING_ENABLED = true;
 export const STAGING_LEAD_TURNS = 2;
 
 /** The neutral Major Powers that `side` has a declaration plan against and is within STAGING_LEAD_TURNS of making. */
-export function plannedTargets(state: GameState, side: Side): PowerId[] {
+export function plannedTargets(state: GameState, side: Side, enabled: boolean = STAGING_ENABLED): PowerId[] {
   const out = new Set<PowerId>();
-  if (!STAGING_ENABLED) return [];
+  if (!enabled) return [];
   for (const p of DECLARATION_PLANS) {
     if (ALIGNMENT[p.by] === side && state.nations[p.on]?.status === "neutral" && turnIndex(state) >= turnIndex(p.from) - STAGING_LEAD_TURNS) out.add(p.on);
   }

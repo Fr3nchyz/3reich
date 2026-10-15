@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseAction } from "../src/ai";
-import { plannedTargets, STAGING_LEAD_TURNS } from "../src/ai/declare";
+import { plannedTargets, STAGING_ENABLED, STAGING_LEAD_TURNS } from "../src/ai/declare";
 import { enemyObjectives, groundDistances, stagingTargets } from "../src/ai/geo";
 import { createMemory } from "../src/ai/memory";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
@@ -39,6 +39,8 @@ describe("planned targets and waiting places (declare.ts, geo.ts)", () => {
     expect(STAGING_LEAD_TURNS).toBe(2);
     expect(plannedTargets({ ...s, year: 1940, season: "winter" }, "axis")).toEqual(["ussr"]); // two Game Turns before Summer 1941
     expect(plannedTargets({ ...s, year: 1940, season: "fall" }, "axis")).toEqual([]);
+    expect(STAGING_ENABLED).toBe(true);
+    expect(plannedTargets(s, "axis", false)).toEqual([]); // switched off: nothing is staged
     expect(plannedTargets(at6f([]), "axis")).toEqual([]); // Fall 1939: far too early to wait at a border
     expect(plannedTargets(s, "allies")).toEqual([]);
     expect(plannedTargets(newGame(SCENARIO_1942, 1), "axis")).toEqual([]);
