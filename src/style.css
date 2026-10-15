@@ -191,3 +191,18 @@ button, select, summary { touch-action: manipulation; }
   .zoom { top: auto; bottom: .5rem; flex-direction: row; }
   .hexinfo, .map-toast { right: calc(4 * 44px + 3 * 6px + 1rem); }
 }
+
+/* The hex card (spec 07, part A): the counters of the hex last tapped, at the top of the status column. */
+.hexcard { padding: .6rem 1rem .8rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--gold); border-radius: 4px; }
+.hexcard-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.hexcard h2 { margin: 0; font-size: 1.1rem; }
+.hexcard h2:focus { outline: none; }
+.hexcard-head button { min-width: 44px; min-height: 44px; flex: none; }
+.hexcard p { margin: .15rem 0; }
+.hexcard-where { color: var(--ink-soft); font-size: .9rem; }
+.hexcard-count { font-weight: 700; font-size: .9rem; }
+.hexcard-units { list-style: none; margin: .3rem 0 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+.hexcard-units li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .6rem; padding: .35rem .5rem; background: var(--card); border: 1px solid var(--paper-line); border-radius: 4px; }
+.hexcard-factors { min-width: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hexcard-kind { font-weight: 600; }
+.hexcard-notes { margin-left: auto; color: var(--ink-soft); font-size: .85rem; }

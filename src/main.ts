@@ -25,6 +25,7 @@ import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
 import { createWatchLoop } from "./ui/watchLoop";
 import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
+import { revealCard } from "./ui/hexCardView";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
@@ -40,7 +41,7 @@ const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); revealCard(shell.status); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
