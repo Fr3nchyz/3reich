@@ -98,16 +98,19 @@ export function toggleTick(s: Session, id: string): void {
 
 /** "All": every unit that can move is ticked. */
 export function tickAll(s: Session): void {
+  s.toast = "";
   if (s.moveChosen) s.moveChosen = withTicks(s.moveChosen, defaultTicks(s.ctx, s.state, s.moveChosen.hex));
 }
 
 /** "None". */
 export function tickNone(s: Session): void {
+  s.toast = "";
   if (s.moveChosen) s.moveChosen = withTicks(s.moveChosen, []);
 }
 
 /** "Cancel", Escape, or a tap on the chosen hex again: the choice is thrown away and nothing has changed in the game. */
 export function cancelMove(s: Session): void {
+  s.toast = "";
   s.moveChosen = null;
 }
 

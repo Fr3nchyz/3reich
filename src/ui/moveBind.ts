@@ -20,3 +20,15 @@ export function bindMove(root: HTMLElement, s: Session, redraw: () => void): voi
   on("#move-cancel", () => cancelMove(s));
   root.querySelector(".movecard")?.addEventListener("keydown", (e) => { if (onMoveKey(s, (e as KeyboardEvent).key)) redraw(); });
 }
+
+/**
+ * Escape while a choice is open cancels it wherever the focus is on the page (a tap elsewhere on the map may have moved the focus out of the card).
+ * `session` is read at each key, since a new game replaces it. Listens on `target` (the document); `redraw` draws again when the key was used.
+ */
+export function bindMoveEscape(target: EventTarget, session: () => Session, redraw: () => void): void {
+  target.addEventListener("keydown", (e) => {
+    const k = e as KeyboardEvent;
+    const s = session();
+    if (!k.defaultPrevented && s.moveChosen && onMoveKey(s, k.key)) redraw();
+  });
+}

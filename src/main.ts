@@ -29,7 +29,9 @@ import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
 import { revealFresh, revealStep } from "./ui/reveal";
-import { revealMove } from "./ui/moveView";
+import { revealMove, revealMoveStep } from "./ui/moveView";
+import { bindMoveEscape } from "./ui/moveBind";
+import { atStep6f } from "./ui/moveTap";
 import { attacking } from "./ui/attackTap";
 import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
@@ -42,6 +44,8 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 let session: Session;
 /** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
 let wasAttacking = false;
+/** Whether it was the player's step 6f at the last draw: the Next bar and the list of stacks are brought into view when it begins. */
+let wasMoving = false;
 
 /** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
 const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
@@ -51,12 +55,13 @@ const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (session.moveChosen?.hex !== h.id) revealCard(shell.status); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (!session.moveChosen) revealCard(shell.status); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
 bindZoom(shell, view, () => lookedHex(session), undefined, undefined, () => nothingSelectedText(session));
 const overlay = bindOverlay(shell, view, () => session);
+bindMoveEscape(document, () => session, () => render());
 
 /** The scenarios whose setup can be played now; the others wait for map data the printed card lacks. */
 shell.scenario.innerHTML = SCENARIOS.map((s) => {
@@ -138,6 +143,9 @@ function render(): void {
   const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
   if (now && !wasAttacking) revealStep(shell.status);
   wasAttacking = now;
+  const moving = atStep6f(session);
+  if (moving && !wasMoving) revealMoveStep(shell.status);
+  wasMoving = moving;
   if (session.watch) watcher.kick();
   else computer.kick();
 }

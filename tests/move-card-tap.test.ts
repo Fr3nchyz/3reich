@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { legalActions } from "../src/engine/actions";
 import { hasMoved } from "../src/engine/move-record";
-import { onMoveKey } from "../src/ui/moveBind";
+import { bindMoveEscape, onMoveKey } from "../src/ui/moveBind";
 import { cancelMove, chooseStack, moveFurther, moveTargets, movableStacks, selectionNow, tickAll, tickNone, toggleTick } from "../src/ui/moveTap";
 import type { Session } from "../src/ui/session";
 import { lookAt, normaliseMode, tapHex, takeAction } from "../src/ui/sessionActions";
@@ -285,5 +285,47 @@ describe("a real game", () => {
     expect(at(s, go!)).toBe(hex);
     expect(at(s, keep!)).toBe(big!.hex);
     expect(s.moveChosen).toMatchObject({ hex: big!.hex, ticked: [keep] });
+  });
+});
+
+describe("the toast belongs to the last thing that went wrong", () => {
+  it("All, None and Cancel clear 'Tick at least one unit.' (and any other leftover line)", () => {
+    for (const how of ["all", "none", "cancel"] as const) {
+      const s = crafted();
+      tapHex(s, hexOf(s, "L32"));
+      tickNone(s);
+      tapHex(s, hexOf(s, "L31"));
+      expect(s.toast, how).toBe("Tick at least one unit.");
+      if (how === "all") tickAll(s);
+      else if (how === "none") tickNone(s);
+      else cancelMove(s);
+      expect(s.toast, how).toBe("");
+    }
+  });
+});
+
+describe("Escape anywhere on the page", () => {
+  const press = (target: EventTarget, key: string, defaultPrevented = false) => {
+    const e = Object.assign(new Event("keydown", { cancelable: true }), { key });
+    if (defaultPrevented) e.preventDefault();
+    target.dispatchEvent(e);
+  };
+
+  it("cancels the open choice and draws again, wherever the focus is; other keys and no choice do nothing", () => {
+    const s = crafted();
+    const doc = new EventTarget();
+    let drawn = 0;
+    bindMoveEscape(doc, () => s, () => drawn++);
+    press(doc, "Escape");
+    expect(drawn).toBe(0); // nothing chosen
+    tapHex(s, hexOf(s, "L32"));
+    press(doc, "Tab");
+    expect(s.moveChosen).not.toBeNull();
+    press(doc, "Escape", true); // already used by something else (a menu)
+    expect(s.moveChosen).not.toBeNull();
+    press(doc, "Escape");
+    expect(s.moveChosen).toBeNull();
+    expect(drawn).toBe(1);
+    expect(s.state.units.u1!.at).toBe("L32");
   });
 });
