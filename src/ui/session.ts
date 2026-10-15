@@ -8,7 +8,8 @@ import type { UnitSpec } from "../engine/placement";
 import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
-import { placeName, stackSummary, unitName, unitsFromPlaces, unitsWithIds } from "./names";
+import { unitsWhere } from "./actionLabels";
+import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
 
 /**
@@ -117,9 +118,9 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       if (swept.has(e.unitId)) return null;
       return `Eliminated: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
     case "LOSSES_CHOSEN":
-      return `${sideName(e.side)} chooses losses: ${unitsFromPlaces(ctx, before, e.units)}.`;
+      return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
-      return `${e.units.join(", ")} move from ${e.from} to ${e.to}.`;
+      return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
     case "HEX_CONTROL_CHANGED":

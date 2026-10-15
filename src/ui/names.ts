@@ -75,14 +75,3 @@ export function stackSummary(units: readonly Pick<Unit, "owner" | "nationality" 
 
 /** The counters with these ids that are still in the game, in the order given; an id that is not found is skipped, never printed. */
 export const unitsWithIds = (state: Pick<GameState, "units">, ids: readonly string[]): Unit[] => ids.flatMap((id) => state.units[id] ?? []);
-
-/**
- * Counters with the place each stands in: "3-4 German armor from Lodz (N33)"; counters from several hexes are told per hex, joined by
- * " and ", in the order the hexes first appear. Ids that are not in the game are left out.
- */
-export function unitsFromPlaces(ctx: Pick<GameContext, "map">, state: Pick<GameState, "units">, ids: readonly string[]): string {
-  const groups = new Map<string, Unit[]>();
-  for (const u of unitsWithIds(state, ids)) groups.set(u.at, [...(groups.get(u.at) ?? []), u]);
-  if (groups.size === 0) return "no units";
-  return [...groups].map(([at, us]) => `${stackSummary(us)} from ${placeName(ctx.map, at)}`).join(" and ");
-}

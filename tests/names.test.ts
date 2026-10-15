@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { OWNER_NAMES } from "../src/engine/nations";
 import type { ForceOwner, Unit, UnitType } from "../src/engine/types";
-import { nationAdjective, placeName, stackSummary, unitName, unitsFromPlaces, unitsWithIds } from "../src/ui/names";
+import { unitsWhere } from "../src/ui/actionLabels";
+import { nationAdjective, placeName, stackSummary, unitName, unitsWithIds } from "../src/ui/names";
 import { CTX } from "./helpers";
 
 /** Plain names for places and counters (spec 07, part B and decisions 7 and 8): place first with the coordinate in brackets, no raw ids. */
@@ -102,7 +103,7 @@ describe("stackSummary", () => {
   });
 });
 
-describe("unitsFromPlaces", () => {
+describe("unitsWhere", () => {
   const state = {
     units: {
       u94: unit("u94", "germany", "armor", 3, 4, "N33"),
@@ -112,20 +113,20 @@ describe("unitsFromPlaces", () => {
   };
 
   it("tells where one stack stands, by name", () => {
-    expect(unitsFromPlaces(CTX, state, ["u94"])).toBe("3-4 German armor from Lodz (N33)");
+    expect(unitsWhere(CTX, state, ["u94"])).toBe("3-4 German armor from Lodz (N33)");
   });
 
   it("tells a stack from an unnamed hex by its coordinate", () => {
-    expect(unitsFromPlaces(CTX, state, ["u96"])).toBe("2-3 German infantry from M34");
+    expect(unitsWhere(CTX, state, ["u96"])).toBe("2-3 German infantry from M34");
   });
 
   it("tells counters from several hexes hex by hex", () => {
-    expect(unitsFromPlaces(CTX, state, ["u94", "u95", "u96"])).toBe("3-4 German armor, 2-3 German infantry from Lodz (N33) and 2-3 German infantry from M34");
+    expect(unitsWhere(CTX, state, ["u94", "u95", "u96"])).toBe("3-4 German armor, 2-3 German infantry from Lodz (N33) and 2-3 German infantry from M34");
   });
 
   it("leaves out an id that is not in the game instead of printing it", () => {
     expect(unitsWithIds(state, ["u94", "u999"]).map((u) => u.id)).toEqual(["u94"]);
-    expect(unitsFromPlaces(CTX, state, ["u999"])).toBe("no units");
-    expect(unitsFromPlaces(CTX, state, ["u94", "u999"])).not.toContain("u999");
+    expect(unitsWhere(CTX, state, ["u999"])).toBe("no units");
+    expect(unitsWhere(CTX, state, ["u94", "u999"])).not.toContain("u999");
   });
 });

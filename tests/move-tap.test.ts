@@ -87,14 +87,14 @@ describe("the tap flow in detail", () => {
     tapHex(part, hexOf(part, "L35")); // three hexes: only the 4-factor unit has the points
     expect(part.state.units.u1!.at).toBe("L35");
     expect(part.state.units.u2!.at).toBe("L32");
-    expect(part.toast).toMatch(/Only u1 could get there; the rest of the stack stays/);
+    expect(part.toast).toMatch(/^Only 3-4 German infantry could get there; the rest of the stack stays\.$/);
   });
 
   it("logs the move", () => {
     const s = crafted();
     tapHex(s, hexOf(s, "L33")); // u3 alone
     tapHex(s, hexOf(s, "L34"));
-    expect(s.log).toContain("u3 move from L33 to L34.");
+    expect(s.log).toContain("3-3 German infantry move from L33 to L34.");
   });
 
   it("tapping the chosen stack again lets it go, without a message", () => {

@@ -89,7 +89,7 @@ test("1939, Axis: step 6f, tap a stack then a yellow hex to move it; a refused t
   const dest = (await visibleCentres(page, "g.highlights polygon"))[0];
   if (!dest) throw new Error("no yellow hex is visible");
   await tapAt(page, hasTouch, dest);
-  await expect(page.locator(".log li").filter({ hasText: /move from \w+ to \w+\./ })).not.toHaveCount(0);
+  await expect(page.locator(".log li").filter({ hasText: / move from .+ to .+\.$/ })).not.toHaveCount(0);
   expect(await page.locator(".log li").count()).toBeGreaterThan(before);
   await expect(page.locator("g.highlights polygon")).toHaveCount(0);
   expect(errors).toEqual([]);

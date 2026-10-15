@@ -8,7 +8,7 @@ import { computerSide, computerToMove } from "./computerPlay";
 import type { GameContext } from "../engine/context";
 import type { GameState } from "../engine/types";
 import { cap, nameOf, sideName } from "./format";
-import { placeName, stackSummary, unitsFromPlaces, unitsWithIds } from "./names";
+import { combatLabel, labelled } from "./actionLabels";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
 import { setupPanel } from "./setupView";
@@ -53,15 +53,14 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
-    case "ATTACK":
-      return `Attack ${placeName(ctx.map, a.target)} with ${unitsFromPlaces(ctx, state, a.units)}`;
-    case "ALLOCATE_LOSSES":
-      return `Lose ${unitsFromPlaces(ctx, state, a.units)}`;
-    case "ADVANCE":
-      return `Advance ${stackSummary(unitsWithIds(state, a.units))} into ${placeName(ctx.map, a.to)}`;
     default:
-      return a.type;
+      return combatLabel(a, ctx, state) ?? a.type;
   }
+}
+
+/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels, identical actions appear once, and no two read alike. */
+export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
+  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**
@@ -70,12 +69,14 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
  * they have their own panel (buildView).
  */
 function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): string {
-  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${label(a, ctx, state)}</button>`;
+  const shown = buttonLabels(actions, ctx, state);
+  const text = new Map(shown.map((l) => [l.action, l.text]));
+  const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
   const fold = (type: Action["type"], title: string) => {
-    const group = actions.filter((a) => a.type === type);
+    const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} choices)</summary><div class="actions controls">${group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE");
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE");
   return `${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}<div class="actions controls">${rest.map(button).join("")}</div>`
 }
 

@@ -89,7 +89,7 @@ describe("the Advance button", () => {
     const state = afterAttack(units, ["u94", "u95"], (s) => has(s, "ADVANCE"));
     const advance = buttons(sessionAt(state)).filter((b) => b.startsWith("Advance"));
     expect(advance.length).toBeGreaterThan(0);
-    expect(advance).toContain("Advance 2 x 4-4 German armor into Warsaw (M35)");
+    expect(advance).toContain("Advance 2 x 4-4 German armor from M34 into Warsaw (M35)");
     for (const b of advance) expect(b).not.toMatch(NO_ID);
   });
 });
