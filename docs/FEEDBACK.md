@@ -39,3 +39,19 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 - The log should show the newest action first and keep its place. Done (#42, #44).
 - Hexes look confusing where land hexes are separated by water (for example Italy and Albania). Water edges drawn (#45).
 - Still not as clear as the board photo or the DOS screen. Open: stronger country borders and colours, clearer coasts; wait for Frank's view.
+
+## 2 (2026-10-15): Amaury, desktop, a short try-out
+
+- The zoom buttons work. The target button did nothing visible. Fixed (#63): it now centres on a tapped hex, or shows a message when nothing is selected.
+- The log should be colour coded: red for Axis, blue for Allies. Done (#63), with a solid or dashed bar as a second cue.
+
+## Follow-ups found by independent reviews (open, small)
+
+- The advance card is cramped on a phone-width screen (Stay wraps under Advance; the sticky footer covers the second loss option until you scroll).
+- `lossOptions` accepts only the loss sets the engine lists (at most 100); a very large stack with many equivalent sets could hide a legal one. Add a fallback or a note.
+- The "nothing selected" note also shows on the computer's turn and at step 3, where nothing can be chosen; on the smallest landscape phone screen it hides the refused-move line for 4 seconds.
+- A test is missing for "the computer attacks and the human chooses the losses" (the case works in a trial).
+- A stack cannot be moved onto one of your own stacks that has not moved yet, because tapping it re-chooses it (seen in 1942, Buerat armor to Tripoli).
+- "These units cannot get there together" is plural for a one-unit stack and misleading on an enemy hex (spec 10, ticket 10-7).
+- The engine has no "decline the advance" action; Stay only hides the card.
+- A manual pass of the loss-choice cards and the move card on a real iPad is still to do.
