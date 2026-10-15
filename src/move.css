@@ -7,8 +7,8 @@
 .movecard h2:focus { outline: none; }
 .movecard h3 { margin: .7rem 0 .2rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
 .movecard p, .movelist p { margin: .2rem 0; }
-.movelist .note { margin: 0 0 .6rem; color: var(--ink); }
-.move-tools { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .2rem; }
+.movelist .note { margin: .2rem 0 0; color: var(--ink); }
+.move-tools { display: flex; align-items: center; gap: .5rem; margin: .4rem 0 .7rem; }
 .move-summary { flex: 1 1 auto; font-weight: 700; }
 .move-tools button { min-width: 56px; min-height: 44px; flex: none; }
 .move-lines { list-style: none; padding: 0; margin: .3rem 0 .5rem; gap: .5rem; }

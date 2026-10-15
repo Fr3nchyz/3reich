@@ -56,8 +56,8 @@ function cardHtml(s: Session, sel: MoveSelection): string {
 function listHtml(s: Session): string {
   const stacks = movableStacks(s);
   const rows = stacks.map((k) => `<li><button type="button" class="stack-row" data-stack="${e(k.hex)}"><span class="row-name">${e(placeName(s.ctx.map, k.hex))}</span><span class="row-count">${e(T.canMove(k.units))}</span></button></li>`);
-  return `<div class="movelist"><p class="note">${e(T.MOVE_PROMPT)}</p>
-      <h2 id="stacks-title">Stacks that can move (${stacks.length})</h2>
+  return `<div class="movelist"><h2 id="stacks-title">Stacks that can move (${stacks.length})</h2>
+      <p class="note">${e(T.MOVE_PROMPT)}</p>
       <ul class="stack-rows" aria-labelledby="stacks-title">${rows.join("")}</ul></div>`;
 }
 
@@ -80,5 +80,12 @@ export function revealMove(root: HTMLElement, s: Session): void {
   if (!c?.fresh) return;
   c.fresh = false;
   const heading = root.querySelector<HTMLElement>("#move-title");
-  if (heading) revealHeading(heading, showTop);
+  if (heading) revealHeading(heading, showBelowBar);
+}
+
+/** The card replaces the list under the bar, so after a scroll its top can sit behind the sticky bar: bring it just under the bar then (else as any card, showTop). */
+function showBelowBar(card: HTMLElement): void {
+  showTop(card);
+  const bar = document.querySelector(".nextbar");
+  if (bar && card.getBoundingClientRect().top < bar.getBoundingClientRect().bottom) card.scrollIntoView({ block: "start" });
 }
