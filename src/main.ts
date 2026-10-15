@@ -29,6 +29,7 @@ import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
 import { revealFresh, revealStep } from "./ui/reveal";
 import { attacking } from "./ui/attackTap";
+import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
@@ -129,7 +130,7 @@ function render(): void {
   bindStatus(shell.status, session, setup, actions, render);
   drawBar(shell.watchBar, session);
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
-  revealFresh(shell.status, session);
+  revealFresh(shell.status, session, unseenChoice(session));
   announceAttack(shell.live, session);
   const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
   if (now && !wasAttacking) revealStep(shell.status);
@@ -138,5 +139,6 @@ function render(): void {
   else computer.kick();
 }
 
-installE2eLoad(document, location.search, SCENARIOS, (scenario, next) => { shell.side.value = next.humanSide; menu.refresh(); begin(scenario, next); });
+// Test-only loader: compiled in only by the e2e build (`vite build --mode e2e`, used by Playwright); the normal build folds this test to false and drops the module.
+if (import.meta.env.MODE === "e2e") installE2eLoad(document, location.search, SCENARIOS, (scenario, next) => { shell.side.value = next.humanSide; menu.refresh(); begin(scenario, next); });
 start(SCENARIO_1939, "axis");

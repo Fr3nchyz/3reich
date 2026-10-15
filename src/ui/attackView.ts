@@ -3,6 +3,7 @@ import { attackPreview, defaultAttackers, type AttackerChip, type AttackPreview,
 import { attackTargets } from "./attackDraft";
 import { defendersLine, nonDefendersLine, rowLines, toBeatLine } from "./attackText";
 import { atStep7h, attacking } from "./attackTap";
+import { choiceHtml } from "./choiceView";
 import { escape } from "./mapGeometry";
 import { resultCardHtml } from "./resultView";
 import type { Session } from "./session";
@@ -78,15 +79,21 @@ export function draftPreview(s: Session): AttackPreview | null {
   return s.attack ? attackPreview(s.ctx, s.state, s.attack.target, s.attack.units) : null;
 }
 
-/** The list of hexes to attack with the card (or the result of the last battle) under it; empty unless the player may attack now. */
+/**
+ * Step 7h as one stack of cards, the next thing to do first (spec 07, State 3 and 4): the choices the engine asks for (losses of an Exchange, the
+ * advance), the result of the last battle, the list of hexes to attack, and the attack card under the list. Empty unless the player may attack now
+ * or a battle result is still shown.
+ */
 export function attackHtml(s: Session, actions: readonly Action[]): string {
   // While the computer chooses the losses of an Exchange the player's result card stays, with no list under the step buttons.
   if (!attacking(s)) return atStep7h(s) && s.battle ? `<section class="attacks">${resultCardHtml(s)}</section>` : "";
   const targets = attackTargets(actions);
   const p = draftPreview(s);
-  const card = p ? cardHtml(s, p) : s.battle ? resultCardHtml(s) : "";
-  if (targets.length === 0 && !card) return "";
-  return `<section class="attacks">${targets.length > 0 ? listHtml(s, targets) : ""}${card}</section>`;
+  const result = !p && s.battle ? resultCardHtml(s) : "";
+  const choice = choiceHtml(s, actions);
+  const card = p ? cardHtml(s, p) : "";
+  if (targets.length === 0 && !card && !result && !choice) return "";
+  return `<section class="attacks">${choice}${result}${targets.length > 0 ? listHtml(s, targets) : ""}${card}</section>`;
 }
 
 /** Whether the card is open on this hex (the hex card is then hidden: the attack card already lists the defenders). */

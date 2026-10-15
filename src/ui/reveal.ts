@@ -24,10 +24,26 @@ export function showTop(card: HTMLElement): void {
   if (top < edge || top > edge + (window.innerHeight - edge) / 2) card.scrollIntoView({ block: "start" });
 }
 
-/** When step 7h begins for the player: the step buttons come to the top of the panel with "Attacks you can make" under them (nothing moves if they are already there). */
+/** The edge of the area the status column scrolls in, below: the bottom of the column when it scrolls on its own, else the bottom of the window. */
+function bottomEdge(card: HTMLElement): number {
+  const column = card.closest<HTMLElement>("#status");
+  if (column && column.scrollHeight > column.clientHeight + 1 && getComputedStyle(column).overflowY !== "visible") return column.getBoundingClientRect().bottom;
+  return window.innerHeight;
+}
+
+/** The height the first row of "Attacks you can make" needs to count as shown. */
+const ROW_PEEK = 56;
+
+/**
+ * When step 7h begins for the player: the column goes back to its top, so the turn line, the "Next:" bar and the list "Attacks you can make"
+ * are in view together. Nothing moves if the list's heading and the start of its first row are already on screen.
+ */
 export function revealStep(root: HTMLElement): void {
-  const buttons = root.querySelector(".attacks")?.previousElementSibling;
-  if (buttons instanceof HTMLElement) showTop(buttons);
+  const top = root.querySelector(".turn");
+  const list = root.querySelector("#attacks-title");
+  if (!(top instanceof HTMLElement)) return;
+  const shown = list instanceof HTMLElement && list.getBoundingClientRect().top >= topEdge(top) && list.getBoundingClientRect().bottom + ROW_PEEK <= bottomEdge(top);
+  if (!shown) top.scrollIntoView({ block: "start" });
 }
 
 /** Focuses `heading` and brings its card into view with `show`. */
@@ -43,11 +59,16 @@ export function revealHeading(heading: HTMLElement, show: (card: HTMLElement) =>
   document.addEventListener("click", again, { capture: true, once: true });
 }
 
-/** A card opened by a press: the attack card, or the result of the battle (each once, when it is new). */
-export function revealFresh(root: HTMLElement, s: { attack?: { fresh: boolean } | null; battle?: { fresh: boolean } | null }): void {
-  const which = s.attack?.fresh ? "attack" : s.battle?.fresh ? "result" : null;
+/**
+ * A card opened by a press: the choice the engine asks for (`choice`, a key from `unseenChoice`, once), the attack card, or the result of the
+ * battle (each once, when it is new). A choice takes the focus before the result, which is only text.
+ */
+export function revealFresh(root: HTMLElement, s: { attack?: { fresh: boolean } | null; battle?: { fresh: boolean } | null }, choice: string | null = null): void {
+  if (choice && s.battle) s.battle.fresh = false;
+  const which = choice ? "choice" : s.attack?.fresh ? "attack" : s.battle?.fresh ? "result" : null;
   if (!which) return;
-  (which === "attack" ? s.attack! : s.battle!).fresh = false;
-  const heading = root.querySelector<HTMLElement>(`#${which}-title`);
+  if (which === "attack") s.attack!.fresh = false;
+  else if (which === "result") s.battle!.fresh = false;
+  const heading = root.querySelector<HTMLElement>(which === "choice" ? "#choice-title-0" : `#${which}-title`);
   if (heading) revealHeading(heading, showTop);
 }
