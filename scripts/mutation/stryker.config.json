@@ -1,0 +1,17 @@
+{
+  "testRunner": "vitest",
+  "vitest": { "configFile": "scripts/mutation/vitest.quick.config.ts" },
+  "coverageAnalysis": "perTest",
+  "concurrency": 2,
+  "ignoreStatic": true,
+  "timeoutMS": 15000,
+  "dryRunTimeoutMinutes": 15,
+  "mutate": [
+    "src/engine/combat.ts", "src/engine/tables.ts", "src/engine/attack-rules.ts", "src/engine/attack-losses.ts",
+    "src/engine/terrain.ts", "src/engine/zoc.ts", "src/engine/stacking.ts", "src/engine/control.ts",
+    "src/engine/movement.ts", "src/engine/war.ts", "src/engine/construction.ts", "src/engine/grants.ts", "src/engine/supply.ts"
+  ],
+  "mutator": { "excludedMutations": ["StringLiteral", "Regex", "ArrayDeclaration", "ObjectLiteral"] },
+  "disableTypeChecks": "src/**/*.ts",
+  "reporters": ["clear-text", "progress-append-only"]
+}
