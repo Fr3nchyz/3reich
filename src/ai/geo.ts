@@ -6,6 +6,7 @@ import type { HexFeature } from "../engine/terrain";
 import type { ForceOwner, GameState, Side } from "../engine/types";
 import { atWar } from "../engine/war";
 import { adjacentHexes, canCross } from "../engine/zoc";
+import { plannedTargets } from "./declare";
 
 /**
  * Where the computer wants its ground units to go (computer policy, not rules): toward the nearest hex of the enemy
@@ -30,12 +31,15 @@ export function objectiveHexes(ctx: GameContext): readonly HexId[] {
 /** Whether a hex is an objective or capital. */
 export const isObjective = (ctx: GameContext, hex: HexId): boolean => ctx.map.hexes[hex]?.features.some((f) => OBJECTIVE_FEATURES.includes(f)) ?? false;
 
-/** Land the owner's units may not enter: a neutral country's, as movement.ts's entryProblem reads it (the units standing there are left out). */
-function closedTo(ctx: GameContext, state: GameState, owner: ForceOwner, hex: HexId): boolean {
+/**
+ * Land the owner's units may not enter: a neutral country's, as movement.ts's entryProblem reads it (the units standing there
+ * are left out). `open` names owners whose land is counted as open anyway (a country the computer plans to declare war on).
+ */
+function closedTo(ctx: GameContext, state: GameState, owner: ForceOwner, hex: HexId, open?: ReadonlySet<string>): boolean {
   const control = controllerOf(ctx, state, hex);
-  if (control !== null) return control !== owner && sideInWar(state, control) === null && !atWar(state, owner, control);
+  if (control !== null) return control !== owner && sideInWar(state, control) === null && !atWar(state, owner, control) && !open?.has(control);
   const country = ctx.map.hexes[hex]?.country;
-  return country !== undefined && Object.hasOwn(MINOR_COUNTRY_FORCES, country) && !atWar(state, owner, country as ForceOwner);
+  return country !== undefined && Object.hasOwn(MINOR_COUNTRY_FORCES, country) && !atWar(state, owner, country as ForceOwner) && !open?.has(country);
 }
 
 /** Hexes of the enemy of `side` that are objectives or capitals and that it controls now, in hex order. */
@@ -58,8 +62,10 @@ function crossable(ctx: GameContext, here: HexId): readonly HexId[] {
 }
 
 /** Breadth-first ground distance from the `sources` to every hex a unit of `owner` could reach on foot; with `from`, also the source each hex is nearest to (the first in the list on a tie). */
-export function groundDistances(ctx: GameContext, state: GameState, owner: ForceOwner, sources: readonly HexId[], from?: Map<HexId, HexId>): Map<HexId, number> {
+export function groundDistances(ctx: GameContext, state: GameState, owner: ForceOwner, sources: readonly HexId[], from?: Map<HexId, HexId>, open?: ReadonlySet<string>): Map<HexId, number> {
   const dist = new Map<HexId, number>();
+  const shut = new Map<HexId, boolean>();
+  const closed = (h: HexId): boolean => shut.get(h) ?? shut.set(h, closedTo(ctx, state, owner, h, open)).get(h)!;
   let frontier: HexId[] = [];
   for (const h of sources) {
     dist.set(h, 0);
@@ -70,7 +76,7 @@ export function groundDistances(ctx: GameContext, state: GameState, owner: Force
     const next: HexId[] = [];
     for (const here of frontier) {
       for (const n of crossable(ctx, here)) {
-        if (dist.has(n) || closedTo(ctx, state, owner, n)) continue;
+        if (dist.has(n) || closed(n)) continue;
         dist.set(n, d);
         from?.set(n, from.get(here)!);
         next.push(n);
@@ -87,4 +93,14 @@ export function groundDistances(ctx: GameContext, state: GameState, owner: Force
  */
 export function distanceToEnemyObjective(ctx: GameContext, state: GameState, owner: ForceOwner, side: Side, from?: Map<HexId, HexId>): Map<HexId, number> {
   return groundDistances(ctx, state, owner, enemyObjectives(ctx, state, side), from);
+}
+
+/**
+ * Where units with no way to any enemy objective can wait: the capitals and objectives of the neutral Major Powers the computer
+ * plans to declare war on (`plannedTargets`), and those powers, whose land the staging distance counts as open. A unit that
+ * heads there still moves only where the engine lets it now, so it stops at the border until the declaration is made.
+ */
+export function stagingTargets(ctx: GameContext, state: GameState, side: Side): { sources: HexId[]; open: Set<string> } {
+  const open = new Set<string>(plannedTargets(state, side));
+  return { sources: objectiveHexes(ctx).filter((h) => open.has(controllerOf(ctx, state, h) ?? "")), open };
 }

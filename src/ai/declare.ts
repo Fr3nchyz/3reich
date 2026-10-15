@@ -1,9 +1,9 @@
 import type { Action } from "../engine/actions";
 import { turnIndex } from "../engine/game";
 import { BRP_COSTS } from "../engine/tables";
-import { atWar, sideOfPower } from "../engine/war";
+import { ALIGNMENT, atWar, sideOfPower } from "../engine/war";
 import { combatantName, POWER_NAMES } from "../engine/nations";
-import type { GameState, GameTurn, PowerId } from "../engine/types";
+import type { GameState, GameTurn, PowerId, Side } from "../engine/types";
 import type { Decision } from "./types";
 
 /**
@@ -46,4 +46,14 @@ export function plannedReserve(state: GameState, by: PowerId): number {
   const me = state.nations[by];
   if (!me || sideOfPower(me) === null || BRP_COSTS.declareWarOnMajorPower > me.spendLimit) return 0;
   return DECLARATION_PLANS.filter((p) => p.by === by && !atWar(state, by, p.on)).length * BRP_COSTS.declareWarOnMajorPower;
+}
+
+/**
+ * The neutral Major Powers that `side` has a declaration plan against (computer policy): the units of that side with no way to an
+ * enemy objective wait at their border (geo.ts, `stagingTargets`) so that the declaration finds them in place.
+ */
+export function plannedTargets(state: GameState, side: Side): PowerId[] {
+  const out = new Set<PowerId>();
+  for (const p of DECLARATION_PLANS) if (ALIGNMENT[p.by] === side && state.nations[p.on]?.status === "neutral") out.add(p.on);
+  return [...out];
 }

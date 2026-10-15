@@ -40,6 +40,10 @@ export interface TurnStats {
   grantAmount: number;
   moves: number;
   unitsMoved: number;
+  /** Units moved by each side's Player Turn. */
+  movedBy: { axis: number; allies: number };
+  /** Ground units (infantry, armor, airborne) each side has on the map at the end of the Game Turn. */
+  ground: { axis: number; allies: number };
   combats: { total: number; attackerEliminated: number; defenderEliminated: number; exchange: number };
   /** Attacks made by each side. */
   attacks: { axis: number; allies: number };

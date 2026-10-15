@@ -160,9 +160,10 @@ describe("step 6f: a unit keeps its target and does not go back (computer memory
     expect(d.action.type).toBe("MOVE");
   });
 
-  it("the unit cap holds over a whole step: 45 units that can all advance move 40", () => {
-    const hexes = Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany" && h.id !== "L31").map((h) => h.id).sort().slice(0, 45);
-    let s = at6f(hexes.map((h, i) => inf(`u${i + 1}`, "germany", h, 1, 3)));
+  it(`the unit cap holds over a whole step: with ${MOVE_MAX_UNITS_PER_TURN - 3} units already moved, ten units that can all advance move three`, () => {
+    const hexes = Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany" && h.id !== "L31").map((h) => h.id).sort().slice(0, 10);
+    const base = at6f(hexes.map((h, i) => inf(`u${i + 1}`, "germany", h, 1, 3)));
+    let s: GameState = { ...base, moves: { turn: turnKey(base), moved: Array.from({ length: MOVE_MAX_UNITS_PER_TURN - 3 }, (_, i) => `x${i}`) } };
     const mem = createMemory();
     let moves = 0;
     for (let i = 0; i < 100; i++) {
@@ -173,7 +174,7 @@ describe("step 6f: a unit keeps its target and does not go back (computer memory
       s = r.state;
       moves += d.action.units.length;
     }
-    expect(moves).toBe(MOVE_MAX_UNITS_PER_TURN);
+    expect(moves).toBe(3);
     expect(movesOf(s).moved).toHaveLength(MOVE_MAX_UNITS_PER_TURN);
   });
 });

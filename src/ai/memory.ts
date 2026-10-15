@@ -11,8 +11,12 @@ export interface AiMemory {
   left: Map<string, { hex: HexId; turn: number }[]>;
   /** Ground distances to one target for one owner, kept for the Game Turn they were made in. */
   distances: Map<string, Map<HexId, number>>;
-  /** The Game Turn index `distances` belongs to. */
+  /** Per owner and set of enemy-held objectives: the ground distance to the nearest one and which it is, kept for the same Game Turn. */
+  nearest: Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>;
+  /** The same for the waiting places of units with no way to an enemy objective (see `stagingTargets` in geo.ts). */
+  staging: Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>;
+  /** The Game Turn index `distances`, `nearest` and `staging` belong to. */
   distancesTurn: number;
 }
 
-export const createMemory = (): AiMemory => ({ targets: new Map(), left: new Map(), distances: new Map(), distancesTurn: -1 });
+export const createMemory = (): AiMemory => ({ targets: new Map(), left: new Map(), distances: new Map(), nearest: new Map(), staging: new Map(), distancesTurn: -1 });

@@ -10,6 +10,14 @@ const table = (head: readonly string[], rows: readonly (readonly (string | numbe
 const sum = (xs: readonly number[]): number => xs.reduce((a, b) => a + b, 0);
 const pair = (p: { axis: number; allies: number }): string => `${p.axis} / ${p.allies}`;
 
+/** A side with at least this many ground units that neither moves nor attacks in its Player Turn counts as idle. */
+export const IDLE_MIN_GROUND = 10;
+
+/** The Player Turns in which a side with IDLE_MIN_GROUND or more ground units neither moved a unit nor attacked, as "Spring 1941 axis". */
+export function idleTurns(turns: readonly TurnStats[]): string[] {
+  return turns.flatMap((t) => (["axis", "allies"] as const).filter((s) => !t.partial && t.ground[s] >= IDLE_MIN_GROUND && t.movedBy[s] === 0 && t.attacks[s] === 0).map((s) => `${t.label} ${s}`));
+}
+
 /** Totals over every Game Turn of a game: what the summary and the comparison table show. */
 export function totals(r: GameResult) {
   const t = r.turns;
@@ -28,6 +36,7 @@ export function totals(r: GameResult) {
     lostFactorsAllies: sum(t.map((x) => x.lostFactors.allies)),
     hexChanges: sum(t.map((x) => x.hexChanges)),
     unitsMoved: sum(t.map((x) => x.unitsMoved)),
+    idle: idleTurns(t),
     spent: sum(t.map((x) => sum(POWERS.map((p) => x.spent[p])))),
     final: { ...holdings(r.ctx, r.final), brp: last?.brp, units: last?.units, factors: last?.factors },
     start: holdings(r.ctx, r.initial),
@@ -41,8 +50,8 @@ function turnTables(turns: readonly TurnStats[]): string {
     turns.map((t) => [label(t), ...POWERS.map((p) => t.brp[p]), sum(POWERS.map((p) => t.spent[p])), ...POWERS.map((p) => t.spent[p]), `${t.spentOn.war} / ${t.spentOn.build} / ${t.spentOn.grant} / ${t.spentOn.option}`]),
   );
   const acts = table(
-    ["Game Turn", "Wars declared", "Built", "Grants (BRPs)", "Units moved", "Combats (A out / D out / Ex)", "Attacks ax / al", "Lost units ax / al", "Lost factors ax / al", "Hexes changed", "Front Options", "Actions"],
-    turns.map((t) => [label(t), t.wars.join("; ") || "-", t.built, `${t.grants} (${t.grantAmount})`, t.unitsMoved, `${t.combats.total} (${t.combats.attackerEliminated} / ${t.combats.defenderEliminated} / ${t.combats.exchange})`, pair(t.attacks), pair(t.lost), pair(t.lostFactors), t.hexChanges, t.frontOptions.join("; ") || "-", t.actions]),
+    ["Game Turn", "Wars declared", "Built", "Grants (BRPs)", "Units moved", "Moved ax / al", "Ground units ax / al", "Combats (A out / D out / Ex)", "Attacks ax / al", "Lost units ax / al", "Lost factors ax / al", "Hexes changed", "Front Options", "Actions"],
+    turns.map((t) => [label(t), t.wars.join("; ") || "-", t.built, `${t.grants} (${t.grantAmount})`, t.unitsMoved, pair(t.movedBy), pair(t.ground), `${t.combats.total} (${t.combats.attackerEliminated} / ${t.combats.defenderEliminated} / ${t.combats.exchange})`, pair(t.attacks), pair(t.lost), pair(t.lostFactors), t.hexChanges, t.frontOptions.join("; ") || "-", t.actions]),
   );
   const map = table(
     ["Game Turn", "Hexes ax / al / neutral", "Objectives ax / al / neutral", "Units ax / al", "Factors ax / al"],
@@ -69,6 +78,7 @@ export function gameReport(r: GameResult): string {
     `- Wars declared (${t.wars.length}): ${t.wars.join("; ") || "none"}.`,
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,
+    `- Player Turns in which a side with ${IDLE_MIN_GROUND} or more ground units neither moved nor attacked (${t.idle.length}): ${t.idle.join("; ") || "none"}.`,
     `- Hexes held Axis / Allies / neutral: ${f.hexes.axis} / ${f.hexes.allies} / ${f.hexes.neutral} (at the start ${t.start.hexes.axis} / ${t.start.hexes.allies} / ${t.start.hexes.neutral}).`,
     `- Capitals and objectives held Axis / Allies / neutral: ${f.objectives.axis} / ${f.objectives.allies} / ${f.objectives.neutral} (at the start ${t.start.objectives.axis} / ${t.start.objectives.allies} / ${t.start.objectives.neutral}).`,
     f.units && f.factors ? `- Units on the map at the end Axis / Allies: ${pair(f.units)}; factors ${pair(f.factors)}.` : "- No Game Turn was played.",
@@ -90,9 +100,9 @@ export function gameReport(r: GameResult): string {
 export function comparison(results: readonly GameResult[]): string {
   const rows = results.map((r) => {
     const t = totals(r);
-    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
+    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
   });
-  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Anomalies", "Runtime s"];
+  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Anomalies", "Runtime s"];
   const totalMs = sum(results.map((r) => r.runtimeMs));
   const anomalies = results.flatMap((r) => r.anomalies.map((a) => `- ${r.options.scenario} seed ${r.options.seed}: ${a.kind} at ${a.at}: ${a.detail}`));
   return [`# Self-play comparison`, "", table(head, rows), "", `${results.length} games, ${(totalMs / 1000).toFixed(1)} s in all, ${sum(results.map((r) => r.anomalies.length))} anomalies.`, "", ...(anomalies.length ? ["## Anomalies", "", ...anomalies, ""] : [])].join("\n");
