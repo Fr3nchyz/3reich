@@ -49,3 +49,5 @@
 .attack-go.risky { background: #f0b400; color: #2a1d00; border-color: #7a5a00; }
 .attack-go.risky:hover:not(:disabled) { background: #ffc61f; }
 .hexcard-why { margin: .5rem 0 0; color: var(--accent); font-weight: 600; }
+/* Short screens (a phone on its side): the map takes 40% of the height, so the button bar does not stick; it sits at the end of the card. */
+@media (max-height: 480px) { .attack-foot { position: static; } }

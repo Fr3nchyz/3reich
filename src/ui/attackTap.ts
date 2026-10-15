@@ -13,10 +13,15 @@ import { run, type Session } from "./session";
  * that can attack and the numbers all come from `legalActions` and the preview model.
  */
 
+/** Whether it is step 7h of a Player Turn in a game the player plays (not watched), whoever is to move. */
+export function atStep7h(s: Session): boolean {
+  const p = s.state.position;
+  return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7h" && !s.watch;
+}
+
 /** Whether the player may make an attack now: step 7h of a Player Turn that is theirs, and not a watched game. */
 export function attacking(s: Session): boolean {
-  const p = s.state.position;
-  return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7h" && !s.watch && !computerToMove(s);
+  return atStep7h(s) && !computerToMove(s);
 }
 
 /** The legal actions for the attack flow: none unless the player may attack now. */
@@ -32,7 +37,7 @@ export const targetsNow = (s: Session): string[] => attackTargets(attackActions(
 export function normaliseAttack(s: Session, actions?: readonly Action[]): void {
   if (!attacking(s)) {
     s.attack = null;
-    if (s.battle && (s.battle.turn !== turnKey(s.state) || !(s.state.position?.part === "player-turn" && s.state.position.step === "7h"))) s.battle = null;
+    if (s.battle && (s.battle.turn !== turnKey(s.state) || !atStep7h(s))) s.battle = null;
     return;
   }
   if (s.battle && s.battle.turn !== turnKey(s.state)) s.battle = null;

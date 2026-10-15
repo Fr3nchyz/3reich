@@ -27,7 +27,8 @@ import { createWatchLoop } from "./ui/watchLoop";
 import { newWatchSession, takeOver } from "./ui/watchPlay";
 import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
-import { revealFresh } from "./ui/reveal";
+import { revealFresh, revealStep } from "./ui/reveal";
+import { attacking } from "./ui/attackTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
@@ -36,6 +37,8 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 
 /** The one game being played; start() replaces it. */
 let session: Session;
+/** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
+let wasAttacking = false;
 
 /** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
 const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
@@ -128,6 +131,9 @@ function render(): void {
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
   revealFresh(shell.status, session);
   announceAttack(shell.live, session);
+  const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
+  if (now && !wasAttacking) revealStep(shell.status);
+  wasAttacking = now;
   if (session.watch) watcher.kick();
   else computer.kick();
 }

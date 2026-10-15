@@ -9,6 +9,7 @@ import { attackPreview } from "../src/ui/attackPreview";
 import { createSession, type Session } from "../src/ui/session";
 import { normaliseMode, takeAction } from "../src/ui/sessionActions";
 import { resultCardHtml } from "../src/ui/resultView";
+import { attackHtml } from "../src/ui/attackView";
 import { GER, POL, at7h } from "./preview-helpers";
 import { CTX } from "./helpers";
 
@@ -58,6 +59,18 @@ describe("the result card", () => {
     expect(text(s)).toContain("You lost: 3 German infantry.");
     expect(text(s)).toContain("They lost: 1 Polish infantry.");
     expect(text(s)).not.toContain("Choose your losses");
+  });
+
+  it("an Exchange the computer settles: the card stays with no list, and the losses are added when they happen", () => {
+    const pol = [POL("p1", "M33", 1), POL("p2", "M33", 1), POL("p3", "M33", 1), POL("p4", "M33", 1)];
+    const s = find((x) => combatOf(x.state).pending?.chooser === "allies", [GER("g1", "M32", 3), GER("g2", "M32", 3), ...pol]);
+    const shown = attackHtml(s, legalActions(s.ctx, s.state));
+    expect(shown).toContain("The computer is choosing its losses.");
+    expect(shown).not.toContain("Attacks you can make");
+    expect(text(s)).toContain("You lost: 2 x 3 German infantry.");
+    takeAction(s, legalActions(s.ctx, s.state).find((a) => a.type === "ALLOCATE_LOSSES")!);
+    expect(text(s)).toContain("They lost: 3 x 1 Polish infantry.");
+    expect(text(s)).not.toContain("computer is choosing");
   });
 
   it("attackers eliminated: you lose all, they lose nothing", () => {

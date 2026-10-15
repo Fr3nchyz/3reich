@@ -14,10 +14,20 @@ function topEdge(card: HTMLElement): number {
   return document.querySelector(".map-dock")?.getBoundingClientRect().bottom ?? 0;
 }
 
-/** Scrolls so the top of the card shows, only as far as needed and never the other way: nothing happens when its top is already in view. */
+/**
+ * Scrolls so the top of the card is in the upper half of the area it scrolls in, only as far as needed and never the other way: nothing happens
+ * when its top is already there (a card whose heading only peeks in at the bottom is not "in view": its button bar would cover the rest).
+ */
 export function showTop(card: HTMLElement): void {
+  const edge = topEdge(card);
   const top = card.getBoundingClientRect().top;
-  if (top < topEdge(card) || top > window.innerHeight - 96) card.scrollIntoView({ block: "start" });
+  if (top < edge || top > edge + (window.innerHeight - edge) / 2) card.scrollIntoView({ block: "start" });
+}
+
+/** When step 7h begins for the player: the step buttons come to the top of the panel with "Attacks you can make" under them (nothing moves if they are already there). */
+export function revealStep(root: HTMLElement): void {
+  const buttons = root.querySelector(".attacks")?.previousElementSibling;
+  if (buttons instanceof HTMLElement) showTop(buttons);
 }
 
 /** Focuses `heading` and brings its card into view with `show`. */

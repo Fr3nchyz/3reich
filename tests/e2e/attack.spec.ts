@@ -245,11 +245,13 @@ test("watch mode: taps only inspect; no list and no card", async ({ page, hasTou
   await expect(page.locator("g.attack-marks *")).toHaveCount(0);
 });
 
-const SIZES: readonly Pt[] = [[1024, 768], [768, 1024], [1180, 820], [1400, 1000], [390, 844]];
+const SIZES: readonly Pt[] = [[1024, 768], [768, 1024], [1180, 820], [1400, 1000], [390, 844], [844, 390]];
 for (const size of SIZES) {
   test(`${size[0]}x${size[1]}: the card opens in reach, every button is 44 px, the map stays on screen, nothing scrolls sideways`, async ({ page, hasTouch }) => {
     await load(page, size);
-        await tapHexId(page, hasTouch, "M35");
+        await expect(page.locator("#attacks-title"), "the list of attacks is on screen when step 7h begins").toBeInViewport();
+    await expect(rows(page).first()).toBeInViewport();
+    await tapHexId(page, hasTouch, "M35");
     await expect(card(page)).toBeVisible();
     await expect(card(page).locator("h2")).toBeFocused();
     const heading = (await card(page).locator("h2").boundingBox())!;

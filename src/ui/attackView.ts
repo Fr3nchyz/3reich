@@ -2,7 +2,7 @@ import type { Action } from "../engine/actions";
 import { attackPreview, defaultAttackers, type AttackerChip, type AttackPreview, type ResultRow } from "./attackPreview";
 import { attackTargets } from "./attackDraft";
 import { defendersLine, nonDefendersLine, rowLines, toBeatLine } from "./attackText";
-import { attacking } from "./attackTap";
+import { atStep7h, attacking } from "./attackTap";
 import { escape } from "./mapGeometry";
 import { resultCardHtml } from "./resultView";
 import type { Session } from "./session";
@@ -80,7 +80,8 @@ export function draftPreview(s: Session): AttackPreview | null {
 
 /** The list of hexes to attack with the card (or the result of the last battle) under it; empty unless the player may attack now. */
 export function attackHtml(s: Session, actions: readonly Action[]): string {
-  if (!attacking(s)) return "";
+  // While the computer chooses the losses of an Exchange the player's result card stays, with no list under the step buttons.
+  if (!attacking(s)) return atStep7h(s) && s.battle ? `<section class="attacks">${resultCardHtml(s)}</section>` : "";
   const targets = attackTargets(actions);
   const p = draftPreview(s);
   const card = p ? cardHtml(s, p) : s.battle ? resultCardHtml(s) : "";
