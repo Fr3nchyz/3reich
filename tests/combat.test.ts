@@ -52,6 +52,26 @@ describe("odds", () => {
   });
 });
 
+describe("odds column boundaries, hard-coded", () => {
+  // Independent evidence: every row below was worked out by hand from the printed columns (Ref 12.1,
+  // docs/RULES.md "Odds below 1:1": fractions are ignored, a weaker attack rounds toward the defender),
+  // not computed by any formula. [attack factors, defending factors (already multiplied), column].
+  const CASES: ReadonlyArray<readonly [number, number, string | null]> = [
+    [1, 5, null], [2, 9, null], [24, 100, null], // below 1:4: the attacker is eliminated
+    [1, 4, "1-4"], [2, 8, "1-4"], [2, 7, "1-4"], [3, 10, "1-4"], [25, 100, "1-4"], // 1:4 up to just under 1:3
+    [1, 3, "1-3"], [2, 6, "1-3"], [3, 8, "1-3"], [4, 9, "1-3"], // 1:3 up to just under 1:2
+    [1, 2, "1-2"], [2, 3, "1-2"], [3, 4, "1-2"], [99, 100, "1-2"], // 1:2 up to just under 1:1
+    [1, 1, "1-1"], [3, 2, "1-1"], [7, 4, "1-1"], [100, 100, "1-1"], [199, 100, "1-1"], // 1:1 up to just under 2:1
+    [2, 1, "2-1"], [5, 2, "2-1"], [299, 100, "2-1"],
+    [3, 1, "3-1"], [10, 3, "3-1"], [7, 2, "3-1"], [399, 100, "3-1"],
+    [4, 1, "4-1"], [9, 2, "4-1"], [499, 100, "4-1"],
+    [5, 1, "5-1"], [6, 1, "5-1"], [11, 2, "5-1"], [500, 100, "5-1"], [50, 1, "5-1"], // 5:1 and everything above it
+  ];
+  it.each(CASES)("%i against %i is column %s", (attack, defense, column) => {
+    expect(oddsColumn(attack, defense)).toBe(column);
+  });
+});
+
 describe("offensive CRT", () => {
   // Change detector: a second copy of the constant, laid out by die roll, so an edit to OFFENSIVE_CRT
   // cannot pass unnoticed. It is not independent evidence; it was checked against the game's chart
@@ -187,5 +207,32 @@ describe("attrition", () => {
   it("resolves reproducibly", () => {
     expect(resolveAttrition(25, 9)).toEqual(resolveAttrition(25, 9));
     expect(resolveAttrition(0, 9).roll).toBeNull();
+  });
+});
+
+describe("attrition column boundaries, hard-coded", () => {
+  // Ref 12.4: the printed columns are 1-10, 11-20, 21-30, 31-40, 41-50, 51-60 and 61+. Each edge is listed
+  // by hand so the test does not repeat the band formula.
+  const EDGES: ReadonlyArray<readonly [number, string | null]> = [
+    [-3, null], [0, null],
+    [1, "1-10"], [10, "1-10"], [11, "11-20"], [20, "11-20"], [21, "21-30"], [30, "21-30"],
+    [31, "31-40"], [40, "31-40"], [41, "41-50"], [50, "41-50"], [51, "51-60"], [60, "51-60"],
+    [61, "61+"], [62, "61+"], [100, "61+"], [1000, "61+"], // 61+ is the top column: no column beyond it
+  ];
+  it.each(EDGES)("%i ground factors is column %s", (factors, column) => {
+    expect(attritionColumn(factors)).toBe(column);
+  });
+  it("a roll reads the 11-20 column at 11 factors but the 1-10 column at 10 factors", () => {
+    // Roll 1 is [2 units, 1 hex] in 11-20 and [1 unit, 0 hexes] in 1-10 (printed table).
+    const at = (factors: number) => {
+      for (let seed = 1; seed < 200; seed++) {
+        const r = resolveAttrition(factors, seed);
+        if (r.roll === 1) return [r.units, r.hexes];
+      }
+      return null;
+    };
+    expect(at(10)).toEqual([1, 0]);
+    expect(at(11)).toEqual([2, 1]);
+    expect(at(61)).toEqual([7, 4]);
   });
 });
