@@ -13,6 +13,28 @@ const pair = (p: { axis: number; allies: number }): string => `${p.axis} / ${p.a
 /** A side with at least this many ground units that neither moves nor attacks in its Player Turn counts as idle. */
 export const IDLE_MIN_GROUND = 10;
 
+/** A side that moves at least CHURN_MIN_MOVED units in each of CHURN_RUN or more Game Turns in a row without one attack is churning: marching without fighting. */
+export const CHURN_MIN_MOVED = 5;
+export const CHURN_RUN = 3;
+
+/** The runs of Game Turns in which a side moved units but never attacked, as "axis Summer 1940 to Spring 1941 (4 Game Turns, 83 units moved)". */
+export function churnRuns(turns: readonly TurnStats[]): string[] {
+  const out: string[] = [];
+  for (const side of ["axis", "allies"] as const) {
+    let run: TurnStats[] = [];
+    const close = () => {
+      if (run.length >= CHURN_RUN) out.push(`${side} ${run[0]!.label} to ${run[run.length - 1]!.label} (${run.length} Game Turns, ${run.reduce((n, t) => n + t.movedBy[side], 0)} units moved)`);
+      run = [];
+    };
+    for (const t of turns) {
+      if (!t.partial && t.movedBy[side] >= CHURN_MIN_MOVED && t.attacks[side] === 0) run.push(t);
+      else close();
+    }
+    close();
+  }
+  return out;
+}
+
 /** The Player Turns in which a side with IDLE_MIN_GROUND or more ground units neither moved a unit nor attacked, as "Spring 1941 axis". */
 export function idleTurns(turns: readonly TurnStats[]): string[] {
   return turns.flatMap((t) => (["axis", "allies"] as const).filter((s) => !t.partial && t.ground[s] >= IDLE_MIN_GROUND && t.movedBy[s] === 0 && t.attacks[s] === 0).map((s) => `${t.label} ${s}`));
@@ -37,6 +59,7 @@ export function totals(r: GameResult) {
     hexChanges: sum(t.map((x) => x.hexChanges)),
     unitsMoved: sum(t.map((x) => x.unitsMoved)),
     idle: idleTurns(t),
+    churn: churnRuns(t),
     spent: sum(t.map((x) => sum(POWERS.map((p) => x.spent[p])))),
     final: { ...holdings(r.ctx, r.final), brp: last?.brp, units: last?.units, factors: last?.factors },
     start: holdings(r.ctx, r.initial),
@@ -79,6 +102,7 @@ export function gameReport(r: GameResult): string {
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,
     `- Player Turns in which a side with ${IDLE_MIN_GROUND} or more ground units neither moved nor attacked (${t.idle.length}): ${t.idle.join("; ") || "none"}.`,
+    `- Churn (a side moving ${CHURN_MIN_MOVED} or more units without a single attack for ${CHURN_RUN} or more Game Turns in a row) (${t.churn.length}): ${t.churn.join("; ") || "none"}.`,
     `- Hexes held Axis / Allies / neutral: ${f.hexes.axis} / ${f.hexes.allies} / ${f.hexes.neutral} (at the start ${t.start.hexes.axis} / ${t.start.hexes.allies} / ${t.start.hexes.neutral}).`,
     `- Capitals and objectives held Axis / Allies / neutral: ${f.objectives.axis} / ${f.objectives.allies} / ${f.objectives.neutral} (at the start ${t.start.objectives.axis} / ${t.start.objectives.allies} / ${t.start.objectives.neutral}).`,
     f.units && f.factors ? `- Units on the map at the end Axis / Allies: ${pair(f.units)}; factors ${pair(f.factors)}.` : "- No Game Turn was played.",
@@ -100,9 +124,9 @@ export function gameReport(r: GameResult): string {
 export function comparison(results: readonly GameResult[]): string {
   const rows = results.map((r) => {
     const t = totals(r);
-    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
+    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, t.churn.length, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
   });
-  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Anomalies", "Runtime s"];
+  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Churn runs", "Anomalies", "Runtime s"];
   const totalMs = sum(results.map((r) => r.runtimeMs));
   const anomalies = results.flatMap((r) => r.anomalies.map((a) => `- ${r.options.scenario} seed ${r.options.seed}: ${a.kind} at ${a.at}: ${a.detail}`));
   return [`# Self-play comparison`, "", table(head, rows), "", `${results.length} games, ${(totalMs / 1000).toFixed(1)} s in all, ${sum(results.map((r) => r.anomalies.length))} anomalies.`, "", ...(anomalies.length ? ["## Anomalies", "", ...anomalies, ""] : [])].join("\n");

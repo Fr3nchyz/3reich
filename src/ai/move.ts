@@ -29,7 +29,7 @@ import type { AiConfig, Decision } from "./types";
  * engine still lets it move only where it may enter now. When no stack qualifies it ends the step. Supply is not considered.
  */
 export const MOVE_MIN_PROGRESS = 1;
-export const MOVE_MAX_UNITS_PER_TURN = 80;
+export const MOVE_MAX_UNITS_PER_TURN = 40;
 export const MOVE_MAX_ENEMY_RATIO = 2;
 export const MOVE_KEEP_CAPITAL_GARRISON = true;
 export const MOVE_NO_RETURN_TURNS = 2;
@@ -104,26 +104,27 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
   // The groups of unmoved ground units standing together, with where each is heading, the farthest from it first.
   const groups = new Map<string, Unit[]>();
   for (const u of movableUnits(ctx, state)) groups.set(u.at, [...(groups.get(u.at) ?? []), u]);
-  const work: { units: Unit[]; target: HexId; d0: number; field: Map<HexId, number>; staged: boolean }[] = [];
+  const work: { units: Unit[]; target: HexId; d0: number; field: () => Map<HexId, number>; staged: boolean }[] = [];
   for (const [hex, units] of groups) {
     const owner = units[0]!.owner;
     const near = nearestFor(owner);
     const target = targetOf(units[0]!, near.from, held, mem);
-    const field = target === undefined ? undefined : target === near.from.get(hex) ? near.dist : distanceTo(owner, target);
-    const d0 = field?.get(hex);
-    if (target !== undefined && field && d0 !== undefined) {
-      if (d0 > 0) work.push({ units, target, d0, field, staged: false });
+    // The distance to the unit's own target, not to the nearest objective of each hex: progress is measured toward one goal.
+    const d0 = target === undefined ? undefined : target === near.from.get(hex) ? near.dist.get(hex) : distanceTo(owner, target).get(hex);
+    if (target !== undefined && d0 !== undefined) {
+      if (d0 > 0) work.push({ units, target, d0, field: () => distanceTo(owner, target), staged: false });
       continue;
     }
     const wait = stageFor(owner);
     const place = wait.from.get(hex);
     const dw = wait.dist.get(hex);
-    if (place !== undefined && dw !== undefined && dw > 0) work.push({ units, target: place, d0: dw, field: wait.dist, staged: true });
+    if (place !== undefined && dw !== undefined && dw > 0) work.push({ units, target: place, d0: dw, field: () => wait.dist, staged: true });
   }
   work.sort((a, b) => b.d0 - a.d0 || (a.units[0]!.at < b.units[0]!.at ? -1 : 1));
 
-  for (const { units, target, d0, field, staged } of work) {
+  for (const { units, target, d0, field: fieldOf, staged } of work) {
     const from = units[0]!.at;
+    const field = fieldOf();
     const features = ctx.map.hexes[from]?.features ?? [];
     const holds = (features.includes("capital") || features.includes("capital-port")) && controllingSide(ctx, state, from) === side;
     const candidates: { move: Move; progress: number }[] = [];

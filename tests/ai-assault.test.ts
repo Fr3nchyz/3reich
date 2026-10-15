@@ -48,10 +48,9 @@ describe("step 7h: which attacks the computer makes (Ref 12.1)", () => {
     expect(decide(at7h([u("g1", "germany", 36, "M32"), u("p1", "poland", 12, "M33")])).action).toEqual(END);
   });
 
-  it("also needs an acceptable Exchange: below 2-1 at most 8 factors (18 against 5x2 is 1-1 but could cost 10); from 2-1 up to 16 (36 against 8x2 attacks, 40 against 9x2 stays home)", () => {
-    expect(decide(at7h([u("g1", "germany", 18, "M32"), u("p1", "poland", 5, "M33")])).action).toEqual(END);
-    expect(decide(at7h([u("g1", "germany", 36, "M32"), u("p1", "poland", 8, "M33")])).action.type).toBe("ATTACK");
-    expect(decide(at7h([u("g1", "germany", 40, "M32"), u("p1", "poland", 9, "M33")])).action).toEqual(END);
+  it("also needs an acceptable Exchange: 25 against 5x2 is 2-1 but could cost 10 factors; 25 against 4x2 could cost 8", () => {
+    expect(decide(at7h([u("g1", "germany", 25, "M32"), u("p1", "poland", 5, "M33")])).action).toEqual(END);
+    expect(decide(at7h([u("g1", "germany", 25, "M32"), u("p1", "poland", 4, "M33")])).action.type).toBe("ATTACK");
   });
 
   it("counts the defender's terrain: 5 against 2 on a mountain (x3) is 1-2 and is not attacked; 12 is attacked at 2-1, where plain would give 3-1", () => {

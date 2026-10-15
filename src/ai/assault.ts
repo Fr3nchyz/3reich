@@ -13,9 +13,7 @@ import type { AiConfig, Decision } from "./types";
  * Of the ATTACK actions the engine lists it makes the best one whose odds (the column the engine's own `attackNumbers`
  * gives, terrain included) are at least ATTACK_MIN_COLUMN (ATTACK_MIN_COLUMN_SUPERIOR where the attackers hold ATTACK_SUPERIORITY
  * times the defenders' printed factors over the whole hex) and whose Exchange is acceptable: an Exchange costs the attackers
- * at least the defender's multiplied factors (Ref 12.2), and that may be at most ATTACK_MAX_EXCHANGE_FACTORS, or
- * ATTACK_MAX_EXCHANGE_FACTORS_STRONG at odds of ATTACK_STRONG_COLUMN or better (so a large stack may assault a strongly held hex that a
- * small one may not; with the cap alone, big armies stood idle beside a fortified hex they could take at 2-1). Better odds first, then an attack on a capital or objective, then the bigger force. After a battle that left a
+ * at least the defender's multiplied factors (Ref 12.2), and that may be at most ATTACK_MAX_EXCHANGE_FACTORS. Better odds first, then an attack on a capital or objective, then the bigger force. After a battle that left a
  * hex empty it advances with as many survivors as the hex takes. When nothing qualifies it ends the step.
  */
 export const ATTACK_MIN_COLUMN: OddsColumn = "2-1";
@@ -23,8 +21,6 @@ export const ATTACK_MIN_COLUMN: OddsColumn = "2-1";
 export const ATTACK_SUPERIORITY = 3;
 export const ATTACK_MIN_COLUMN_SUPERIOR: OddsColumn = "1-1";
 export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
-export const ATTACK_MAX_EXCHANGE_FACTORS_STRONG = 16;
-export const ATTACK_STRONG_COLUMN: OddsColumn = "2-1";
 export const ATTACK_MAX_PER_TURN = 40;
 /** Base score of a sweep of a hex with only air units or the like: below any real attack, so the units are first offered to real attacks. */
 export const SWEEP_SCORE = -1000;
@@ -36,7 +32,6 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
   if (combatOf(state).targets.length >= ATTACK_MAX_PER_TURN) return undefined;
   const floor = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN);
   const floorSuperior = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN_SUPERIOR);
-  const strong = ODDS_COLUMNS.indexOf(ATTACK_STRONG_COLUMN);
   const scored = new Map<Attack, number>();
   for (const a of legal) {
     if (a.type !== "ATTACK") continue;
@@ -51,8 +46,7 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
     }
     const n = attackNumbers(ctx, state, units, defenders, a.target);
     const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
-    const exchangeCap = column >= strong ? ATTACK_MAX_EXCHANGE_FACTORS_STRONG : ATTACK_MAX_EXCHANGE_FACTORS;
-    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > exchangeCap) continue;
+    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
     scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
   }
   const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);
