@@ -33,11 +33,17 @@ function chipHtml(c: AttackerChip): string {
   return `<li><button type="button" class="chip${grey ? " greyed" : ""}" data-unit="${e(c.id)}" aria-pressed="${c.state === "chosen"}"${grey ? ' aria-disabled="true"' : ""}><span class="chip-mark" aria-hidden="true">${mark}</span><span class="chip-name">${e(c.name)}${nth}</span><small>from ${e(c.from)}${grey ? `, ${e(c.reason ?? "")}` : ""}</small></button></li>`;
 }
 
+/** "Exchange: you lose all ..." with the words before the first colon in bold. */
+function headed(text: string): string {
+  const [head, ...rest] = text.split(": ");
+  return rest.length > 0 ? `<strong>${e(head!)}:</strong> ${e(rest.join(": "))}` : e(text);
+}
+
 function rowHtml(r: ResultRow): string {
   const counter = r.counter?.lines.length
     ? `<details><summary>What the counterattack can lead to</summary><ul>${r.counter.lines.map((l) => `<li><strong>${e(l.rollText)}</strong> ${e(l.text)}</li>`).join("")}</ul></details>`
     : "";
-  return `<li><strong class="res-roll">${e(r.rollText)}</strong><span class="res-text"><strong>${e(r.title)}.</strong> ${e(r.text)}${counter}</span></li>`;
+  return `<li><strong class="res-roll">${e(r.rollText)}</strong><span class="res-text">${headed(r.text)}${counter}</span></li>`;
 }
 
 /** The numbers and the six results, or the sentence for a hex with no ground defender. */
@@ -62,8 +68,8 @@ function cardHtml(s: Session, p: AttackPreview): string {
       <h3 id="attack-with">Attacking with <small>(tap a unit to add or remove it)</small></h3>
       <ul class="chips attack-chips" aria-labelledby="attack-with">${p.attackers.map(chipHtml).join("")}</ul>
       ${outcomeHtml(p)}
-      ${problems}${p.oneTry && !p.button.disabled ? `<p class="muted">${e(p.oneTry)}</p>` : ""}
-      <button type="button" id="attack-go" class="attack-go${p.button.risky ? " risky" : ""}"${p.button.disabled ? " disabled" : ""}>${e(p.button.text)}</button>
+      ${problems}
+      <div class="attack-foot">${p.oneTry && !p.button.disabled ? `<p class="muted">${e(p.oneTry)}</p>` : ""}<button type="button" id="attack-go" class="attack-go${p.button.risky ? " risky" : ""}"${p.button.disabled ? " disabled" : ""}>${e(p.button.text)}</button></div>
     </section>`;
 }
 

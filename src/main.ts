@@ -29,6 +29,7 @@ import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
 import { revealFresh } from "./ui/reveal";
 import { announceAttack } from "./ui/attackAnnounce";
+import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
@@ -131,4 +132,5 @@ function render(): void {
   else computer.kick();
 }
 
+installE2eLoad(document, location.search, SCENARIOS, (scenario, next) => { shell.side.value = next.humanSide; menu.refresh(); begin(scenario, next); });
 start(SCENARIO_1939, "axis");

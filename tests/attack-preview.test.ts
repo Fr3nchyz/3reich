@@ -103,7 +103,7 @@ describe("the cost of an Exchange, in both directions (Ref 12.2)", () => {
     const row = exchangeRow(preview(s, "M33", ["g1", "g2"]));
     expect(row.exchange).toEqual(exchangeCost([s.units.g1!, s.units.g2!], [s.units.p1!, s.units.p2!], 2));
     expect(row.exchange).toMatchObject({ attackersLoseAll: true, chooser: "defenders", required: 4 });
-    expect(row.text).toBe("Exchange: you lose all 4 of your factors; they lose at least 4 factors, each of their units counting doubled and they choose which units.");
+    expect(row.text).toBe("Exchange: you lose all your 4 factors; they lose at least 4 factors, each of their units counting doubled and they choose which units.");
   });
   it("attackers larger: the defenders lose all, the attackers remove at least the multiplied defence", () => {
     const s = at7h([GER("g1", "M32", 3), GER("g2", "M32", 2), POL("p1", "M33"), POL("p2", "M33")]);

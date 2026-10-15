@@ -52,6 +52,7 @@ export interface ResultInput {
 
 const sum = (us: readonly Unit[]): number => us.reduce((n, u) => n + u.strength, 0);
 const units = (n: number): string => (n === 1 ? "1 unit" : `${n} units`);
+const fx = (n: number): string => (n === 1 ? "1 factor" : `${n} factors`);
 
 /** "1", "1 or 4", "2, 3 or 5". */
 export function rollWords(rolls: readonly number[]): string {
@@ -71,10 +72,10 @@ export const hasChoice = (c: ExchangeCost): boolean => minimalSets(Object.keys(c
 
 /** An Exchange in words, for the original attack (defenders at the multiple) or for a counterattack (basic factors, multiple 1). */
 export function exchangeWords(c: ExchangeCost, multiple: number): string {
-  if (c.chooser === null) return `Exchange: the sides are equal at ${c.attackTotal} factors, so both lose every unit.`;
+  if (c.chooser === null) return `Exchange: the sides are equal at ${fx(c.attackTotal)}, so both lose every unit.`;
   const worth = multiple > 1 && c.chooser === "defenders" ? `, each of their units counting ${multipleWord(multiple)}` : "";
   const choice = hasChoice(c);
-  if (c.attackersLoseAll) return `Exchange: you lose all ${c.attackTotal} of your factors; they lose at least ${c.required} factors${worth}${choice ? " and they choose which units" : " (only one set of their units is enough, so nothing is left to choose)"}.`;
+  if (c.attackersLoseAll) return `Exchange: you lose all your ${fx(c.attackTotal)}; they lose at least ${fx(c.required)}${worth}${choice ? " and they choose which units" : " (only one set of their units is enough, so nothing is left to choose)"}.`;
   const counted = multiple > 1 ? ` (their ${c.defenseTotal} counted ${multipleWord(multiple)})` : "";
   return `Exchange: they lose all${counted}; you lose at least ${c.required} of your factors${choice ? " and you choose which units" : " (only one set of your units is enough, so nothing is left to choose)"}.`;
 }
@@ -122,11 +123,11 @@ export function resultRows(i: ResultInput): ResultRow[] {
   const def = sum(i.defenders);
   return [...mergeRolls(i.column)].map(([result, rolls]): ResultRow => {
     const base = { rolls, rollText: rollWords(rolls), result, title: TITLES[result] };
-    if (result === "A") return { ...base, text: `Your attackers are eliminated: you lose all ${units(i.attackers.length)} (${att} factors). They lose nothing.` };
+    if (result === "A") return { ...base, text: `Your attackers are eliminated: you lose all ${units(i.attackers.length)} (${fx(att)}). They lose nothing.` };
     if (result === "D") {
       const also = i.alsoDestroyed.length > 0 ? ` These enemy counters in the hex go too, with no roll: ${i.alsoDestroyed.join(", ")}.` : "";
       const adv = i.emptyAfterWin ? " The hex is left empty and your survivors may advance." : "";
-      return { ...base, text: `The defenders are eliminated: they lose all ${units(i.defenders.length)} (${def} factors). You lose nothing.${also}${adv}` };
+      return { ...base, text: `The defenders are eliminated: they lose all ${units(i.defenders.length)} (${fx(def)}). You lose nothing.${also}${adv}` };
     }
     if (result === "Ex") {
       const exchange = exchangeCost(i.attackers, i.defenders, i.multiplier);
