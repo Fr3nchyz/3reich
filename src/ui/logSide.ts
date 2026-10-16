@@ -75,6 +75,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
       const sides = new Set(e.units.map((u) => sideOfOwner(u.owner)));
       return sides.size === 1 ? [...sides][0]! : actor;
     }
+    case "AIR_STAGED":
     case "UNITS_MOVED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
     case "STEPS_PASSED": return actor;

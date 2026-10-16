@@ -6,6 +6,7 @@ import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
+import { applyStageAir } from "./air-stage";
 import { applyMove, legalMoves } from "./move-action";
 import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
@@ -74,6 +75,8 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));
     case "PLACE_AIRBASE":
       return applyPlaceAirbase(ctx, state, action);
+    case "STAGE_AIR":
+      return atStep(state, "6f", "Air units are staged", () => applyStageAir(ctx, state, action));
     case "ATTACK":
       return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":

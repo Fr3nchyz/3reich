@@ -1,6 +1,6 @@
 # 09. Air units: bases, staging, air support in battle, counter-air and airdrops
 
-Status: **approved 2026-10-15 with the decision below (D1: displace). Tickets 09-1, 09-2 and 09-6 are built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
+Status: **approved 2026-10-15 with the decision below (D1: displace). Tickets 09-1, 09-2, 09-3 and 09-6 are built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
 
 
 ## Decisions (product owner, 2026-10-15)
@@ -644,6 +644,14 @@ Ref 3.0 (counters), 4.51, 4.7 (cities as bases), 5.0 (stacking), 9.1 (boundary o
 - **Not in this ticket.** Using a freshly placed airbase only by units of its own nationality (staging, 09-3); relocation of an unsupplied or captured airbase (09-5); the screen (09-13). Placement is not tested in a Campaign or 1942 position.
 - **`TODO(verify)`.** A Major Power that is not yet in the war (Italy, the USSR and the USA in 1939) cannot place an airbase, at setup or later, until it is. The supply test is skipped at setup (the position is still being built; `AIRBASE_AT_SETUP`); "friendly-controlled" is read as the side that controls the hex (`controllingSide`), so a hex of an inactive minor ally is refused.
 - **Tests.** `tests/air-airbase.test.ts` (15). Mutation checks (8 killed): supply test off, reserve check off, control test off, one-to-a-hex off, enemy-units test off, a fourth airbase, any step, water.
+
+## As built (ticket 09-3: staging)
+
+- **Files.** `src/engine/air-stage.ts` (`stageProblem`, `stagingTargets`, `applyStageAir`), `air-record.ts` (`AirState` gains `staged` and `controlAtStart`; `newAirTurn`), constant `ONE_STAGE_PER_TURN = true` in `air-rules.ts`. Action `STAGE_AIR { side, units, to }`, event `AIR_STAGED` with a log line ("... change base from X to Y."). `turn.ts` `beginPlayerTurn` starts the air record for every Player Turn (one line), which is where the copy of control is taken.
+- **Rule (R4).** Air units standing together in one hex change base at step 6f, up to 8 hexes, over a route that avoids neutral land, to a base the side held when its Player Turn began (`controlAtStart`, so a base taken by ground units in this very step cannot be used), obeying the Anglo-French and Russian/Western Allied base bans and the room of the target (5 air factors a city, 10 with an airbase; counted one unit at a time). An air unit stages once a Player Turn. An airbase set down this Player Turn serves only air of its own nation until the turn ends (Italian units lent to Germany count as German); a city hex that also holds the new airbase is a base in its own right, so the limit applies only to open ground (`TODO(verify)`). An airbase alone bases 5 air factors, a city 5, both 10. Whether a nation is in the war is read when the unit stages. No control changes, no interception, armor zones of control do not matter.
+- **Not `legalActions`, and `hasMoveWork` unchanged,** for the reasons of 09-2: the computer does not stage yet and recorded games must not change; step 6f is still passed without waiting when no ground unit can move, so the screen ticket (09-13) must decide whether staging keeps the step open. `stagingTargets(ctx, state, ids)` lists the bases for a group; a test proves it agrees with `applyAction` on every hex.
+- **Not in this ticket.** The Option of the Front entered and the Pass Option limit (Ref 11.42): `TODO(verify)`, nothing in our Front Options models "pass" yet. Marking newly built air units as having no mission this Game Turn (Ref 20.3) is left to ticket 09-7, which introduces the record of flown missions.
+- **Tests.** `tests/air-stage.test.ts` (13), including the full-map agreement and the record at the start of both Player Turns. Mutation checks (8 killed): start-of-turn control, once a turn, placed-this-turn rule, range 9, air type, side, stacking, record at turn start.
 
 ## As built (ticket 09-6: air combat resolver)
 

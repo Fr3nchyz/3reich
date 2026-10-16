@@ -145,6 +145,8 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "AIR_STAGED":
+      return `${stackSummary(unitsWithIds(before, e.units))} change base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
     case "HEX_CONTROL_CHANGED":

@@ -32,6 +32,12 @@ export const CAPITAL_AIR_MAX = 10;
 /** Staging (rebasing) range in the Movement Phase, in hexes (Ref 20.2, Ops 5.45f). Same number as the ocean-crossing limit in terrain.ts. */
 export const STAGING_RANGE = MAX_OCEAN_AIR_STAGE_HEXES;
 
+/**
+ * An air unit stages (changes base) at most once in a Player Turn (spec 09 R4, option a; like `ONE_MOVE_PER_TURN`).
+ * TODO(verify): Ref 20.2 gives the 8-hex range for the Movement Phase as a whole; whether several shorter hops are allowed is not settled.
+ */
+export const ONE_STAGE_PER_TURN = true;
+
 /** A mission in the Combat Phase flies out and back over at most this many hexes (Ref 20.41, 20.51). */
 export const MISSION_RANGE = 4;
 
