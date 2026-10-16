@@ -7,6 +7,7 @@ import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { stackingProblem } from "./placement";
+import { UNSUPPLIED_CANNOT_ADVANCE, wasCutOff } from "./supply-effects";
 import type { GameState, Unit } from "./types";
 
 /**
@@ -65,6 +66,8 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
  * or null. Units are added one at a time so each sees the ones before it.
  */
 function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string[], to: HexId): string | null {
+  const cut = ids.find((id) => UNSUPPLIED_CANNOT_ADVANCE && wasCutOff(state, id));
+  if (cut) return `${cut} was out of supply when the turn began and cannot advance (Ref 12.21).`;
   let s = state;
   for (const id of ids) {
     const u = s.units[id]!;
@@ -82,7 +85,7 @@ function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string
 function legalAdvances(ctx: GameContext, state: GameState): Action[] {
   const found: { mask: number; action: Action }[] = [];
   for (const chance of combatOf(state).advances) {
-    const ids = chance.units.filter((id) => state.units[id]).slice(0, 12);
+    const ids = chance.units.filter((id) => state.units[id] && !(UNSUPPLIED_CANNOT_ADVANCE && wasCutOff(state, id))).slice(0, 12); // Ref 12.21: units cut off at the start of the turn cannot advance
     // A set is listed when advanceProblem finds nothing, and that adds its units one at a time in this order, so a set
     // fits only if the same set without its last unit fits and that unit then fits on top. Walking the sets that way
     // checks each fitting set once (and never looks at a set whose start fails) instead of re-checking every subset
