@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 // The map marks no double city, so DOUBLE_CITY_HEXES is empty (TODO(verify), spec 09 R1). The branch is checked here with a list.
-vi.mock("../src/engine/air-rules", async (original) => ({ ...(await original<typeof import("../src/engine/air-rules")>()), DOUBLE_CITY_HEXES: ["N33"] }));
+vi.mock("../src/engine/air-rules", async (original) => ({ ...(await original<object>()), DOUBLE_CITY_HEXES: ["N33"] }));
 
 const { airCapacity, citiesAt } = await import("../src/engine/air-bases");
 const { board, counter } = await import("./board");
