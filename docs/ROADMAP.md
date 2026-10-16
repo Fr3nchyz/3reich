@@ -196,7 +196,7 @@ Done: the Warsaw fix, tap-to-attack with an odds preview and a hex card, iPad zo
 
 1. ~~Choosing units of a stack (spec 10, tickets 10-1 to 10-9).~~ Done 2026-10-16.
 2. Make the watch-mode "turbo repaint" browser test reliable and shorten the slow step-7h computer decision.
-3. Air units (spec: [09-air-units](specs/09-air-units.md), approved), then fleets (spec 12, not written).
+3. Air units (spec: [09-air-units](specs/09-air-units.md), approved), then fleets (spec 12: [12-fleets-naval](specs/12-fleets-naval.md), draft for review).
 4. Computer opponent: a stall-breaking rule, then an evaluator and difficulty levels.
 5. Small follow-ups from reviews (see `docs/FEEDBACK.md`).
 6. A "Send feedback" button and a short play-test card (French wording only if it helps Frank).

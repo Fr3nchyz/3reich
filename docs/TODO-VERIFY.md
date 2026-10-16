@@ -85,6 +85,45 @@ Columns: ID, where in `src/` (file and line), the named constant or branch, what
 | S1 | `src/engine/supply.ts:23` | Supply sources and tracing | Which sources count (capitals only as land sources, minor capitals only if they fight on that side, captured capitals supply their captor), which sources are not built yet, the numbering (Ref 19.x vs 10.0), French and British limits, any maximum line length, and whether a unit's own hex must be friendly. | Listed: the supply bullet (line 160), which names each item. |
 | S2 | `src/engine/supply.ts:116` (`seaSupplyLine`; TODO at :113) | Sea supply (19.31) | Designation of fleets, naval factors as capacity, port pairs, transfer points (Gibraltar, Kiel, Istanbul) and interception. Currently a stub that supplies nothing by sea. | Listed: "sea supply (19.31) is a stub" (line 160). |
 
+### Fleets and naval warfare (spec 12, draft; not in `src/` yet, so not counted in the summary above)
+
+Added 2026-10-16 from `docs/specs/12-fleets-naval.md`. The rule numbers are the spec's (R1 to R21); the rule text is the PC Reference Manual 19.31 and 21.x, paraphrased. Each row has a matching bullet in `docs/RULES.md` ("Fleets and naval warfare open items"). Related existing rows: G4 (the sweep that destroys fleets), M15 (fleet stacking at sea), S2 (the sea-supply stub).
+
+| ID | Where | Name | What is assumed | In RULES.md open questions? |
+|---|---|---|---|---|
+| N1 | spec 12 R1 | `FLEET_COUNTER_SIZES` = 1, 2, 6, 9 | Which partial fleet counters exist. The manual's own example uses 9, 6, 2 and 1; whether 3, 4, 5, 7 or 8 exist is not stated. | Listed ("Fleets and naval warfare open items"). |
+| N2 | spec 12 R1, R12 | Combining and break-down | Whether partial fleets may be combined outside Strategic Redeployment, and whether the total lost may exceed the amount owed when the right small counter is missing (the manual says more is lost). | Listed ("Fleets and naval warfare open items"). |
+| N3 | spec 12 R2 | Port capacity | 36 factors per port, 9 for Malta, Suda Bay and Famagusta; 72 for a hex with two ports, of which our map has none. | Listed ("Fleets and naval warfare open items"). |
+| N4 | spec 12 R3 | `PORT_FRONTS` | The Front of the water each port opens on. Batum, Vigo, Cadiz, Rostock, Gibraltar and Istanbul touch water of two Fronts in our data; Stettin, La Coruna and Haifa touch no water hexside; Marseilles and Constanta are on one Front by land and another by water. | Listed ("Fleets and naval warfare open items"). |
+| N5 | spec 12 R3 | Black Sea and Baltic Fronts | Which Front the Black Sea ports count as (read: Eastern for the northern ones) and that Suez city is a two-Front port for escorts only. | Listed ("Fleets and naval warfare open items"). |
+| N6 | spec 12 R4 | `mayBasePort` | Base bans for fleets: Free French and Vichy; the German and Italian ban before they are allied against the same Major Power. | Listed ("Fleets and naval warfare open items"). |
+| N7 | spec 12 R5 | One function per Game Turn | A fleet does one thing in a full Game Turn, read as Game Turn (the manual's words), not Player Turn; a fleet that intercepted in the other side's earlier Player Turn cannot supply in its own. | Listed ("Fleets and naval warfare open items"). |
+| N8 | spec 12 R6 | Second designation | A fleet designated at step 6e may be designated again at 9f for its unused factors. | Listed ("Fleets and naval warfare open items"). |
+| N9 | spec 12 R6 | Capacity charged when named | A unit named in a designation uses the fleet's capacity even if it later moves back to a normal supply line. | Listed ("Fleets and naval warfare open items"). |
+| N10 | spec 12 R7 | Port and destination in a zone | Whether the fleet's port must be supplied at designation or at the final check, and whether a port or destination in an enemy armor zone still works (read as for a unit or a source: yes). | Listed ("Fleets and naval warfare open items"). |
+| N11 | spec 12 R7 | One-hex islands | Which islands are playable one-hex islands for supply and invasion. Malta and Scapa Flow are named in Ref 4.9; the map data has no list and a guess from hexsides fails for Sardinia. | Listed ("Fleets and naval warfare open items"). |
+| N12 | spec 12 R7 | Libyan ports | Libyan ports supply Axis units with no fleet (as built in `supply-sources.ts`), against the last paragraph of Ref 31.0, which says supply must still come by Axis fleets to the ports. | Listed ("Fleets and naval warfare open items"). |
+| N13 | spec 12 R7 | Africa 18-factor limit | The 18-factor limit on German supply in Africa and Malta's naval and air factors (Ref 31.0) is not built; fleets make it possible. | Listed ("Fleets and naval warfare open items"). |
+| N14 | spec 12 R8 | Supply read at 6e | Supply is read once when 6e is left (replacing the record taken at the start of the turn), not only at the start; eliminations stay at the end of the Player Turn. | Listed ("Fleets and naval warfare open items"). |
+| N15 | spec 12 R9 | "Nearest" port | The nearest friendly port for a displaced fleet is measured by the shortest sea route (not straight distance or land). | Listed ("Fleets and naval warfare open items"). |
+| N16 | spec 12 R9 | Equal distance | First slice breaks ties by the lowest hex id; the manual lets the owner choose. | Listed ("Fleets and naval warfare open items"). |
+| N17 | spec 12 R9 | Fleet on a mission | A fleet away on a mission when its port falls is treated as in port (as air, Ref 20.2); a displaced fleet keeps its function for the Game Turn. | Listed ("Fleets and naval warfare open items"). |
+| N18 | spec 12 R9 | Other captures | Attrition occupation, conquest and the fall of France use the same displacement; the special Vichy and Italian fleet rules are out of scope. | Listed ("Fleets and naval warfare open items"). |
+| N19 | spec 12 R10 | `ONE_BASE_CHANGE_PER_TURN` | A fleet changes base once in a Movement Phase. | Listed ("Fleets and naval warfare open items"). |
+| N20 | spec 12 R10 | Pass Option test | How the four-hex distance from enemy planes is measured along the course, and that the enemy-fleet test is about the fleet's Front. | Listed ("Fleets and naval warfare open items"). |
+| N21 | spec 12 R10 | What is one force | One `MOVE_FLEET` action is one force; fleets from different ports are separate forces for interception (Peele). | Listed ("Fleets and naval warfare open items"). |
+| N22 | spec 12 R10 | Suez Canal | Passable by fleets only while the hexes beside it are friendly; the damage clock and the PC differences (Peele 47.3 and 47.4) are not built. | Listed ("Fleets and naval warfare open items"). |
+| N23 | spec 12 R11 | Interception distance | Counted as the length of the shortest sea route from the base to the interception hex. | Listed ("Fleets and naval warfare open items"). |
+| N24 | spec 12 R11 | Who may intercept | The interceptor must be based on the same Front as the course; fleets in the U.S. Box count as distance 30+ and may intercept only once the U.S.A. is at war. | Listed ("Fleets and naval warfare open items"). |
+| N25 | spec 12 R12 | `NAVAL_LOSS_CHOICE` | The owner chooses which fleets lose factors (people), automatic for the computer; the manual says only to use the fewest partial units. | Listed ("Fleets and naval warfare open items"). |
+| N26 | spec 12 R13 | Non-participants | Fleets at a base that took no part in a naval battle are not hurt (only Counter-Air hurts non-participants). | Listed ("Fleets and naval warfare open items"). |
+| N27 | spec 12 R12 | 18-factor multiplier | The multiplier for a loser with 18 or more factors is read as its factors divided by nine. | Listed ("Fleets and naval warfare open items"). |
+| N28 | spec 12 R12 | Italy row N | That the program's row argument for Italy's modifier is the battle hex's row was read by hand, not reproduced by the script (docs/GAME_DATA.md). | Listed ("Fleets and naval warfare open items"). |
+| N29 | spec 12 R14 | Air attacks on ports | Counter-Air before ship attack including at Malta (Peele), and who picks the fleet factors lost. | Listed ("Fleets and naval warfare open items"). |
+| N30 | spec 12 R15 | Air against fleets at sea | Whether the Option matters (Ref 20.431 says no, 20.52 names Offensive and Attrition) and that supply carriers are as immune to planes as to fleets. | Listed ("Fleets and naval warfare open items"). |
+| N31 | spec 12 R19 | Naval missions and Options | Naval missions use `frontAllowsAttack` (the Offensive Option of the Front that receives the action), not wired. | Listed ("Fleets and naval warfare open items"). |
+| N32 | spec 12 R16 to R18, R20 | Outlined rules | Shore Bombardment, Sea Transport, Seaborne Invasion and the U.S. Box rules are only outlined; their open items are listed when the addendum is written. Fleets in the U.S. Box are inert in release N1. | Listed ("Fleets and naval warfare open items"). |
+
 ### Map data and scenario rules
 
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
@@ -179,4 +218,4 @@ Ranked by how much a wrong guess would change a game. Each is an open question t
 9. Do BRPs left unspent at the end of a year carry over?
 10. Can a unit move twice in one turn with points left over?
 
-Also worth asking, if time allows: whether replacement counters move and fight; what forces a minor country gets when attacked and where they go; whether an automatic declaration of war counts towards the spending limit; and whether a grant is blocked when an enemy stands next to a capital.
+Also worth asking, if time allows: for fleets (spec 12), how the game asks you to supply units by sea, what happens to a fleet when its port is taken, which Front the Black Sea and Baltic ports are on, how interception distance is counted, and whether Libyan ports supply by themselves; whether replacement counters move and fight; what forces a minor country gets when attacked and where they go; whether an automatic declaration of war counts towards the spending limit; and whether a grant is blocked when an enemy stands next to a capital.
