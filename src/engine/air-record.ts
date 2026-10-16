@@ -21,10 +21,10 @@ export interface AirState {
 /** A record for the Player Turn that begins now, with control as it stands. */
 export const newAirTurn = (state: GameState): AirState => ({ turn: turnKey(state), placed: [], staged: [], controlAtStart: { ...state.control } });
 
-/** The record for the Player Turn now being played: the stored one, or an empty one (control as it stands, for a game saved before the record existed). */
+/** The record for the Player Turn now being played: the stored one, or a new one with control as it stands (a state built by hand, or one that began before the record existed). */
 export function airOf(state: GameState): AirState {
   const rec = state.air;
-  return rec && rec.turn === turnKey(state) ? rec : newAirTurn(state);
+  return rec && rec.turn === turnKey(state) && Array.isArray(rec.placed) && Array.isArray(rec.staged) && rec.controlAtStart ? rec : newAirTurn(state);
 }
 
 /**

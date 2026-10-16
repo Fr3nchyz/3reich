@@ -37,7 +37,7 @@ describe("STAGE_AIR at step 6f", () => {
 
   it("units standing together stage together, each counted one at a time against the room (5 air factors a city)", () => {
     const s = board([air("a1", "J32", 3), air("a2", "J32", 2), air("a3", "K33", 3)]);
-    expect(errorOf(applyAction(CTX, s, stage(["a1", "a2"], "K33")))).toMatch(/stack|limit|5/i); // 3 + 3 + 2 = 8 > 5
+    expect(errorOf(applyAction(CTX, s, stage(["a1", "a2"], "K33")))).toMatch(/limit/i); // 3 + 3 + 2 = 8 > 5
     const room = board([air("a1", "J32", 2), air("a2", "J32", 2)]);
     const r = okOf(applyAction(CTX, room, stage(["a1", "a2"], "K33")));
     expect(r.state.units.a1!.at).toBe("K33");
@@ -49,6 +49,8 @@ describe("STAGE_AIR at step 6f", () => {
     const once = okOf(applyAction(CTX, board([air("a1", "J32")]), stage(["a1"], "K33"))).state;
     expect(errorOf(applyAction(CTX, once, stage(["a1"], "J32")))).toMatch(/already staged/);
     expect(airOf({ ...once, activeSide: "allies" }).staged).toEqual([]); // another Player Turn starts fresh
+    const next = okOf(endTurn(CTX, once)).state; // the real thing: the record of the new Player Turn
+    expect(next.air!.staged).toEqual([]);
   });
 
   it("refuses ground units, the other side's air, units apart, the hex they stand in, water, unknown hexes and malformed input", () => {
@@ -72,7 +74,7 @@ describe("STAGE_AIR at step 6f", () => {
     const s = board([air("a1", "J32")]);
     const plain = Object.values(CTX.map.hexes).find((h) => h.land && h.features.length === 0 && h.country === "germany")!.id;
     expect(errorOf(applyAction(CTX, s, stage(["a1"], plain)))).toMatch(/not an air base/);
-    expect(errorOf(applyAction(CTX, s, stage(["a1"], "M33")))).toMatch(/not held by the axis side|too far/); // Poznan: Polish
+    expect(errorOf(applyAction(CTX, s, stage(["a1"], "M33")))).toMatch(/not held by the axis side/); // Poznan: Polish
     expect(errorOf(applyAction(CTX, { ...s, position: { part: "player-turn", turn: 1, step: "7h" } }, stage(["a1"], "K33")))).toMatch(/step/);
   });
 
@@ -94,8 +96,24 @@ describe("STAGE_AIR at step 6f", () => {
     expect(near("g1")).not.toMatch(/placed this turn/); // German air may use it at once (it may still be out of reach)
     expect(near("i1")).toMatch(/placed this turn: only germany air/);
     expect(near("l1")).not.toMatch(/placed this turn/); // an Italian unit lent to Germany counts as German here
-    const next = { ...s, air: { ...airOf(s), placed: [] } }; // the next Player Turn
+    const next = { ...s, air: { ...airOf(s), turn: "an earlier turn" } }; // the record belongs to another Player Turn: nothing was placed in this one
     expect(errorOf(applyAction(CTX, next, stage(["i1"], hex)))).not.toMatch(/placed this turn/);
+  });
+
+  it("a city that also holds the new airbase takes any air of the side (the city is a base in its own right)", () => {
+    const tweak = { nations: { ...SCENARIO_1939.nations, italy: { ...atStart(SCENARIO_1939, 1).nations.italy, status: "axis" as const } } } as Partial<GameState>;
+    let s = board([air("i1", "J32", 2, "italy")], tweak);
+    s = okOf(applyAction(CTX, s, { type: "PLACE_AIRBASE", owner: "germany", at: "K33" })).state; // K33 is a city
+    expect(applyAction(CTX, s, stage(["i1"], "K33")).ok).toBe(true);
+  });
+
+  it("holes and odd entries in the list of units are refused, never thrown", () => {
+    const s = board([air("a1", "J32")]);
+    // eslint-disable-next-line no-sparse-arrays
+    const sparse = [, "a1"] as unknown as string[];
+    expect(errorOf(applyAction(CTX, s, { type: "STAGE_AIR", side: "axis", units: sparse, to: "K33" }))).toMatch(/one or more distinct/);
+    expect(errorOf(applyAction(CTX, s, { type: "STAGE_AIR", side: "axis", units: "a1" as unknown as string[], to: "K33" }))).toMatch(/one or more distinct/);
+    expect(stagingTargets(CTX, s, sparse)).toEqual([]);
   });
 
   it("the list of targets agrees with the engine on every hex of the map", () => {
