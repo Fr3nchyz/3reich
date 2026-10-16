@@ -29,7 +29,7 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 ### Zones of Control (ZOC)
 
 - A ground unit exerts a ZOC into every adjacent hex (not across a hexside the unit cannot cross).
-- A unit entering an enemy ZOC must stop; leaving a ZOC is allowed. Friendly units negate ZOC for supply and movement as the rules say (Ref 6.0).
+- (Replaced by spec 13: armor-only ZOC; leaving a hex in enemy armor ZOC costs 2 more, entering never stops a unit.) Was: A unit entering an enemy ZOC must stop; leaving a ZOC is allowed. Friendly units negate ZOC for supply and movement as the rules say (Ref 6.0).
 - The UI can show every ZOC hex for a selected side.
 
 ### Supply (steps 6e, 9f to 9h)

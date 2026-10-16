@@ -10,9 +10,10 @@ import { board, counter } from "./board";
 import { CTX, ctxFor } from "./helpers";
 
 const pole = (id: string, at: string): Unit => counter(id, "poland", "infantry", 2, at, 3);
-const german = (id: string, at: string): Unit => counter(id, "germany", "infantry", 3, at, 4);
+/** Armor: only armor puts enemy hexes in a ZOC (Ref 7.0); the others are plain ground units. */
+const german = (id: string, at: string): Unit => counter(id, "germany", "armor", 3, at, 4);
 const italian = (id: string, at: string): Unit => counter(id, "italy", "infantry", 2, at, 3);
-const british = (id: string, at: string): Unit => counter(id, "britain", "infantry", 3, at, 3);
+const british = (id: string, at: string): Unit => counter(id, "britain", "armor", 3, at, 3);
 /** The 1939 board with Italy at war on the Axis side (it is neutral at the start). */
 const withItaly = (units: Unit[], extra: Partial<GameState> = {}): GameState => {
   const s = board([]);
@@ -71,9 +72,19 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(lineOf(board([pole("p1", "M35")]), "allies", "p1")!.path).toEqual(["M35"]);
   });
 
-  it("Ref 19.3: enemy ZOC on the unit's hex and on the source does not cut it", () => {
-    const s = board([pole("p1", "M34"), german("g1", "L35")]); // L35 touches both Warsaw and M34
-    expect(lineOf(s, "allies", "p1")!.path).toEqual(["M34", "M35"]);
+  it("Ref 19.3: enemy ZOC on the unit's hex and on the source does not cut a line whose hexes between are free of it", () => {
+    // L35 touches both Warsaw (M35) and M34, so the direct step is out (next test); the line goes round through N34.
+    const s = board([pole("p1", "M34"), german("g1", "L35")]);
+    expect(lineOf(s, "allies", "p1")!.path).toEqual(["M34", "N34", "M35"]);
+  });
+
+  it("Ref 19.3: a unit next to its source is not supplied when both stand in the ZOC of the same enemy unit", () => {
+    const hold = board([pole("p1", "M34"), german("g1", "L35")]);
+    const around = Object.fromEntries(adjacentHexes(CTX, "M34").filter((h) => h !== "M35" && CTX.map.hexes[h]?.land).map((h) => [h, "germany" as const]));
+    const s = { ...hold, control: { ...hold.control, ...around } };
+    expect(lineOf(s, "allies", "p1")).toBeUndefined(); // the only way out is the direct step, and one armor unit covers both hexes
+    const apart = { ...s, units: { ...s.units, g1: { ...s.units.g1!, at: "L34" } } }; // L34 touches M34 but not Warsaw: the exception no longer applies
+    expect(lineOf(apart, "allies", "p1")!.path).toEqual(["M34", "M35"]);
   });
 
   it("Ref 19.3: cut by enemy ZOC on a hex between (Messina chain, Sicily to Rome)", () => {
@@ -116,11 +127,11 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["i1"]);
   });
 
-  it("friendly units negate enemy ZOC for supply (spec 03; ZOC_POLICY), and the policy can switch it off", () => {
+  it("friendly units do NOT negate enemy ZOC for supply (Ref 7.0); the policy switch can turn negation on", () => {
     const s = withItaly([italian("i1", "DD21"), british("b1", "BB24"), italian("i2", "BB23"), italian("i3", "CC23")]);
-    expect(unsuppliedUnits(CTX, s, "axis")).toEqual([]);
-    const off: SupplyPolicy = { ...SUPPLY_POLICY, zoc: { friendlyUnitNegates: false } };
-    expect(unsuppliedUnits(CTX, s, "axis", off)).toEqual(["i1", "i3"]); // i2 sits on the ZOC edge, the line to it still ends there
+    expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["i1", "i3"]); // i2 sits on the ZOC edge, the line to it still ends there
+    const on: SupplyPolicy = { ...SUPPLY_POLICY, zoc: { friendlyUnitNegates: true } };
+    expect(unsuppliedUnits(CTX, s, "axis", on)).toEqual([]);
   });
 
   it("Ref 19.3: a line crosses a Crossing Arrow without naval help (the Strait of Messina)", () => {

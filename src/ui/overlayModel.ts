@@ -17,7 +17,7 @@ export type Holder = Side | "neutral";
 export interface OverlayCells {
   /** Land hexes held by each holder, in hex-id order. Land nobody holds is in none of them. */
   control: Record<Holder, HexId[]>;
-  /** The hexes where the side to move must stop on entering, in hex-id order: the other side's Zones of Control, less hexes holding the mover's own ground unit (`enemyZocFor`, Ref 6.0). */
+  /** The hexes where a ground unit of the side to move pays 2 extra movement factors to leave, in hex-id order: the other side's armor Zones of Control (`enemyZocFor`, Ref 7.0). */
   zoc: HexId[];
   /** The side whose Zones of Control are hatched: the one that does not have the move. */
   zocSide: Side;
@@ -46,6 +46,6 @@ export function overlayLegend(cells: OverlayCells): string[] {
   const mover = otherSide(cells.zocSide);
   return [
     "Outline: who holds the hex. Dark = Axis, green = Allies, dotted = neutral (in the war on neither side).",
-    `Red hatching: ${sideName(cells.zocSide)} Zones of Control. ${sideName(mover)} ground units entering one must stop (a hex with an ${sideName(mover)} ground unit in it is left clear).`,
+    `Red hatching: ${sideName(cells.zocSide)} armor Zones of Control. ${sideName(mover)} ground units pay 2 extra movement points to leave one.`,
   ];
 }

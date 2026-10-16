@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { controllerOf, sideInWar } from "../src/engine/control";
-import { enemyZocFor, mustStop, zocHexes } from "../src/engine/zoc";
+import { enemyZocFor, inEnemyZoc, zocHexes } from "../src/engine/zoc";
 import { HATCH_ID, overlayMarkup } from "../src/ui/mapOverlay";
 import { overlayCells, overlayLegend } from "../src/ui/overlayModel";
 import { board, counter } from "./board";
 import { CTX, ctxFor } from "./helpers";
 
-// The overlay only shows what engine/control.ts (Ref 7.0) and engine/zoc.ts (Ref 6.0) already say.
-const german = (id: string, at: string) => counter(id, "germany", "infantry", 3, at, 4);
-const polish = (id: string, at: string) => counter(id, "poland", "infantry", 2, at, 3);
+// The overlay only shows what engine/control.ts (Ref 7.0) and engine/zoc.ts (Ref 7.0, spec 13) already say.
+const german = (id: string, at: string) => counter(id, "germany", "armor", 3, at, 4);
+const polish = (id: string, at: string) => counter(id, "poland", "armor", 2, at, 3);
 
 describe("who holds each hex", () => {
   it("groups every held land hex by the side its holder fights on, and never lists sea or land nobody holds", () => {
@@ -59,22 +59,22 @@ describe("Zones of Control of the side not to move", () => {
     const axisMove = overlayCells(CTX, board(units, undefined, { activeSide: "axis" }));
     expect(axisMove.zocSide).toBe("allies");
     expect(axisMove.zoc).toEqual([...enemyZocFor(CTX, board(units), "axis")].sort());
-    expect(axisMove.zoc).toContain("N34"); // next to the Polish infantry
+    expect(axisMove.zoc).toContain("N34"); // next to the Polish armor
     const alliesMove = overlayCells(CTX, board(units, undefined, { activeSide: "allies" }));
     expect(alliesMove.zocSide).toBe("axis");
     expect(alliesMove.zoc).toEqual([...enemyZocFor(CTX, board(units), "allies")].sort());
     expect(alliesMove.zoc).not.toEqual(axisMove.zoc);
   });
 
-  // Ref 6.0 as read in zoc.ts (TODO(verify) friendlyUnitNegates): the key says a unit "must stop" there, so only hexes where mustStop holds are hatched.
-  it("leaves clear a hex that holds the mover's own ground unit: hatched exactly where the mover must stop", () => {
+  // Ref 7.0: friendly units do not negate enemy ZOC, so a hex that holds the mover's own unit is hatched like any other hex in the zone.
+  it("hatches a hex that holds the mover's own ground unit too: friendly units do not cancel enemy ZOC", () => {
     const units = [german("u1", "M34"), polish("u2", "M35")];
     const s = board(units, undefined, { activeSide: "axis" });
-    expect(zocHexes(CTX, s, "allies").has("M34")).toBe(true); // the raw Polish ZOC reaches the German hex
-    expect(mustStop(CTX, s, "axis", "M34")).toBe(false); // but the German unit there cancels it
+    expect(zocHexes(CTX, s, "allies").has("M34")).toBe(true); // the Polish armor's ZOC reaches the German hex
+    expect(inEnemyZoc(CTX, s, "axis", "M34")).toBe(true);
     const { zoc } = overlayCells(CTX, s);
-    expect(zoc).not.toContain("M34");
-    for (const h of zocHexes(CTX, s, "allies")) expect(zoc.includes(h), h).toBe(mustStop(CTX, s, "axis", h));
+    expect(zoc).toContain("M34");
+    for (const h of zocHexes(CTX, s, "allies")) expect(zoc.includes(h), h).toBe(inEnemyZoc(CTX, s, "axis", h));
   });
 
   it("is empty with no ground units, and air units and fleets exert none", () => {
@@ -112,11 +112,11 @@ describe("drawing", () => {
 });
 
 describe("the key", () => {
-  it("names the side whose ZOC is hatched and the side that must stop, in plain words", () => {
+  it("names the side whose armor ZOC is hatched and says what leaving costs, in plain words", () => {
     const axisMove = overlayLegend(overlayCells(CTX, board([], undefined, { activeSide: "axis" }))).join(" ");
-    expect(axisMove).toMatch(/Allies Zones of Control\. Axis ground units entering one must stop \(a hex with an Axis ground unit/);
+    expect(axisMove).toMatch(/Allies armor Zones of Control\. Axis ground units pay 2 extra movement points to leave one/);
     const alliesMove = overlayLegend(overlayCells(CTX, board([], undefined, { activeSide: "allies" }))).join(" ");
-    expect(alliesMove).toMatch(/Axis Zones of Control\. Allies ground units entering one must stop/);
+    expect(alliesMove).toMatch(/Axis armor Zones of Control\. Allies ground units pay 2 extra movement points to leave one/);
     expect(axisMove).toMatch(/Axis/);
     expect(axisMove).toMatch(/green = Allies/);
     expect(axisMove).not.toMatch(/yet/); // Vichy and the USSR in 1939 are neutral, not "not yet" anything

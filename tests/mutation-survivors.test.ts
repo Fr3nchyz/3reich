@@ -71,35 +71,18 @@ describe("only Major Powers in the war attack (spec 04 and the Ref 12.1 attacker
   });
 });
 
-describe("ground movement stops at an enemy ZOC but goes on from a hex that has none (Ref 6.0)", () => {
-  // TODO(verify, Ref 6.0): these two tests pin the CURRENT assumptions, not settled rules. docs/RULES.md lists as open
-  // whether a friendly unit cancels the enemy ZOC in its own hex (ZOC_POLICY.friendlyUnitNegates) and the cost of
-  // entering terrain (every hex costs 1 for now); the paths below rest on both.
-  it("a German stack at M32, next to a Polish unit, reaches M31 and M30 beyond it; ZOC hexes can be entered", () => {
-    const g = counter("g1", "germany", "infantry", 3, "M32", 3);
-    const p = counter("p1", "poland", "infantry", 2, "M33", 3);
-    const reach = reachableHexes(CTX, board([g, p], SCENARIO_1939, { activeSide: "axis" }), [g]);
-    expect(reach.has("M31")).toBe(true);
-    expect(reach.has("M30")).toBe(true);
-    expect(reach.has("L33")).toBe(true); // a hex inside the Polish ZOC can be entered
-    expect(reach.has("L32")).toBe(true);
-    expect(reach.has("K32")).toBe(true); // ...and from L32, outside the ZOC, the stack goes on
-  });
-
-  // TODO(verify, Ref 6.0): pins behaviour under the ALTERNATIVE setting of an open question (a friendly unit does not
-  // cancel the enemy ZOC in its hex), so that a stack that starts in an enemy ZOC still leaves it ("may leave one
-  // freely"). It asserts no settled rule; it exists so the start-hex test in reachableHexes is not hidden by the policy.
-  it("with friendlyUnitNegates false, a stack that starts inside the enemy ZOC still moves out", () => {
-    const g = counter("g1", "germany", "infantry", 3, "M32", 3);
-    const p = counter("p1", "poland", "infantry", 2, "M33", 3);
+describe("ground movement and enemy armor ZOC (Ref 7.0, spec 13)", () => {
+  it("a German stack at M32, next to a Polish armor unit, reaches hexes beyond it at the exit cost; ZOC hexes can be entered", () => {
+    const g = counter("g1", "germany", "infantry", 3, "M32", 4);
+    const p = counter("p1", "poland", "armor", 2, "M33", 3);
     const s = board([g, p], SCENARIO_1939, { activeSide: "axis" });
-    const zoc = enemyZocFor(CTX, s, "axis", { friendlyUnitNegates: false });
-    expect(zoc.has("M32")).toBe(true); // the start hex is in the ZOC under this setting
+    const zoc = enemyZocFor(CTX, s, "axis");
+    expect(zoc.has("M32")).toBe(true); // the start hex is in the armor's ZOC: the first step costs 2 more
     const reach = reachableHexes(CTX, s, [g], zoc);
-    expect(reach.has("M31")).toBe(true);
-    expect(reach.has("M30")).toBe(true);
-    expect(reach.has("L33")).toBe(true); // a ZOC hex is entered...
-    for (const [hex, path] of reach) for (const step of path.slice(0, -1)) expect(zoc.has(step), `${hex} via ${step}`).toBe(false); // ...and not left
+    expect(reach.has("M31")).toBe(true); // 2 + 1
+    expect(reach.has("L33")).toBe(true); // a ZOC hex is entered
+    expect(reach.has("M30")).toBe(true); // 2 + 1 + 1
+    expect(reach.has("M29")).toBe(false); // 2 + 1 + 1 + 1 is over the 4 factors
   });
 });
 

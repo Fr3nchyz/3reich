@@ -8,7 +8,7 @@ import type { LandTerrain } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
 import { atWar } from "./war";
 import { hasMoved } from "./move-record";
-import { adjacentHexes, canCross, enemyZocFor, zocPathProblem } from "./zoc";
+import { adjacentHexes, canCross, enemyZocFor, ZOC_EXIT_COST, zocExitCost } from "./zoc";
 
 /**
  * Ground movement at step 6f (Ref 5.45f, spec 03): which units can move, what a move may cross and
@@ -16,7 +16,7 @@ import { adjacentHexes, canCross, enemyZocFor, zocPathProblem } from "./zoc";
  *
  * The rule text in docs/RULES.md settles: a unit moves up to its movement factor in hexes along hexsides
  * ground units may cross (land hexsides and crossing arrows both ways, never Qattara, Ref 4.3, 4.6, 4.51),
- * a unit entering an enemy ZOC stops (Ref 6.0), stacking applies at the end (Ref 5.0). It does not settle:
+ * leaving a hex in enemy armor ZOC costs 2 extra movement factors (Ref 7.0, spec 13), stacking applies at the end (Ref 5.0). It does not settle:
  * TODO(verify, Ref 4.5): the cost of entering terrain (`TERRAIN_MOVE_COST`: 1 for every terrain; rivers and
  * crossing arrows cost nothing extra); TODO(verify, Ref 5.45f): that each unit moves once per Player Turn
  * (`ONE_MOVE_PER_TURN`); TODO(verify, Ref 13.0, 14.0, 17.0): that neutral land cannot be entered (`NEUTRAL_LAND_CLOSED`).
@@ -141,6 +141,8 @@ export function movePathProblem(ctx: GameContext, state: GameState, units: reado
   const mp = stackMovement(units);
   let at = start;
   let spent = 0;
+  let exited = false;
+  const zoc = enemyZocFor(ctx, state, sideInWar(state, owners[0]!) as Side);
   const seen = new Set<HexId>([start]);
   for (const hex of path) {
     if (seen.has(hex)) return `The path goes through ${hex} twice.`;
@@ -149,23 +151,25 @@ export function movePathProblem(ctx: GameContext, state: GameState, units: reado
     if (!canCross(ctx, at, hex)) return `Ground units cannot cross from ${at} into ${hex}: that hexside is water or the Qattara Depression.`;
     const blocked = entryProblem(ctx, state, owners, hex);
     if (blocked) return blocked;
-    spent += entryCost(ctx, hex);
-    if (spent > mp) return `The move costs ${spent} movement points; the slowest unit has ${mp}.`;
+    const exit = zocExitCost(zoc, at);
+    spent += exit + entryCost(ctx, hex);
+    exited ||= exit > 0;
+    if (spent > mp) return `The move costs ${spent} movement points${exited ? ` (leaving an enemy zone of control costs ${ZOC_EXIT_COST} more)` : ""}; the slowest unit has ${mp}.`;
     at = hex;
   }
-  return zocPathProblem(ctx, state, sideInWar(state, owners[0]!) as Side, path) ?? endProblem(ctx, state, units, at);
+  return endProblem(ctx, state, units, at);
 }
 
 /**
  * The hexes the stack can reach this Player Turn and the cheapest path to each (start excluded), a shortest path by cost,
- * ties broken by the fixed order of neighbours. A hex in an enemy ZOC can be entered but not left (Ref 6.0). Where it may
- * end is a separate question (`endProblem`). `zoc` is the side's enemy ZOC, passed in when many stacks are asked at once.
+ * ties broken by the fixed order of neighbours. Leaving a hex in enemy armor ZOC costs 2 extra (Ref 7.0), including the first step.
+ * Where it may end is a separate question (`endProblem`). `zoc` is the side's enemy ZOC, passed in when many stacks are asked at once.
  */
 export function reachableHexes(ctx: GameContext, state: GameState, units: readonly Unit[], zoc?: ReadonlySet<HexId>): Map<HexId, HexId[]> {
   const start = units[0]!.at;
   const owners = [...new Set(units.map((u) => u.owner))];
   const mp = stackMovement(units);
-  const stops = zoc ?? enemyZocFor(ctx, state, sideInWar(state, owners[0]!) as Side);
+  const inZoc = zoc ?? enemyZocFor(ctx, state, sideInWar(state, owners[0]!) as Side);
   const best = new Map<HexId, { cost: number; path: HexId[] }>([[start, { cost: 0, path: [] }]]);
   const blocked = new Map<HexId, boolean>();
   const closed = (hex: HexId): boolean => blocked.get(hex) ?? blocked.set(hex, entryProblem(ctx, state, owners, hex) !== null).get(hex)!;
@@ -177,11 +181,10 @@ export function reachableHexes(ctx: GameContext, state: GameState, units: readon
     const here = open.splice(k, 1)[0]!;
     if (done.has(here)) continue;
     done.add(here);
-    if (here !== start && stops.has(here)) continue;
     const now = best.get(here)!;
     for (const next of adjacentHexes(ctx, here)) {
       if (done.has(next) || !canCross(ctx, here, next) || closed(next)) continue;
-      const cost = now.cost + entryCost(ctx, next);
+      const cost = now.cost + zocExitCost(inZoc, here) + entryCost(ctx, next);
       if (cost > mp || (best.has(next) && best.get(next)!.cost <= cost)) continue;
       best.set(next, { cost, path: [...now.path, next] });
       open.push(next);

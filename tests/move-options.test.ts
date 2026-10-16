@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, legalActions } from "../src/engine/actions";
 import { moveOptionsFor, type MoveOptions } from "../src/engine/move-options";
-import { MIXED_NATIONS_MOVE_TOGETHER, STACKING_CHECKED_ONE_AT_A_TIME, STACK_MOVES_AT_SLOWEST_UNIT, movableUnits, reachableHexes } from "../src/engine/movement";
-import { adjacentHexes, enemyZocFor, zocPathProblem } from "../src/engine/zoc";
+import { MIXED_NATIONS_MOVE_TOGETHER, STACKING_CHECKED_ONE_AT_A_TIME, STACK_MOVES_AT_SLOWEST_UNIT, movableUnits, movePathProblem, reachableHexes } from "../src/engine/movement";
+import { adjacentHexes, enemyZocFor } from "../src/engine/zoc";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { CTX, ctxFor } from "./helpers";
 import { at6f, inf, movesIn } from "./helpers-move";
@@ -213,21 +213,29 @@ describe("open assumptions kept as named constants (TODO(verify), spec 10 engine
   });
 });
 
-describe("Zones of Control (Ref 6.0)", () => {
-  const pol = inf("p1", "poland", "M34", 2, 3);
+describe("Zones of Control (Ref 7.0, spec 13)", () => {
+  const pol = inf("p1", "poland", "M34", 2, 3, "armor");
 
-  it("a group entering an enemy ZOC stops there: nothing beyond is listed", () => {
+  it("a group entering an enemy armor ZOC may go on, paying 2 more to leave it: every listed path is a legal move", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 5), inf("u2", "germany", "L32", 3, 5), pol]);
     const o = must(moveOptionsFor(CTX, s, ["u1", "u2"]));
     expect(dests(o)).toContain("L34");
-    // L35 can still be reached around the ZOC, but never through it.
-    for (const d of o.destinations) expect(zocPathProblem(CTX, s, "axis", d.path), d.to).toBeNull();
+    expect(dests(o)).toContain("L35");
+    for (const d of o.destinations) expect(movePathProblem(CTX, s, [s.units.u1!, s.units.u2!], d.path), d.to).toBeNull();
+  });
+
+  it("a slower group cannot afford the exit: at 4 factors L35 is out of reach through the ZOC hex", () => {
+    const s = at6f([inf("u1", "germany", "L32", 3, 4), pol]);
+    const o = must(moveOptionsFor(CTX, s, ["u1"]));
+    expect(dests(o)).toContain("L34");
     expect(o.destinations.find((d) => d.to === "L35")?.path ?? []).not.toContain("L34");
   });
 
-  it("a ticked unit standing in an enemy ZOC may leave it", () => {
+  it("a ticked unit standing in an enemy ZOC may leave it, paying 2 more", () => {
     const s = at6f([inf("u1", "germany", "L34", 3, 4), pol]);
-    expect(dests(must(moveOptionsFor(CTX, s, ["u1"])))).toEqual(expect.arrayContaining(["L33", "L35"]));
+    expect(dests(must(moveOptionsFor(CTX, s, ["u1"])))).toEqual(expect.arrayContaining(["L33"]));
+    const slow = at6f([inf("u1", "germany", "L34", 3, 2), pol]);
+    expect(dests(must(moveOptionsFor(CTX, slow, ["u1"])))).toEqual([]);
   });
 });
 
