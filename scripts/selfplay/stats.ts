@@ -51,7 +51,7 @@ export class TurnTally {
   constructor(readonly label: string) {
     this.t = {
       label, brp: zero(() => 0), spent: zero(() => 0), spentOn: { war: 0, build: 0, grant: 0, option: 0, other: 0 }, wars: [], built: 0, builtList: [], grants: 0, grantAmount: 0,
-      moves: 0, unitsMoved: 0, movedBy: { axis: 0, allies: 0 }, ground: { axis: 0, allies: 0 }, combats: { total: 0, attackerEliminated: 0, defenderEliminated: 0, exchange: 0 }, attacks: { axis: 0, allies: 0 }, lost: { axis: 0, allies: 0 }, lostFactors: { axis: 0, allies: 0 },
+      moves: 0, unitsMoved: 0, movedBy: { axis: 0, allies: 0 }, ground: { axis: 0, allies: 0 }, combats: { total: 0, attackerEliminated: 0, defenderEliminated: 0, exchange: 0 }, attacks: { axis: 0, allies: 0 }, lost: { axis: 0, allies: 0 }, lostUnsupplied: { axis: 0, allies: 0 }, lostFactors: { axis: 0, allies: 0 },
       hexChanges: 0, hexes: { axis: 0, allies: 0, neutral: 0 }, objectives: { axis: 0, allies: 0, neutral: 0 }, units: { axis: 0, allies: 0 }, factors: { axis: 0, allies: 0 }, frontOptions: [], actions: 0, partial: false,
     };
   }
@@ -88,6 +88,7 @@ export class TurnTally {
         case "OVERSTACK_ELIMINATED": {
           const side: Side = sideOfOwner(e.owner);
           t.lost[side]++;
+          if (e.type === "UNIT_ELIMINATED" && e.reason === "unsupplied") t.lostUnsupplied[side]++;
           const u = before.units[e.unitId];
           if (u && FACTOR_TYPES.includes(u.type)) t.lostFactors[side] += u.strength;
           break;

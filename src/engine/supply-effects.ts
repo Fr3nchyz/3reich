@@ -22,6 +22,8 @@ import { ZOC_UNIT_TYPES } from "./zoc";
  * not built: the U.S.A. fallback, Greek islands, Tangiers.
  */
 export const SUPPLY_EFFECTS_ENABLED = false;
+/** Whether the supply effects apply in this game: the context's own setting (tests, self-play), otherwise `SUPPLY_EFFECTS_ENABLED`. */
+export const supplyEffectsOn = (ctx: GameContext): boolean => ctx.supplyEffects ?? SUPPLY_EFFECTS_ENABLED;
 export const UNSUPPLIED_CANNOT_MOVE = true;
 export const UNSUPPLIED_CANNOT_ADVANCE = true;
 export const ELIMINATE_ONLY_IF_CUT_OFF_AT_START = true;
@@ -31,7 +33,7 @@ const cutOff = (ctx: GameContext, state: GameState): string[] =>
   unsuppliedUnits(ctx, state, state.activeSide).filter((id) => state.units[id] && ZOC_UNIT_TYPES.includes(state.units[id].type));
 
 /** A Player Turn begins: remember which of the side's ground units are cut off. */
-export function recordUnsupplied(ctx: GameContext, state: GameState, enabled: boolean = SUPPLY_EFFECTS_ENABLED): GameState {
+export function recordUnsupplied(ctx: GameContext, state: GameState, enabled: boolean = supplyEffectsOn(ctx)): GameState {
   if (!enabled) return state;
   const ids = cutOff(ctx, state);
   if (ids.length === 0 && state.unsuppliedAtStart === undefined) return state;

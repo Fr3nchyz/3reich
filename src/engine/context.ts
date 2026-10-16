@@ -11,4 +11,6 @@ export interface GameContext {
   scenario: Scenario;
   /** Steps whose rules are built (default: IMPLEMENTED_STEPS in sequence.ts, which wait only while there is something to do). A test may set it, and then every listed step waits. */
   implementedSteps?: ReadonlySet<string>;
+  /** Whether the supply effects apply (Ref 19.4, 11.74, 12.21; supply-effects.ts). Absent: `SUPPLY_EFFECTS_ENABLED`, the shipped setting. Tests and the self-play runner set it to measure the effects without changing what ships. */
+  supplyEffects?: boolean;
 }

@@ -14,6 +14,8 @@ export interface RunOptions {
   stepLimit?: number;
   /** Most actions allowed in one Game Turn (default 8000). */
   turnLimit?: number;
+  /** Whether the supply effects apply (default: the shipped `SUPPLY_EFFECTS_ENABLED`); set in the game's context, `GameContext.supplyEffects`. */
+  supplyEffects?: boolean;
 }
 
 export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack";
@@ -48,6 +50,8 @@ export interface TurnStats {
   /** Attacks made by each side. */
   attacks: { axis: number; allies: number };
   lost: { axis: number; allies: number };
+  /** Of the units lost, those eliminated for being out of supply at the end of their Player Turn (Ref 19.4, 11.74). */
+  lostUnsupplied: { axis: number; allies: number };
   lostFactors: { axis: number; allies: number };
   hexChanges: number;
   hexes: { axis: number; allies: number; neutral: number };

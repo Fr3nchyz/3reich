@@ -10,9 +10,11 @@ export interface CliArgs {
   games: number;
   out: string;
   verify: boolean;
+  /** Whether the supply effects apply; absent: the shipped setting. */
+  supplyEffects?: boolean;
 }
 
-export const USAGE = "usage: npm run selfplay -- --scenario <1939|campaign|1942|1944|all> --turns <N|end> --seed <n> [--games k] [--out dir] [--no-verify]";
+export const USAGE = "usage: npm run selfplay -- --scenario <1939|campaign|1942|1944|all> --turns <N|end> --seed <n> [--games k] [--out dir] [--no-verify] [--supply-effects on|off]";
 
 /** The seeds the engine accepts (newGame). */
 export const MAX_SEED = 0xffffffff;
@@ -50,6 +52,11 @@ export function parseArgs(argv: readonly string[], root: string = process.cwd())
         break;
       }
       case "--no-verify": args.verify = false; break;
+      case "--supply-effects":
+        if (value !== "on" && value !== "off") throw new Error(`--supply-effects is on or off, got ${value === undefined ? "nothing" : `"${value}"`}. ${USAGE}`);
+        args.supplyEffects = value === "on";
+        i++;
+        break;
       case "--": break;
       default: throw new Error(`Unknown argument ${flag}. ${USAGE}`);
     }
