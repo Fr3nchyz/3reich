@@ -192,9 +192,9 @@ Autosave, save slots and a save file, iPad support, a short in-app help page and
 
 ## Next up, from play-test feedback (see FEEDBACK.md)
 
-Done: the Warsaw fix, tap-to-attack with an odds preview and a hex card, iPad zoom, watch mode, choosing which units of a stack move (first part). Order from here, by the owner (2026-10-15):
+Done: the Warsaw fix, tap-to-attack with an odds preview and a hex card, iPad zoom, watch mode, choosing which units of a stack move (spec 10, built end to end; awaiting Frank's view). Order from here, by the owner (2026-10-15):
 
-1. Finish choosing units of a stack (spec 10, tickets 10-5 to 10-9: ring marks, take back, why-not sentences, layout and keyboard checks).
+1. ~~Choosing units of a stack (spec 10, tickets 10-1 to 10-9).~~ Done 2026-10-16.
 2. Make the watch-mode "turbo repaint" browser test reliable and shorten the slow step-7h computer decision.
 3. Air units (spec: [09-air-units](specs/09-air-units.md), approved), then fleets (spec 12, not written).
 4. Computer opponent: a stall-breaking rule, then an evaluator and difficulty levels.

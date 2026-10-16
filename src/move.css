@@ -2,6 +2,7 @@
 .moves { display: flex; flex-direction: column; gap: .9rem; }
 .movecard, .movelist { padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; scroll-margin-top: 5rem; }
 .movecard { border-left: 6px solid var(--gold); }
+@media (max-height: 480px) { .movecard, .movelist { scroll-margin-top: .4rem; } } /* a phone on its side: the Next bar is not sticky there, so nothing hides the top of the card */
 .movelist { border-left: 6px solid #b58a14; }
 .movecard h2, .movelist h2 { margin: 0; font-size: 1.1rem; }
 .movecard h2:focus { outline: none; }

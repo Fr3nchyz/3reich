@@ -176,6 +176,35 @@ test("no raw unit id is shown anywhere in the card or the list", async ({ page }
   expect((await page.locator(".moves").innerText()) + (await page.locator("#maptoast").innerText())).not.toMatch(/\bu\d+\b/);
 });
 
+test("keyboard only: Tab to a stack row, Enter opens the card, Space unticks a line, Tab reaches All and Cancel, Escape drops it", async ({ page }) => {
+  await load(page);
+  const row = page.locator('button.stack-row[data-stack="J36"]');
+  await row.focus();
+  await page.keyboard.press("Enter");
+  await expect(card(page).locator("h2")).toBeFocused();
+  for (const id of ["#move-cancel", "#move-all", "#move-none"]) {
+    await page.keyboard.press("Tab");
+    await expect(page.locator(id), `Tab reaches ${id}`).toBeFocused();
+  }
+  await page.keyboard.press("Tab");
+  await expect(lines(page).first()).toBeFocused();
+  await expect(lines(page).first()).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Space");
+  await expect(lines(page).first()).toHaveAttribute("aria-pressed", "false");
+  await expect(lines(page).first()).toBeFocused();
+  await page.keyboard.press("Space");
+  await expect(lines(page).first()).toHaveAttribute("aria-pressed", "true");
+  await page.locator("#move-none").focus();
+  await page.keyboard.press("Enter");
+  await expect(yellow(page)).toHaveCount(0);
+  await page.locator("#move-all").focus();
+  await page.keyboard.press("Enter");
+  expect(await yellow(page).count()).toBeGreaterThan(0);
+  await page.keyboard.press("Escape");
+  await expect(card(page)).toHaveCount(0);
+  await expect(moveLog(page)).toHaveCount(0);
+});
+
 test("watch mode: taps only inspect; no list and no card", async ({ page, hasTouch }) => {
   await page.goto("/");
   await page.locator("#side").selectOption("watch");
@@ -188,7 +217,7 @@ test("watch mode: taps only inspect; no list and no card", async ({ page, hasTou
   await expect(card(page)).toHaveCount(0);
 });
 
-const SIZES: readonly Pt[] = [[1024, 768], [1180, 820], [768, 1024], [390, 844]];
+const SIZES: readonly Pt[] = [[1024, 768], [1180, 820], [768, 1024], [390, 844], [844, 390], [1366, 1024], [1400, 1000]];
 for (const size of SIZES) {
   test(`${size[0]}x${size[1]}: the Next bar and the card's buttons stay in reach, every button is 44 px, the map stays on screen, nothing scrolls sideways`, async ({ page, hasTouch }) => {
     await load(page, size);
@@ -315,7 +344,7 @@ async function arriveAt6f(page: Page, size: Pt): Promise<void> {
   await expect(page.locator(".turn")).toContainText("step 6f");
 }
 
-for (const size of [[1024, 768], [1180, 820], [768, 1024], [390, 844]] as const) {
+for (const size of [[1024, 768], [1180, 820], [768, 1024], [390, 844], [844, 390], [1366, 1024], [1400, 1000]] as const) {
   test(`${size[0]}x${size[1]}: arriving at step 6f brings the Next bar and the list of stacks into view`, async ({ page }) => {
     await arriveAt6f(page, size);
     const bar = page.locator(".nextbar");
