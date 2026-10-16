@@ -31,6 +31,15 @@ function bottomEdge(card: HTMLElement): number {
   return window.innerHeight;
 }
 
+/**
+ * Scrolls a choice card (losses, advance) to the top of the area as soon as it does not fit in it, so its options are not left under its own
+ * button bar; a card that fits where it is stays put. The card is what the game waits for, so it gets the room.
+ */
+export function showChoice(card: HTMLElement): void {
+  const r = card.getBoundingClientRect();
+  if (r.top < topEdge(card) || r.bottom > bottomEdge(card)) card.scrollIntoView({ block: "start" });
+}
+
 /** The height the first row of "Attacks you can make" needs to count as shown. */
 const ROW_PEEK = 56;
 
@@ -74,5 +83,5 @@ export function revealFresh(root: HTMLElement, s: { attack?: { fresh: boolean } 
   if (which === "attack") s.attack!.fresh = false;
   else if (which === "result") s.battle!.fresh = false;
   const heading = root.querySelector<HTMLElement>(which === "choice" ? "#choice-title-0" : `#${which}-title`);
-  if (heading) revealHeading(heading, showTop);
+  if (heading) revealHeading(heading, which === "choice" ? showChoice : showTop);
 }
