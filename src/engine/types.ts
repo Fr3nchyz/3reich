@@ -296,6 +296,8 @@ export interface GameState {
   frontOptions: Partial<Record<Front, FrontChoice>>;
   /** Hexes that currently have Fortress status (Ref 4.8). */
   fortresses: Record<HexId, boolean>;
+  /** Ids of the side-to-move's ground units that were out of supply when its Player Turn began (Ref 19.4, 12.21); they cannot move or advance, and are eliminated at the end of the turn if still cut off. Absent: none. */
+  unsuppliedAtStart?: string[];
   /** Ground combat so far in the current Player Turn (step 7h); absent until the first attack. */
   combat?: CombatRecord;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */

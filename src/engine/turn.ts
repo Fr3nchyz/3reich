@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { refreshFortresses } from "./fortress";
+import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
@@ -53,7 +54,7 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
 
 /** A Player Turn begins: spending starts again from nothing, Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending(state))));
+  return scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending(state)))));
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
@@ -82,7 +83,9 @@ export function advance(ctx: GameContext, state: GameState): Transition {
     case "player-turn": {
       const step = nextStepId(pos.step);
       if (step) return { state: { ...state, position: { ...pos, step } }, events: [] };
-      return pos.turn === 1 ? secondPlayerTurn(ctx, state) : endGameTurn(state);
+      const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
+      const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ended.state);
+      return { state: next.state, events: [...ended.events, ...next.events] };
     }
   }
 }
