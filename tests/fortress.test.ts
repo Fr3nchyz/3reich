@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { attackNumbers } from "../src/engine/attack-rules";
+import { enterHexes } from "../src/engine/control";
 import { refreshFortresses } from "../src/engine/fortress";
 import { adjacentHexes } from "../src/engine/zoc";
 import type { GameState } from "../src/engine/types";
@@ -79,6 +80,19 @@ describe("which hexes are Fortresses (Ref 4.8)", () => {
   it("returns the same object when nothing changes", () => {
     const once = refreshFortresses(CTX, board([]));
     expect(refreshFortresses(CTX, once)).toBe(once);
+  });
+});
+
+describe("the status goes the moment an enemy ground unit enters (Ref 4.8)", () => {
+  it("a German unit entering Metz (P24) ends its status in the same Player Turn; entering Gibraltar does not", () => {
+    const base = refreshFortresses(CTX, board([]));
+    const unit = counter("g1", "germany", "infantry", 3, "P24", 4);
+    const taken = enterHexes(CTX, base, unit, ["P24"]);
+    expect(taken.state.control.P24).toBe("germany");
+    expect(taken.state.fortresses.P24).toBe(false);
+    expect(taken.state.fortresses.Q24).toBe(true);
+    const gib = enterHexes(CTX, base, unit, ["GG19"]);
+    expect(gib.state.fortresses.GG19).toBe(true);
   });
 });
 

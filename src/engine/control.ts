@@ -95,6 +95,7 @@ export function controlAfterEntry(ctx: GameContext, state: GameState, unit: Pick
 /** Records the control changes of a unit entering these hexes in order (nothing moves the unit here). Logs each change. */
 export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes: readonly HexId[]): { state: GameState; events: GameEvent[] } {
   let control = state.control;
+  let fortresses = state.fortresses;
   const events: GameEvent[] = [];
   for (const hex of hexes) {
     const now = control[hex] ?? startingControl(ctx).get(hex) ?? null;
@@ -102,6 +103,12 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
     if (to === null) continue;
     control = { ...control, [hex]: to };
     events.push({ type: "HEX_CONTROL_CHANGED", hex, from: now, to, unitId: unit.id });
+    // Ref 4.8: a Fortress (other than Malta, Gibraltar and Sevastopol, which fortress.ts decides) loses the status for good when an enemy occupies it.
+    const kind = ctx.map.hexes[hex]?.fortress;
+    const owner = startingControl(ctx).get(hex);
+    if (fortresses[hex] === true && (kind === "standard" || kind === "maginot" || kind === "west-wall") && owner !== undefined && areEnemies(state, to, owner)) {
+      fortresses = { ...fortresses, [hex]: false };
+    }
   }
-  return { state: events.length ? { ...state, control } : state, events };
+  return { state: events.length ? { ...state, control, fortresses } : state, events };
 }

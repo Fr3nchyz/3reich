@@ -5,8 +5,9 @@ import type { GameState } from "./types";
 
 /**
  * Fortress status (Ref 4.8, spec 04). `GameState.fortresses[hex]` is true while a hex is a Fortress and false once it has lost the status for good;
- * absent means "not a Fortress (yet)". It is refreshed at the start of every Player Turn (`refreshFortresses`, called by turn.ts), so a hex
- * taken by an enemy keeps its status until the next Player Turn begins, which is soon enough: the next attack on it comes from the other side.
+ * absent means "not a Fortress (yet)". `enterHexes` (control.ts) ends the status the moment an enemy ground unit enters a Fortress; `refreshFortresses`
+ * (called by turn.ts when each Player Turn begins) sets the statuses that depend on the date and the nation (West Wall, Maginot Line, Sevastopol, Malta
+ * and Gibraltar) and catches any other loss.
  *
  * Rules built from Ref 4.8: Malta and Gibraltar are always Fortresses. Every other Fortress loses the status for good as soon as an enemy
  * occupies it (here: when its controller fights on the other side from the one whose territory it was at the start). Maginot-Line hexes are not
