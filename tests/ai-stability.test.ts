@@ -33,7 +33,7 @@ describe("fixed-seed play is stable", () => {
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
 // Winter 1940 or Spring 1941 (every enemy objective on its land was taken, the U.S.S.R. was not yet at war); now it walks to the border.
 // Known gap, TODO(spec 05, the computer's stall rule): on seed 13 the Axis declares on the U.S.S.R. in Summer 1941 and then neither moves nor attacks that turn.
-// It used to pass only because a Replacement counter made one attack; Replacements may not attack except in a Counterattack (Ref 12.1, PC Reference Manual).
+// Before Replacements were barred from attacking (Ref 12.1, PC Reference Manual) the play diverged earlier and the Axis acted that turn, so the guard passed by luck, not by design.
 const STILL_IDLE: Record<number, string[]> = { 13: ["Summer 1941"] };
 describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenario, seeds 5, 12, 13)", () => {
   for (const seed of [5, 12, 13]) {
