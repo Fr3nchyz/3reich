@@ -47,11 +47,16 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 
 ## Follow-ups found by independent reviews (open, small)
 
-- The advance card is cramped on a phone-width screen (Stay wraps under Advance; the sticky footer covers the second loss option until you scroll).
-- `lossOptions` accepts only the loss sets the engine lists (at most 100); a very large stack with many equivalent sets could hide a legal one. Add a fallback or a note.
-- The "nothing selected" note also shows on the computer's turn and at step 3, where nothing can be chosen; on the smallest landscape phone screen it hides the refused-move line for 4 seconds.
-- A test is missing for "the computer attacks and the human chooses the losses" (the case works in a trial).
-- A stack cannot be moved onto one of your own stacks that has not moved yet, because tapping it re-chooses it (seen in 1942, Buerat armor to Tripoli).
+- The advance card is cramped on a phone-width screen (Stay wraps under Advance; the sticky footer covers the second loss option until you scroll). Fixed (#92): Stay sits beside Advance down to 320 px, the confirm bar no longer sticks on a phone on its side, and a card that does not fit is scrolled to the top; Playwright check at 390x844 and 844x390.
+- `lossOptions` accepts only the loss sets the engine lists (at most 100); a very large stack with many equivalent sets could hide a legal one. Fixed (#92): the card asks the engine's own check (`lossSetError`, also used by `applyAllocation`), so any valid set can be confirmed.
+- The "nothing selected" note also shows on the computer's turn and at step 3, where nothing can be chosen; on the smallest landscape phone screen it hides the refused-move line for 4 seconds. Fixed (#92): the line over the map shows only at step 6f of your own turn (and in setup); the words are still spoken on the status line.
+- A test is missing for "the computer attacks and the human chooses the losses" (the case works in a trial). Done: the case was already covered by `tests/choice-computer-attack.test.ts` (#72); #92 adds the refusals (wrong side, too little, a spare unit, a foreign unit).
+- A stack cannot be moved onto one of your own stacks that has not moved yet, because tapping it re-chooses it (seen in 1942, Buerat armor to Tripoli). Not a bug now: the "Where they can go" list (spec 10, ticket 10-7, "As built") moves the ticked units onto such a hex, and tapping still re-chooses by design. Checked by a test in `tests/move-where.test.ts` (#92).
 - "These units cannot get there together" is plural for a one-unit stack and misleading on an enemy hex (done in spec 10, ticket 10-7; was: ticket 10-7).
-- The engine has no "decline the advance" action; Stay only hides the card.
+- The engine has no "decline the advance" action; Stay only hides the card. Proposal, not built (needs a design decision):
+  - Add `DECLINE_ADVANCE { side, to }` to the engine; it removes that entry from `combat.advances`, so the offer is gone for good and is part of the record.
+  - Stay would send it, so a saved or replayed game shows the choice and the card cannot come back after a reload or an undo.
+  - Open question for the owner: may a player decline and then change their mind later in the same step? Today Stay is reversible only by the offer staying open.
+  - Cost: one action type, one `legalActions` entry per open advance, `applyAction` and log text, and the computer player must choose it too (today it advances or ignores).
+  - Until decided, Stay stays a screen-only "put away", as `choiceTap.ts` says.
 - A manual pass of the loss-choice cards and the move card on a real iPad is still to do.
