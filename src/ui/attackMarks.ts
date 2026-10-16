@@ -13,6 +13,8 @@ export interface AttackMarksInput {
   chosen?: string | null;
   /** Hexes holding units that attack the chosen target. */
   attackers?: Iterable<string>;
+  /** Spec 10 (ticket 10-5): the hex the units to move stand in (step 6f). A thick outline; never set together with targets at one step. */
+  from?: string | null;
 }
 
 export interface AttackMarkCells {
@@ -21,6 +23,8 @@ export interface AttackMarkCells {
   chosen: string | null;
   /** Attacker hexes, once each, in the order given; the chosen target is never one (it is the enemy's hex). */
   attackers: string[];
+  /** The hex a move is chosen from, or null. */
+  from: string | null;
 }
 
 /** Hexes that are not on the map are dropped, so a stale id can never draw outside it. */
@@ -28,5 +32,6 @@ export function attackMarkCells(map: MapData, input: AttackMarksInput | null | u
   const onMap = (id: string): boolean => map.hexes[id] !== undefined;
   const chosen = input?.chosen && onMap(input.chosen) ? input.chosen : null;
   const unique = (ids: Iterable<string> | undefined): string[] => [...new Set(ids ?? [])].filter((id) => onMap(id) && id !== chosen);
-  return { targets: unique(input?.targets), chosen, attackers: unique(input?.attackers) };
+  const from = input?.from && onMap(input.from) ? input.from : null;
+  return { targets: unique(input?.targets), chosen, attackers: unique(input?.attackers), from };
 }

@@ -122,6 +122,7 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="highlights"></g>
       <g class="attack-marks" aria-hidden="true"></g>
       <g class="units"></g>
+      <g class="unit-marks" aria-hidden="true"></g>
       <polygon class="hover" points="" />
     </svg>`;
 }

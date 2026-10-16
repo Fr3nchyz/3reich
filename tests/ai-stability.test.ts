@@ -1,4 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { chooseAction } from "../src/ai";
+import { createMemory } from "../src/ai/memory";
+import { applyAction, legalActions } from "../src/engine/actions";
+import { autoSetup } from "../src/engine/autosetup";
+import { newGame, turnIndex } from "../src/engine/game";
+import { MAP } from "../src/data/map";
+import { SCENARIOS } from "../scripts/selfplay/scenarios";
 import { churnRuns, idleTurns } from "../scripts/selfplay/report";
 import { runGame } from "../scripts/selfplay/runner";
 import type { ScenarioKey } from "../scripts/selfplay/scenarios";
@@ -16,6 +23,10 @@ const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => f
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2511506607));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3946485592));
+  it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
+    expect(hashOf("1939", 5, 4)).toBe(812001494);
+    expect(hashOf("1939", 2, 4)).toBe(2041899447);
+  });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2511506607));
 });
 
@@ -51,5 +62,35 @@ describe("the churn counter (self-play report)", () => {
     expect(churnRuns(run)).toEqual(["axis A to C (3 Game Turns, 52 units moved)"]);
     expect(churnRuns([turn("A", 9, 0), turn("B", 29, 0), turn("C", 14, 1), turn("D", 9, 0)])).toEqual([]);
     expect(churnRuns([turn("A", 9, 0), turn("B", 4, 0), turn("C", 14, 0)])).toEqual([]);
+  });
+});
+
+// The lists the engine offers at step 7h (attacks, advances, losses) are what the computer chooses from; the advance list used to take
+// 300-450 ms to build when a battle left a dozen survivors. A faster build must list exactly the same actions in the same order.
+describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game Turns)", () => {
+  it("hash of every list at every 7h position along the computer's play", () => {
+    const ctx = { map: MAP, scenario: SCENARIOS["1939"] };
+    let state = newGame(ctx.scenario, 5);
+    for (const a of autoSetup(ctx, state)) {
+      const r = applyAction(ctx, state, a);
+      if (r.ok) state = r.state;
+    }
+    const memory = createMemory();
+    const end = turnIndex(state) + 4;
+    let lists = 0;
+    let h = 0;
+    for (let n = 0; n < 5000 && state.phase === "player-turn" && turnIndex(state) < end; n++) {
+      if (state.position?.part === "player-turn" && state.position.step === "7h") {
+        lists++;
+        h = fnv(`${h}${JSON.stringify(legalActions(ctx, state))}`);
+      }
+      const d = chooseAction(ctx, state, { seed: 5, memory });
+      if (!d) break;
+      const r = applyAction(ctx, state, d.action);
+      if (!r.ok) throw new Error(r.error);
+      state = r.state;
+    }
+    expect(lists).toBeGreaterThan(20);
+    expect(h).toBe(3126842618);
   });
 });

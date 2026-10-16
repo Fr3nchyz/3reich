@@ -8,24 +8,24 @@ import { OWNER_COLOURS, counterNumber, darken } from "./mapStyle";
 /** The SVG text of the counters and of the highlighted hexes, redrawn whenever the game changes. */
 
 /** Counter size on the map, in SVG units: a square of cardboard, as on the printed board. */
-const COUNTER_SIZE = 12.4;
+export const COUNTER_SIZE = 12.4;
 /** A counter's top-left corner sits this far left of and above the hex centre. */
-const COUNTER_LEFT = COUNTER_SIZE / 2;
-const COUNTER_ABOVE = COUNTER_SIZE / 2 + 0.4;
+export const COUNTER_LEFT = COUNTER_SIZE / 2;
+export const COUNTER_ABOVE = COUNTER_SIZE / 2 + 0.4;
 /** The unit symbol is drawn this far below the counter's top edge (its centre), and the numbers this far above its bottom edge. */
 const SYMBOL_DROP = 4.3;
-const NUMBER_RISE = 1.5;
+export const NUMBER_RISE = 1.5;
 /** The shadow under a counter is offset by this much to the right and below. */
 const SHADOW = 0.8;
 /** Each counter in a stack is drawn this much up and to the right of the one below it. */
-const STACK_STEP = 1.3;
+export const STACK_STEP = 1.3;
 /** At most this many counters of a stack are drawn; the rest show as "+n". */
-const STACK_SHOWN = 4;
+export const STACK_SHOWN = 4;
 /** The "+n" for hidden counters sits this far right of and below the hex centre. */
 const MORE_OFFSET = 7;
 
 /** Counters grouped by the map hex they stand in; off-map boxes are listed outside the map. */
-function stacksOnMap(map: MapData, units: readonly Unit[]): Map<string, Unit[]> {
+export function stacksOnMap(map: MapData, units: readonly Unit[]): Map<string, Unit[]> {
   const stacks = new Map<string, Unit[]>();
   for (const u of units) {
     if (!map.hexes[u.at]) continue;

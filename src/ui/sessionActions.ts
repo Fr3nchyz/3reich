@@ -100,6 +100,7 @@ export function takeAction(s: Session, action: Action): void {
   s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
   s.moveChosen = null;
+  s.undo = null; // any step button that is not a move ends what "Take back last move" can undo (spec 10, 10-6)
   run(s, action);
 }
 

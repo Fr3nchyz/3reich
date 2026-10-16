@@ -40,11 +40,15 @@ export function whereText(s: Session): string {
  */
 export function watchSlice(s: Session, now: () => number = () => performance.now()): void {
   const started = now();
+  let lastCost = 0;
   for (let n = 0; s.watch && shouldRun(s.watch, s.state) && n < actionsPerSlice(s.watch); n++) {
-    if (n > 0 && now() - started >= SLICE_MS) return;
+    // Another action only if the last one's cost fits in what is left of the slice: after a slow action the page repaints first.
+    const before = now();
+    if (n > 0 && (before - started >= SLICE_MS || lastCost > SLICE_MS - (before - started))) return;
     let result: ReturnType<typeof computerAct>;
     try {
       result = computerAct(s);
+      lastCost = now() - before;
     } catch (e) {
       s.watch = markStuck(s.watch, "exception", (e as Error).message);
       return;

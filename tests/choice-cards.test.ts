@@ -9,7 +9,8 @@ import { confirmAttack, openAttack } from "../src/ui/attackTap";
 import { confirmAdvance, confirmLosses, normaliseChoice, openOffers, pickedAdvance, pickedLosses, pickLossWay, stayOut, toggleAdvance, toggleLoss } from "../src/ui/choiceTap";
 import { choiceHtml } from "../src/ui/choiceView";
 import { e2eFixtureSession } from "./preview-helpers";
-import { MAX_GROUPS, lossModel, ownPending } from "../src/ui/lossOptions";
+import { MAX_GROUPS, legalSets, lossModel, ownPending } from "../src/ui/lossOptions";
+import { applyAllocation, legalAllocations } from "../src/engine/attack-losses";
 import { nextText } from "../src/ui/nextBar";
 import { createSession, type Session } from "../src/ui/session";
 import { attackHtml } from "../src/ui/attackView";
@@ -94,6 +95,21 @@ describe("Choose your losses: the model", () => {
     expect(m.groups).toHaveLength(MAX_GROUPS);
     expect(m.moreGroups).toBe(true);
   });
+
+  it("documents the 100-set limit (attack-losses.ts): past 100 ways only the first 100 are offered, and the card refuses a valid set beyond them", () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => GER(`s${i}`, "M32", 1));
+    const state = withPending(twelve, { candidates: twelve.map((u) => u.id), values: Object.fromEntries(twelve.map((u) => [u.id, 1])), required: 6 });
+    const listed = legalAllocations(state);
+    expect(listed).toHaveLength(100); // C(12, 6) = 924 minimal sets; only the first 100 in walk order are listed
+    const past = ["s6", "s7", "s8", "s9", "s10", "s11"]; // a valid set, but not among the first 100
+    expect(legalSets(listed).some((ids) => ids.join() === past.join())).toBe(false);
+    expect(applyAllocation(state, { type: "ALLOCATE_LOSSES", side: "axis", units: past }).ok, "the engine accepts it").toBe(true);
+    const m = lossModel(CTX, state, "axis", listed, past)!;
+    expect(m.legal, "the card does not").toBe(false);
+    expect(m.total).toBe("Chosen 6 of at least 6 factors: more than the Exchange takes. Take one off.");
+    expect(m.button).toEqual({ text: "Take one unit off to lose exactly enough", disabled: true });
+    expect(lossModel(CTX, state, "axis", listed, legalSets(listed)[0]!)!.legal).toBe(true);
+  });
 });
 
 describe("Advance into <place>?: the model", () => {
@@ -131,10 +147,18 @@ describe("Advance into <place>?: the model", () => {
     const a = acts(s);
     const survivors = combatOf(s.state).advances[0]!.units;
     if (survivors.length >= 3) {
-      expect(advanceModel(s.ctx, s.state, a, "M33", survivors)!.button).toEqual({ text: `These ${survivors.length} units do not all fit in Poznan (M33)`, disabled: true });
+      expect(advanceModel(s.ctx, s.state, a, "M33", survivors)!.button).toEqual({ text: `${survivors.length} units do not all fit in Poznan (M33)`, disabled: true });
     }
     expect(advanceModel(s.ctx, s.state, a, "M33", [])!.button).toEqual({ text: "Choose at least one unit to advance", disabled: true });
     expect(advanceModel(s.ctx, s.state, a, "M33", [survivors[0]!])!.button).toEqual({ text: "Advance 1 unit into Poznan (M33)", disabled: false });
+  });
+
+  it("a refused choice of one or two units reads with the right number and verb ('1 unit does not fit', '2 units do not all fit')", () => {
+    const s = won();
+    const a = acts(s);
+    // Ids no ADVANCE lists: the card refuses the set and words it by its size.
+    expect(advanceModel(s.ctx, s.state, a, "M33", ["no-such-unit"])!.button).toEqual({ text: "1 unit does not fit in Poznan (M33)", disabled: true });
+    expect(advanceModel(s.ctx, s.state, a, "M33", ["no-such-a", "no-such-b"])!.button).toEqual({ text: "2 units do not all fit in Poznan (M33)", disabled: true });
   });
 
   it("is null for a hex that is not offered", () => {

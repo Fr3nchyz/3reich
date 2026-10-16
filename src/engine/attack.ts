@@ -80,15 +80,28 @@ function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string
  * considered (at most six hexes of two units can attack one hex), which bounds the subsets listed.
  */
 function legalAdvances(ctx: GameContext, state: GameState): Action[] {
-  const out: Action[] = [];
+  const found: { mask: number; action: Action }[] = [];
   for (const chance of combatOf(state).advances) {
     const ids = chance.units.filter((id) => state.units[id]).slice(0, 12);
-    for (let mask = 1; mask < 1 << ids.length; mask++) {
-      const pick = ids.filter((_, i) => mask & (1 << i));
-      if (!advanceProblem(ctx, state, pick, chance.to)) out.push({ type: "ADVANCE", side: state.activeSide, units: pick, to: chance.to });
-    }
+    // A set is listed when advanceProblem finds nothing, and that adds its units one at a time in this order, so a set
+    // fits only if the same set without its last unit fits and that unit then fits on top. Walking the sets that way
+    // checks each fitting set once (and never looks at a set whose start fails) instead of re-checking every subset
+    // from its first unit; the sets are then listed by their bit mask as before.
+    const walk = (s: GameState, from: number, mask: number): void => {
+      for (let i = from; i < ids.length; i++) {
+        const id = ids[i]!;
+        const u = s.units[id]!;
+        if (stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to)) continue;
+        const next = mask | (1 << i);
+        found.push({ mask: next, action: { type: "ADVANCE", side: state.activeSide, units: ids.filter((_, k) => next & (1 << k)), to: chance.to } });
+        walk({ ...s, units: { ...s.units, [id]: { ...u, at: chance.to } } }, i + 1, next);
+      }
+    };
+    const start = found.length;
+    walk(state, 0, 0);
+    found.splice(start, found.length - start, ...found.slice(start).sort((a, b) => a.mask - b.mask));
   }
-  return out;
+  return found.map((f) => f.action);
 }
 
 /** The step's actions: the losses to choose while an Exchange waits, otherwise attacks and advances. */

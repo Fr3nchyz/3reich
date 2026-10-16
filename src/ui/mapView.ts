@@ -6,7 +6,9 @@ import { highlightsMarkup, unitsMarkup } from "./mapCounters";
 import { cornersOf, hexCenter, points } from "./mapGeometry";
 import { overlayMarkup } from "./mapOverlay";
 import type { AttackMarksInput } from "./attackMarks";
+import type { UnitMarks } from "./moveMarks";
 import { attackMarksMarkup } from "./mapMarks";
+import { unitMarksMarkup } from "./mapUnitMarks";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
@@ -30,7 +32,8 @@ export interface MapViewOptions {
 
 export interface MapView {
   setFronts(on: boolean): void;
-  setUnits(units: readonly Unit[]): void;
+  /** Draw the counters; `marks` (spec 10, 10-5) puts a ringed badge under each ticked counter and a dash under each left-behind one of the hex chosen to move from (own group above the counters). */
+  setUnits(units: readonly Unit[], marks?: UnitMarks): void;
   /** Outline these hexes (places where the selected counter may go); `further` are drawn in a second shade (spec 10: where a faster unit alone could go). */
   setHighlights(ids: Iterable<string>, further?: Iterable<string>): void;
   /** Draw who holds each hex and the Zones of Control (see overlayModel.ts); null clears the overlay. */
@@ -60,6 +63,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const hover = svg.querySelector<SVGPolygonElement>("polygon.hover")!;
   const tint = svg.querySelector<SVGGElement>("g.front-tint")!;
   const unitLayer = svg.querySelector<SVGGElement>("g.units")!;
+  const unitMarksLayer = svg.querySelector<SVGGElement>("g.unit-marks")!;
   const overlayLayer = svg.querySelector<SVGGElement>("g.overlay")!;
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
   const marksLayer = svg.querySelector<SVGGElement>("g.attack-marks")!;
@@ -86,7 +90,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
 
   return {
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
-    setUnits: (units) => { unitLayer.innerHTML = unitsMarkup(map, units); },
+    setUnits: (units, marks) => { unitLayer.innerHTML = unitsMarkup(map, units); unitMarksLayer.innerHTML = marks ? unitMarksMarkup(map, units, marks) : ""; },
     setHighlights: (ids, further) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined, further); },
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     setAttackMarks: drawMarks,

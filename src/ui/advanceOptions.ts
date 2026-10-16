@@ -65,6 +65,6 @@ export function advanceModel(ctx: GameContext, state: GameState, actions: readon
     chips: units.map((u): AdvanceChip => ({ id: u.id, name: unitName(u), from: placeName(ctx.map, u.at), nth: nthOf(units, u), chosen: picked.includes(u.id) })),
     chosenCount: n,
     legal,
-    button: legal ? { text: `Advance ${plural(n, "unit")} into ${toName}`, disabled: false } : { text: n === 0 ? "Choose at least one unit to advance" : `These ${n} units do not all fit in ${toName}`, disabled: true },
+    button: legal ? { text: `Advance ${plural(n, "unit")} into ${toName}`, disabled: false } : { text: n === 0 ? "Choose at least one unit to advance" : `${plural(n, "unit")} ${n === 1 ? "does not fit" : "do not all fit"} in ${toName}`, disabled: true },
   };
 }

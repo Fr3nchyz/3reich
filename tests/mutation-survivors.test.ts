@@ -115,12 +115,15 @@ describe("BRP grants (Ref 11.71)", () => {
     expect(r.ok && r.state.grants).toEqual([{ from: "britain", to: "usa", amount: 1 }]);
   });
 
-  it("a block on one pair (the U.S.S.R. may not grant to Britain) does not block other givers to the same receiver", () => {
-    const s: GameState = { ...allied42(), noGrants: [["ussr", "britain"]] };
-    expect(grantRoom(s, "ussr", "britain")).toBe(0);
-    expect(grantRoom(s, "usa", "britain")).toBeGreaterThan(0);
-    expect(grantRoom(s, "britain", "ussr")).toBeGreaterThan(0); // the block is one-way
-    expect(grantRoom(s, "ussr", "usa")).toBeGreaterThan(0); // and it names one receiver, not all of them
+  it("a block on one pair does not block other givers to the same receiver, the same giver to other receivers, or the reverse", () => {
+    // The U.S.S.R. never grants (Ref 11.71), so the pairs are chosen among Britain, the U.S.A. and the U.S.S.R. as receiver.
+    const toUssr: GameState = { ...allied42(), noGrants: [["usa", "ussr"]] };
+    expect(grantRoom(toUssr, "usa", "ussr")).toBe(0);
+    expect(grantRoom(toUssr, "britain", "ussr")).toBeGreaterThan(0); // another giver, same receiver
+    expect(grantRoom(toUssr, "usa", "britain")).toBeGreaterThan(0); // same giver, another receiver
+    const toBritain: GameState = { ...allied42(), noGrants: [["usa", "britain"]] };
+    expect(grantRoom(toBritain, "usa", "britain")).toBe(0);
+    expect(grantRoom(toBritain, "britain", "usa")).toBeGreaterThan(0); // the block is one-way
   });
 
   // TODO(verify, Ref 11.71): the grant rules come from web-sourced rulebook text (docs/RULES.md "Web research", spec 02), not the

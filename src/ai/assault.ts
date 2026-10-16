@@ -3,6 +3,7 @@ import { attackNumbers, defendersAt } from "../engine/attack-rules";
 import { combatOf } from "../engine/combat-record";
 import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import type { GameContext } from "../engine/context";
+import { turnIndex } from "../engine/game";
 import type { GameState } from "../engine/types";
 import { isObjective } from "./geo";
 import { best } from "./random";
@@ -22,16 +23,36 @@ export const ATTACK_SUPERIORITY = 3;
 export const ATTACK_MIN_COLUMN_SUPERIOR: OddsColumn = "1-1";
 export const ATTACK_MAX_EXCHANGE_FACTORS = 8;
 export const ATTACK_MAX_PER_TURN = 40;
+/**
+ * The stall rule (computer policy): a side that has made no real ground attack for ATTACK_STALL_TURNS Game Turns, while the memory
+ * is kept, accepts attacks whose Exchange could cost up to ATTACK_STALL_MAX_EXCHANGE_FACTORS instead of ATTACK_MAX_EXCHANGE_FACTORS,
+ * for that Game Turn. The odds floor is unchanged. Without it an army in front of a full hex (a fortress, the Maginot Line) waits for ever
+ * at 2-1 (spec 05, "What staging does not fix").
+ */
+export const ATTACK_STALL_TURNS = 2;
+export const ATTACK_STALL_MAX_EXCHANGE_FACTORS = 16;
 /** Base score of a sweep of a hex with only air units or the like: below any real attack, so the units are first offered to real attacks. */
 export const SWEEP_SCORE = -1000;
 
 type Attack = Extract<Action, { type: "ATTACK" }>;
 type Advance = Extract<Action, { type: "ADVANCE" }>;
 
+/** The most the attackers may stand to lose in an Exchange this turn: the stall rule lifts it for a side that has been quiet. */
+function exchangeLimit(state: GameState, cfg: AiConfig): number {
+  const mem = cfg.memory;
+  if (!mem) return ATTACK_MAX_EXCHANGE_FACTORS;
+  const side = state.activeSide;
+  const turn = turnIndex(state);
+  mem.quietSince[side] ??= turn;
+  if (turn - mem.quietSince[side] >= ATTACK_STALL_TURNS) mem.stallTurn[side] = turn;
+  return mem.stallTurn[side] === turn ? ATTACK_STALL_MAX_EXCHANGE_FACTORS : ATTACK_MAX_EXCHANGE_FACTORS;
+}
+
 export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig): Decision | undefined {
   if (combatOf(state).targets.length >= ATTACK_MAX_PER_TURN) return undefined;
   const floor = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN);
   const floorSuperior = ODDS_COLUMNS.indexOf(ATTACK_MIN_COLUMN_SUPERIOR);
+  const maxExchange = exchangeLimit(state, cfg);
   const scored = new Map<Attack, number>();
   for (const a of legal) {
     if (a.type !== "ATTACK") continue;
@@ -46,7 +67,7 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
     }
     const n = attackNumbers(ctx, state, units, defenders, a.target);
     const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
-    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > ATTACK_MAX_EXCHANGE_FACTORS) continue;
+    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > maxExchange) continue;
     scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
   }
   const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);
@@ -55,6 +76,7 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
   const defenders = defendersAt(state, units, pick.target);
   if (defenders.length === 0) return { action: pick, why: `Attacks ${pick.target}, where only air units or the like stand: they are destroyed without a roll.` };
   const n = attackNumbers(ctx, state, units, defenders, pick.target);
+  if (cfg.memory) cfg.memory.quietSince[state.activeSide] = turnIndex(state);
   return { action: pick, why: `Attacks ${pick.target} with ${n.attackFactors} factors against ${n.defenseFactors}${n.multiplier > 1 ? ` (x${n.multiplier})` : ""}, odds ${n.column}.` };
 }
 
