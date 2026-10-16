@@ -3,6 +3,7 @@ import { defenseBasis, type DefenseBasis } from "./terrain";
 import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
 import type { Front } from "./map";
 import { sideOfOwner } from "./setup";
+import { countedAir } from "./air-support";
 import { oddsColumn, type OddsColumn } from "./combat";
 import type { ForceOwner, GameState, PowerId, Side, Unit, UnitType } from "./types";
 import { atWar, isMajorPower } from "./war";
@@ -130,7 +131,12 @@ export function lonersAt(state: GameState, attackers: readonly Unit[], at: HexId
 }
 
 export interface AttackNumbers {
+  /** The attackers' factors: the ground units' and the Ground Support air that counts (`airFactors`). */
   attackFactors: number;
+  /** The air factors committed to Ground Support at the hex that count against these attackers (spec 09 R8), already in `attackFactors`. */
+  airFactors: number;
+  /** The air units those factors come from, in designation order (empty when no air is committed). */
+  air: Unit[];
   defenseFactors: number;
   multiplier: number;
   /** Why the defence is multiplied that much (terrain.ts `defenseBasis`): for the preview to say in words. */
@@ -146,7 +152,9 @@ export function attackNumbers(ctx: GameContext, state: GameState, attackers: rea
     return side !== undefined && (side.river === true || side.crossingArrow === true);
   });
   const { multiplier, basis } = defenseBasis({ terrain: h.land ?? "plain", features: h.features, fortress: state.fortresses[target] === true, behindRiverOrArrow: behind });
-  const attackFactors = attackers.reduce((n, u) => n + u.strength, 0);
+  const ground = attackers.reduce((n, u) => n + u.strength, 0);
+  const support = countedAir(state, target, ground);
+  const attackFactors = ground + support.factors;
   const defenseFactors = defenders.reduce((n, u) => n + u.strength, 0);
-  return { attackFactors, defenseFactors, multiplier, basis, column: oddsColumn(attackFactors, defenseFactors * multiplier) };
+  return { attackFactors, airFactors: support.factors, air: support.units, defenseFactors, multiplier, basis, column: oddsColumn(attackFactors, defenseFactors * multiplier) };
 }

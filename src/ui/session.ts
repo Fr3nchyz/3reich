@@ -15,6 +15,7 @@ import type { ChoiceDraft } from "./choiceTap";
 import type { MoveChoice } from "./moveDraft";
 import type { MoveUndo } from "./moveUndo";
 import { trackBattle, type BattleResult } from "./resultModel";
+import { plural } from "./attackText";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
 
@@ -147,6 +148,10 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} change base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "AIR_MISSION_DESIGNATED":
+      return `${stackSummary(unitsWithIds(before, e.units))} fly ground support to ${placeName(ctx.map, e.target)}.`;
+    case "GROUND_SUPPORT_LOST":
+      return `${plural(e.units.reduce((n, u) => n + u.strength, 0), "air factor")} committed to ${placeName(ctx.map, e.hex)} were lost: the hex was not attacked.`;
     case "AIR_RESHAPED": {
       const side = before.units[e.before[0]!.id];
       return `${side ? `${OWNER_NAMES[side.owner]} air` : "Air"} at ${placeName(ctx.map, e.at)}: ${e.before.map((b) => b.strength).join(" + ")} became ${e.after.map((a) => a.strength).join(" + ")} air factors.`;

@@ -2,7 +2,7 @@ import type { HexId } from "./hex";
 import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
-import type { AirState } from "./air-record";
+import type { AirFlown, AirState } from "./air-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -305,6 +305,8 @@ export interface GameState {
   air?: AirState;
   /** How many movable airbases each Major Power has set down in the whole game, destroyed ones included (Ref 20.1: three each); absent means none. */
   airbasesPlaced?: Partial<Record<PowerId, number>>;
+  /** The air units that have used their mission this Game Turn (spec 09 R5); absent in an older saved game. */
+  airFlown?: AirFlown;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
   /**

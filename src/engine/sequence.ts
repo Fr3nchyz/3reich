@@ -155,4 +155,4 @@ export function describeStep(id: string): string {
  * The Year Start Sequence ("YSS") runs by itself when the game reaches it (yearstart.ts) and never
  * waits; the Russian-Winter roll ("II.A") is not built yet.
  */
-export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6f", "7h", "8b", "9a", LAST_STEP]);
+export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6f", "7b", "7h", "8b", "9a", LAST_STEP]);
