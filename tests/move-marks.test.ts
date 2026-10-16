@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { attackMarkCells } from "../src/ui/attackMarks";
 import type { MapView } from "../src/ui/mapView";
-import { unitsMarkup } from "../src/ui/mapCounters";
+import { COUNTER_ABOVE, COUNTER_LEFT, COUNTER_SIZE, STACK_STEP, unitsMarkup } from "../src/ui/mapCounters";
+import { BADGE_R, SLOT, badgesFor, shownOf, unitMarksMarkup } from "../src/ui/mapUnitMarks";
+import { OWNER_COLOURS } from "../src/ui/mapStyle";
 import { attackMarksMarkup } from "../src/ui/mapMarks";
 import { syncMap } from "../src/ui/mapSync";
-import { NO_MOVE_MARKS, moveMarksOf } from "../src/ui/moveMarks";
+import { NO_MOVE_MARKS, NO_UNIT_MARKS, moveMarksOf, type UnitMarks } from "../src/ui/moveMarks";
 import { selectionFor } from "../src/ui/moveSelection";
 import { chooseStack, tickNone, toggleTick, selectionNow } from "../src/ui/moveTap";
 import { at6f, inf } from "./helpers-move";
@@ -47,27 +49,20 @@ describe("what is drawn", () => {
   const units = [inf("u1", "germany", "L32", 3, 4), inf("u2", "germany", "L32", 2, 1), inf("u3", "germany", "L33", 3, 3)];
   const marks = { ticked: new Set(["u1"]), left: new Set(["u2"]) };
 
-  it("a ring on each ticked counter, a veil and a bar on each left-behind one, nothing on the rest; the shapes differ", () => {
-    const svg = unitsMarkup(MAP, units, marks);
-    expect(count(svg, /class="ring"/g)).toBe(1);
-    expect(count(svg, /class="ring-case"/g)).toBe(1);
-    expect(count(svg, /class="veil"/g)).toBe(1);
-    expect(count(svg, /class="dash"/g)).toBe(1);
-    expect(svg).toContain('data-mark="ticked"');
-    expect(svg).toContain('data-mark="left"');
-    expect(count(svg, /data-mark=/g)).toBe(2);
-    expect(count(unitsMarkup(MAP, units), /data-mark=|class="ring"|class="veil"/g)).toBe(0);
+  it("the counters are drawn exactly as without marks: nothing is laid over a counter, so no number or symbol is covered or dimmed", () => {
+    expect(unitsMarkup(MAP, units)).not.toMatch(/class="(ring|veil|dash)|data-mark/);
   });
 
-  it("the ring sits inside the counter's own group (u1, drawn first), the veil in u2's: a counter above covers a mark as it covers the cardboard", () => {
-    const groups = unitsMarkup(MAP, units, marks).split("<g data-at=").slice(1).filter((g) => g.startsWith('"L32"'));
-    expect(groups).toHaveLength(2);
-    expect(groups[0]).toContain('data-mark="ticked"');
-    expect(groups[0]).toContain('class="ring"');
-    expect(groups[0]).not.toContain('class="veil"');
-    expect(groups[1]).toContain('data-mark="left"');
-    expect(groups[1]).toContain('class="veil"');
-    expect(groups[1]).not.toContain('class="ring"');
+  it("a ringed badge with a tick for each ticked counter, a flat dash for each left-behind one, none for the rest; the shapes differ", () => {
+    const svg = unitMarksMarkup(MAP, units, marks);
+    expect(count(svg, /data-mark="ticked"/g)).toBe(1);
+    expect(count(svg, /data-mark="left"/g)).toBe(1);
+    expect(count(svg, /class="bd-ring"/g)).toBe(1);
+    expect(count(svg, /class="bd-tick"/g)).toBe(1);
+    expect(count(svg, /class="bd-dash"/g)).toBe(1);
+    expect(count(svg, /<circle/g)).toBe(2); // ring: case and ring; dash: rectangles only
+    expect(unitMarksMarkup(MAP, units, NO_UNIT_MARKS)).toBe("");
+    expect(unitMarksMarkup(MAP, units, { ticked: new Set(["u3"]), left: new Set() })).toContain('data-unit="u3"');
   });
 
   it("the chosen hex is a thick outline in the marks layer, once, and a hex off the map draws nothing", () => {
@@ -77,15 +72,66 @@ describe("what is drawn", () => {
     expect(attackMarksMarkup(MAP, { from: null })).toBe("");
   });
 
-  it("the ring's gold and its dark case differ enough to see on any paper (contrast of at least 3 to 1)", () => {
-    const css = readFileSync("src/move.css", "utf8");
-    const colour = (sel: string) => css.match(new RegExp(`${sel}\\s*\\{[^}]*stroke:\\s*(#[0-9a-f]{6})`, "i"))![1]!;
-    const lum = (hexColour: string) => {
-      const [r, g, b] = [1, 3, 5].map((i) => parseInt(hexColour.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
-    };
-    const [a, b] = [lum(colour("svg.map .units .ring")), lum(colour("svg.map .units .ring-case, svg.map .units .dash-case"))].sort((x, y) => y - x);
-    expect((a! + 0.05) / (b! + 0.05)).toBeGreaterThanOrEqual(3);
+  const css = readFileSync("src/move.css", "utf8");
+  const rule = (cls: string, prop: string) => css.match(new RegExp(`\\.${cls} \\{[^}]*${prop}: (#[0-9a-f]{6})`, "i"))![1]!;
+  const lum = (c: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+  };
+  const contrast = (a: string, b: string) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi! + 0.05) / (lo! + 0.05); };
+
+  it("the gold ring against its dark case, and the dash against its case, differ enough to see on any paper (at least 3 to 1)", () => {
+    expect(contrast(rule("bd-ring", "stroke"), rule("bd-case", "fill"))).toBeGreaterThanOrEqual(3);
+    expect(contrast(rule("bd-dash", "fill"), rule("bd-case", "fill"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it("the number on every nation's counter reads at 4.5 to 1 or better, marked or not (a mark never dims a counter)", () => {
+    for (const [owner, c] of Object.entries(OWNER_COLOURS)) expect(contrast(c.text, c.fill), owner).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("where the badges go (geometry)", () => {
+  const CX = 100, CY = 100;
+  const stack = (n: number) => Array.from({ length: n }, (_, i) => ({ id: `u${i}` }));
+  const allTicked = (n: number): UnitMarks => ({ ticked: new Set(stack(n).map((u) => u.id)), left: new Set() });
+  /** The counters' squares as the map draws them, bottom first. */
+  const counters = (n: number) => Array.from({ length: n }, (_, i) => ({ x: CX - COUNTER_LEFT + i * STACK_STEP, y: CY - COUNTER_ABOVE - i * STACK_STEP }));
+  const hits = (b: { x: number; y: number }, r: { x: number; y: number }) => b.x + BADGE_R > r.x && b.x - BADGE_R < r.x + COUNTER_SIZE && b.y + BADGE_R > r.y && b.y - BADGE_R < r.y + COUNTER_SIZE;
+
+  for (const n of [1, 2, 3, 4]) {
+    it(`a stack of ${n}: every counter has its own badge, in stack order, none touching another badge or any counter (so none covers a number or symbol)`, () => {
+      const b = badgesFor(stack(n), CX, CY, allTicked(n));
+      expect(b.map((x) => x.id)).toEqual(stack(n).map((u) => u.id));
+      for (let i = 1; i < b.length; i++) expect(b[i]!.x - b[i - 1]!.x, "left to right, bottom counter first").toBeGreaterThanOrEqual(2 * BADGE_R);
+      for (const m of b) for (const c of counters(n)) expect(hits(m, c), `badge ${m.id} clear of every counter`).toBe(false);
+      b.forEach((m, i) => {
+        const c = counters(n)[i]!;
+        expect(m.ly, "the line meets its own counter's bottom edge").toBeCloseTo(c.y + COUNTER_SIZE);
+        expect(m.lx).toBeGreaterThan(c.x);
+        expect(m.lx).toBeLessThan(c.x + COUNTER_SIZE);
+        expect(m.y - BADGE_R, "below the lowest counter").toBeGreaterThanOrEqual(CY - COUNTER_ABOVE + COUNTER_SIZE);
+      });
+    });
+  }
+
+  it("the row is centred on the hex and keeps one slot per drawn counter, so an unmarked counter leaves a gap rather than shifting the others", () => {
+    const b = badgesFor(stack(3), CX, CY, { ticked: new Set(["u0", "u2"]), left: new Set(["u1"]) });
+    expect(b.map((x) => x.kind)).toEqual(["ticked", "left", "ticked"]);
+    expect((b[0]!.x + b[2]!.x) / 2).toBeCloseTo(CX);
+    const gap = badgesFor(stack(3), CX, CY, { ticked: new Set(["u0", "u2"]), left: new Set() });
+    expect(gap[1]!.x - gap[0]!.x).toBeCloseTo(2 * SLOT);
+  });
+
+  it("a counter that is neither ticked nor left behind (greyed, or another hex) has no badge; a stack over the drawn four marks only the drawn ones", () => {
+    expect(badgesFor(stack(2), CX, CY, NO_UNIT_MARKS)).toEqual([]);
+    const six = Array.from({ length: 6 }, (_, i) => inf(`s${i}`, "germany", "L32", 1, 1));
+    const all: UnitMarks = { ticked: new Set(six.map((u) => u.id)), left: new Set() };
+    expect(badgesFor(shownOf(six), CX, CY, all).map((x) => x.id)).toEqual(["s2", "s3", "s4", "s5"]);
+  });
+
+  it("badges stay clear of the numbers and the symbols: nothing of a badge lies inside any counter's square", () => {
+    const b = badgesFor(stack(4), CX, CY, allTicked(4));
+    for (const m of b) expect(counters(4).some((c) => hits(m, c))).toBe(false);
   });
 });
 

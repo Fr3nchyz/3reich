@@ -109,6 +109,7 @@ export const MARK_GREYED = "Cannot move";
 /** The button of step 6f that takes the last move back (a screen convenience, spec 10; not a game rule). */
 export const UNDO_BUTTON = "Take back last move";
 export const UNDO_NOTHING = "Nothing to take back: no move made yet.";
+export const UNDO_UNAVAILABLE = "Moves can be taken back only at your own step 6f.";
 export const UNDO_HIDDEN = "A die was rolled: earlier moves cannot be taken back.";
 /** "Took back: Moved 2 German infantry from Lodz (N33) to Radom (N34)." (`line` is the sentence the move was told with). */
 export const tookBack = (line: string): string => `Took back: ${line}`;

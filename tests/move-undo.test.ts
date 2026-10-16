@@ -153,12 +153,23 @@ describe("what clears or blocks it", () => {
     moveInto(w, "L32", "K33", ["u2"]);
     w.watch = { speed: "normal" } as unknown as WatchInfo;
     expect(takeBack(w)).toBe(false);
+    expect(takeBackReason(w)).toBe("Moves can be taken back only at your own step 6f."); // the reason and the refusal agree
     expect(moveHtml(w, legalActions(w.ctx, w.state))).toBe("");
     const c = crafted();
     moveInto(c, "L32", "K33", ["u2"]);
     c.humanSide = "allies"; // the Axis turn is now the computer's
     expect(takeBack(c)).toBe(false);
+    expect(takeBackReason(c)).not.toBeNull();
     expect(moveHtml(c, [])).toBe("");
+  });
+
+  it("a line added to the log without a new position ends the history (a cut back would delete it)", () => {
+    const s = crafted();
+    moveInto(s, "L32", "K33", ["u2"]);
+    s.log.push("A note from somewhere else.");
+    expect(takeBackReason(s)).not.toBeNull();
+    expect(takeBack(s)).toBe(false);
+    expect(s.log.at(-1)).toBe("A note from somewhere else.");
   });
 
   it("a mis-built history never leaves a half-built game: an unreplayable step is refused and the position stays", () => {

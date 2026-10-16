@@ -1,5 +1,4 @@
 import { applyAction, type Action } from "../engine/actions";
-import { turnKey } from "../engine/combat-record";
 import type { GameState } from "../engine/types";
 import { atStep6f } from "./step6f";
 import * as T from "./moveText";
@@ -43,10 +42,14 @@ export interface MoveUndo {
  */
 export const revealedHidden = (before: GameState, after: GameState): boolean => after.rngState !== before.rngState;
 
-/** The history that still fits the session, or null. */
+/**
+ * The history that still fits the session, or null. `tip === s.state` is the test that matters (any other action gives a new position, and a position
+ * only ever follows the one before it in the same Player Turn, so no turn check is needed); the log length catches a line added to the log without a
+ * new position, which a cut back to the move's length would otherwise delete.
+ */
 function live(s: Session): MoveUndo | null {
   const u = s.undo;
-  return u && u.tip === s.state && u.tipLog === s.log.length && turnKey(u.base) === turnKey(s.state) ? u : null;
+  return u && u.tip === s.state && u.tipLog === s.log.length ? u : null;
 }
 
 /** Called after each MOVE of the player went through `run`: `before` and `logLen` are the position and the log length it was made in. */
@@ -62,6 +65,7 @@ export function noteMove(s: Session, before: GameState, logLen: number, action: 
 
 /** Why there is nothing to take back, or null when there is. */
 export function takeBackReason(s: Session): string | null {
+  if (!atStep6f(s)) return T.UNDO_UNAVAILABLE; // not the player's step 6f: not on the computer's turn, not in watch mode
   const u = live(s);
   if (u && u.steps.length > 0) return null;
   return u?.hidden ? T.UNDO_HIDDEN : T.UNDO_NOTHING;

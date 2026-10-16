@@ -37,7 +37,7 @@ export const OWNER_COLOURS: Record<ForceOwner, { fill: string; text: string }> =
   "vichy-france": { fill: "#5b8ad0", text: "#101418" },
   "free-france": { fill: "#5b8ad0", text: "#101418" },
   britain: { fill: "#d9b46a", text: "#101418" },
-  ussr: { fill: "#a0663e", text: "#f2efe2" },
+  ussr: { fill: "#955d36", text: "#f2efe2" },
   usa: { fill: "#7ea642", text: "#101418" },
   poland: { fill: "#e6c54f", text: "#101418" },
   finland: { fill: "#b4b0a4", text: "#101418" },
