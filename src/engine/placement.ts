@@ -1,3 +1,4 @@
+import { airCapacity } from "./air-bases";
 import { cacheOf, isBox, resolveArea, resolveAreas, territoryOf, union, type Place, type Resolved } from "./areas";
 import type { GameContext } from "./context";
 import { setupOf } from "./game";
@@ -100,7 +101,10 @@ export function stackingProblem(ctx: GameContext, state: GameState, owner: Force
   }
   if (spec.type === "air") {
     const air = here.filter((u) => u.type === "air").reduce((n, u) => n + u.strength, 0);
-    if (air + spec.strength > AIR_FACTOR_STACKING_LIMIT) return `${place} would hold ${air + spec.strength} air factors (limit ${AIR_FACTOR_STACKING_LIMIT}).`;
+    // Ref 20.1, 5.0: the hex's own capacity (5 per city, 5 per airbase counter). A hex that is no base keeps the old flat limit: whether air may be there at all is suitsBase's question.
+    const capacity = airCapacity(ctx, state, place);
+    const limit = capacity > 0 ? capacity : AIR_FACTOR_STACKING_LIMIT;
+    if (air + spec.strength > limit) return `${place} would hold ${air + spec.strength} air factors (limit ${limit}).`;
   }
   if (spec.type === "fleet") {
     const naval = here.filter((u) => u.type === "fleet").reduce((n, u) => n + u.strength, 0);
