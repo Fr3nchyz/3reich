@@ -25,11 +25,21 @@ export interface SupplyNet {
   serves: (u: Pick<Unit, "owner">) => boolean;
 }
 
-const named = (ctx: GameContext, name: string): HexId | undefined => Object.values(ctx.map.hexes).find((h) => h.name === name)?.id;
+/** Static lookups on the map, worked out once per context: they are read on every supply search. */
+const statics = new WeakMap<GameContext, Map<string, unknown>>();
+function once<T>(ctx: GameContext, key: string, make: () => T): T {
+  let byKey = statics.get(ctx);
+  if (!byKey) statics.set(ctx, (byKey = new Map<string, unknown>()));
+  if (!byKey.has(key)) byKey.set(key, make());
+  return byKey.get(key) as T;
+}
+
+const named = (ctx: GameContext, name: string): HexId | undefined => once(ctx, `name:${name}`, () => Object.values(ctx.map.hexes).find((h) => h.name === name)?.id);
 const FRENCH: readonly ForceOwner[] = ["france", "free-france", "vichy-france"];
 
 /** The east edge of the map as far south as Z53 (Ref 19.2): the highest-numbered hex of each row A to Z, when it is land. */
-function eastEdge(ctx: GameContext): HexId[] {
+const eastEdge = (ctx: GameContext): readonly HexId[] => once(ctx, "east-edge", () => findEastEdge(ctx));
+function findEastEdge(ctx: GameContext): HexId[] {
   const last = new Map<string, { col: number; id: HexId; land: boolean }>();
   for (const h of Object.values(ctx.map.hexes)) {
     const m = /^([A-Z])(\d+)$/.exec(h.id);
@@ -43,7 +53,7 @@ function eastEdge(ctx: GameContext): HexId[] {
 export function specialNets(ctx: GameContext, state: GameState, side: Side): SupplyNet[] {
   const mine = (hex: HexId | undefined): hex is HexId => hex !== undefined && controllingSide(ctx, state, hex) === side;
   const nets: SupplyNet[] = [];
-  const ports = (country: string) => Object.values(ctx.map.hexes).filter((h) => h.land && h.country === country && h.features.includes("port")).map((h) => h.id).filter(mine);
+  const ports = (country: string) => once(ctx, `ports:${country}`, () => Object.values(ctx.map.hexes).filter((h) => h.land && h.country === country && h.features.includes("port")).map((h) => h.id)).filter(mine);
   if (side === "axis") nets.push({ id: "libya", sources: ports("libya"), serves: () => true });
   else nets.push({ id: "egypt", sources: ports("egypt"), serves: (u) => u.owner !== "ussr" });
   for (const name of ["Tunis", "Beirut"]) {

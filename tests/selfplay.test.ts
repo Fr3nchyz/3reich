@@ -7,6 +7,7 @@ import { controllerOf, sideInWar } from "../src/engine/control";
 import { sideOfOwner } from "../src/engine/setup";
 import { chooseAction } from "../src/ai";
 import { newGame } from "../src/engine/game";
+import { SUPPLY_EFFECTS_ENABLED } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
 import { MAX_SEED, parseArgs, recording } from "../scripts/selfplay/args";
 import { prepareOut } from "../scripts/selfplay/out";
@@ -212,6 +213,20 @@ describe("self-play command line", () => {
     expect(parseArgs(["--scenario", "all"]).scenarios).toEqual([...SCENARIO_KEYS]);
     expect(parseArgs(["--no-verify"]).verify).toBe(false);
   });
+
+  it("--supply-effects on|off sets the supply effects for the run; absent, the shipped setting applies (and the report names it)", () => {
+    expect(parseArgs(["--supply-effects", "on"]).supplyEffects).toBe(true);
+    expect(parseArgs(["--supply-effects", "off"]).supplyEffects).toBe(false);
+    expect(parseArgs([]).supplyEffects).toBeUndefined();
+    for (const bad of [[], ["yes"], ["--no-verify"]]) expect(() => parseArgs(["--supply-effects", ...bad]), bad.join()).toThrow(/--supply-effects is on or off/);
+    const r = runGame({ scenario: "1942", seed: 1, turns: 1, verify: false, supplyEffects: true });
+    expect(r.ctx.supplyEffects).toBe(true);
+    expect(r.options.supplyEffects).toBe(true);
+    expect(gameReport(r)).toContain("--supply-effects on");
+    expect(r.turns[0]!.lostUnsupplied.axis).toBeGreaterThan(0); // Sardinia and Norway: sea supply is not built
+    expect(comparison([r])).toContain("Unsupplied lost ax / al");
+    expect(runGame({ scenario: "1939", seed: 1, turns: 1, verify: false }).ctx.supplyEffects).toBe(SUPPLY_EFFECTS_ENABLED);
+  }, 60_000);
 
   it("refuses what it does not understand", () => {
     for (const bad of [["--scenario", "1941"], ["--turns", "0"], ["--turns", "x"], ["--seed", "-1"], ["--games", "0"], ["--bogus"], ["--out"]]) expect(() => parseArgs(bad), bad.join(" ")).toThrow(/usage/);

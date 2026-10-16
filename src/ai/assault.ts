@@ -5,6 +5,7 @@ import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import type { GameContext } from "../engine/context";
 import { turnIndex } from "../engine/game";
 import type { GameState } from "../engine/types";
+import { exchangeFree } from "./doomed";
 import { isObjective } from "./geo";
 import { best } from "./random";
 import type { AiConfig, Decision } from "./types";
@@ -15,7 +16,8 @@ import type { AiConfig, Decision } from "./types";
  * gives, terrain included) are at least ATTACK_MIN_COLUMN (ATTACK_MIN_COLUMN_SUPERIOR where the attackers hold ATTACK_SUPERIORITY
  * times the defenders' printed factors over the whole hex) and whose Exchange is acceptable: an Exchange costs the attackers
  * at least the defender's multiplied factors (Ref 12.2), and that may be at most ATTACK_MAX_EXCHANGE_FACTORS. Better odds first, then an attack on a capital or objective, then the bigger force. After a battle that left a
- * hex empty it advances with as many survivors as the hex takes. When nothing qualifies it ends the step.
+ * hex empty it advances with as many survivors as the hex takes. When nothing qualifies it ends the step. An attack made only by units that the end
+ * of the turn will eliminate for being cut off skips the Exchange limit (`exchangeFree`, doomed.ts; only while the supply effects are on).
  */
 export const ATTACK_MIN_COLUMN: OddsColumn = "2-1";
 /** Where the attackers hold at least ATTACK_SUPERIORITY times the defenders' printed factors (before terrain), the least column falls to this. */
@@ -67,7 +69,8 @@ export function chooseAttack(ctx: GameContext, state: GameState, legal: readonly
     }
     const n = attackNumbers(ctx, state, units, defenders, a.target);
     const column = n.column === null ? -1 : ODDS_COLUMNS.indexOf(n.column);
-    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor) || n.defenseFactors * n.multiplier > maxExchange) continue;
+    if (column < (n.attackFactors >= ATTACK_SUPERIORITY * n.defenseFactors ? Math.min(floor, floorSuperior) : floor)) continue;
+    if (n.defenseFactors * n.multiplier > maxExchange && !exchangeFree(ctx, state, a.units, cfg)) continue;
     scored.set(a, column * 1000 + (isObjective(ctx, a.target) ? 500 : 0) + Math.min(n.attackFactors, 99));
   }
   const pick = best([...scored.keys()], (a) => scored.get(a)!, cfg.seed, (a) => `${a.target}:${a.units.join(",")}`);

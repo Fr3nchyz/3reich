@@ -9,6 +9,7 @@ import { endProblem, movableUnits, reachableHexes } from "../engine/movement";
 import type { GameState, Unit } from "../engine/types";
 import { enemyZocFor } from "../engine/zoc";
 import { distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective, stagingTargets } from "./geo";
+import { preferSupplied } from "./lines";
 import type { AiMemory } from "./memory";
 import { best } from "./random";
 import type { AiConfig, Decision } from "./types";
@@ -26,7 +27,9 @@ import type { AiConfig, Decision } from "./types";
  * milliseconds, not the whole move list. A stack with no way to any enemy objective (they lie behind a neutral country's land, a sea or
  * a closed border) does not stand still: it heads for the capitals and objectives of a neutral Major Power the computer plans to declare
  * war on (`plannedTargets` in declare.ts), counting that country's land as open, so it waits at the border for the declaration; the
- * engine still lets it move only where it may enter now. When no stack qualifies it ends the step. Supply is not considered.
+ * engine still lets it move only where it may enter now. When no stack qualifies it ends the step. While the supply effects are on it does not
+ * take a move that leaves the stack cut off while one that gets closer keeps it supplied (`preferSupplied` in lines.ts); with them off,
+ * supply is not considered.
  */
 export const MOVE_MIN_PROGRESS = 1;
 export const MOVE_MAX_UNITS_PER_TURN = 40;
@@ -127,7 +130,7 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
     const field = fieldOf();
     const features = ctx.map.hexes[from]?.features ?? [];
     const holds = (features.includes("capital") || features.includes("capital-port")) && controllingSide(ctx, state, from) === side;
-    const candidates: { move: Move; progress: number }[] = [];
+    const candidates: { move: Move; progress: number; units: Unit[]; to: HexId }[] = [];
     for (const set of units.length > 1 ? [...units.map((u) => [u]), units] : [units]) {
       // A garrison stays on the capital of its own side: the whole stack leaving would empty it.
       if (MOVE_KEEP_CAPITAL_GARRISON && holds && set.length === (at.get(from) ?? []).filter((u) => sideInWar(state, u.owner) === side).length) continue;
@@ -136,12 +139,13 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
         if (d1 === undefined || d0 - d1 < MOVE_MIN_PROGRESS || endProblem(ctx, state, set, to) !== null) continue;
         if (set.some((u) => (mem?.left.get(u.id) ?? []).some((l) => l.hex === to && turn - l.turn < MOVE_NO_RETURN_TURNS))) continue;
         if (enemyNear(to) > MOVE_MAX_ENEMY_RATIO * (factors(at.get(to)) + factors(set))) continue;
-        candidates.push({ move: { type: "MOVE", side, units: set.map((u) => u.id), path }, progress: d0 - d1 });
+        candidates.push({ move: { type: "MOVE", side, units: set.map((u) => u.id), path }, progress: d0 - d1, units: set, to });
       }
     }
     if (candidates.length === 0) continue;
+    const { pool, cutOff } = preferSupplied(ctx, state, candidates, cfg);
     const score = (c: { move: Move; progress: number }) => c.progress * 100 + c.move.units.length * 10 + (isObjective(ctx, c.move.path[c.move.path.length - 1]!) ? 5 : 0);
-    const pick = best(candidates, score, cfg.seed, (c) => `${c.move.units.join(",")}>${c.move.path[c.move.path.length - 1]}`)!;
+    const pick = best(pool, score, cfg.seed, (c) => `${c.move.units.join(",")}>${c.move.path[c.move.path.length - 1]}`)!;
     if (mem) {
       for (const id of pick.move.units) {
         if (!staged) mem.targets.set(id, target);
@@ -152,7 +156,8 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
     const left = d0 - pick.progress;
     const who = pick.move.units.length === 1 ? "a unit" : `${pick.move.units.length} units`;
     const near = `${pick.progress} hex${pick.progress === 1 ? "" : "es"} closer to`;
-    return { action: pick.move, why: staged ? `Moves ${who} from ${from} to ${to}, ${near} ${target} (${left} to go), an objective of a power it plans to declare war on: no enemy objective is within reach, so it waits at the border.` : `Moves ${who} from ${from} to ${to}, ${near} the enemy-held objective ${target} (${left} to go).` };
+    const cut = cutOff ? " It will be out of supply there: no move that gets closer keeps its supply line." : "";
+    return { action: pick.move, why: (staged ? `Moves ${who} from ${from} to ${to}, ${near} ${target} (${left} to go), an objective of a power it plans to declare war on: no enemy objective is within reach, so it waits at the border.` : `Moves ${who} from ${from} to ${to}, ${near} the enemy-held objective ${target} (${left} to go).`) + cut };
   }
   return undefined;
 }

@@ -5,6 +5,7 @@ import type { GameState } from "../engine/types";
 import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
+import { chooseLosses } from "./doomed";
 import { chooseGrant } from "./grant";
 import { chooseMove } from "./move";
 import type { AiConfig, Decision } from "./types";
@@ -25,19 +26,9 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6f" ? chooseMove(ctx, state, cfg)
-    : step === "7h" ? chooseLosses(legal) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
+    : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
-}
-
-/**
- * Ground combat (step 7h): if an Exchange waits for losses to be chosen and the computer is the one to choose (the
- * engine lists only that choice then), it takes the first legal set, as the engine lists them. Otherwise it advances
- * or attacks by assault.ts, and ends the step when neither qualifies (the fallback).
- */
-function chooseLosses(legal: readonly Action[]): Decision | undefined {
-  const action = legal.find((a) => a.type === "ALLOCATE_LOSSES");
-  return action ? { action, why: "Loses the first legal set of units to the Exchange." } : undefined;
 }
 
 const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLAYER_TURN" }> => a.type === "END_STEP" || a.type === "END_PLAYER_TURN";
