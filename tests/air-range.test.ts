@@ -138,6 +138,7 @@ describe("staging: the bases a unit could move to (Ref 20.2, 20.1, 5.0)", () => 
     expect(hexes).not.toContain(KIEL_AREA_9); // 9: not listed at all
     expect(choices.every((c) => c.distance! >= 1 && c.distance! <= STAGING_RANGE)).toBe(true);
     expect(choices.map((c) => c.distance)).toEqual([...choices.map((c) => c.distance)].sort((a, b) => a! - b!));
+    expect(stagingChoices(CTX, s, s.units.u1!).map((c) => c.hex)).not.toContain(KIEL_AREA_9); // the full list stops at the staging range too
     expect(choices.find((c) => c.hex === KIEL_AREA_8)).toMatchObject({ distance: 8, room: 5, problem: null });
   });
 

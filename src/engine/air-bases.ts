@@ -16,7 +16,7 @@ export const nationOf = (u: Pick<Unit, "owner" | "nationality">): ForceOwner => 
 /** How many cities the hex holds: 0 if it is not a base feature, 1 for a city, port, capital or objective, 2 for a listed double city (Ref 20.1). */
 export function citiesAt(ctx: GameContext, hex: HexId): number {
   const h = ctx.map.hexes[hex];
-  if (!h || !h.land || !h.features.some((f) => AIR_BASE_FEATURES.includes(f))) return 0;
+  if (!h || !h.features.some((f) => AIR_BASE_FEATURES.includes(f))) return 0;
   return DOUBLE_CITY_HEXES.includes(hex) ? 2 : 1;
 }
 
