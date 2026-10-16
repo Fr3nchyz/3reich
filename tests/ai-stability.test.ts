@@ -32,9 +32,6 @@ describe("fixed-seed play is stable", () => {
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
 // Winter 1940 or Spring 1941 (every enemy objective on its land was taken, the U.S.S.R. was not yet at war); now it walks to the border.
-// Known gap, TODO(spec 05, the computer's stall rule): on seed 13 the Axis declares on the U.S.S.R. in Summer 1941 and then neither moves nor attacks that turn.
-// Before Replacements were barred from attacking (Ref 12.1, PC Reference Manual) the play diverged earlier and the Axis acted that turn, so the guard passed by luck, not by design.
-const STILL_IDLE: Record<number, string[]> = { 13: ["Summer 1941"] };
 describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenario, seeds 5, 12, 13)", () => {
   for (const seed of [5, 12, 13]) {
     it(`seed ${seed}: it moves or attacks in every one of those Player Turns, and the game ends without anomaly`, () => {
@@ -43,11 +40,8 @@ describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenari
       expect(r.ended).toBe("game-over");
       const stretch = r.turns.filter((t) => ["Fall 1940", "Winter 1940", "Spring 1941", "Summer 1941"].includes(t.label));
       expect(stretch).toHaveLength(4);
-      const exempt = STILL_IDLE[seed] ?? [];
-      for (const t of stretch.filter((x) => !exempt.includes(x.label))) expect(t.movedBy.axis + t.attacks.axis, t.label).toBeGreaterThan(0);
-      expect(idleTurns(stretch).filter((x) => x.endsWith("axis") && !exempt.some((l) => x.startsWith(l))), "Axis idle Player Turns").toEqual([]);
-      // The exemption must still be needed: when the computer stops idling there, this fails and the entry is removed.
-      for (const t of stretch.filter((x) => exempt.includes(x.label))) expect(t.movedBy.axis + t.attacks.axis, `${t.label} (exempt)`).toBe(0);
+      for (const t of stretch) expect(t.movedBy.axis + t.attacks.axis, t.label).toBeGreaterThan(0);
+      expect(idleTurns(stretch).filter((x) => x.endsWith("axis")), "Axis idle Player Turns").toEqual([]);
     });
   }
 });
