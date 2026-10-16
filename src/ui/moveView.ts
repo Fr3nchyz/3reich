@@ -44,12 +44,30 @@ function liveHtml(sel: MoveSelection): string {
   return parts.map((p) => `<p class="move-live">${e(p)}</p>`).join("");
 }
 
+/** The most destinations the fold-out lists (the nearest first); the map shows the rest. */
+export const WHERE_LIMIT = 40;
+
+/**
+ * "Where they can go (N)": the yellow hexes as 44 px rows, place name and distance, nearest first, for the keyboard and for hexes too small to
+ * tap (spec 10, ticket 10-7). Shut by default; whether it is open is kept in the choice so a redraw leaves it as it was.
+ */
+function whereHtml(s: Session, sel: MoveSelection): string {
+  if (sel.destinations.length === 0) return "";
+  const rows = [...sel.destinations]
+    .map((d) => ({ d, name: placeName(s.ctx.map, d.to) }))
+    .sort((a, b) => a.d.path.length - b.d.path.length || (a.name < b.name ? -1 : 1));
+  const shown = rows.slice(0, WHERE_LIMIT);
+  const items = shown.map((r) => `<li><button type="button" class="stack-row dest-row" data-dest="${e(r.d.to)}"><span class="row-name">${e(r.name)}</span><span class="row-count">${e(T.whereRow(r.d.path.length))}</span></button></li>`).join("");
+  const capped = rows.length > shown.length ? `<p class="note">${e(T.WHERE_CAPPED(shown.length, rows.length))}</p>` : "";
+  return `<details class="move-where" id="move-where"${s.moveChosen?.whereOpen ? " open" : ""}><summary id="move-where-sum">${e(T.WHERE_SUMMARY(sel.destinations.length))}</summary><ul class="stack-rows" aria-label="Places the ticked units can go">${items}</ul>${capped}</details>`;
+}
+
 /** The Move card: the chosen hex, All / None / Cancel, the unit lines and the live line. */
 function cardHtml(s: Session, sel: MoveSelection): string {
   const tools = sel.status === "nobody" ? "" : `<div class="move-tools"><span class="move-summary" aria-hidden="true">${e(sel.summary)}</span><button type="button" id="move-all">All</button><button type="button" id="move-none">None</button></div>`;
   return `<section class="movecard" aria-labelledby="move-title">
       <div class="card-head"><h2 id="move-title" tabindex="-1">Move from ${e(sel.title)}</h2><button type="button" id="move-cancel">Cancel</button></div>
-      ${tools}${linesHtml(s, sel)}${liveHtml(sel)}
+      ${tools}${linesHtml(s, sel)}${liveHtml(sel)}${whereHtml(s, sel)}
     </section>`;
 }
 

@@ -158,7 +158,7 @@ describe("the move", () => {
     tapHex(s, hexOf(s, "L32"));
     toggleTick(s, "u2");
     tapHex(s, Object.values(s.ctx.map.hexes).find((h) => !h.land)!);
-    expect(s.toast).toMatch(/cannot get there/);
+    expect(s.toast).toMatch(/open water: ground units cannot go there/); // spec 10, 10-7: the refusal says why
     expect(s.moveChosen).toMatchObject({ hex: "L32", ticked: ["u1"] });
   });
 });

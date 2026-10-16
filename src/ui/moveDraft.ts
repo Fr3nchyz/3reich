@@ -16,6 +16,8 @@ export interface MoveChoice {
   fresh: boolean;
   /** Chosen from the list, where the hex may be off the visible map: the map moves to show it, once. */
   focus: boolean;
+  /** The fold-out "Where they can go" is open (ticket 10-7); it stays as the player left it while the card is redrawn. */
+  whereOpen?: boolean;
 }
 
 export const newChoice = (state: GameState, hex: string, ticked: readonly string[], focus = false): MoveChoice => ({ hex, ticked: [...ticked], turn: turnKey(state), fresh: true, focus });

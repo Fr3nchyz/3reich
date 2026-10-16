@@ -8,7 +8,7 @@
  */
 
 /** data-* attributes whose value names the control for good (unlike data-action, an index into a list that changes). */
-const STABLE_DATA = ["spec", "mode", "build", "box", "buildbox", "unit", "stack", "target", "pick", "lossway", "advancego", "advancestay"];
+const STABLE_DATA = ["spec", "mode", "build", "box", "buildbox", "unit", "stack", "dest", "target", "pick", "lossway", "advancego", "advancestay"];
 
 export interface FocusMark {
   /** Focus was on the status panel itself (where an earlier redraw left it). */

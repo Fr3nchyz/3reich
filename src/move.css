@@ -42,3 +42,6 @@ svg.map .unit-marks .bd-lead { stroke: #2b1d00; stroke-width: .6; }
 .moveundo .undo { min-height: 44px; min-width: 44px; flex: none; }
 .moveundo .undo[aria-disabled="true"] { opacity: .6; cursor: not-allowed; }
 .moveundo .undo-why { flex: 1 1 7rem; font-size: .85rem; line-height: 1.25; }
+.move-where { margin-top: .6rem; }
+.move-where summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.move-where summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }

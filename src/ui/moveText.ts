@@ -87,6 +87,17 @@ export const movedSentence = (what: string, to: string): string => `Moved ${what
 
 /** A tap on a hex that is not one of the yellow hexes. */
 export const CANNOT_GET_THERE = "These units cannot get there together. The yellow hexes are the places they can.";
+
+/** Why a tapped hex is not a destination (spec 10, ticket 10-7): plain sentences, a place name each, never an id. */
+export const whyWater = (place: string): string => `${place} is open water: ground units cannot go there.`;
+export const whyHexside = (place: string): string => `Ground units cannot cross into ${place} from there: the edge between them is water or the Qattara Depression.`;
+export const whyEnemy = (place: string): string => `${place} holds an enemy unit: that is an attack, not a move.`;
+export const whyNeutral = (place: string): string => `${place} is neutral land: you are not at war with its country, so your units may not enter it.`;
+export const whyFull = (place: string, units: number, limit: number): string =>
+  `${place} could not hold ${units === 1 ? "this unit" : `all ${units} of them`}: a hex holds at most ${limit} ground units. Untick one, or tap a hex with room.`;
+export const whyNoRoom = (place: string): string => `There is no room for them in ${place}. The yellow hexes are the places they can go.`;
+export const whyTooFar = (place: string, points: number, exitCost: number): string =>
+  `${place} is too far for them: they can go up to ${reach(points)}${exitCost > 0 ? `, and leaving an enemy zone of control costs ${exitCost} more` : ""}. The yellow hexes are the places they can go.`;
 /** A tap on a hex when no stack is chosen. */
 export const CHOOSE_FIRST = "Tap one of your stacks that can move, then a yellow hex.";
 
@@ -114,3 +125,8 @@ export const UNDO_HIDDEN = "A die was rolled: earlier moves cannot be taken back
 /** "Took back: Moved 2 German infantry from Lodz (N33) to Radom (N34)." (`line` is the sentence the move was told with). */
 export const tookBack = (line: string): string => `Took back: ${line}`;
 export const TOOK_BACK_PREFIX = "Took back: ";
+
+/** The fold-out of destinations for the keyboard and for hexes too small to tap (ticket 10-7). */
+export const WHERE_SUMMARY = (n: number): string => `Where they can go (${n})`;
+export const whereRow = (hexes: number): string => reach(hexes);
+export const WHERE_CAPPED = (shown: number, all: number): string => `The ${shown} nearest of ${all} are listed. Tap the map for the others.`;
