@@ -19,7 +19,7 @@ type PlaceAirbase = Extract<Action, { type: "PLACE_AIRBASE" }>;
 
 /** The first reason `owner` may not set an airbase down in `at` now, or null. `supplied` is the hex's supply test, skipped at setup. */
 function placementProblem(ctx: GameContext, state: GameState, owner: PowerId, at: HexId, supplied: ReadonlySet<HexId> | null): string | null {
-  const hex = ctx.map.hexes[at];
+  const hex = Object.hasOwn(ctx.map.hexes, at) ? ctx.map.hexes[at] : undefined;
   if (!hex) return `${at} is not on the map.`;
   if (!hex.land) return `${at} is open water: an airbase stands on land.`;
   const side = sideInWar(state, owner);
@@ -54,6 +54,7 @@ export function airbasePlacements(ctx: GameContext, state: GameState, owner: Pow
 /** The first reason the owner may not place an airbase at this moment at all (wrong phase, step or side), or null. */
 function momentProblem(state: GameState, owner: PowerId): string | null {
   if (!isMajorPower(owner)) return "Only a Major Power has airbases.";
+  if (sideInWar(state, owner) === null) return `${owner} is not in the war, so it has no airbase to place.`;
   if (state.phase === "setup") {
     if (!AIRBASE_AT_SETUP) return "Airbases are not placed in the setup.";
     return currentSetupOwner(state) === owner ? null : `${currentSetupOwner(state) ?? "nobody"} is setting up now, not ${owner}.`;
@@ -77,7 +78,13 @@ export function applyPlaceAirbase(ctx: GameContext, state: GameState, action: Pl
   const rec = airOf(state);
   return {
     ok: true,
-    state: { ...state, nextUnitId: state.nextUnitId + 1, units: { ...state.units, [id]: unit }, air: { ...rec, placed: [...rec.placed, id] } },
+    state: {
+      ...state,
+      nextUnitId: state.nextUnitId + 1,
+      units: { ...state.units, [id]: unit },
+      air: { ...rec, placed: [...rec.placed, id] },
+      airbasesPlaced: { ...state.airbasesPlaced, [owner]: (state.airbasesPlaced?.[owner] ?? 0) + 1 },
+    },
     events: [{ type: "AIRBASE_PLACED", unitId: id, owner, at }],
   };
 }

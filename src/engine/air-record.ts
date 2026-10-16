@@ -19,11 +19,8 @@ export function airOf(state: GameState): AirState {
   return rec && rec.turn === turnKey(state) ? rec : { turn: turnKey(state), placed: [] };
 }
 
-/** The airbase counters of a Major Power that stand on the map. */
-export const airbasesPlaced = (state: GameState, owner: PowerId): number => Object.values(state.units).filter((u) => u.type === "airbase" && u.owner === owner).length;
-
 /**
- * Airbases a Major Power has not set down yet (Ref 20.1: three each). Counted from the counters on the map, so it cannot disagree with them;
- * the spec's stored `reserve` is not needed while an airbase can only leave the map by Strategic Redeployment, which is not built.
+ * Airbases a Major Power has not set down yet (Ref 20.1: three each): three minus the number it has ever placed (`GameState.airbasesPlaced`).
+ * An airbase destroyed in play does not come back. TODO(verify): the rule text read so far does not say whether a destroyed airbase is replaced.
  */
-export const airbasesInReserve = (state: GameState, owner: PowerId): number => Math.max(0, AIRBASES_PER_MAJOR_POWER - airbasesPlaced(state, owner));
+export const airbasesInReserve = (state: GameState, owner: PowerId): number => Math.max(0, AIRBASES_PER_MAJOR_POWER - (state.airbasesPlaced?.[owner] ?? 0));

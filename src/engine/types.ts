@@ -303,6 +303,8 @@ export interface GameState {
   combat?: CombatRecord;
   /** What the air rules have recorded this Player Turn (spec 09); absent in an older saved game. */
   air?: AirState;
+  /** How many movable airbases each Major Power has set down in the whole game, destroyed ones included (Ref 20.1: three each); absent means none. */
+  airbasesPlaced?: Partial<Record<PowerId, number>>;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
   /**

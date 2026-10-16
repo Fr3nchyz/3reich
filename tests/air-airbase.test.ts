@@ -5,6 +5,7 @@ import { airOf, airbasesInReserve } from "../src/engine/air-record";
 import { AIRBASES_PER_MAJOR_POWER } from "../src/engine/air-rules";
 import { airCapacity } from "../src/engine/air-bases";
 import { controlMap } from "../src/engine/control";
+import { enemyZocFor } from "../src/engine/zoc";
 import { newGame } from "../src/engine/game";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { GameState, PowerId } from "../src/engine/types";
@@ -61,11 +62,28 @@ describe("PLACE_AIRBASE at step 6f", () => {
     expect(errorOf(applyAction(CTX, s, place("germany", sea)))).toMatch(/open water/);
     expect(errorOf(applyAction(CTX, s, place("germany", "M33")))).toMatch(/not held by the axis side/); // Poznan, Polish
     expect(errorOf(applyAction(CTX, s, place("germany", "ZZ99")))).toMatch(/not on the map/);
+    for (const name of ["constructor", "__proto__", "toString"]) expect(errorOf(applyAction(CTX, s, place("germany", name)))).toMatch(/not on the map/);
     const one = okOf(applyAction(CTX, s, place("germany", "L32"))).state;
     expect(errorOf(applyAction(CTX, one, place("germany", "L32")))).toMatch(/one to a hex/);
     const crowded = board6f([inf("u1", "germany", "L32", 3, 3), inf("p1", "poland", "L33", 2, 3)]);
     const held = { ...crowded, control: { ...crowded.control, L33: "germany" as const } };
     expect(errorOf(applyAction(CTX, held, place("germany", "L33")))).toMatch(/holds enemy units/);
+  });
+
+  it("a destroyed airbase does not free its slot: the count is of airbases ever placed", () => {
+    let s = base();
+    for (const h of germanHexes(s).slice(0, 3)) s = okOf(applyAction(CTX, s, place("germany", h))).state;
+    const gone = Object.values(s.units).find((u) => u.type === "airbase")!;
+    const { [gone.id]: _lost, ...rest } = s.units;
+    const after = { ...s, units: rest };
+    expect(airbasesInReserve(after, "germany")).toBe(0);
+    expect(errorOf(applyAction(CTX, after, place("germany", gone.at)))).toMatch(/already placed all three/);
+  });
+
+  it("a Major Power that is not in the war is told so, not whose turn it is", () => {
+    const s = board6f([inf("b1", "britain", "K24", 3, 3)], "allies");
+    expect(errorOf(applyAction(CTX, s, place("usa", "K24")))).toMatch(/usa is not in the war/);
+    expect(errorOf(applyAction(CTX, base(), place("italy", "L32")))).toMatch(/italy is not in the war/);
   });
 
   it("refuses at another step, in the other side's turn, for a nation that is not a Major Power, and malformed input", () => {
@@ -79,8 +97,9 @@ describe("PLACE_AIRBASE at step 6f", () => {
 
   it("allows a hex inside an enemy armor zone of control (Ref 11.72)", () => {
     const s = board6f([inf("u1", "germany", "L32", 3, 3), inf("p1", "poland", "M33", 4, 6, "armor")]);
-    const inZoc = germanHexes(s).find((h) => CTX.map.hexes[h]!.land && (h === "L33" || h === "L32" || h === "M32"))!;
-    expect(inZoc).toBeDefined();
+    const zoc = enemyZocFor(CTX, s, "axis");
+    const inZoc = germanHexes(s).find((h) => zoc.has(h))!;
+    expect(inZoc, "a German hex lies in the Polish armor's zone of control").toBeDefined();
     expect(applyAction(CTX, s, place("germany", inZoc)).ok).toBe(true);
   });
 
@@ -107,7 +126,7 @@ describe("PLACE_AIRBASE at step 6f", () => {
     const s = base();
     expect(legalActions(CTX, s).some((a) => a.type === "PLACE_AIRBASE")).toBe(false);
     const after = okOf(applyAction(CTX, s, place("germany", "L32"))).state;
-    expect(legalActions(CTX, after).filter((a) => a.type === "MOVE").length).toBe(legalActions(CTX, s).filter((a) => a.type === "MOVE").length);
+    expect(legalActions(CTX, after)).toEqual(legalActions(CTX, s)); // an airbase counter changes neither a move nor any other choice
   });
 
   it("the record belongs to one Player Turn: another turn starts empty", () => {
