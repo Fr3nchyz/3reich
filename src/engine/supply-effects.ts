@@ -15,10 +15,11 @@ import { ZOC_UNIT_TYPES } from "./zoc";
  * once, at the start of the Player Turn. Not built: Strategic Redeployment, Exploitation, airbases relocating (Ref 20.1, 11.75), the Libyan cap.
  */
 /**
- * OFF until the supply sources are complete. Today only capitals supply, so units in Gibraltar, Malta, Egypt, Palestine, Syria, Algeria, Tunisia,
- * Libya, Sardinia and East Prussia-like pockets count as cut off at the start of every scenario (3 Axis and 12 Allied units in 1939; 26 Allied in 1944),
- * and punishing them would be wrong. Missing: Fortress, Libyan, Egyptian, Tunis, Beirut, Moscow and east-edge sources, Malta, the U.S.A. fallback,
- * Konigsberg and Durazzo (Ref 19.2) and sea supply (Ref 19.31, needs fleets). Switch on when `docs/PC-MANUAL-AUDIT.md` shows the false positives gone.
+ * OFF. Two things stand in the way (measured 2026-10-16 with the switch on, computer against itself): (1) the computer does not plan its supply, so its
+ * armies run ahead of their lines and sit cut off: over 30 seeds of 1939 the Axis holds 202 objectives instead of 289 and idles 180 Player Turns instead of 65
+ * (the Campaign 18 instead of 86); (2) a few legitimate pockets still need sea supply (Ref 19.31, needs fleets): Italian units in Sardinia and German units in
+ * Norway in the 1942 and 1944 scenarios. Switch on when the computer keeps its supply lines and fleets exist. The sources of Ref 19.2 are built (supply-sources.ts);
+ * not built: the U.S.A. fallback, Greek islands, Tangiers.
  */
 export const SUPPLY_EFFECTS_ENABLED = false;
 export const UNSUPPLIED_CANNOT_MOVE = true;
