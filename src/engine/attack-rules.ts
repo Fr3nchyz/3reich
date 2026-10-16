@@ -13,11 +13,17 @@ import { atWar, isMajorPower } from "./war";
  */
 
 /**
- * Counters that fight on the ground. TODO(verify): whether Replacement counters attack and
- * defend like other ground units; here they do, as they count toward stacking.
+ * Counters that fight on the ground. Replacements defend (and count toward stacking); they attack only in a Counterattack, see
+ * REPLACEMENTS_ONLY_COUNTERATTACK. TODO(verify): whether they exert a ZOC.
  */
 export const GROUND_COMBAT_TYPES: readonly UnitType[] = ["infantry", "armor", "airborne", "replacement"];
 export const isGroundCombatUnit = (u: Pick<Unit, "type">): boolean => GROUND_COMBAT_TYPES.includes(u.type);
+
+/**
+ * Replacements "may not attack except as a part of a Counterattack" (Ref 12.1, PC Reference Manual; rule 22.0 itself has no body text in our
+ * copy). The Counterattack result is not built, so for now they never attack; they still defend. Set false for the old behaviour.
+ */
+export const REPLACEMENTS_ONLY_COUNTERATTACK = true;
 
 /**
  * A hex can be attacked only once in a Player Turn. TODO(verify): the manual text is not in the
@@ -104,10 +110,10 @@ export function neighborIds(ctx: GameContext, at: HexId): HexId[] {
 /** Whether the owner's units fight at all: a Major Power must be in the war; a minor force (Poland, a Minor-Ally...) is. */
 const takesPart = (state: GameState, o: ForceOwner): boolean => !isMajorPower(o) || inTheWar(state, o);
 
-/** Ground units of the side that could attack now: on a hex, not yet used this turn, supplied. */
+/** Ground units of the side that could attack now: on a hex, not yet used this turn, supplied; Replacements only in a Counterattack (not built). */
 export function attackerPool(ctx: GameContext, state: GameState, side: Side, used: readonly string[]): Unit[] {
   return Object.values(state.units).filter(
-    (u) => isGroundCombatUnit(u) && sideOfOwner(u.owner) === side && takesPart(state, u.owner) && ctx.map.hexes[u.at] !== undefined && !used.includes(u.id) && isSupplied(ctx, state, u),
+    (u) => isGroundCombatUnit(u) && !(REPLACEMENTS_ONLY_COUNTERATTACK && u.type === "replacement") && sideOfOwner(u.owner) === side && takesPart(state, u.owner) && ctx.map.hexes[u.at] !== undefined && !used.includes(u.id) && isSupplied(ctx, state, u),
   );
 }
 
