@@ -6,6 +6,7 @@ import { airOf, flownOf, hasFlown } from "../src/engine/air-record";
 import { committedAt, countedAir } from "../src/engine/air-support";
 import { applyOutcome } from "../src/engine/attack-losses";
 import { attackNumbers } from "../src/engine/attack-rules";
+import { oddsColumn } from "../src/engine/combat";
 import { combatOf } from "../src/engine/combat-record";
 import { legalBuilds } from "../src/engine/construction";
 import type { GameContext } from "../src/engine/context";
@@ -92,6 +93,19 @@ describe("what the player is asked at step 7b", () => {
     expect(hasAirWork(CTX, at7b([air("a1", "J32", 3)]))).toBe(false);
   });
 
+  it("with the missions on: the list names each attackable hex with the air that fits, every listed action is accepted, and 7b waits only while there is room under the cap", () => {
+    const s = base();
+    const listed = legalDesignations(CTX, s, true);
+    expect(listed).toEqual([commit(["a1", "a2"])]); // 3 + 2 air under the cap of 12
+    for (const a of listed) expect(applyAction(CTX, s, a).ok).toBe(true);
+    const tight = at7b([inf("u1", "germany", "M32", 1, 3), inf("p1", "poland", "M33", 2, 3), air("a1", "J32", 5)]); // cap 3, the only unit has 5
+    expect(legalDesignations(CTX, tight, true)).toEqual([]);
+    expect(hasAirWork(CTX, tight)).toBe(false);
+    expect(hasAirWork(CTX, s)).toBe(true);
+    const split = at7b([inf("u1", "germany", "M32", 1, 3), inf("p1", "poland", "M33", 2, 3), air("a1", "J32", 3), air("a2", "J32", 2)]);
+    expect(legalDesignations(CTX, split, true)).toEqual([commit(["a1"])]); // a1 fits the cap of 3, a2 would make 5
+  });
+
   it("is off in the game as shipped: 7b is passed, nothing is listed, and a step that waits only when the test says so", () => {
     const s = base();
     expect(legalActions(CTX, s).some((a) => a.type === "DESIGNATE_AIR")).toBe(false);
@@ -102,6 +116,28 @@ describe("what the player is asked at step 7b", () => {
     const ctx: GameContext = { ...CTX, implementedSteps: new Set([...IMPLEMENTED_STEPS, "7b"]) };
     const waits = okOf(applyAction(ctx, sixth, { type: "END_STEP", side: "axis", step: "6f" })).state;
     expect(waits.position).toMatchObject({ step: "7b" });
+  });
+});
+
+describe("reshaping air at step 7b", () => {
+  it("a unit committed to ground support cannot be split or combined; it cannot fly twice by new ids", () => {
+    const s = okOf(applyAction(CTX, base(), commit(["a1"]))).state;
+    expect(errorOf(applyAction(CTX, s, { type: "SPLIT_AIR", side: "axis", unit: "a1", parts: [2, 1] }))).toMatch(/committed to ground support/);
+    expect(errorOf(applyAction(CTX, s, { type: "COMBINE_AIR", side: "axis", units: ["a1", "a2"] }))).toMatch(/committed to ground support/);
+    const free = okOf(applyAction(CTX, s, { type: "SPLIT_AIR", side: "axis", unit: "a2", parts: [1, 1] })).state; // a free unit may
+    expect(Object.values(free.units).filter((u) => u.type === "air" && u.at === "J32").map((u) => u.strength).sort()).toEqual([1, 1, 3]);
+  });
+
+  it("parts of a unit built this Game Turn may not fly either, nor may a unit joined to one", () => {
+    const built = { ...at7b([inf("u1", "germany", "M32", 4, 3), inf("p1", "poland", "M33", 2, 3), air("n1", "J32", 3), air("o1", "J32", 2)]), airFlown: { turn: "1939-summer", units: { n1: "new" as const } } };
+    const state: GameState = { ...built, year: 1939, season: "summer" };
+    const split = okOf(applyAction(CTX, state, { type: "SPLIT_AIR", side: "axis", unit: "n1", parts: [2, 1] })).state;
+    const parts = Object.values(split.units).filter((u) => u.id.startsWith("u1") && u.type === "air").map((u) => u.id);
+    expect(parts).toHaveLength(2);
+    for (const id of parts) expect(hasFlown(split, id)).toBe(true);
+    const joined = okOf(applyAction(CTX, state, { type: "COMBINE_AIR", side: "axis", units: ["n1", "o1"] })).state;
+    expect(hasFlown(joined, "u100")).toBe(true);
+    expect(errorOf(applyAction(CTX, joined, commit(["u100"])))).toMatch(/already flown a mission/);
   });
 });
 
@@ -116,7 +152,8 @@ describe("the numbers and the battle", () => {
     expect(n.air.map((u) => u.id)).toEqual(["a1"]);
     const none = attackNumbers(CTX, base(), [base().units.u1!], defenders, "M33");
     expect(none).toMatchObject({ attackFactors: 4, airFactors: 0, air: [] });
-    expect(none.column).not.toBe(n.column === null ? "x" : n.column === none.column ? "never" : "x");
+    expect(n.column).toBe(oddsColumn(7, 2 * n.multiplier)); // the odds are those of the larger attack
+    expect(none.column).toBe(oddsColumn(4, 2 * none.multiplier));
   });
 
   it("the cap is three times the ground factors actually attacking, units counted in order, the rest committed but not counted", () => {

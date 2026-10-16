@@ -47,7 +47,7 @@ export const AIR_MISSIONS_ENABLED = false;
 /** Air factors counted in a Ground Support attack are at most this many times the ground factors attacking the hex (Ref 20.41). */
 export const GS_CAP_MULTIPLE = 3;
 
-/** A mission in the Combat Phase flies out and back over at most this many hexes (Ref 20.41, 20.51). */
+/** A mission in the Combat Phase flies to a hex at most this many hexes from the plane's base (Ref 20.41, 20.51); `missionHexes` measures the one-way route. */
 export const MISSION_RANGE = 4;
 
 /** Airdrop range of a paratroop unit from its base (Ref 23.1). Not used before the airdrop ticket. */

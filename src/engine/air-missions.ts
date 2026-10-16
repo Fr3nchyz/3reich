@@ -39,15 +39,12 @@ export const airInRangeOf = (ctx: GameContext, state: GameState, target: HexId):
 /** The most air factors that may be committed at the hex: three times every ground factor that could attack it (the exact cap is applied at step 7h, R8 option a). */
 const commitCap = (ground: readonly Unit[]): number => GS_CAP_MULTIPLE * ground.reduce((n, u) => n + u.strength, 0);
 
-/** Whether step 7b has anything to wait for: a free air unit within reach of a hex that can be attacked. */
-export const hasAirWork = (ctx: GameContext, state: GameState): boolean => {
-  const targets = groundSupportTargets(ctx, state);
-  return targets.size > 0 && freeAir(ctx, state).length > 0 && [...targets.keys()].some((t) => airInRangeOf(ctx, state, t).length > 0);
-};
+/** Whether step 7b has anything to wait for: some designation is possible (a free air unit within reach of a hex that can be attacked, and room under the cap). */
+export const hasAirWork = (ctx: GameContext, state: GameState): boolean => designations(ctx, state).length > 0;
 
 /** The first reason these air units may not all be committed to ground support at `target`, or null. */
-export function designateProblem(ctx: GameContext, state: GameState, units: readonly Unit[], target: HexId): string | null {
-  const ground = groundSupportTargets(ctx, state).get(target);
+export function designateProblem(ctx: GameContext, state: GameState, units: readonly Unit[], target: HexId, targets: ReadonlyMap<HexId, Unit[]> = groundSupportTargets(ctx, state)): string | null {
+  const ground = targets.get(target);
   if (!ground) return `${target} is not a hex the ${state.activeSide} side can attack now.`;
   for (const u of units) {
     if (u.type !== "air") return `${u.id} is not an air unit.`;
@@ -89,17 +86,21 @@ export function applyDesignate(ctx: GameContext, state: GameState, action: Desig
   };
 }
 
-/** The designations listed to the player: for each hex that can be attacked, every free air unit in range that fits under the cap, together (the first useful choice, as ATTACK lists the whole force). */
-export function legalDesignations(ctx: GameContext, state: GameState): Action[] {
-  if (!AIR_MISSIONS_ENABLED) return [];
+/** The designations that could be made now: for each hex that can be attacked, every free air unit in range that fits under the cap, together (the first useful choice, as ATTACK lists the whole force). */
+function designations(ctx: GameContext, state: GameState): Action[] {
+  const targets = groundSupportTargets(ctx, state);
+  if (targets.size === 0) return [];
   const out: Action[] = [];
-  for (const target of [...groundSupportTargets(ctx, state).keys()].sort()) {
+  for (const target of [...targets.keys()].sort()) {
     const chosen: string[] = [];
-    for (const u of airInRangeOf(ctx, state, target)) if (designateProblem(ctx, state, [...chosen, u.id].map((id) => state.units[id]!), target) === null) chosen.push(u.id);
+    for (const u of airInRangeOf(ctx, state, target)) if (designateProblem(ctx, state, [...chosen, u.id].map((id) => state.units[id]!), target, targets) === null) chosen.push(u.id);
     if (chosen.length > 0) out.push({ type: "DESIGNATE_AIR", side: state.activeSide, mission: "ground-support", units: chosen, target });
   }
   return out;
 }
+
+/** The designations listed to the player at step 7b; nothing while the missions are switched off (`enabled` is for a test to ask as if they were on). */
+export const legalDesignations = (ctx: GameContext, state: GameState, enabled: boolean = AIR_MISSIONS_ENABLED): Action[] => (enabled ? designations(ctx, state) : []);
 
 /**
  * Step 7h is over: ground support committed to a hex that was not attacked is eliminated (Ref 20.41, R8: the committed units cannot be withdrawn;
