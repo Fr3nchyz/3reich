@@ -1,6 +1,6 @@
 # 09. Air units: bases, staging, air support in battle, counter-air and airdrops
 
-Status: **approved 2026-10-15 with the decision below (D1: displace). Tickets 09-1, 09-2, 09-3 and 09-6 are built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
+Status: **approved 2026-10-15 with the decision below (D1: displace). Tickets 09-1, 09-2, 09-3, 09-4 and 09-6 are built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
 
 
 ## Decisions (product owner, 2026-10-15)
@@ -652,6 +652,15 @@ Ref 3.0 (counters), 4.51, 4.7 (cities as bases), 5.0 (stacking), 9.1 (boundary o
 - **Not `legalActions`, and `hasMoveWork` unchanged,** for the reasons of 09-2: the computer does not stage yet and recorded games must not change; step 6f is still passed without waiting when no ground unit can move, so the screen ticket (09-13) must decide whether staging keeps the step open. `stagingTargets(ctx, state, ids)` lists the bases for a group; a test proves it agrees with `applyAction` on every hex.
 - **Not in this ticket.** The Option of the Front entered and the Pass Option limit (Ref 11.42): `TODO(verify)`, nothing in our Front Options models "pass" yet. Marking newly built air units as having no mission this Game Turn (Ref 20.3) is left to ticket 09-7, which introduces the record of flown missions.
 - **Tests.** `tests/air-stage.test.ts` (13), including the full-map agreement and the record at the start of both Player Turns. Mutation checks (8 killed): start-of-turn control, once a turn, placed-this-turn rule, range 9, air type, side, stacking, record at turn start.
+
+## As built (ticket 09-4: partial units)
+
+- **Files.** `src/engine/air-units.ts` (`applySplitAir`, `applyCombineAir`, `combineProblem`, `splitChoices`). Actions `SPLIT_AIR { side, unit, parts }` and `COMBINE_AIR { side, units }`, event `AIR_RESHAPED { at, before, after }` with a log line ("Germany air at X: 5 became 3 + 2 air factors."). The counter sizes are the existing `AIR_COMBAT_RULES.counterSizes` (1, 2, 3, 5; `TODO(verify)`, part J item 4; the spec's name `AIR_COUNTER_SIZES` is this field), so splitting and the break-down of losses use one list. The actions carry `side` like the others, and the one event is `AIR_RESHAPED` for both directions (the spec's C3 named two).
+- **Rule (R6).** In the owner's Player Turn, at step 6f (and 7b when it exists), a Major Power's air unit is split into two or more counters of sizes in the list adding to its factors, or air counters of one owner, nationality and movement factor in one hex are combined when the total is a counter size. New ids, largest part first; the old counters go; the hex's total of air factors never changes, so stacking is unaffected. Air that is not a Major Power's (Poland, the free forces, the Minor-Allies, Vichy) is not partial. A unit that staged this turn keeps that: its parts, or the counter made from it, count as staged, so one stage a turn cannot be dodged by reshaping.
+- **Parts count as units (R6).** A unit split before it stages gives two units that may each stage once. The parent's id stays in `air.staged` (ids are never reused).
+- **Not `legalActions`** (as 09-2 and 09-3): the computer does not reshape air, and step 6f is still passed without waiting when no ground unit can move (`hasMoveWork` ignores air until ticket 09-13 decides how the step stays open); `splitChoices(strength)` lists the splits for the screen of ticket 09-13.
+- **Not in this ticket.** The check of counter sizes when air is built (Ref 11.61, a construction ticket); reshaping at the combat steps that do not wait yet.
+- **Tests.** `tests/air-units.test.ts` (12); mutation checks (12 killed): split total, split sizes, non-Major-Power air, air type, movement, nationality, owner, combine total, staged kept on split and on combine, step on split and on combine.
 
 ## As built (ticket 09-6: air combat resolver)
 
