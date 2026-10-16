@@ -1,6 +1,7 @@
 import { ADVANCE_AFTER_COMBAT, ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, isEnemy, isGroundCombatUnit, lonersAt, neighborIds } from "../engine/attack-rules";
 import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import { combatOf } from "../engine/combat-record";
+import { committedAt } from "../engine/air-support";
 import type { GameContext } from "../engine/context";
 import { OWNER_NAMES } from "../engine/nations";
 import type { DefenseBasis } from "../engine/terrain";
@@ -42,8 +43,21 @@ export interface NonDefenderLine {
   reason: string;
 }
 
+/** The air committed to ground support at the hex (spec 09): what counts in the attack, and what is committed but left out by the cap. */
+export interface AirSupportLine {
+  /** "3-4 German air from Poznan (M33)", one per unit that counts. */
+  counted: string[];
+  /** The air factors that count (they are inside `attackFactors`). */
+  factors: number;
+  /** Committed units the cap of three times the ground factors leaves out. */
+  leftOut: string[];
+}
+
 export interface PreviewNumbers {
+  /** Ground factors plus the air factors that count. */
   attackFactors: number;
+  /** The air support inside `attackFactors`, or null when none is committed here. */
+  air: AirSupportLine | null;
   /** The defenders' printed factors, before the terrain multiple. */
   defenseFactors: number;
   multiplier: number;
@@ -180,8 +194,11 @@ function describeNumbers(ctx: GameContext, state: GameState, attackers: Unit[], 
   const n = attackNumbers(ctx, state, attackers, defenders, target);
   const defenseTotal = n.defenseFactors * n.multiplier;
   const rounded = n.attackFactors < defenseTotal ? " A weaker attack is rounded against the attacker." : n.attackFactors >= 5 * defenseTotal ? " More than 5-1 counts as 5-1." : "";
-  const odds = n.column === null ? `${n.attackFactors} against ${defenseTotal}: weaker than 1-4, so the attackers are eliminated with no roll.` : `${n.attackFactors} against ${defenseTotal}, column ${n.column}.`;
-  return { attackFactors: n.attackFactors, defenseFactors: n.defenseFactors, multiplier: n.multiplier, basis: n.basis, multiplierReason: MULTIPLIER_REASONS[n.basis], defenseTotal, column: n.column, oddsText: odds + rounded };
+  const committed = committedAt(state, target);
+  const air: AirSupportLine | null = committed.length === 0 ? null : { counted: n.air.map((u) => `${unitName(u)} from ${placeName(ctx.map, u.at)}`), factors: n.airFactors, leftOut: committed.filter((u) => !n.air.includes(u)).map((u) => unitName(u)) };
+  const mine = air && air.factors > 0 ? `${n.attackFactors} (${n.attackFactors - air.factors} on the ground and ${air.factors} in the air)` : `${n.attackFactors}`;
+  const odds = n.column === null ? `${mine} against ${defenseTotal}: weaker than 1-4, so the attackers are eliminated with no roll.` : `${mine} against ${defenseTotal}, column ${n.column}.`;
+  return { attackFactors: n.attackFactors, air, defenseFactors: n.defenseFactors, multiplier: n.multiplier, basis: n.basis, multiplierReason: MULTIPLIER_REASONS[n.basis], defenseTotal, column: n.column, oddsText: odds + rounded };
 }
 
 /** The problems that stop any attack on this hex now (the sentences of spec 07 part A). */
@@ -221,7 +238,8 @@ const factorsWord = (n: number): string => `${n} factor${n === 1 ? "" : "s"}`;
 function buttonFor(place: string, chosen: Unit[], numbers: PreviewNumbers | null, sweep: Sweep | null, loners: Unit[], problems: string[]): AttackButton {
   if (problems.length > 0) return { text: chosen.length === 0 && problems.length === 1 && problems[0] === NONE_CHOSEN ? "Choose at least one unit to attack with" : problems[0]!, risky: false, disabled: true };
   if (sweep) return { text: `Destroy ${stackSummary(loners)} in ${place}`, risky: false, disabled: false };
-  const by = `with ${chosen.length === 1 ? "1 unit" : `${chosen.length} units`} (${factorsWord(numbers!.attackFactors)})`;
+  const airNote = numbers!.air && numbers!.air.factors > 0 ? ` and ${numbers!.air.factors} air` : "";
+  const by = `with ${chosen.length === 1 ? "1 unit" : `${chosen.length} units`}${airNote} (${factorsWord(numbers!.attackFactors)})`;
   // With no roll the loss is certain, which is not a gamble: the amber warning stays, the word "risky" does not.
   if (numbers!.column === null) return { text: `Attack ${place} ${by}: no roll, your attackers are eliminated (certain loss)`, risky: true, disabled: false };
   const risky = RISKY.includes(numbers!.column);
@@ -262,7 +280,9 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
   const without = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => !defenders.some((d) => d.id === id))) };
   const alsoDestroyed = defenders.length > 0 && chosen.length > 0 ? lonersAt(without, chosen, target).map((u) => unitName(u, true)) : [];
   const emptyAfterWin = ADVANCE_AFTER_COMBAT && here.every((u) => defenders.includes(u) || lonersAt(without, chosen, target).includes(u));
-  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: chosen, defenders, multiplier: numbers.multiplier, alsoDestroyed, emptyAfterWin }) : [];
+  // The air that counts fights and can be lost with the attackers (attack-losses.ts), so the rows are worked out with it among them.
+  const airUnits = numbers && numbers.air && numbers.air.factors > 0 ? attackNumbers(ctx, state, chosen, defenders, target).air : [];
+  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: [...chosen, ...airUnits], defenders, multiplier: numbers.multiplier, alsoDestroyed, emptyAfterWin }) : [];
 
   const keys = new Map<string, number>();
   const nth = cands.map((c) => `${unitName(c.unit)}|${c.unit.at}`);
