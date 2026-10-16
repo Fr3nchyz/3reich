@@ -142,10 +142,10 @@ stateDiagram-v2
 
 ### What the yellow hexes show
 
-- **Where all ticked units can end up together**: the hexes the group can reach at its slowest unit's factor, entering an enemy ZOC ends the path, and the whole group must fit at the end. The engine already computes exactly this for the group (`reachableHexes` and `endProblem`).
+- **Where all ticked units can end up together**: the hexes the group can reach at its slowest unit's factor (leaving a hex in enemy armor ZOC costs 2 more, spec 13; entering never stops the group), and the whole group must fit at the end. The engine already computes exactly this for the group (`reachableHexes` and `endProblem`).
 - **Different movement allowances.** The group takes the slowest. This equals the **overlap** of what each unit could reach alone, because a slower unit's reach lies inside a faster one's (every hex costs 1 today, and a larger budget never reaches less). Moving a group is only a shortcut for moving each unit to the same hex one by one, so nothing is lost: to send the fast unit further, untick the slow one (or move the slow one first, then the fast one).
 - **Stacking.** Two units need room for two. Hexes with one free place appear for one ticked unit and vanish for two; the card says so in the line for a refused tap.
-- **Refused tap.** A tap on a non-yellow hex says why when the engine can tell ("Radom (N34) holds an enemy unit: that is an attack, not a move"; "would hold 3 ground units, limit 2"), else "These units cannot get there together. The yellow hexes are the places they can." (ticket 10-7).
+- **Refused tap.** A tap on a non-yellow hex says why when the engine can tell ("Radom (N34) holds an enemy unit: that is an attack, not a move"; "a hex holds at most 2 ground units, so untick one or tap a hex with room"), else "These units cannot get there together. The yellow hexes are the places they can." (ticket 10-7).
 - **Nothing is hidden by the zoom**: spec 08's "zoom to the selected counter" button fits exactly these yellow hexes, so it keeps working.
 
 ### Units left behind
@@ -340,3 +340,10 @@ Ref 5.0 and 26.0 (stacking, Anglo-French), 5.45f and 5.45g (movement, overstack)
 4. The computer and watch mode never see the card; `legalActions`, the computer's moves and a fixed-seed self-play are identical to before.
 5. Every button is at least 44 px on phone, iPad (both ways) and computer; the Playwright mouse and touch tests of Part F pass; lint, typecheck, unit tests and build pass.
 6. No rule was added: anything not in docs/RULES.md is marked `TODO(verify)` and listed above.
+
+### As built, ticket 10-7 (2026-10-16): why not, and the list of destinations
+
+- `src/ui/moveWhy.ts` (`whyNot`): a refused tap on a hex that is not yellow now says why, in one sentence with a place name and no unit id, picked in this order from the engine's read-only queries (`entryProblem`, `canCross`, `reachableHexes`, `endProblem`) and a route search that ignores movement points: open water; an edge ground units cannot cross (the Channel, the Qattara Depression); an enemy unit there; neutral land. If the hex can be entered but not ended on: British and French together before 1942 get their own sentence, a full hex says how many fit (and "Untick one" only when unticking would help), anything else says there is no room. If it cannot be reached: no route at all ("There is no way through to ..."); a route longer than the movement points ("it is 4 hexes away and they can go up to 2"); or a route within the points that only fails because leaving an enemy zone of control costs 2 more. Nothing ticked: the general sentence stays. The second shade keeps its own sentence ("The 3-4 German armor alone could go further...").
+- The fold-out `Where they can go (N)` (`whereHtml` in `moveView.ts`) under the card's live lines: one 44 px button per yellow hex, place name and distance, nearest first, at most 40 (`WHERE_LIMIT`, with a line saying how many are listed). A row does exactly what a tap on that yellow hex does (`goTo`). Shut by default; whether it is open is kept in the choice (`MoveChoice.whereOpen`) so a redraw leaves it as the player left it; `focusKeep.ts` knows `data-dest` so the keyboard focus returns to the same row.
+- Tests: `tests/move-why.test.ts` (8), `tests/move-where.test.ts` (5), two browser tests in `tests/e2e/move-pick.spec.ts` (mouse and touch); the older tests that expected the general sentence now expect the specific one.
+- Still for 10-8: the keyboard-only run and the sizes 844x390, 1366x1024 and 1400x1000.

@@ -47,7 +47,7 @@ describe("tapping a stack and then a destination (step 6f)", () => {
     tapHex(s, hexOf(s, from));
     tapHex(s, Object.values(s.ctx.map.hexes).find((h) => !h.land)!);
     expect(s.moveChosen?.hex).toBe(from);
-    expect(s.toast).toMatch(/cannot get there/);
+    expect(s.toast).toMatch(/open water: ground units cannot go there/); // spec 10, 10-7: the refusal says why
   });
 
   it("shows no button for the moves, and says how to move", () => {

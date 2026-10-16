@@ -78,7 +78,7 @@ test("1939, Axis: step 6f, tap a stack then a yellow hex to move it; a refused t
   let refused = false;
   for (const pt of away) {
     await tapAt(page, hasTouch, pt);
-    if (/cannot get there/.test((await page.locator("#maptoast").textContent()) ?? "")) { refused = true; break; }
+    if (/too far for them|holds an enemy unit|open water|neutral land|cannot cross into|could not hold|no room for them/.test((await page.locator("#maptoast").textContent()) ?? "")) { refused = true; break; }
   }
   expect(refused, "a tap away from the yellow hexes is refused in the line over the map").toBe(true);
   expect(await outlined(page)).toBe(yellow);

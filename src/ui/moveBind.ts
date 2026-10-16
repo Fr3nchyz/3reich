@@ -1,4 +1,4 @@
-import { cancelMove, chooseStack, tickAll, tickNone, toggleTick } from "./moveTap";
+import { cancelMove, chooseStack, goTo, setWhereOpen, tickAll, tickNone, toggleTick } from "./moveTap";
 import { takeBack, takeBackReason } from "./moveUndo";
 import type { Session } from "./session";
 
@@ -16,6 +16,8 @@ export function bindMove(root: HTMLElement, s: Session, redraw: () => void): voi
     root.querySelectorAll<T>(selector).forEach((el) => el.addEventListener("click", () => { handler(el); redraw(); }));
   on<HTMLButtonElement>("button.stack-row", (b) => chooseStack(s, b.dataset.stack!, true));
   on<HTMLButtonElement>("button.mline[data-unit]", (b) => toggleTick(s, b.dataset.unit!));
+  on<HTMLButtonElement>("button.dest-row", (b) => goTo(s, b.dataset.dest!));
+  root.querySelector<HTMLDetailsElement>("#move-where")?.addEventListener("toggle", (ev) => setWhereOpen(s, (ev.currentTarget as HTMLDetailsElement).open)); // no redraw: the page already shows it
   on("#move-all", () => tickAll(s));
   on("#move-none", () => tickNone(s));
   on("#move-cancel", () => cancelMove(s));

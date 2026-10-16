@@ -5,6 +5,7 @@ import { newChoice, withTicks } from "./moveDraft";
 import { defaultTicks, movedLine, selectionFor, toggled, type MoveSelection } from "./moveSelection";
 import * as T from "./moveText";
 import { placeName, stackSummary, unitsWithIds } from "./names";
+import { whyNot } from "./moveWhy";
 import { noteMove } from "./moveUndo";
 import { run, type Session } from "./session";
 import { atStep6f } from "./step6f";
@@ -111,11 +112,22 @@ export function cancelMove(s: Session): void {
   s.moveChosen = null;
 }
 
+/** The fold-out "Where they can go" was opened or closed. */
+export function setWhereOpen(s: Session, open: boolean): void {
+  if (s.moveChosen) s.moveChosen = { ...s.moveChosen, whereOpen: open };
+}
+
+/** A row of the fold-out "Where they can go": the ticked units go there, exactly as a tap on that yellow hex does. */
+export function goTo(s: Session, to: string): void {
+  const sel = selectionNow(s);
+  if (sel) moveTicked(s, sel, to);
+}
+
 /** The ticked units go to `to` if it is a yellow hex; the hex stays chosen while someone there can still move. */
 function moveTicked(s: Session, sel: MoveSelection, to: string): void {
   const dest = sel.destinations.find((d) => d.to === to);
   if (sel.ticked.length === 0) s.toast = T.NOTHING_TICKED;
-  else if (!dest) s.toast = sel.alone.includes(to) && sel.further ? sel.further : T.CANNOT_GET_THERE;
+  else if (!dest) s.toast = sel.alone.includes(to) && sel.further ? sel.further : whyNot(s.ctx, s.state, sel.ticked.map((id) => s.state.units[id]!), to);
   else {
     const line = movedLine(s.ctx, s.state, sel.ticked, to);
     const action: Move = { type: "MOVE", side: s.state.activeSide, units: sel.ticked, path: dest.path };

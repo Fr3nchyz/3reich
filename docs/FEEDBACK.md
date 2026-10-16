@@ -52,6 +52,6 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 - The "nothing selected" note also shows on the computer's turn and at step 3, where nothing can be chosen; on the smallest landscape phone screen it hides the refused-move line for 4 seconds.
 - A test is missing for "the computer attacks and the human chooses the losses" (the case works in a trial).
 - A stack cannot be moved onto one of your own stacks that has not moved yet, because tapping it re-chooses it (seen in 1942, Buerat armor to Tripoli).
-- "These units cannot get there together" is plural for a one-unit stack and misleading on an enemy hex (spec 10, ticket 10-7).
+- "These units cannot get there together" is plural for a one-unit stack and misleading on an enemy hex (done in spec 10, ticket 10-7; was: ticket 10-7).
 - The engine has no "decline the advance" action; Stay only hides the card.
 - A manual pass of the loss-choice cards and the move card on a real iPad is still to do.

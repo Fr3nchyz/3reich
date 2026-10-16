@@ -256,7 +256,7 @@ for (const size of [[390, 844], [1024, 768], [1180, 820]] as const) {
 
     // A tap on an enemy hex is refused; the page does not move.
     await tapAt(page, hasTouch, await here(page, "M35"));
-    await expect(page.locator("#maptoast")).toContainText("cannot get there");
+    await expect(page.locator("#maptoast")).toContainText(/holds an enemy unit: that is an attack, not a move|too far for them|no way through|zone of control/);
     await cardInReach(page, "after a refused tap");
     expect(await page.evaluate(() => window.scrollY)).toBe(top);
 
@@ -327,3 +327,40 @@ for (const size of [[1024, 768], [1180, 820], [768, 1024], [390, 844]] as const)
     expect(first.y, "the first row is on screen").toBeLessThan(size[1]);
   });
 }
+
+test("the fold-out 'Where they can go' lists the yellow hexes as 44 px buttons and a row moves the ticked units (10-7)", async ({ page, hasTouch }) => {
+  const errors = await load(page);
+  await tapHexId(page, hasTouch, "O32");
+  await expect(card(page)).toBeVisible();
+  const where = page.locator("#move-where");
+  const summary = page.locator("#move-where-sum");
+  await expect(where).toBeVisible();
+  await expect(where).not.toHaveAttribute("open", "");
+  const count = Number(/\((\d+)\)/.exec((await summary.textContent()) ?? "")![1]);
+  expect(count).toBe(await yellow(page).count());
+  await press(summary, hasTouch);
+  await expect(where).toHaveAttribute("open", "");
+  const rows = page.locator("button.dest-row");
+  expect(await rows.count()).toBe(Math.min(count, 40));
+  for (const b of await rows.all()) expect((await b.boundingBox())!.height, "a row is at least 44 px high").toBeGreaterThanOrEqual(44);
+  // The open state survives a redraw (None, then All).
+  await press(page.locator("#move-none"), hasTouch);
+  await press(page.locator("#move-all"), hasTouch);
+  await expect(where).toHaveAttribute("open", "");
+  const first = rows.first();
+  const target = await first.getAttribute("data-dest");
+  await press(first, hasTouch);
+  await expect(moveLog(page).first()).toBeVisible();
+  expect(errors).toEqual([]);
+  expect(target).toBeTruthy();
+});
+
+test("a tap on a hex that is not yellow says why, in words with no unit id", async ({ page, hasTouch }) => {
+  const errors = await load(page);
+  await tapHexId(page, hasTouch, "O32");
+  await expect(card(page)).toBeVisible();
+  await tapHexId(page, hasTouch, "M35"); // Warsaw: the Polish capital, held by the enemy
+  await expect(page.locator("#maptoast")).toContainText(/holds an enemy unit: that is an attack, not a move|too far for them|no way through|zone of control/);
+  expect(await page.locator("#maptoast").innerText()).not.toMatch(/\bu\d+\b/);
+  expect(errors).toEqual([]);
+});
