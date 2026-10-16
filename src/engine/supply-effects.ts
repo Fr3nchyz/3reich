@@ -40,9 +40,15 @@ export function recordUnsupplied(ctx: GameContext, state: GameState, enabled: bo
 /** Whether this unit was cut off when its Player Turn began. */
 export const wasCutOff = (state: GameState, unitId: string): boolean => state.unsuppliedAtStart?.includes(unitId) === true;
 
+const withoutRecord = (state: GameState): GameState => {
+  const { unsuppliedAtStart: _gone, ...rest } = state;
+  return rest;
+};
+
 /** The Player Turn ends: eliminate the ground units that are cut off (see the header for which), and forget the record. */
 export function eliminateUnsupplied(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
   const start = state.unsuppliedAtStart ?? [];
+  if (ELIMINATE_ONLY_IF_CUT_OFF_AT_START && start.length === 0) return { state: state.unsuppliedAtStart === undefined ? state : withoutRecord(state), events: [] }; // nobody was cut off at the start: no supply search needed
   const doomed = cutOff(ctx, state).filter((id) => !ELIMINATE_ONLY_IF_CUT_OFF_AT_START || start.includes(id));
   const units = { ...state.units };
   const events: GameEvent[] = [];
@@ -51,6 +57,5 @@ export function eliminateUnsupplied(ctx: GameContext, state: GameState): { state
     delete units[id];
     events.push({ type: "UNIT_ELIMINATED", unitId: id, owner: u.owner, at: u.at, reason: "unsupplied" });
   }
-  const { unsuppliedAtStart: _gone, ...rest } = state;
-  return { state: { ...rest, units }, events };
+  return { state: { ...withoutRecord(state), units }, events };
 }
