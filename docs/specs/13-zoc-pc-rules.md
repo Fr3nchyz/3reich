@@ -58,4 +58,4 @@ Each row 1 to 5 has a test citing the rule number; a mutation check breaks each 
 - Not built: embarking in a port in enemy ZOC (21.42) and the Exploitation limit (12.31); both wait for fleets and exploitation.
 - Supply also gets the 19.3 exception: a unit next to its source is not supplied when both stand in the ZOC of the same enemy armor unit.
 - Armor ZOC does not cross a Qattara hexside either (7.0 names only water, Crossing Arrow and Fortress; Qattara is a hexside no ground unit crosses): `TODO(verify)`.
-- **Known gap, not from this change:** `GameState.fortresses` is never filled in (game.ts starts it empty), so Fortress status is inert everywhere: the Fortress exception for ZOC here and the quadrupled defence in `attack-rules.ts` only work once something sets it. Needs its own ticket (Malta and Gibraltar are always Fortresses; the others depend on the scenario and the year, map field `fortress`).
+- **Fixed afterwards:** `GameState.fortresses` was never filled in, so the Fortress ZOC exception and the quadrupled defence in `attack-rules.ts` were inert; `fortress.ts` now sets it (RULES.md, "Fortress status").
