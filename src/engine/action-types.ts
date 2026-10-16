@@ -60,7 +60,7 @@ export type GameEvent =
   | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true }
   /** Counters that cannot defend on the ground (air units, fleets...) were destroyed alone in a hex (ALONE_NONGROUND_DESTROYED, attack-rules.ts). Each also has a UNIT_ELIMINATED event. */
   | { type: "UNITS_SWEPT"; hex: HexId; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
-  | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId }
+  | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId; reason?: "unsupplied" }
   | { type: "LOSSES_CHOSEN"; side: Side; units: string[] }
   /** Step 6f: units moved along a path (the hexes entered, in order). */
   | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
