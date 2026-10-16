@@ -11,7 +11,7 @@ import type { ForceOwner, GameState, Side, Unit } from "./types";
  * - Libyan ports for the Axis, Egyptian ports for the Allies (not the U.S.S.R.), while the side controls them. TODO(verify, Ref 31.0, 32.0): these are
  *   "contingent on other eventualities"; the 18 German factors cap of 31.0 is not built, nor is anything for Egypt.
  * - Tunis and Beirut for the units of the nation that controls them (France, Free France or Vichy France only, and not shared).
- * - The east edge of the map down to hex Z53 for the U.S.S.R. while it controls the hexes (the edge hexes: the last hex of rows A to Z).
+ * - The east edge of the map down to hex Z53 for the U.S.S.R. while it controls the hexes (the edge hexes: the highest-numbered hex of rows A to Z).
  * - Konigsberg for German units and Durazzo for Italian ones in the 1939 and Campaign scenarios. TODO(verify): they should end when a normal land line
  *   reaches them; here they stay, which only matters if a line is cut again later.
  * - A Fortress hex supplies the units inside it, and only them (Ref 4.8, 19.2): Malta only while the Allies control Gibraltar, Alexandria and Suez
@@ -28,14 +28,16 @@ export interface SupplyNet {
 const named = (ctx: GameContext, name: string): HexId | undefined => Object.values(ctx.map.hexes).find((h) => h.name === name)?.id;
 const FRENCH: readonly ForceOwner[] = ["france", "free-france", "vichy-france"];
 
-/** The last land hex of each row from A to Z: the east edge of the map as far south as Z53 (Ref 19.2). */
+/** The east edge of the map as far south as Z53 (Ref 19.2): the highest-numbered hex of each row A to Z, when it is land. */
 function eastEdge(ctx: GameContext): HexId[] {
-  const out: HexId[] = [];
+  const last = new Map<string, { col: number; id: HexId; land: boolean }>();
   for (const h of Object.values(ctx.map.hexes)) {
     const m = /^([A-Z])(\d+)$/.exec(h.id);
-    if (m && h.land && !ctx.map.hexes[`${m[1]}${Number(m[2]) + 1}`]) out.push(h.id);
+    if (!m) continue;
+    const col = Number(m[2]);
+    if (col > (last.get(m[1]!)?.col ?? -1)) last.set(m[1]!, { col, id: h.id, land: !!h.land });
   }
-  return out;
+  return [...last.values()].filter((x) => x.land).map((x) => x.id);
 }
 
 export function specialNets(ctx: GameContext, state: GameState, side: Side): SupplyNet[] {

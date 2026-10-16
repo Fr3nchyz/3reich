@@ -79,7 +79,12 @@ describe("the east edge of the map supplies Soviet units (Ref 19.2)", () => {
     expect(isUnitSupplied(ctx, s, "r1")).toBe(true);
     expect(isUnitSupplied(ctx, s, "r2")).toBe(true);
     expect(specialNets(ctx, s, "allies").find((n) => n.id === "soviet-edge")!.sources).toContain("Z53");
-    expect(specialNets(ctx, s, "allies").find((n) => n.id === "soviet-edge")!.sources.every((h) => /^[A-Z]\d+$/.test(h))).toBe(true);
+    const edge = specialNets(ctx, s, "allies").find((n) => n.id === "soviet-edge")!.sources;
+    expect(edge).toHaveLength(26); // one hex for each of the rows A to Z, from A66 to Z53
+    expect(edge).toContain("A66");
+    expect(edge).not.toContain("R22"); // France: a gap in a row must not make an inland hex an edge hex
+    expect(edge).not.toContain("S21");
+    expect(edge.every((h) => /^[A-Z]\d+$/.test(h) && Number(h.slice(1)) >= 52)).toBe(true);
   });
 });
 
