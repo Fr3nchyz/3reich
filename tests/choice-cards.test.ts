@@ -131,10 +131,18 @@ describe("Advance into <place>?: the model", () => {
     const a = acts(s);
     const survivors = combatOf(s.state).advances[0]!.units;
     if (survivors.length >= 3) {
-      expect(advanceModel(s.ctx, s.state, a, "M33", survivors)!.button).toEqual({ text: `These ${survivors.length} units do not all fit in Poznan (M33)`, disabled: true });
+      expect(advanceModel(s.ctx, s.state, a, "M33", survivors)!.button).toEqual({ text: `${survivors.length} units do not all fit in Poznan (M33)`, disabled: true });
     }
     expect(advanceModel(s.ctx, s.state, a, "M33", [])!.button).toEqual({ text: "Choose at least one unit to advance", disabled: true });
     expect(advanceModel(s.ctx, s.state, a, "M33", [survivors[0]!])!.button).toEqual({ text: "Advance 1 unit into Poznan (M33)", disabled: false });
+  });
+
+  it("a refused choice of one or two units reads with the right number and verb ('1 unit does not fit', '2 units do not all fit')", () => {
+    const s = won();
+    const a = acts(s);
+    // Ids no ADVANCE lists: the card refuses the set and words it by its size.
+    expect(advanceModel(s.ctx, s.state, a, "M33", ["no-such-unit"])!.button).toEqual({ text: "1 unit does not fit in Poznan (M33)", disabled: true });
+    expect(advanceModel(s.ctx, s.state, a, "M33", ["no-such-a", "no-such-b"])!.button).toEqual({ text: "2 units do not all fit in Poznan (M33)", disabled: true });
   });
 
   it("is null for a hex that is not offered", () => {
