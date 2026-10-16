@@ -21,7 +21,7 @@ const air = (id: string, at: string, strength: number, owner: Unit["owner"] = "g
 const at7b = (units: Unit[], tweak: Partial<GameState> = {}): GameState =>
   at6f(units, "axis", SCENARIO_1939, { nextUnitId: 100, position: { part: "player-turn", turn: 1, step: "7b" }, ...tweak });
 const at7h = (s: GameState): GameState => ({ ...s, position: { part: "player-turn", turn: 1, step: "7h" } });
-const commit = (units: string[], target = "M33"): Action => ({ type: "DESIGNATE_AIR", side: "axis", mission: "ground-support", units, target });
+const commit = (units: string[], target = "M33"): Extract<Action, { type: "DESIGNATE_AIR" }> => ({ type: "DESIGNATE_AIR", side: "axis", mission: "ground-support", units, target });
 const attack = (units: string[], target = "M33"): Action => ({ type: "ATTACK", side: "axis", units, target });
 const base = () => at7b([inf("u1", "germany", "M32", 4, 3), inf("p1", "poland", "M33", 2, 3), air("a1", "J32", 3), air("a2", "J32", 2), air("a3", "Q27", 3)]);
 const kinds = (events: GameEvent[]) => events.map((e) => e.type);
