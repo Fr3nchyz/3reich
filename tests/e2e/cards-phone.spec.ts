@@ -2,9 +2,10 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
- * The loss and advance cards on a phone, upright (390x844) and on its side (844x390): right after each card appears, with no scrolling, the
- * heading, every way and chip of the losses, Advance and Stay are wholly on screen and not covered (by the pinned map, the Next bar or the
- * card's own sticky button bar). Same position as tests/e2e/cards.spec.ts: seed 27 at Warsaw gives an Exchange, then an advance.
+ * The loss and advance cards on a phone: 320x640 and 390x844 upright, 844x390 on its side. Checked: right after a card appears, with no
+ * scrolling, what the size allows (see SIZES) is wholly on screen and not covered (by the pinned map, the Next bar or the card's own sticky
+ * button bar). Whatever is not in reach at once (the unit chips, Lose on the smaller screens) is reached by scrolling a little at a time and
+ * must then be uncovered. Same position as tests/e2e/cards.spec.ts: seed 27 at Warsaw gives an Exchange, then an advance.
  */
 
 type Pt = readonly [number, number];
@@ -42,11 +43,12 @@ async function reachableAfterScroll(page: Page, loc: Locator): Promise<boolean> 
 }
 
 /**
- * Upright, the card is wider than it is high: its heading, both ways and the confirm button are in reach the moment it appears. On its side
- * there is room for the heading and the ways only; the chips and the confirm button are a scroll away but never stay covered.
+ * What is in reach the moment the loss card appears, by size: 2 (390x844) the heading, both ways and Lose; 1 (844x390) the heading and the ways;
+ * 0 (320x640, the smallest phone: the map leaves about 300 px) nothing is required without scrolling, only that every control is reachable by it.
+ * At every size Stay is beside Advance, and Advance and Stay are in reach when the advance card appears.
  */
-const SIZES: readonly (readonly [number, number, boolean])[] = [[390, 844, true], [844, 390, false]];
-for (const [w, h, upright] of SIZES) {
+const SIZES: readonly (readonly [number, number, 0 | 1 | 2])[] = [[320, 640, 0], [390, 844, 2], [844, 390, 1]];
+for (const [w, h, level] of SIZES) {
   test(`${w}x${h}: the losses card and the advance card (Advance beside Stay) can be pressed whole`, async ({ page }) => {
     const errors = await load(page, 27, [w, h]);
     await page.locator('button.attack-row[data-target="M35"]').click();
@@ -54,11 +56,15 @@ for (const [w, h, upright] of SIZES) {
     await page.locator("#attack-go").click();
     const loss = page.locator(".losscard");
     await expect(loss).toBeVisible();
-    await expectReachable(loss.locator("h2"), "the losses heading");
     const ways = await loss.locator("button.way").all();
     expect(ways).toHaveLength(2);
-    for (const [i, way] of ways.entries()) await expectReachable(way, `loss way ${i + 1}`);
-    if (upright) await expectReachable(page.locator("#loss-go"), "Lose");
+    if (level >= 1) {
+      await expectReachable(loss.locator("h2"), "the losses heading");
+      for (const [i, way] of ways.entries()) await expectReachable(way, `loss way ${i + 1}`);
+    } else {
+      for (const [i, way] of ways.entries()) expect(await reachableAfterScroll(page, way), `loss way ${i + 1}, after scrolling`).toBe(true);
+    }
+    if (level >= 2) await expectReachable(page.locator("#loss-go"), "Lose");
     for (const [i, chip] of (await loss.locator("button.pick").all()).entries()) expect(await reachableAfterScroll(page, chip), `loss unit ${i + 1}`).toBe(true);
     expect(await reachableAfterScroll(page, page.locator("#loss-go")), "Lose, after scrolling").toBe(true);
 

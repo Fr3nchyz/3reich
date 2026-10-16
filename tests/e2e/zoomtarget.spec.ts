@@ -27,7 +27,10 @@ const FIXTURE = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "u
 async function startAt(page: Page, size: readonly [number, number], step: "3" | "6f"): Promise<void> {
   await page.setViewportSize({ width: size[0], height: size[1] });
   await page.goto("/?e2e");
-  const actions = FIXTURE.actions.slice(0, step === "6f" ? 124 : 117);
+  // Stop before the END_STEP that leaves the step, found by its step name (the fixture's moves and the earlier END_STEPs stay).
+  const stop = FIXTURE.actions.findIndex((a) => (a as { type: string; step?: string }).type === "END_STEP" && (a as { step?: string }).step === step);
+  expect(stop, `the fixture ends step ${step}`).toBeGreaterThan(0);
+  const actions = FIXTURE.actions.slice(0, stop);
   await page.evaluate((detail) => document.dispatchEvent(new CustomEvent("e2e-load", { detail })), { scenario: FIXTURE.scenario, side: "axis", seed: FIXTURE.seed, actions });
   await expect(page.locator(".turn")).toContainText(`step ${step}`);
   await page.evaluate(() => document.getElementById("wholemap")!.click());

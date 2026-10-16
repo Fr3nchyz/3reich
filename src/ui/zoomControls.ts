@@ -1,7 +1,7 @@
 import { computerToMove } from "./computerPlay";
 import type { MapView } from "./mapView";
 import { placeName } from "./names";
-import type { Session } from "./session";
+import { setupView, type Session } from "./session";
 import type { Shell } from "./shell";
 import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT } from "./viewport";
 
@@ -58,11 +58,12 @@ export function nothingSelectedText(s: Session): string {
 
 /**
  * Whether the player can choose a stack now (a map tap or this button has something to pick): step 6f of their own Player Turn, or setting up
- * (a counter to place). Only then is "nothing is selected" worth a line over the map; on the computer's turn, at step 3, in a watched game and
+ * (the human's own counter to place). Only then is "nothing is selected" worth a line over the map; on the computer's turn, at step 3, in a watched game and
  * at the other steps the line would only cover the map's refused-move line, so it is spoken (the status line) but not shown.
  */
 export function canChooseStack(s: Session): boolean {
-  if (s.state.phase === "setup") return true;
+  if (s.state.phase === "setup") return !s.watch && setupView(s) !== null; // the human's own placing, not a watched game or the computer's
+  // No other step chooses a stack: step 7h and 7b pick hexes and units through their cards and buttons, and the rest have no map choice.
   const at = s.state.position;
   return s.state.phase === "player-turn" && !s.watch && !computerToMove(s) && at?.part === "player-turn" && at.step === "6f";
 }

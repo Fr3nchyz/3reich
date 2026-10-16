@@ -5,7 +5,7 @@ import { otherSide } from "../src/engine/game";
 import type { GameState } from "../src/engine/types";
 import type { MapView } from "../src/ui/mapView";
 import { tapHex } from "../src/ui/sessionActions";
-import { createSession, type Session } from "../src/ui/session";
+import { createSession, setupView, type Session } from "../src/ui/session";
 import type { WatchInfo } from "../src/ui/watchController";
 import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_COMPUTER, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_STEP3, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, canChooseStack, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
 import { started } from "./helpers";
@@ -271,7 +271,15 @@ describe("the buttons", () => {
       expect(canChooseStack(session(at3(turn)))).toBe(false);
       expect(canChooseStack(session(turn)), "step 10b").toBe(false);
       expect(canChooseStack(session(at6f, true))).toBe(false);
-      expect(canChooseStack(session({ ...turn, phase: "setup", position: null }))).toBe(true);
+    });
+
+    it("in setup the note is for the human's own placing only, not a watched game or the computer's placing", () => {
+      const mine = createSession(SCENARIO_1939, "axis", 1);
+      expect(mine.state.phase).toBe("setup");
+      expect(setupView(mine), "the human places now").not.toBeNull();
+      expect(canChooseStack(mine)).toBe(true);
+      expect(canChooseStack({ ...mine, humanSide: otherSide(mine.humanSide) }), "the other side is placing: the computer's turn to place").toBe(false);
+      expect(canChooseStack({ ...mine, watch: {} as WatchInfo })).toBe(false);
     });
 
     it("pressing the target button with nothing to choose still says the words, but puts no note on the map and sets no timer", () => {
