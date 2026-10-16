@@ -3,9 +3,9 @@ import type { MoveLine } from "./moveSelection";
 
 /**
  * What the map shows of the Move card (spec 10, ticket 10-5): pure data in, plain sets out; no DOM and no SVG here.
- * The hex the units move from gets a thick outline (in the attack-marks layer of spec 07, `from`); a ticked counter gets a gold ring and a
- * left-behind one (free to move, not ticked) a pale veil with a bar, drawn on the counters themselves (mapCounters.ts) so a ring sits over
- * the cardboard. A counter that cannot move (air, fleet, already moved) is not marked. Nothing here is a rule or changes the game.
+ * The hex the units move from gets a thick outline (in the attack-marks layer of spec 07, `from`); a ticked counter gets a round gold ring
+ * with a tick and a left-behind one (free to move, not ticked) a flat pale dash, both as badges in a row under the stack (mapUnitMarks.ts),
+ * so none covers a counter. A counter that cannot move (air, fleet, already moved) is not marked. Nothing here is a rule or changes the game.
  */
 
 export interface UnitMarks {
