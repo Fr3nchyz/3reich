@@ -1,4 +1,5 @@
 import type { HexId } from "../engine/hex";
+import type { Side } from "../engine/types";
 
 /**
  * What the computer remembers during one game, so that its movement does not dither (computer policy, spec 05). The caller
@@ -17,6 +18,10 @@ export interface AiMemory {
   staging: Map<string, { dist: Map<HexId, number>; from: Map<HexId, HexId> }>;
   /** The Game Turn index `distances`, `nearest` and `staging` belong to. */
   distancesTurn: number;
+  /** Per side, the Game Turn index of its last real ground attack (or the first turn it was asked to choose one): how long it has been quiet. */
+  quietSince: Partial<Record<Side, number>>;
+  /** Per side, the Game Turn index in which the stall rule lifted the Exchange limit (it stays lifted for that whole turn). */
+  stallTurn: Partial<Record<Side, number>>;
 }
 
-export const createMemory = (): AiMemory => ({ targets: new Map(), left: new Map(), distances: new Map(), nearest: new Map(), staging: new Map(), distancesTurn: -1 });
+export const createMemory = (): AiMemory => ({ targets: new Map(), left: new Map(), distances: new Map(), nearest: new Map(), staging: new Map(), distancesTurn: -1, quietSince: {}, stallTurn: {} });
