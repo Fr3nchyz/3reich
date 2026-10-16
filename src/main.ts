@@ -20,7 +20,7 @@ import { normaliseMode, tapHex } from "./ui/sessionActions";
 import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
-import { bindZoom, lookedHex, nothingSelectedText } from "./ui/zoomControls";
+import { bindZoom, canChooseStack, lookedHex, nothingSelectedText } from "./ui/zoomControls";
 import { mountShell } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
@@ -59,7 +59,7 @@ const view = renderMap(shell.map, MAP, {
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
-bindZoom(shell, view, () => lookedHex(session), undefined, undefined, () => nothingSelectedText(session));
+bindZoom(shell, view, () => lookedHex(session), undefined, undefined, () => nothingSelectedText(session), () => canChooseStack(session));
 const overlay = bindOverlay(shell, view, () => session);
 bindMoveEscape(document, () => session, () => render());
 
