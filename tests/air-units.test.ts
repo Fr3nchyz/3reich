@@ -55,6 +55,7 @@ describe("SPLIT_AIR", () => {
     // eslint-disable-next-line no-sparse-arrays
     expect(errorOf(applyAction(CTX, s, split("a1", [, 5] as unknown as number[])))).toMatch(/whole number/);
     expect(errorOf(applyAction(CTX, s, { type: "SPLIT_AIR", side: "axis", unit: "a1", parts: "32" as unknown as number[] }))).toMatch(/whole number/);
+    expect(errorOf(applyAction(CTX, s, split("a1", Array<number>(101).fill(1))))).toMatch(/whole number/); // a list longer than any real split is refused before it is read
   });
 
   it("refuses ground units, the other side's air, minor-country air, unknown units, another step and the wrong side", () => {
