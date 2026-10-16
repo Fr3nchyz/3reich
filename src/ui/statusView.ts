@@ -18,6 +18,7 @@ import { hexCardHtml } from "./hexCardView";
 import { attackHtml } from "./attackView";
 import { leadsStatus, nextBarHtml } from "./nextBar";
 import { moveHtml } from "./moveView";
+import { airPromptHtml } from "./airView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -116,6 +117,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
       ${frontPrompt(s, actions)}
+      ${airPromptHtml(actions)}
       ${buildPanel(s, actions)}
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}

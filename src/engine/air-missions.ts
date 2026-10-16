@@ -1,4 +1,5 @@
 import { attackables } from "./attack";
+import { defendersAt } from "./attack-rules";
 import { airOf, hasFlown, markFlown } from "./air-record";
 import { clearGroundSupport, committedAt } from "./air-support";
 import { GS_CAP_MULTIPLE, AIR_MISSIONS_ENABLED } from "./air-rules";
@@ -20,9 +21,14 @@ type Designate = Extract<Action, { type: "DESIGNATE_AIR" }>;
 /** No list of units is longer than this: a bound before any loop runs over it. */
 const MAX_UNITS = 100;
 
-/** The enemy hexes the side to move could attack now, each with the ground units that could attack it (what `attackables` lists at step 7h). */
+/**
+ * The enemy hexes the side to move could attack in a battle now, each with the ground units that could attack it (what `attackables` lists at step 7h,
+ * less the hexes that hold only air units or fleets: that attack is a sweep with no roll, so there is no battle for planes to support; `TODO(verify)`).
+ */
 export function groundSupportTargets(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
-  return attackables(ctx, state);
+  const out = new Map<HexId, Unit[]>();
+  for (const [hex, from] of attackables(ctx, state)) if (defendersAt(state, from, hex).length > 0) out.set(hex, from);
+  return out;
 }
 
 /** The side's air units that have not flown this Game Turn, on the map, in id order. */

@@ -9,8 +9,6 @@ import { attackNumbers } from "../src/engine/attack-rules";
 import { oddsColumn } from "../src/engine/combat";
 import { combatOf } from "../src/engine/combat-record";
 import { legalBuilds } from "../src/engine/construction";
-import type { GameContext } from "../src/engine/context";
-import { IMPLEMENTED_STEPS } from "../src/engine/sequence";
 import type { GameState, Unit } from "../src/engine/types";
 import { CTX, atStart } from "./helpers";
 import { at6f, errorOf, inf, okOf } from "./helpers-move";
@@ -106,16 +104,17 @@ describe("what the player is asked at step 7b", () => {
     expect(legalDesignations(CTX, split, true)).toEqual([commit(["a1"])]); // a1 fits the cap of 3, a2 would make 5
   });
 
-  it("is off in the game as shipped: 7b is passed, nothing is listed, and a step that waits only when the test says so", () => {
+  it("is on in the game: 7b waits only for a side that has air to commit, and lists the designations", () => {
     const s = base();
-    expect(legalActions(CTX, s).some((a) => a.type === "DESIGNATE_AIR")).toBe(false);
-    expect(legalDesignations(CTX, s)).toEqual([]);
+    expect(legalDesignations(CTX, s)).toEqual([commit(["a1", "a2"])]);
+    expect(legalActions(CTX, s).filter((a) => a.type === "DESIGNATE_AIR")).toHaveLength(1);
     const sixth: GameState = { ...s, position: { part: "player-turn", turn: 1, step: "6f" } };
-    const passed = okOf(applyAction(CTX, sixth, { type: "END_STEP", side: "axis", step: "6f" })).state;
-    expect(passed.position).toMatchObject({ step: "7h" }); // 7b was passed, as before this ticket
-    const ctx: GameContext = { ...CTX, implementedSteps: new Set([...IMPLEMENTED_STEPS, "7b"]) };
-    const waits = okOf(applyAction(ctx, sixth, { type: "END_STEP", side: "axis", step: "6f" })).state;
-    expect(waits.position).toMatchObject({ step: "7b" });
+    const waits = okOf(applyAction(CTX, sixth, { type: "END_STEP", side: "axis", step: "6f" })).state;
+    expect(waits.position).toMatchObject({ step: "7b" }); // air in range of Poznan: the step waits
+    const none = at7b([inf("u1", "germany", "M32", 4, 3), inf("p1", "poland", "M33", 2, 3), air("a3", "Q27", 3)]);
+    const noAir = okOf(applyAction(CTX, { ...none, position: { part: "player-turn", turn: 1, step: "6f" } }, { type: "END_STEP", side: "axis", step: "6f" })).state;
+    expect(noAir.position).toMatchObject({ step: "7h" }); // nothing in range: 7b is passed
+    expect(legalDesignations(CTX, s, false)).toEqual([]); // the switch, as a test asks for it
   });
 });
 
@@ -247,9 +246,12 @@ describe("the numbers and the battle", () => {
     expect(r.state.units.a2).toBeDefined();
   });
 
-  it("an attack on a hex that holds only an air unit (a sweep) is an attack: the support is not lost", () => {
-    const s = at7h(okOf(applyAction(CTX, at7b([inf("u1", "germany", "M32", 4, 3), air("l1", "M33", 2, "poland"), air("a1", "J32", 3)]), commit(["a1"]))).state);
-    const r = okOf(applyAction(CTX, s, attack(["u1"])));
+  it("a hex that holds only an air unit (a sweep, no battle) is not a target for ground support; if a commitment is there anyway the sweep clears it and the air is not lost", () => {
+    const sweep = at7b([inf("u1", "germany", "M32", 4, 3), air("l1", "M33", 2, "poland"), air("a1", "J32", 3)]);
+    expect(errorOf(applyAction(CTX, sweep, commit(["a1"])))).toMatch(/not a hex the axis side can attack/);
+    expect(hasAirWork(CTX, sweep)).toBe(false);
+    const forced = at7h({ ...sweep, air: { ...airOf(sweep), groundSupport: { M33: ["a1"] } } });
+    const r = okOf(applyAction(CTX, forced, attack(["u1"])));
     expect(r.state.units.a1).toBeDefined();
     expect(airOf(r.state).groundSupport).toEqual({});
   });

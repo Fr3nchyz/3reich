@@ -18,7 +18,8 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
-  const legal = step === "6f" ? moveOnAction(state) : legalActions(ctx, state);
+  // At 7b the computer commits no air yet, so the designations are not worked out either.
+  const legal = step === "6f" || step === "7b" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
@@ -56,6 +57,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "The computer does not choose Front Options yet: every Front stays on the default (defensive) Option.",
     "6f": "No ground move brings a stack closer to an enemy objective.",
+    "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
