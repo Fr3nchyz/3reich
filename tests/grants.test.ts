@@ -65,6 +65,20 @@ describe("a grant", () => {
     expect(!over.ok && over.error).toMatch(/at most 7/);
   });
 
+  it("is capped at half the yearly allotment over the whole year, across Player Turns (Ref 11.71)", () => {
+    // Ref 11.71: at most half the yearly allotment may go out in grants over the year.
+    const base = allied42();
+    const small = { ...base, nations: { ...base.nations, britain: { ...base.nations.britain, spendLimit: 30, brpTotal: 200 } } };
+    const first = ok(grant(ctx42, small, "britain", "usa", 20)).state;
+    expect(first.nations.britain.grantedThisYear).toBe(20);
+    // A new Player Turn clears the turn's spending and grants, not the year's tally.
+    const nextTurn = { ...first, grants: [], noGrants: [], nations: { ...first.nations, britain: { ...first.nations.britain, spent: 0 } } };
+    expect(grantRoom(nextTurn, "britain", "usa")).toBe(10);
+    const second = ok(grant(ctx42, nextTurn, "britain", "usa", 10)).state;
+    expect(grantRoom({ ...second, grants: [], nations: { ...second.nations, britain: { ...second.nations.britain, spent: 0 } } }, "britain", "usa")).toBe(0);
+    expect(grant(ctx42, { ...second, grants: [], nations: { ...second.nations, britain: { ...second.nations.britain, spent: 0 } } }, "britain", "usa", 1)).toMatchObject({ ok: false });
+  });
+
   it("may not be handed back by the receiver for the rest of the game", () => {
     const s = ok(grant(ctx42, allied42(), "britain", "ussr", 10)).state;
     expect(s.noGrants).toContainEqual(["ussr", "britain"]);
