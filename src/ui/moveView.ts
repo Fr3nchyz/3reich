@@ -123,6 +123,9 @@ function showBelowBar(card: HTMLElement): void {
   showTop(card);
   const bar = document.querySelector(".nextbar");
   if (bar && card.getBoundingClientRect().top < bar.getBoundingClientRect().bottom) card.scrollIntoView({ block: "start" });
+  // A short screen (a phone on its side): a heading in the upper half is not enough if the first unit line is cut off below it.
+  const line = card.querySelector(".mline");
+  if (line && line.getBoundingClientRect().bottom > window.innerHeight) card.scrollIntoView({ block: "start" });
 }
 
 /**

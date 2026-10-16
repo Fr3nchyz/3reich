@@ -14,7 +14,7 @@ What real players said, what we make of it, and what we do. Newest first. Feedba
 | Took Poland: first attack worked, but **in later turns could no longer attack Warsaw** (clarified: not about two attacks in one turn). | Unknown cause. The engine has no rule that blocks it; likely a UI or step-flow problem, or the attackers were no longer next to Warsaw. | Reproduce with a scripted human-like game over several turns (move next to Warsaw, attack, end turn, repeat), find the cause, fix, add a regression test. |
 | For an attack you must know the coordinates of the unit you attack. | Attacks are buttons labelled with unit ids. | Tap-to-attack: tap your stack, enemy hexes it can attack are highlighted, tap one, see the odds, confirm. |
 | Cannot see the detail of the 4 Polish units defending Warsaw. | No unit inspector. | Tap any hex to list its units (type, factors, nationality, moved/attacked), and show attackers and defenders in the attack panel. |
-| Two units on a hex stay grouped when moving. | The tap flow moves the whole stack. | Pick which units of a stack move before choosing the destination. |
+| Two units on a hex stay grouped when moving. | The tap flow moves the whole stack. | Pick which units of a stack move before choosing the destination. Built (spec 10): tick the units, tap a yellow hex; refusals say why; a fold-out lists where they can go; take back undoes a move. To confirm with Frank. |
 | Could not use air factors. | Air units are not built yet (movement, air support, bases). | Spec, then build (roadmap 6.4). |
 | Built and placed units fine. | Works. | None. |
 
