@@ -14,9 +14,8 @@ import type { GameState, Side, Unit } from "./types";
 /**
  * Listing every way to remove enough factors stops at this many sets: `minimalSets` stops walking, and the sets it has are the
  * ones `legalActions` offers (ALLOCATE_LOSSES). A stack with many counters of similar strength can have more, so the sets past the
- * first 100 are never offered. The engine's applyAllocation still accepts any valid set, but the loss card (ui/lossOptions.ts) only
- * confirms listed sets: a player who picks an unlisted one is told it takes more than needed ("Take one off"), or that one unit must
- * come off, though that set is exactly enough. Not measured on real games yet. Behaviour is unchanged here; see the note in lossOptions.ts.
+ * first 100 are not listed. They are still legal: `lossSetError` (what applyAllocation checks) accepts any valid set, and the loss card
+ * (ui/lossOptions.ts) asks it too, so a player who picks an unlisted set by hand can confirm it. Not measured on real games yet.
  */
 const MAX_LISTED_SETS = 100;
 
@@ -166,17 +165,24 @@ export function legalAllocations(state: GameState): Action[] {
   return p ? minimalSets(p.candidates, p.values, p.required).map((units): Action => ({ type: "ALLOCATE_LOSSES", side: p.chooser, units })) : [];
 }
 
+/** Why `units` are not a valid loss for the pending Exchange, or null when they are: distinct candidates, enough factors, and none to spare. */
+export function lossSetError(p: PendingLosses, units: string[]): string | null {
+  if (!Array.isArray(units) || new Set(units).size !== units.length || units.some((id) => !p.candidates.includes(id))) {
+    return `Losses must be distinct units from the stack that loses: ${p.candidates.join(", ")}.`;
+  }
+  const sum = units.reduce((n, id) => n + p.values[id]!, 0);
+  if (sum < p.required) return `The Exchange takes at least ${p.required} factors; ${units.join(", ") || "no units"} count for ${sum}.`;
+  if (units.some((id) => sum - p.values[id]! >= p.required)) return `Those losses are more than the Exchange takes: a unit could be spared.`;
+  return null;
+}
+
 export function applyAllocation(state: GameState, action: Extract<Action, { type: "ALLOCATE_LOSSES" }>): ActionResult {
   const p = combatOf(state).pending;
   if (!p) return { ok: false, error: "No Exchange is waiting for losses to be chosen." };
   if (action.side !== p.chooser) return { ok: false, error: `The ${p.chooser} player chooses these losses, not ${action.side}.` };
+  const error = lossSetError(p, action.units);
+  if (error) return { ok: false, error };
   const units = action.units;
-  if (!Array.isArray(units) || new Set(units).size !== units.length || units.some((id) => !p.candidates.includes(id))) {
-    return { ok: false, error: `Losses must be distinct units from the stack that loses: ${p.candidates.join(", ")}.` };
-  }
-  const sum = units.reduce((n, id) => n + p.values[id]!, 0);
-  if (sum < p.required) return { ok: false, error: `The Exchange takes at least ${p.required} factors; ${units.join(", ") || "no units"} count for ${sum}.` };
-  if (units.some((id) => sum - p.values[id]! >= p.required)) return { ok: false, error: `Those losses are more than the Exchange takes: a unit could be spared.` };
   const gone = eliminate(state, units);
   const done = finishBattle(gone.state, p.attackers, p.target, p.attackers.flatMap((id) => (state.units[id] ? [state.units[id]] : [])));
   return { ok: true, state: done.state, events: [{ type: "LOSSES_CHOSEN", side: action.side, units: [...units] }, ...gone.events, ...done.events] };

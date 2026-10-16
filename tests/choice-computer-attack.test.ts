@@ -80,4 +80,15 @@ describe("the computer attacks; the human Allies choose the losses (Ref 12.2)", 
     expect(computerTick(s, 1e9, () => 0)).toBe("done");
     expect(s.state.position).toMatchObject({ step: "8b" });
   });
+
+  it("only the Allies may choose: the computer's own side is refused, and so are sets that take too little or too much", () => {
+    const s = attacked();
+    const send = (side: "axis" | "allies", ids: string[]) => applyAction(s.ctx, s.state, { type: "ALLOCATE_LOSSES", side, units: ids });
+    expect(send("axis", ["p3"]).ok, "the attacker does not choose the defenders' losses").toBe(false);
+    expect(send("allies", ["p1"]).ok, "1 factor of the 6 the Exchange takes").toBe(false);
+    expect(send("allies", ["p1", "p2", "p3"]).ok, "a unit could be spared").toBe(false);
+    expect(send("allies", ["g1"]).ok, "not one of the stack that loses").toBe(false);
+    expect(send("allies", ["p3"]).ok).toBe(true);
+    expect(acts(s).some((a) => a.type === "ALLOCATE_LOSSES" && a.side === "axis")).toBe(false);
+  });
 });

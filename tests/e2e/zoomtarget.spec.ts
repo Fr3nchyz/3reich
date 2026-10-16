@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
 /**
@@ -14,6 +15,24 @@ async function startPlay(page: Page): Promise<void> {
   await page.locator("#newgame").click();
   for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
   await expect(page.locator(".turn")).toContainText("step 1");
+  await page.evaluate(() => document.getElementById("wholemap")!.click());
+}
+
+const FIXTURE = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "utf8")) as { scenario: string; seed: number; actions: unknown[] };
+
+/**
+ * The first Axis Player Turn from the recorded game (the `?e2e` loader), stopped at step 6f (before its END_STEP)
+ * or at step 3 (before the END_STEP of step 3): the player's own turn, with a stack to choose at 6f and nothing to choose at 3.
+ */
+async function startAt(page: Page, size: readonly [number, number], step: "3" | "6f"): Promise<void> {
+  await page.setViewportSize({ width: size[0], height: size[1] });
+  await page.goto("/?e2e");
+  // Stop before the END_STEP that leaves the step, found by its step name (the fixture's moves and the earlier END_STEPs stay).
+  const stop = FIXTURE.actions.findIndex((a) => (a as { type: string; step?: string }).type === "END_STEP" && (a as { step?: string }).step === step);
+  expect(stop, `the fixture ends step ${step}`).toBeGreaterThan(0);
+  const actions = FIXTURE.actions.slice(0, stop);
+  await page.evaluate((detail) => document.dispatchEvent(new CustomEvent("e2e-load", { detail })), { scenario: FIXTURE.scenario, side: "axis", seed: FIXTURE.seed, actions });
+  await expect(page.locator(".turn")).toContainText(`step ${step}`);
   await page.evaluate(() => document.getElementById("wholemap")!.click());
 }
 
@@ -46,7 +65,7 @@ test("a tapped hex is centred and zoomed on by the target button", async ({ page
 
 test("with nothing selected the target button shows a readable line for a few seconds and moves nothing", async ({ page, hasTouch }) => {
   await page.clock.install();
-  await startPlay(page);
+  await startAt(page, [1024, 768], "6f");
   await expect(page.locator(".hexcard")).toHaveCount(0);
   await page.clock.pauseAt(new Date(Date.now() + 60_000)); // the page's timers now move only when this test says so
   const before = { view: await viewBox(page), map: await box(page.locator(".map-wrap")), status: await box(page.locator("#status")) };
@@ -81,12 +100,7 @@ const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.widt
 
 for (const [width, height] of SIZES) {
   test(`${width}x${height}: the nothing-selected line never covers the key, the buttons, the refused-move line or the zoom buttons`, async ({ page, hasTouch }) => {
-    await page.setViewportSize({ width, height });
-    await page.goto("/");
-    await page.locator("#newgame").click();
-    for (let i = 0; i < 12 && (await page.locator("#fill").count()); i++) await page.locator("#fill").click();
-    await expect(page.locator(".turn")).toContainText("step 1");
-    await page.evaluate(() => document.getElementById("wholemap")!.click());
+    await startAt(page, [width, height], "6f");
     await page.locator("#overlay").click(); // the key on
     await expect(page.locator("#legend")).toBeVisible();
     await page.evaluate(() => { document.getElementById("maptoast")!.textContent = "That stack cannot get there. The yellow hexes are the places it can."; });
@@ -106,3 +120,13 @@ for (const [width, height] of SIZES) {
     }
   });
 }
+
+test("where nothing can be chosen (step 3 of your turn) the target button says it aloud but puts no line over the map", async ({ page, hasTouch }) => {
+  await startAt(page, [844, 390], "3");
+  await page.evaluate(() => { document.getElementById("maptoast")!.textContent = "That stack cannot get there."; });
+  if (hasTouch) await target(page).tap();
+  else await target(page).click();
+  await expect(page.locator("#zoomsay")).toContainText("Nothing to select at this step");
+  expect(await page.locator("#zoomnote").evaluate((e) => e.textContent), "no line to hide the refused-move line").toBe("");
+  await expect(page.locator("#maptoast")).toBeVisible();
+});
