@@ -26,7 +26,7 @@ type AttackAction = Extract<Action, { type: "ATTACK" }>;
 type AdvanceAction = Extract<Action, { type: "ADVANCE" }>;
 
 /** Attackers grouped by the enemy hex they could attack, for every hex that can be attacked now. */
-function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
+export function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
   const rec = combatOf(state);
   const out = new Map<HexId, Unit[]>();
   const pool = attackerPool(ctx, state, state.activeSide, rec.attacked);
@@ -142,8 +142,8 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   const numbers = attackNumbers(ctx, state, units, defenders, action.target);
   const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier }, state.rngState);
   const marked: GameState = { ...state, rngState: res.rngState, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } };
-  const applied = applyOutcome(marked, { outcome: res.outcome, side: state.activeSide, target: action.target, attackers: units, defenders, multiplier: numbers.multiplier });
-  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind };
+  const applied = applyOutcome(marked, { outcome: res.outcome, side: state.activeSide, target: action.target, attackers: units, air: numbers.air, defenders, multiplier: numbers.multiplier });
+  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}) };
   return { ok: true, state: applied.state, events: [event, ...applied.events] };
 }
 

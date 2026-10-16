@@ -10,7 +10,9 @@ import { hasCombatWork } from "./attack";
 import { legalBuilds } from "./construction";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
+import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasMoveWork } from "./move-action";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
@@ -83,7 +85,11 @@ export function advance(ctx: GameContext, state: GameState): Transition {
     }
     case "player-turn": {
       const step = nextStepId(pos.step);
-      if (step) return { state: { ...state, position: { ...pos, step } }, events: [] };
+      if (step) {
+        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
+        const lost = pos.step === "7h" ? loseUnusedGroundSupport(state) : { state, events: [] };
+        return { state: { ...lost.state, position: { ...pos, step } }, events: lost.events };
+      }
       const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
       const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ended.state);
       return { state: next.state, events: [...ended.events, ...next.events] };
@@ -114,6 +120,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return legalDeclarations(ctx, state).length > 0;
     case "6f":
       return hasMoveWork(ctx, state);
+    case "7b":
+      return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
       return hasCombatWork(ctx, state);
     case "3":

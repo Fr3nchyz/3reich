@@ -1,5 +1,5 @@
 import { AIR_COMBAT_RULES } from "./air-combat";
-import { airOf } from "./air-record";
+import { airOf, flownOf, markFlown } from "./air-record";
 import type { Action, ActionResult } from "./action-types";
 import { sideInWar } from "./control";
 import type { Unit } from "./types";
@@ -15,7 +15,7 @@ import { isMajorPower } from "./war";
 type Split = Extract<Action, { type: "SPLIT_AIR" }>;
 type Combine = Extract<Action, { type: "COMBINE_AIR" }>;
 
-/** The steps of the Player Turn at which air counters may be reshaped: movement, and the combat step of ground support (not yet a waiting step). */
+/** The steps of the Player Turn at which air counters may be reshaped: movement, and the step where air is committed to ground support (it waits only when `AIR_MISSIONS_ENABLED`). */
 const RESHAPE_STEPS: readonly string[] = ["6f", "7b"];
 
 /** No list of parts or units is longer than this (the most air factors a nation could have is far fewer): a bound before any loop runs over it. */
@@ -64,6 +64,7 @@ function reshapeProblem(state: GameState, u: Unit): string | null {
   if (u.type !== "air") return `${u.id} is not an air unit.`;
   if (sideInWar(state, u.owner) !== state.activeSide) return `${u.id} does not belong to the ${state.activeSide} side now.`;
   if (!isMajorPower(u.owner)) return `${u.id} is not a Major Power's air: only a Major Power's air is split or combined.`;
+  if (flownOf(state).units[u.id] === "ground-support") return `${u.id} is committed to ground support: it cannot be split or combined now.`;
   return null;
 }
 
@@ -86,14 +87,15 @@ export function applySplitAir(state: GameState, action: Split): ActionResult {
   const rest = Object.fromEntries(Object.entries(state.units).filter(([id]) => id !== u.id));
   const made = [...action.parts].sort((a, b) => b - a).map((n, i) => copyOf(u, `u${state.nextUnitId + i}`, n));
   const rec = airOf(state); // the parent's id stays in `staged`: ids are never reused, so it does no harm
+  const split: GameState = {
+    ...state,
+    nextUnitId: state.nextUnitId + made.length,
+    units: { ...rest, ...Object.fromEntries(made.map((m) => [m.id, m])) },
+    air: rec.staged.includes(u.id) ? { ...rec, staged: [...rec.staged, ...made.map((m) => m.id)] } : rec,
+  };
   return {
     ok: true,
-    state: {
-      ...state,
-      nextUnitId: state.nextUnitId + made.length,
-      units: { ...rest, ...Object.fromEntries(made.map((m) => [m.id, m])) },
-      air: rec.staged.includes(u.id) ? { ...rec, staged: [...rec.staged, ...made.map((m) => m.id)] } : rec,
-    },
+    state: flownOf(state).units[u.id] === "new" ? markFlown(split, made.map((m) => m.id), "new") : split, // a unit built this Game Turn gives parts that may not fly either
     events: [{ type: "AIR_RESHAPED", at: u.at, before: [{ id: u.id, strength: u.strength }], after: made.map((m) => ({ id: m.id, strength: m.strength })) }],
   };
 }
@@ -127,14 +129,15 @@ export function applyCombineAir(state: GameState, action: Combine): ActionResult
   const id = `u${state.nextUnitId}`;
   const rest = Object.fromEntries(Object.entries(state.units).filter(([k]) => !ids.includes(k)));
   const rec = airOf(state);
+  const joined: GameState = {
+    ...state,
+    nextUnitId: state.nextUnitId + 1,
+    units: { ...rest, [id]: copyOf(units[0]!, id, total) },
+    air: units.some((u) => rec.staged.includes(u.id)) ? { ...rec, staged: [...rec.staged, id] } : rec,
+  };
   return {
     ok: true,
-    state: {
-      ...state,
-      nextUnitId: state.nextUnitId + 1,
-      units: { ...rest, [id]: copyOf(units[0]!, id, total) },
-      air: units.some((u) => rec.staged.includes(u.id)) ? { ...rec, staged: [...rec.staged, id] } : rec,
-    },
+    state: units.some((u) => flownOf(state).units[u.id] === "new") ? markFlown(joined, [id], "new") : joined, // joined with a unit built this Game Turn: it may not fly either
     events: [{ type: "AIR_RESHAPED", at: units[0]!.at, before: units.map((u) => ({ id: u.id, strength: u.strength })), after: [{ id, strength: total }] }],
   };
 }
