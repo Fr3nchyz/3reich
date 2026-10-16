@@ -66,7 +66,7 @@ describe("a grant", () => {
   });
 
   it("is capped at half the yearly allotment over the whole year, across Player Turns (Ref 11.71)", () => {
-    // Ref 11.71: "No Major Power may spend more than half of its total yearly BRP allotment (after SW Construction) on BRP Grants during that year."
+    // Ref 11.71: at most half the yearly allotment may go out in grants over the year.
     const base = allied42();
     const small = { ...base, nations: { ...base.nations, britain: { ...base.nations.britain, spendLimit: 30, brpTotal: 200 } } };
     const first = ok(grant(ctx42, small, "britain", "usa", 20)).state;

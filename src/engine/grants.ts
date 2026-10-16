@@ -13,10 +13,10 @@ import { atWar, sideOfPower } from "./war";
  * all, and may not receive until it is at war with Germany (Ref 11.71, PC Reference Manual: "may not Grant BRPs at all"); France and the U.S.A. cannot grant before Spring
  * 1942; a receiver may not grant back to its giver for the rest of the game.
  *
- * A Major Power may also grant at most half its yearly allotment in a year (Ref 11.71, "No Major Power may spend more than half of its
- * total yearly BRP allotment (after SW Construction) on BRP Grants during that year"). The allotment is read as the BRP total the Year Start
- * Sequence left it, so half of it is `spendLimit`; `grantedThisYear` counts what it has granted since (TODO(verify): the allotment is the
- * total after the sequence, as for the per-turn limit). The 1939 and Campaign setups, which start with no sequence, count from 0.
+ * A Major Power may also grant at most half its yearly allotment, counted after Strategic Warfare construction, in a year (Ref 11.71). The allotment
+ * is read as the BRP total the Year Start Sequence left it, so half of it is `spendLimit`; `grantedThisYear` counts what it has granted since.
+ * TODO(verify): Strategic Warfare construction is not built, so nothing is deducted before `spendLimit` is set (yearstart.ts). The 1939 and
+ * Campaign setups, which start with no sequence, count from 0.
  *
  * Not built yet (TODO(verify), spec 02): a grant cannot travel while either capital has an enemy
  * unit next to it (except for the U.S.S.R.), and each 20 BRPs granted count as one Strategic Redeployment.
