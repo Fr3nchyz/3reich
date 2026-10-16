@@ -2,6 +2,7 @@ import type { Action } from "../engine/actions";
 import { attackPreview, defaultAttackers, type AttackerChip, type AttackPreview, type ResultRow } from "./attackPreview";
 import { attackTargets } from "./attackDraft";
 import { defendersLine, nonDefendersLine, rowLines, toBeatLine } from "./attackText";
+import { airWarningHtml } from "./airView";
 import { atStep7h, attacking } from "./attackTap";
 import { choiceHtml } from "./choiceView";
 import { escape } from "./mapGeometry";
@@ -47,6 +48,15 @@ function rowHtml(r: ResultRow): string {
   return `<li><strong class="res-roll">${e(r.rollText)}</strong><span class="res-text">${headed(r.text)}${counter}</span></li>`;
 }
 
+/** "Air support" under the chips: the planes committed to this hex, what counts, what the cap leaves out. */
+function airHtml(p: AttackPreview): string {
+  const air = p.numbers?.air;
+  if (!air) return "";
+  const counted = air.counted.length > 0 ? `<ul class="air-counted">${air.counted.map((c) => `<li>${e(c)}</li>`).join("")}</ul>` : "";
+  const left = air.leftOut.length > 0 ? `<p class="muted">Not counted (the air in an attack is at most three times the ground factors): ${e(air.leftOut.join(", "))}. It stays committed and is not lost.</p>` : "";
+  return `<h3>Air support</h3><p class="air-line">${air.factors > 0 ? `${air.factors} air factor${air.factors === 1 ? "" : "s"} count in this attack. They were committed at step 7b and cannot be taken back; they win or are lost with the attackers.` : "No committed air counts in this attack."}</p>${counted}${left}`;
+}
+
 /** The numbers and the six results, or the sentence for a hex with no ground defender. */
 function outcomeHtml(p: AttackPreview): string {
   if (p.sweep) return `<p class="sweep">${e(p.sweep.text)}</p>`;
@@ -68,6 +78,7 @@ function cardHtml(s: Session, p: AttackPreview): string {
       ${beat ? `<p class="why">${e(beat)}</p>` : ""}${others ? `<p class="muted">${e(others)}</p>` : ""}
       <h3 id="attack-with">Attacking with <small>(tap a unit to add or remove it)</small></h3>
       <ul class="chips attack-chips" aria-labelledby="attack-with">${p.attackers.map(chipHtml).join("")}</ul>
+      ${airHtml(p)}
       ${outcomeHtml(p)}
       ${problems}
       <div class="attack-foot">${p.oneTry && !p.button.disabled ? `<p class="muted">${e(p.oneTry)}</p>` : ""}<button type="button" id="attack-go" class="attack-go${p.button.risky ? " risky" : ""}"${p.button.disabled ? " disabled" : ""}>${e(p.button.text)}</button></div>
@@ -92,8 +103,8 @@ export function attackHtml(s: Session, actions: readonly Action[]): string {
   const result = !p && s.battle ? resultCardHtml(s) : "";
   const choice = choiceHtml(s, actions);
   const card = p ? cardHtml(s, p) : "";
-  if (targets.length === 0 && !card && !result && !choice) return "";
-  return `<section class="attacks">${choice}${result}${targets.length > 0 ? listHtml(s, targets) : ""}${card}</section>`;
+  if (targets.length === 0 && !card && !result && !choice && !airWarningHtml(s)) return "";
+  return `<section class="attacks">${choice}${result}${airWarningHtml(s)}${targets.length > 0 ? listHtml(s, targets) : ""}${card}</section>`;
 }
 
 /** Whether the card is open on this hex (the hex card is then hidden: the attack card already lists the defenders). */

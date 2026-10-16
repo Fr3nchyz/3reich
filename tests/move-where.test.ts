@@ -64,3 +64,25 @@ describe("a refused tap says why", () => {
     expect(s.toast).toMatch(/too far for them/);
   });
 });
+
+describe("onto one of your own stacks that has not moved yet", () => {
+  const two = () => withUnits([inf("u1", "germany", "L32", 3, 3), inf("u3", "germany", "L33", 3, 3)]);
+
+  it("a tap on that hex chooses it instead (the tap behaviour), but the list row moves the unit there", () => {
+    const tapped = two();
+    chooseStack(tapped, "L32");
+    expect(selectionNow(tapped)!.destinations.some((d) => d.to === "L33"), "L33 is a yellow hex for u1").toBe(true);
+    tapToMove(tapped, tapped.ctx.map.hexes.L33!);
+    expect(tapped.moveChosen?.hex, "the tap re-chose the stack standing there").toBe("L33");
+    expect(tapped.state.units.u1!.at).toBe("L32");
+
+    const s = two();
+    chooseStack(s, "L32");
+    expect(html(s)).toMatch(/data-dest="L33"/);
+    goTo(s, "L33");
+    expect(s.toast).not.toMatch(/cannot|too far|holds/);
+    expect(s.state.units.u1!.at, "u1 joined the stack").toBe("L33");
+    expect(s.state.units.u3!.at).toBe("L33");
+    expect(legalActions(s.ctx, s.state).some((a) => a.type === "MOVE" && a.units.includes("u3")), "the stack that was there has not moved and still can").toBe(true);
+  });
+});

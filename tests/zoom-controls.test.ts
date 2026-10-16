@@ -5,9 +5,9 @@ import { otherSide } from "../src/engine/game";
 import type { GameState } from "../src/engine/types";
 import type { MapView } from "../src/ui/mapView";
 import { tapHex } from "../src/ui/sessionActions";
-import { createSession, type Session } from "../src/ui/session";
+import { createSession, setupView, type Session } from "../src/ui/session";
 import type { WatchInfo } from "../src/ui/watchController";
-import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_COMPUTER, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_STEP3, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
+import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_COMPUTER, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_STEP3, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, canChooseStack, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
 import { started } from "./helpers";
 import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, panBox, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
 
@@ -262,6 +262,43 @@ describe("the buttons", () => {
         tapHex(s, { id: "M33" } as MapHex);
         expect(lookedHex(s)?.id).toBe("M33");
       }
+    });
+
+    it("the note over the map shows only where a stack can be chosen: step 6f of the player's own turn (and setup), not on the computer's turn, at step 3, at other steps or when watching", () => {
+      const at6f = { ...turn, position: { part: "player-turn" as const, turn: 1 as const, step: "6f" } };
+      expect(canChooseStack(session(at6f))).toBe(true);
+      expect(canChooseStack(session({ ...computersTurn, position: at6f.position }))).toBe(false);
+      expect(canChooseStack(session(at3(turn)))).toBe(false);
+      expect(canChooseStack(session(turn)), "step 10b").toBe(false);
+      expect(canChooseStack(session(at6f, true))).toBe(false);
+    });
+
+    it("in setup the note is for the human's own placing only, not a watched game or the computer's placing", () => {
+      const mine = createSession(SCENARIO_1939, "axis", 1);
+      expect(mine.state.phase).toBe("setup");
+      expect(setupView(mine), "the human places now").not.toBeNull();
+      expect(canChooseStack(mine)).toBe(true);
+      expect(canChooseStack({ ...mine, humanSide: otherSide(mine.humanSide) }), "the other side is placing: the computer's turn to place").toBe(false);
+      expect(canChooseStack({ ...mine, watch: {} as WatchInfo })).toBe(false);
+    });
+
+    it("pressing the target button with nothing to choose still says the words, but puts no note on the map and sets no timer", () => {
+      const view = { focusOutlined: () => false, focus: () => undefined } as unknown as MapView;
+      let onClick: (e: unknown) => void = () => undefined;
+      const zoomSay = { textContent: "" } as HTMLElement;
+      const zoomNote = { textContent: "" } as HTMLElement;
+      const timers: number[] = [];
+      let choosable = false;
+      bindZoom({ zoom: { addEventListener: (_: string, h: (e: unknown) => void) => { onClick = h; } } as unknown as HTMLElement, zoomSay, zoomNote }, view, () => null, (run) => run(), (_, ms) => timers.push(ms), () => NOTHING_SELECTED_COMPUTER, () => choosable);
+      const press = () => onClick({ target: { closest: () => ({ dataset: { zoom: "selected" } }) } });
+      press();
+      expect(zoomSay.textContent).toBe(NOTHING_SELECTED_COMPUTER);
+      expect(zoomNote.textContent).toBe("");
+      expect(timers).toEqual([]);
+      choosable = true;
+      press();
+      expect(zoomNote.textContent).toBe(NOTHING_SELECTED_COMPUTER);
+      expect(timers).toEqual([NOTE_MS]);
     });
 
     it("no computer word shows while setting up or watching", () => {
