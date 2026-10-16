@@ -13,6 +13,7 @@ import { actorSide, eventSide, logLine } from "./logSide";
 import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
 import type { MoveChoice } from "./moveDraft";
+import type { MoveUndo } from "./moveUndo";
 import { trackBattle, type BattleResult } from "./resultModel";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
@@ -64,6 +65,8 @@ export interface Session {
   build: BuildPick | null;
   /** The stack chosen to move at step 6f and the units ticked in it (spec 10; the yellow hexes are where the ticked units can go together), or null. Screen state, never saved. */
   moveChosen?: MoveChoice | null;
+  /** The player's moves of the current step 6f, for "Take back last move" (spec 10, 10-6; moveUndo.ts). Screen state, never saved; it holds only while the game is still where the last move left it. */
+  undo?: MoveUndo | null;
   /** The hex last tapped to look at (spec 07, part A): the hex card shows it. Screen state only, never saved; closing the card clears it. */
   lookedAt?: string | null;
   /** The attack being put together at step 7h (spec 07, part B): the hex and the chosen units. Screen state, never saved. */

@@ -27,3 +27,18 @@
 .stack-row .row-count { font-weight: 400; font-size: .9rem; color: var(--ink-soft); }
 /* The second shade of yellow: hexes a faster ticked unit could reach alone. Paler fill and a dashed outline, so it is not the colour alone. */
 svg.map .highlights polygon.further { fill: rgba(255, 224, 80, .14); stroke: #e0a526; stroke-width: 1; stroke-dasharray: 2 1.6; }
+/* Marks on the map for the Move card (spec 10, 10-5). The chosen hex = a thick dark outline (screen pixels). Each marked counter has a badge in a row under the stack
+   (group g.unit-marks, above the counters): a ticked counter a round gold ring with a tick, a left-behind one a flat pale dash. Shapes differ, so colour is never the
+   only cue; badge strokes are in map units, so they scale with the counters and never dominate a small one. Nothing covers a counter or takes a tap. */
+svg.map .attack-marks .mk-from { fill: rgba(40, 30, 10, .08); stroke: #2b1d00; stroke-width: 4px; }
+svg.map .unit-marks, svg.map .unit-marks * { pointer-events: none; }
+svg.map .unit-marks .bd-case { fill: #2b1d00; }
+svg.map .unit-marks .bd-ring { fill: #fff7d0; stroke: #f5c400; stroke-width: .9; }
+svg.map .unit-marks .bd-tick { fill: none; stroke: #2b1d00; stroke-width: .8; stroke-linecap: round; stroke-linejoin: round; }
+svg.map .unit-marks .bd-dash { fill: #ffffff; }
+svg.map .unit-marks .bd-lead { stroke: #2b1d00; stroke-width: .6; }
+/* "Take back last move" (spec 10, 10-6): a 44 px button with its reason or the move it would undo beside it; greyed (aria-disabled) when nothing can be taken back. */
+.moveundo { display: flex; flex-wrap: wrap; align-items: center; gap: .2rem .6rem; }
+.moveundo .undo { min-height: 44px; min-width: 44px; flex: none; }
+.moveundo .undo[aria-disabled="true"] { opacity: .6; cursor: not-allowed; }
+.moveundo .undo-why { flex: 1 1 7rem; font-size: .85rem; line-height: 1.25; }

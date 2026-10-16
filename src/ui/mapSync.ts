@@ -3,7 +3,8 @@ import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
 import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
-import { moveFurther, moveTargets } from "./moveTap";
+import { fromMarks, moveMarksOf } from "./moveMarks";
+import { moveFurther, moveTargets, selectionNow } from "./moveTap";
 import { shownOnMap } from "./attackSync";
 import { builds } from "./sessionActions";
 import { syncAttackMarks } from "./attackSync";
@@ -46,9 +47,11 @@ function followChoice(view: MapView, s: Session, shown: (ids: readonly string[])
 }
 
 export function syncMap(view: MapView, s: Session, setup: SetupView | null, actions?: readonly Action[]): void {
-  view.setUnits(Object.values(s.state.units));
+  const marks = moveMarksOf(selectionNow(s)); // spec 10, 10-5: rings on ticked counters, a dash on left-behind ones, the chosen hex outlined
+  view.setUnits(Object.values(s.state.units), marks.units);
   followSetup(view, s, setup?.owner ?? null);
   view.setHighlights(highlightedHexes(s, setup), moveFurther(s));
   followChoice(view, s, shownOnMap);
-  if (actions) syncAttackMarks(view, s, actions);
+  if (marks.from) view.setAttackMarks(fromMarks(marks)); // the one marks layer: at step 6f it holds the chosen hex, at step 7h the attack marks
+  else if (actions) syncAttackMarks(view, s, actions);
 }

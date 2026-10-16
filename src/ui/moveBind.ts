@@ -1,4 +1,5 @@
 import { cancelMove, chooseStack, tickAll, tickNone, toggleTick } from "./moveTap";
+import { takeBack, takeBackReason } from "./moveUndo";
 import type { Session } from "./session";
 
 /** Click and key handlers for the list and the Move card moveView.ts draws. Each changes the session, then calls `redraw`. */
@@ -18,6 +19,7 @@ export function bindMove(root: HTMLElement, s: Session, redraw: () => void): voi
   on("#move-all", () => tickAll(s));
   on("#move-none", () => tickNone(s));
   on("#move-cancel", () => cancelMove(s));
+  on("#move-undo", () => { if (takeBackReason(s) === null) takeBack(s); }); // an unavailable button does nothing: its reason is already on the page
   root.querySelector(".movecard")?.addEventListener("keydown", (e) => { if (onMoveKey(s, (e as KeyboardEvent).key)) redraw(); });
 }
 

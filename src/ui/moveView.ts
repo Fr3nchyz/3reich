@@ -2,8 +2,9 @@ import type { Action } from "../engine/actions";
 import { hexCard, type CardCounter } from "./hexCard";
 import { escape } from "./mapGeometry";
 import { LAYER_TITLES, LAYERS, type MoveLine, type MoveSelection } from "./moveSelection";
-import { atStep6f, movableStacks, selectionNow } from "./moveTap";
+import { movableStacks, selectionNow } from "./moveTap";
 import * as T from "./moveText";
+import { lastMoveLine, takeBackReason, takeBackShown } from "./moveUndo";
 import { placeName } from "./names";
 import { revealHeading, showTop } from "./reveal";
 import type { Session } from "./session";
@@ -61,17 +62,33 @@ function listHtml(s: Session): string {
       <ul class="stack-rows" aria-labelledby="stacks-title">${rows.join("")}</ul></div>`;
 }
 
-/** Step 6f for the player: the Move card when a stack is chosen, else the prompt and the list of stacks that can move; nothing at any other time. */
+/**
+ * "Take back last move" (spec 10, 10-6): a 44 px button that is always there at the player's step 6f, grey with the reason in words when there is
+ * nothing to take back (aria-disabled, so it keeps the keyboard focus), and with the move it would undo in words when there is.
+ */
+function undoHtml(s: Session): string {
+  const why = takeBackReason(s);
+  const note = why ?? `Last move: ${lastMoveLine(s)}`;
+  return `<div class="moveundo"><button type="button" id="move-undo" class="undo" aria-describedby="move-undo-why"${why ? ' aria-disabled="true"' : ""}>${T.UNDO_BUTTON}</button><span id="move-undo-why" class="undo-why">${e(note)}</span></div>`;
+}
+
+/**
+ * Step 6f for the player: the take-back button, then the Move card when a stack is chosen, else the prompt and the list of stacks that can move;
+ * nothing at any other time (and, with no unit able to move and no move to take back, nothing at all).
+ */
 export function moveHtml(s: Session, actions: readonly Action[]): string {
-  if (!atStep6f(s) || !actions.some((a) => a.type === "MOVE")) return "";
+  if (!takeBackShown(s)) return "";
+  const moves = actions.some((a) => a.type === "MOVE");
+  if (!moves && !lastMoveLine(s)) return "";
   const sel = selectionNow(s);
-  return `<section class="moves">${sel ? cardHtml(s, sel) : listHtml(s)}</section>`;
+  return `<section class="moves">${undoHtml(s)}${!moves ? "" : sel ? cardHtml(s, sel) : listHtml(s)}</section>`;
 }
 
 /** The sentence a screen reader hears after each change of the open card ("2 of 2 ticked. They can go up to 3 hexes."), or none. */
 export const moveAnnouncement = (s: Session): string => {
   const sel = selectionNow(s);
-  return sel ? `${sel.title}. ${sel.announce}` : "";
+  if (sel) return `${sel.title}. ${sel.announce}`;
+  return s.toast.startsWith(T.TOOK_BACK_PREFIX) ? s.toast : ""; // a take back drops the card: the screen reader still hears what was undone
 };
 
 /** After a stack is chosen: the card's heading takes the keyboard focus, once, and the card is brought into view. */
