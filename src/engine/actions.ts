@@ -6,6 +6,7 @@ import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
+import { applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
 import { applyMove, legalMoves } from "./move-action";
@@ -28,6 +29,7 @@ function waitingStep(state: GameState): string | undefined {
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
+  if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
@@ -82,6 +84,8 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return applySplitAir(state, action);
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
+    case "DESIGNATE_AIR":
+      return atStep(state, "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK":
       return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":

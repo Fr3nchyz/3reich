@@ -2,6 +2,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { CombatOutcome } from "./combat";
 import { combatOf, type CombatRecord, type PendingLosses } from "./combat-record";
 import type { HexId } from "./hex";
+import { clearGroundSupport } from "./air-support";
 import { ADVANCE_AFTER_COMBAT, lonersAt } from "./attack-rules";
 import type { GameState, Side, Unit } from "./types";
 
@@ -56,7 +57,7 @@ const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState =
 function finishBattle(state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): { state: GameState; events: GameEvent[] } {
   const loners = lonersAt(state, by, target);
   const swept = eliminate(state, loners.map((u) => u.id));
-  const done = finishWithRecord(swept.state, attackers, target);
+  const done = finishWithRecord(clearGroundSupport(swept.state, target), attackers, target);
   const note: GameEvent[] = loners.length > 0 ? [{ type: "UNITS_SWEPT", hex: target, units: loners.map((u) => ({ id: u.id, owner: u.owner, type: u.type, strength: u.strength })) }] : [];
   return { state: done, events: [...note, ...swept.events] };
 }
@@ -109,7 +110,10 @@ export interface Battle {
   outcome: CombatOutcome;
   side: Side;
   target: HexId;
+  /** The ground units that attacked. */
   attackers: Unit[];
+  /** The air units whose Ground Support counted in the attack (spec 09 R8): they fight and lose with the attackers but never advance. Default none. */
+  air?: Unit[];
   defenders: Unit[];
   multiplier: number;
 }
@@ -124,8 +128,10 @@ export interface Battle {
 export function applyOutcome(state: GameState, b: Battle): { state: GameState; events: GameEvent[] } {
   const ids = (us: readonly Unit[]) => us.map((u) => u.id);
   const attackerIds = ids(b.attackers);
+  const fighters = [...b.attackers, ...(b.air ?? [])]; // everyone on the attacking side who can be lost (air counted in the attack included)
+  const fighterIds = ids(fighters);
   if (b.outcome.kind === "attacker-eliminated") {
-    const gone = eliminate(state, attackerIds);
+    const gone = eliminate(state, fighterIds);
     const done = finishBattle(gone.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...gone.events, ...done.events] };
   }
@@ -134,15 +140,15 @@ export function applyOutcome(state: GameState, b: Battle): { state: GameState; e
     const done = finishBattle(gone.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...gone.events, ...done.events] };
   }
-  const cost = exchangeCost(b.attackers, b.defenders, b.outcome.multipliedDefense ? b.multiplier : 1);
-  const wholly = eliminate(state, [...(cost.attackersLoseAll ? attackerIds : []), ...(cost.defendersLoseAll ? ids(b.defenders) : [])]);
+  const cost = exchangeCost(fighters, b.defenders, b.outcome.multipliedDefense ? b.multiplier : 1);
+  const wholly = eliminate(state, [...(cost.attackersLoseAll ? fighterIds : []), ...(cost.defendersLoseAll ? ids(b.defenders) : [])]);
   // The larger side (both, if equal) removes at least as many factors as the smaller side has; with equal totals that is everything.
   if (cost.chooser === null) {
     const done = finishBattle(wholly.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...done.events] };
   }
   const { required, values } = cost;
-  const choosing = cost.chooser === "defenders" ? b.defenders : b.attackers;
+  const choosing = cost.chooser === "defenders" ? b.defenders : fighters;
   const candidates = ids(choosing);
   const sets = minimalSets(candidates, values, required);
   if (sets.length === 1) {

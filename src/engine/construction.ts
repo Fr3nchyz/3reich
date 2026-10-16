@@ -1,3 +1,4 @@
+import { markFlown } from "./air-record";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { territoryOf, type Place } from "./areas";
 import { spend, spendable } from "./brps";
@@ -92,9 +93,7 @@ export function applyBuild(ctx: GameContext, state: GameState, action: BuildActi
   const pool = paid.state.pools[action.owner]!;
   const allowableBuilds = pool.allowableBuilds.map((e) => (e === entry ? { ...e, count: e.count - 1 } : e)).filter((e) => e.count > 0);
   const events: GameEvent[] = [paid.event, { type: "UNIT_BUILT", unitId: id, owner: action.owner, unitType: type, strength, at: action.at, cost }];
-  return {
-    ok: true,
-    state: { ...paid.state, nextUnitId: paid.state.nextUnitId + 1, units: { ...paid.state.units, [id]: unit }, pools: { ...paid.state.pools, [action.owner]: { ...pool, allowableBuilds } } },
-    events,
-  };
+  const built: GameState = { ...paid.state, nextUnitId: paid.state.nextUnitId + 1, units: { ...paid.state.units, [id]: unit }, pools: { ...paid.state.pools, [action.owner]: { ...pool, allowableBuilds } } };
+  // Ref 20.3: an air unit built in a Game Turn flies no mission in it.
+  return { ok: true, state: type === "air" ? markFlown(built, [id], "new") : built, events };
 }
