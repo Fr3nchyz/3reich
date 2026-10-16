@@ -1,7 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+import { SCENARIO_1939 } from "../src/data/scenario-1939";
+import type { MapHex } from "../src/engine/map";
+import { otherSide } from "../src/engine/game";
+import type { GameState } from "../src/engine/types";
 import type { MapView } from "../src/ui/mapView";
-import type { Session } from "../src/ui/session";
-import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
+import { tapHex } from "../src/ui/sessionActions";
+import { createSession, type Session } from "../src/ui/session";
+import type { WatchInfo } from "../src/ui/watchController";
+import { NOTE_MS, NOTHING_SELECTED, NOTHING_SELECTED_COMPUTER, NOTHING_SELECTED_SETUP, NOTHING_SELECTED_STEP3, NOTHING_SELECTED_WATCHING, ZOOM_BUTTONS, bindZoom, lookedHex, nothingSelectedText, zoomSaid, zoomToSelection, type Looked } from "../src/ui/zoomControls";
+import { started } from "./helpers";
 import { BUTTON_ZOOM_STEP, MAX_ZOOM_IN, MAX_ZOOM_OUT, clampBox, createViewport, panBox, wholeOnScreen, zoomBox, zoomLevel, type Size } from "../src/ui/viewport";
 
 /** The zoom buttons (spec 08): the maths behind them, the limits, and what a press does and says. */
@@ -226,6 +233,41 @@ describe("the buttons", () => {
     expect(at("setup", true), "no hex card during setup, even when watching").toBe(NOTHING_SELECTED_SETUP);
     expect(NOTHING_SELECTED_WATCHING).not.toContain("counters");
     expect(NOTHING_SELECTED, "playing: your counters are what you choose").toContain("counters");
+  });
+
+  describe("the words on the computer's turn and at step 3 (where nothing can be chosen)", () => {
+    const turn = started(SCENARIO_1939, 1); // the game waits at step 10b of a Player Turn
+    const me = turn.activeSide; // the side the player plays
+    const session = (state: GameState, watch = false): Session => ({ ...createSession(SCENARIO_1939, me, 1), state, ...(watch ? { watch: {} as WatchInfo } : {}) });
+    const at3 = (state: GameState) => ({ ...state, position: { part: "player-turn" as const, turn: 1 as const, step: "3" } });
+    const computersTurn = { ...turn, activeSide: otherSide(me) };
+
+    it("the player's own turn at step 10b keeps the playing words", () => {
+      expect(nothingSelectedText(session(turn))).toBe(NOTHING_SELECTED);
+    });
+
+    it("the computer's turn says it is the computer's turn, and that a tapped hex is looked at", () => {
+      expect(nothingSelectedText(session(computersTurn))).toBe("It is the computer's turn. Tap a hex to look at it.");
+      expect(NOTHING_SELECTED_COMPUTER).toBe("It is the computer's turn. Tap a hex to look at it.");
+    });
+
+    it("step 3 says there is nothing to select at this step, and that a tapped hex is looked at", () => {
+      expect(nothingSelectedText(session(at3(turn)))).toBe("Nothing to select at this step. Tap a hex to look at it.");
+      expect(NOTHING_SELECTED_STEP3).toBe("Nothing to select at this step. Tap a hex to look at it.");
+    });
+
+    it("a tap still opens the hex card on the computer's turn and at step 3, so the words are true", () => {
+      for (const state of [computersTurn, at3(turn)]) {
+        const s = session(state);
+        tapHex(s, { id: "M33" } as MapHex);
+        expect(lookedHex(s)?.id).toBe("M33");
+      }
+    });
+
+    it("no computer word shows while setting up or watching", () => {
+      expect(nothingSelectedText(session({ ...computersTurn, phase: "setup" }))).toBe(NOTHING_SELECTED_SETUP);
+      expect(nothingSelectedText(session(computersTurn, true))).toBe(NOTHING_SELECTED_WATCHING);
+    });
   });
 
   it("the line given for the game now is the one said, shown on the map and read aloud", () => {

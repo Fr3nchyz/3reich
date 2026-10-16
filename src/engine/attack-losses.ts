@@ -10,7 +10,13 @@ import type { GameState, Side, Unit } from "./types";
  * allocation the owner chooses, and the advance that may follow.
  */
 
-/** Listing every way to remove enough factors stops here; a stack has few counters, so it is not reached. */
+/**
+ * Listing every way to remove enough factors stops at this many sets: `minimalSets` stops walking, and the sets it has are the
+ * ones `legalActions` offers (ALLOCATE_LOSSES). A stack with many counters of similar strength can have more, so the sets past the
+ * first 100 are never offered. The engine's applyAllocation still accepts any valid set, but the loss card (ui/lossOptions.ts) only
+ * confirms listed sets: a player who picks an unlisted one is told it takes more than needed ("Take one off"), or that one unit must
+ * come off, though that set is exactly enough. Not measured on real games yet. Behaviour is unchanged here; see the note in lossOptions.ts.
+ */
 const MAX_LISTED_SETS = 100;
 
 /** The subsets of `ids` whose values reach `required` and in which no unit could be spared. */
