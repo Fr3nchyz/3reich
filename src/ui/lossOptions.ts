@@ -1,4 +1,5 @@
 import type { Action } from "../engine/actions";
+import { lossSetError } from "../engine/attack-losses";
 import { combatOf, type PendingLosses } from "../engine/combat-record";
 import type { GameContext } from "../engine/context";
 import type { GameState, Unit } from "../engine/types";
@@ -63,9 +64,7 @@ export function ownPending(state: GameState, humanSide: "axis" | "allies"): Pend
   return p && p.chooser === humanSide ? p : null;
 }
 
-const sameSet = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && [...a].sort().join() === [...b].sort().join();
-
-/** The legal sets (just enough) as lists of ids, from the ALLOCATE_LOSSES actions on offer. */
+/** The legal sets (just enough) as lists of ids, from the ALLOCATE_LOSSES actions on offer (at most the first 100 the engine lists). */
 export const legalSets = (actions: readonly Action[]): string[][] => actions.flatMap((a) => (a.type === "ALLOCATE_LOSSES" ? [a.units] : []));
 
 const nthOf = (units: readonly Unit[], u: Unit): string | null => {
@@ -92,10 +91,9 @@ export function lossModel(ctx: GameContext, state: GameState, humanSide: "axis" 
   const units = unitsWithIds(state, p.candidates);
   const sum = chosen.reduce((n, id) => n + (p.values[id] ?? 0), 0);
   const sets = legalSets(actions);
-  // The card confirms only a set that `actions` lists. attack-losses.ts lists at most 100 sets (MAX_LISTED_SETS): with a bigger stack, a
-  // valid set past the 100 is refused here and reads as "more than the Exchange takes" (or "Take one unit off"), though it is enough.
-  // That is the behaviour the test in tests/choice-cards.test.ts documents. Fixing it means changing what the engine offers, not this card.
-  const legal = sets.some((s) => sameSet(s, chosen));
+  // The engine lists at most 100 sets (MAX_LISTED_SETS in attack-losses.ts), so a set the player picks by hand may be legal without being
+  // listed: the engine's own check (`lossSetError`) decides. No listed set at all means the player may not act now (`actions` is empty).
+  const legal = sets.length > 0 && lossSetError(p, [...chosen]) === null;
   const groups = groupsOf(state, sets, p.values);
   const chips = units.map((u): LossChip => ({
     id: u.id,

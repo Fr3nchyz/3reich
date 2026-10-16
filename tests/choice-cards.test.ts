@@ -96,7 +96,7 @@ describe("Choose your losses: the model", () => {
     expect(m.moreGroups).toBe(true);
   });
 
-  it("documents the 100-set limit (attack-losses.ts): past 100 ways only the first 100 are offered, and the card refuses a valid set beyond them", () => {
+  it("past 100 ways only the first 100 are listed, but the engine and the card both accept any valid set", () => {
     const twelve = Array.from({ length: 12 }, (_, i) => GER(`s${i}`, "M32", 1));
     const state = withPending(twelve, { candidates: twelve.map((u) => u.id), values: Object.fromEntries(twelve.map((u) => [u.id, 1])), required: 6 });
     const listed = legalAllocations(state);
@@ -105,10 +105,30 @@ describe("Choose your losses: the model", () => {
     expect(legalSets(listed).some((ids) => ids.join() === past.join())).toBe(false);
     expect(applyAllocation(state, { type: "ALLOCATE_LOSSES", side: "axis", units: past }).ok, "the engine accepts it").toBe(true);
     const m = lossModel(CTX, state, "axis", listed, past)!;
-    expect(m.legal, "the card does not").toBe(false);
-    expect(m.total).toBe("Chosen 6 of at least 6 factors: more than the Exchange takes. Take one off.");
-    expect(m.button).toEqual({ text: "Take one unit off to lose exactly enough", disabled: true });
+    expect(m.legal, "and so does the card").toBe(true);
+    expect(m.total).toBe("Chosen 6 of at least 6 factors. That is enough.");
+    expect(m.button).toEqual({ text: "Lose 6 x 1 German infantry", disabled: false });
     expect(lossModel(CTX, state, "axis", listed, legalSets(listed)[0]!)!.legal).toBe(true);
+    // Still refused, in the engine's words: too few, a unit to spare, and a unit that is not in the stack.
+    expect(lossModel(CTX, state, "axis", listed, past.slice(1))!.button).toEqual({ text: "Choose 1 more factor to lose", disabled: true });
+    expect(lossModel(CTX, state, "axis", listed, [...past, "s0"])!.button.disabled).toBe(true);
+    expect(lossModel(CTX, state, "axis", listed, [...past.slice(1), "zz"])!.legal).toBe(false);
+    expect(lossModel(CTX, state, "axis", [], past)!.legal, "nothing to confirm when the player may not act").toBe(false);
+  });
+
+  it("a hand-picked unlisted set goes through the card: ALLOCATE_LOSSES is sent and those units are lost", () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => GER(`s${i}`, "M32", 1));
+    const s = createSession(SCENARIO_1939, "axis", 1);
+    s.state = withPending(twelve, { candidates: twelve.map((u) => u.id), values: Object.fromEntries(twelve.map((u) => [u.id, 1])), required: 6 });
+    s.record = [];
+    const past = ["s6", "s7", "s8", "s9", "s10", "s11"];
+    for (const id of past) toggleLoss(s, id);
+    confirmLosses(s);
+    expect(s.toast).toBe("");
+    expect(s.record).toEqual([{ type: "ALLOCATE_LOSSES", side: "axis", units: past }]);
+    expect(combatOf(s.state).pending).toBeNull();
+    expect(past.some((id) => s.state.units[id])).toBe(false);
+    expect(["s0", "s5"].every((id) => s.state.units[id])).toBe(true);
   });
 });
 
