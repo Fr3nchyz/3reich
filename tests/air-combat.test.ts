@@ -4,9 +4,6 @@ import {
   type AirCombatRules,
   type AirForce,
   airRollsTie,
-  applyAirLosses,
-  autoAirLosses,
-  breakDownAirUnit,
   forceNationalityDrm,
   resolveAirCombat,
 } from "../src/engine/air-combat";
@@ -55,7 +52,9 @@ const TABLE: Row[] = [
   { name: "R7.4 tie, third die 6: still capped at the smaller force (3)", a: F(3, ["germany"]), d: F(5, ["britain"]), dice: [6, 4], tie: 6, mods: [6, 6], aLoss: [3, 0], dLoss: [3, 0], winner: null },
   { name: "R7.6 zero-factor defender: 3 v 0 (+3), 1-1 -> 4 v 1; its 3 lost come from the 4 that sat out", a: F(3, ["germany"]), d: F(0, [], 4), dice: [1, 1], mods: [4, 1], aLoss: [1, 0], dLoss: [0, 3], winner: "attacker" },
   { name: "R7.6 zero-factor defender gets no nationality DRM even if it names one (-2 ignored)", a: F(3, ["germany"]), d: F(0, ["other"], 4), dice: [1, 1], mods: [4, 1], aLoss: [1, 0], dLoss: [0, 3], winner: "attacker" },
-  { name: "R7.6 zero-factor defender, tie: smaller force has 0, so nobody loses", a: F(3, ["germany"]), d: F(0, [], 4), dice: [1, 4], tie: 5, mods: [4, 4], aLoss: [0, 0], dLoss: [0, 0], winner: null },
+  // OPEN reading, TODO(verify): R7 step 6 says the zero-factor defender's losses come out of the planes that sat
+  // out, and step 4 caps a tie at "the smaller force" (here 0 participating). This row pins that reading only.
+  { name: "R7.6/R7.4 zero-factor defender, tie: under the current reading (cap = participating) nobody loses", a: F(3, ["germany"]), d: F(0, [], 4), dice: [1, 4], tie: 5, mods: [4, 4], aLoss: [0, 0], dLoss: [0, 0], winner: null },
   { name: "R7.6 zero-factor defender wins: attacker loses the 2 difference, winner has nothing participating to lose", a: F(3, ["germany"]), d: F(0, [], 4), dice: [1, 6], mods: [4, 6], aLoss: [2, 0], dLoss: [0, 0], winner: "defender", free: false },
   { name: "R7.3 winner with fewer participants than half: capped at 1 (winnerLossReachesNonParticipants off)", a: F(4, ["other"]), d: F(1, ["germany"], 4), dice: [1, 6], mods: [2, 6], aLoss: [4, 0], dLoss: [1, 0], winner: "defender", free: false },
 ];
@@ -222,78 +221,34 @@ describe("rule switches (TODO(verify)) are real branches", () => {
   });
 });
 
-describe("R6/R7 break-down of a lost counter (Ref 20.6, errata)", () => {
-  // Sizes 1, 2, 3, 5: the unit left is the largest size not above strength - owed.
-  const cases: [number, number, number, number][] = [
-    // strength, owed, remaining, lost
-    [5, 0, 5, 0],
-    [5, 1, 3, 2], // the manual's example: 1 factor from a 5-4 takes 2, leaving a 3-4
-    [5, 2, 3, 2],
-    [5, 3, 2, 3],
-    [5, 4, 1, 4],
-    [5, 5, 0, 5],
-    [3, 1, 2, 1],
-    [3, 2, 1, 2],
-    [3, 3, 0, 3],
-    [2, 1, 1, 1],
-    [1, 1, 0, 1],
-    [3, 9, 0, 3],
-  ];
-  for (const [strength, owed, remaining, lost] of cases) {
-    it(`R6 a ${strength} that owes ${owed} keeps ${remaining} and loses ${lost}`, () => {
-      expect(breakDownAirUnit(strength, owed)).toEqual({ remaining, lost });
-    });
-  }
-  it("lossMayExceedOwed off: exactly the factors owed", () => {
-    const rules: AirCombatRules = { ...AIR_COMBAT_RULES, lossMayExceedOwed: false };
-    expect(breakDownAirUnit(5, 1, rules)).toEqual({ remaining: 4, lost: 1 });
+describe("open readings (TODO(verify), docs/RULES.md) are switches with the current reading as default", () => {
+  it("R7.5 'larger' means strictly more by default; at least as many when switched", () => {
+    const a = F(3, ["germany"]);
+    const d = F(3, ["germany"]);
+    expect(resolveAirCombat(a, d, 1, 6).defenderSurvivorsFree).toBe(false);
+    const rules: AirCombatRules = { ...AIR_COMBAT_RULES, largerMeansStrictlyMore: false };
+    expect(resolveAirCombat(a, d, 1, 6, undefined, rules).defenderSurvivorsFree).toBe(true);
   });
-  it("a different set of counter sizes changes the break-down (4 exists)", () => {
-    const rules: AirCombatRules = { ...AIR_COMBAT_RULES, counterSizes: [1, 2, 3, 4, 5] };
-    expect(breakDownAirUnit(5, 1, rules)).toEqual({ remaining: 4, lost: 1 });
+  it("R7.5 no one is free after a tie by default; a larger defender is when switched, a smaller one never", () => {
+    const rules: AirCombatRules = { ...AIR_COMBAT_RULES, tieFreesLargerDefender: true };
+    // 3 v 5 (Britain, +2): 6 against 4 ties at 6.
+    expect(resolveAirCombat(F(3, ["germany"]), F(5, ["britain"]), 6, 4, 2).defenderSurvivorsFree).toBe(false);
+    expect(resolveAirCombat(F(3, ["germany"]), F(5, ["britain"]), 6, 4, 2, rules).defenderSurvivorsFree).toBe(true);
+    // 5 v 3: the defender (Britain, 3 factors) is smaller; modified 6 v 6 needs the attacker's +2 against a 4.
+    expect(resolveAirCombat(F(5, ["germany"]), F(3, ["britain"]), 4, 6, 2, rules).defenderSurvivorsFree).toBe(false);
   });
-});
-
-describe("R7 owner's choice of losses (Ref 20.44)", () => {
-  const pool = [
-    { id: "a", strength: 5 },
-    { id: "b", strength: 1 },
-    { id: "c", strength: 3 },
-  ];
-  it("applies a legal choice with break-down: 1 from the 5 loses 2", () => {
-    expect(applyAirLosses(pool, [{ id: "a", factors: 1 }], 1)).toEqual({ applied: [{ id: "a", remaining: 3, lost: 2 }], lost: 2 });
-  });
-  it("applies a mixed choice: the whole 1 and 2 of the 3", () => {
-    expect(applyAirLosses(pool, [{ id: "b", factors: 1 }, { id: "c", factors: 2 }], 3)).toEqual({
-      applied: [
-        { id: "b", remaining: 0, lost: 1 },
-        { id: "c", remaining: 1, lost: 2 },
-      ],
-      lost: 3,
-    });
-  });
-  it("refuses a wrong total, an unknown unit, a repeat, zero, and more than the unit has", () => {
-    const problem = (take: { id: string; factors: number }[], owed: number) => applyAirLosses(pool, take, owed);
-    expect(problem([{ id: "a", factors: 1 }], 2)).toHaveProperty("problem");
-    expect(problem([{ id: "a", factors: 3 }], 2)).toHaveProperty("problem");
-    expect(problem([{ id: "z", factors: 1 }], 1)).toHaveProperty("problem");
-    expect(problem([{ id: "a", factors: 1 }, { id: "a", factors: 1 }], 2)).toHaveProperty("problem");
-    expect(problem([{ id: "b", factors: 0 }], 0)).toHaveProperty("problem");
-    expect(problem([{ id: "b", factors: 2 }], 2)).toHaveProperty("problem");
-    expect(problem([{ id: "b", factors: 0.5 }], 0.5)).toHaveProperty("problem");
-  });
-  it("the computer's choice takes the smallest first, whole units while they fit, one broken at most", () => {
-    expect(autoAirLosses(pool, 0)).toEqual([]);
-    expect(autoAirLosses(pool, 1)).toEqual([{ id: "b", factors: 1 }]);
-    expect(autoAirLosses(pool, 2)).toEqual([{ id: "b", factors: 1 }, { id: "c", factors: 1 }]);
-    expect(autoAirLosses(pool, 4)).toEqual([{ id: "b", factors: 1 }, { id: "c", factors: 3 }]);
-    expect(autoAirLosses(pool, 6)).toEqual([{ id: "b", factors: 1 }, { id: "c", factors: 3 }, { id: "a", factors: 2 }]);
-    expect(autoAirLosses(pool, 99)).toEqual([{ id: "b", factors: 1 }, { id: "c", factors: 3 }, { id: "a", factors: 5 }]);
-  });
-  it("the computer's choice is a legal choice, and equal units go by id", () => {
-    const twins = [{ id: "y", strength: 3 }, { id: "x", strength: 3 }];
-    const take = autoAirLosses(twins, 4);
-    expect(take).toEqual([{ id: "x", factors: 3 }, { id: "y", factors: 1 }]);
-    expect(applyAirLosses(twins, take, 4)).not.toHaveProperty("problem");
+  it("R7.6 a zero-factor attacker has no nationality DRM by default; only the defender has none when switched", () => {
+    const zero = F(0, ["other"], 2);
+    const d = F(3, ["germany"]);
+    const def = resolveAirCombat(zero, d, 3, 3);
+    expect(def.attacker).toMatchObject({ nationalityDrm: 0, modifiedRoll: 3 });
+    const rules: AirCombatRules = { ...AIR_COMBAT_RULES, zeroFactorNoDrmEitherSide: false };
+    const off = resolveAirCombat(zero, d, 3, 3, undefined, rules);
+    expect(off.attacker).toMatchObject({ nationalityDrm: -2, modifiedRoll: 1 });
+    // zero-factor attacker (die 6, +0) against Germany's 3 (die 3, +3): tie at 6 only while the attacker has no DRM.
+    expect(airRollsTie(zero, d, 6, 3)).toBe(true);
+    expect(airRollsTie(zero, d, 6, 3, rules)).toBe(false);
+    // 3 v 0 factors: the defender's side never gets the DRM, with the switch either way.
+    expect(resolveAirCombat(d, F(0, ["other"], 2), 1, 1, undefined, rules).defender.nationalityDrm).toBe(0);
   });
 });

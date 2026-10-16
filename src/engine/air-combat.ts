@@ -45,12 +45,30 @@ export interface AirCombatRules {
    * factors. True: the rest comes out of its non-participating factors, like the loser's.
    */
   winnerLossReachesNonParticipants: boolean;
+  /**
+   * TODO(verify) (docs/RULES.md, air combat resolver): "larger force" in R7 step 5. True: strictly
+   * more participating factors than the other side. False: at least as many.
+   */
+  largerMeansStrictlyMore: boolean;
+  /**
+   * TODO(verify) (docs/RULES.md): can the Non-Phasing side's survivors be free after a TIE when its
+   * force was the larger? R7 step 5 says "won", and a tie has no winner, so false.
+   */
+  tieFreesLargerDefender: boolean;
+  /**
+   * TODO(verify) (docs/RULES.md): R7 step 6 gives a defender with 0 participating factors no
+   * nationality DRM. True: the same for an attacker with 0 factors. False: only the defender.
+   */
+  zeroFactorNoDrmEitherSide: boolean;
 }
 
 export const AIR_COMBAT_RULES: AirCombatRules = {
   counterSizes: [1, 2, 3, 5],
   lossMayExceedOwed: true,
   winnerLossReachesNonParticipants: false,
+  largerMeansStrictlyMore: true,
+  tieFreesLargerDefender: false,
+  zeroFactorNoDrmEitherSide: true,
 };
 
 export interface AirSideResult {
@@ -86,6 +104,11 @@ export interface AirCombatResult {
   defenderSurvivorsFree: boolean;
 }
 
+/** "Larger force" (R7 step 5), by participating factors. */
+function isLarger(force: AirForce, other: AirForce, rules: AirCombatRules): boolean {
+  return rules.largerMeansStrictlyMore ? force.factors > other.factors : force.factors >= other.factors;
+}
+
 function checkDie(name: string, die: number): void {
   if (!Number.isInteger(die) || die < 1 || die > 6) throw new RangeError(`${name} must be a die roll 1-6, got ${die}`);
 }
@@ -98,8 +121,8 @@ function checkForce(name: string, force: AirForce): void {
 }
 
 /** Lowest nationality DRM of a force; a force with no participating factors has none (R7 step 6). */
-export function forceNationalityDrm(force: AirForce): number {
-  if (force.factors === 0 || force.nationalities.length === 0) return 0;
+export function forceNationalityDrm(force: AirForce, zeroFactorHasNoDrm = true): number {
+  if (force.nationalities.length === 0 || (force.factors === 0 && zeroFactorHasNoDrm)) return 0;
   return Math.min(...force.nationalities.map(airNationalityDrm));
 }
 
@@ -107,13 +130,20 @@ export function forceNationalityDrm(force: AirForce): number {
  * Does this pair of dice (modified) tie? The caller rolls the third die only then, to keep the
  * stream of random numbers short; passing it anyway is harmless (it is ignored).
  */
-export function airRollsTie(attacker: AirForce, defender: AirForce, attackerDie: number, defenderDie: number): boolean {
-  return modified(attacker, defender, attackerDie).total === modified(defender, attacker, defenderDie).total;
+export function airRollsTie(
+  attacker: AirForce,
+  defender: AirForce,
+  attackerDie: number,
+  defenderDie: number,
+  rules: AirCombatRules = AIR_COMBAT_RULES,
+): boolean {
+  return modified(attacker, defender, attackerDie, rules.zeroFactorNoDrmEitherSide).total === modified(defender, attacker, defenderDie, true).total;
 }
 
-function modified(own: AirForce, other: AirForce, die: number): { advantage: number; nationality: number; total: number } {
+/** `zeroFactorNoDrm`: R7 step 6, no nationality DRM for a force with no participating factors. */
+function modified(own: AirForce, other: AirForce, die: number, zeroFactorNoDrm: boolean): { advantage: number; nationality: number; total: number } {
   const advantage = airAdvantageDrm(own.factors, other.factors);
-  const nationality = forceNationalityDrm(own);
+  const nationality = forceNationalityDrm(own, zeroFactorNoDrm);
   return { advantage, nationality, total: die + advantage + nationality };
 }
 
@@ -135,8 +165,8 @@ export function resolveAirCombat(
   checkDie("attacker die", attackerDie);
   checkDie("defender die", defenderDie);
   if (attacker.factors === 0 && defender.factors === 0) throw new RangeError("no air factors take part");
-  const a = modified(attacker, defender, attackerDie);
-  const d = modified(defender, attacker, defenderDie);
+  const a = modified(attacker, defender, attackerDie, rules.zeroFactorNoDrmEitherSide);
+  const d = modified(defender, attacker, defenderDie, true);
   const side = (force: AirForce, m: typeof a): AirSideResult => ({
     factors: force.factors,
     advantageDrm: m.advantage,
@@ -164,6 +194,7 @@ export function resolveAirCombat(
     const each = Math.min(tieRoll, attacker.factors, defender.factors);
     out.attacker.lossParticipating = each;
     out.defender.lossParticipating = each;
+    out.defenderSurvivorsFree = rules.tieFreesLargerDefender && isLarger(defender, attacker, rules);
   } else {
     const [loser, winner, loserForce, winnerForce] =
       out.winner === "attacker"
@@ -181,89 +212,8 @@ export function resolveAirCombat(
       winner.lossNonParticipating = Math.min(half - winner.lossParticipating, winnerForce.nonParticipating ?? 0);
     }
     // R7 step 5 exception: the Non-Phasing side had the larger force and won.
-    out.defenderSurvivorsFree = out.winner === "defender" && defender.factors > attacker.factors;
+    out.defenderSurvivorsFree = out.winner === "defender" && isLarger(defender, attacker, rules);
   }
   for (const s of [out.attacker, out.defender]) s.lossTotal = s.lossParticipating + s.lossNonParticipating;
   return out;
-}
-
-/** One air counter: an id and its air factors. */
-export interface AirCounter {
-  id: string;
-  strength: number;
-}
-
-/**
- * Break-down (R6, Ref 20.6): removing `owed` factors from one counter leaves the largest counter
- * size not above (strength - owed), so the unit may lose more than `owed`. 0 left when the loss
- * covers it. Example from the errata: a 5 that loses 1 becomes a 3 (loses 2).
- */
-export function breakDownAirUnit(
-  strength: number,
-  owed: number,
-  rules: AirCombatRules = AIR_COMBAT_RULES,
-): { remaining: number; lost: number } {
-  if (owed <= 0) return { remaining: strength, lost: 0 };
-  if (owed >= strength) return { remaining: 0, lost: strength };
-  const target = strength - owed;
-  const sizes = rules.counterSizes.filter((s) => s <= target);
-  const remaining = rules.lossMayExceedOwed ? Math.max(0, ...sizes) : target;
-  return { remaining, lost: strength - remaining };
-}
-
-export interface AirLossTake {
-  id: string;
-  factors: number;
-}
-
-export interface AirLossApplied {
-  id: string;
-  remaining: number;
-  lost: number;
-}
-
-/**
- * Apply an owner's choice of air losses (R7: the owner picks, `TODO(verify)`; part J item 5).
- * The choice must name distinct units of the pool and take exactly `owed` factors in all. Returns
- * a reason (naming the rule) or the units' results; the total lost may exceed `owed` (break-down).
- */
-export function applyAirLosses(
-  pool: readonly AirCounter[],
-  take: readonly AirLossTake[],
-  owed: number,
-  rules: AirCombatRules = AIR_COMBAT_RULES,
-): { problem: string } | { applied: AirLossApplied[]; lost: number } {
-  const seen = new Set<string>();
-  let sum = 0;
-  for (const t of take) {
-    const unit = pool.find((u) => u.id === t.id);
-    if (!unit) return { problem: "That air unit is not among those that can be lost (Ref 20.44)." };
-    if (seen.has(t.id)) return { problem: "Each air unit may be named only once (Ref 20.44)." };
-    seen.add(t.id);
-    if (!Number.isInteger(t.factors) || t.factors < 1 || t.factors > unit.strength) {
-      return { problem: "An air unit cannot lose more factors than it has (Ref 20.44)." };
-    }
-    sum += t.factors;
-  }
-  if (sum !== owed) return { problem: `Exactly ${owed} air factors must be chosen as the loss (Ref 20.44).` };
-  const applied = take.map((t) => ({ id: t.id, ...breakDownAirUnit(pool.find((u) => u.id === t.id)!.strength, t.factors, rules) }));
-  return { applied, lost: applied.reduce((n, u) => n + u.lost, 0) };
-}
-
-/**
- * The computer's choice of air losses (spec 09 R7 option b): smallest units first, whole units
- * while they fit, at most one unit broken down. A policy, not a rule: `TODO(verify)` with part J
- * item 5. Returns the picks; `owed` larger than the pool takes the whole pool.
- */
-export function autoAirLosses(pool: readonly AirCounter[], owed: number): AirLossTake[] {
-  const sorted = [...pool].sort((x, y) => x.strength - y.strength || (x.id < y.id ? -1 : 1));
-  const take: AirLossTake[] = [];
-  let left = owed;
-  for (const u of sorted) {
-    if (left <= 0) break;
-    const factors = Math.min(u.strength, left);
-    take.push({ id: u.id, factors });
-    left -= factors;
-  }
-  return take;
 }
