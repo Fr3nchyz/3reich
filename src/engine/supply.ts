@@ -3,6 +3,7 @@ import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
+import { fortressSupplies, specialNets } from "./supply-sources";
 import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSources, type ZocPolicy } from "./zoc";
 
 /**
@@ -174,14 +175,17 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
     if (mine.length) reached.set(g, reach(ctx, state, side, mine, policy));
   }
+  const nets = specialNets(ctx, state, side).map((net) => ({ net, next: reach(ctx, state, side, net.sources, policy) }));
+  const lineIn = (u: Unit, next: Map<HexId, HexId | null> | undefined): SupplyLine | null => {
+    if (!next?.has(u.at)) return null;
+    const path = [u.at];
+    for (let h = next.get(u.at) ?? null; h !== null; h = next.get(h) ?? null) path.push(h);
+    return { unitId: u.id, source: path[path.length - 1]!, path, via: "land" };
+  };
   for (const u of checkedUnits(ctx, state, side)) {
-    const next = reached.get(groupOfOwner(side, u.owner, policy));
-    let line: SupplyLine | null = null;
-    if (next?.has(u.at)) {
-      const path = [u.at];
-      for (let h = next.get(u.at) ?? null; h !== null; h = next.get(h) ?? null) path.push(h);
-      line = { unitId: u.id, source: path[path.length - 1]!, path, via: "land" };
-    }
+    let line = lineIn(u, reached.get(groupOfOwner(side, u.owner, policy)));
+    if (!line && fortressSupplies(ctx, state, side, u)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" };
+    for (const { net, next } of nets) if (!line && net.serves(u)) line = lineIn(u, next);
     line ??= seaSupplyLine(ctx, state, side, u);
     if (line) status.supplied.push(line);
     else status.unsupplied.push(u.id);
