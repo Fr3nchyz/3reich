@@ -54,6 +54,8 @@ export interface Nation {
   spendLimit: number;
   /** BRPs spent so far in the current Player Turn; reset when a Player Turn begins. */
   spent: number;
+  /** BRPs this nation has granted in the current year; reset by the Year Start Sequence (Ref 11.71: at most half the yearly allotment). Absent means 0. */
+  grantedThisYear?: number;
 }
 
 /** Off-map boxes printed on the map. */

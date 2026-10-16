@@ -60,7 +60,7 @@ function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: 
   const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
   const brpBase = n.brpBase + growth;
   const brpTotal = brpBase + minorAllyBrps(ctx, state, n.id) + (KEEP_UNUSED_BRPS ? unused : 0);
-  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0 }, growth };
+  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth };
 }
 
 /** Runs the Year Start Sequence for the year `state` has just entered; a nation that is out of the scenario is left alone. */
