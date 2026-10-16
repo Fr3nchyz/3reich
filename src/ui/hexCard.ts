@@ -53,7 +53,7 @@ const TERRAIN_WORDS: Readonly<Record<LandTerrain, string>> = { plain: "Plain", m
 
 const FEATURE_WORDS: Readonly<Record<HexFeature, string>> = { beach: "beach", city: "city", port: "port", capital: "capital", "capital-port": "capital and port", objective: "objective" };
 
-/** Whether a counter of this kind fights when it is attacked on the ground (GROUND_COMBAT_TYPES, spec 04; Replacement is TODO(verify) there). */
+/** Whether a counter of this kind fights when it is attacked on the ground (GROUND_COMBAT_TYPES, spec 04; Replacements defend but do not attack, Ref 12.1). */
 const defends = (type: UnitType): boolean => GROUND_COMBAT_TYPES.includes(type);
 
 function title(ctx: GameContext, id: string): string {

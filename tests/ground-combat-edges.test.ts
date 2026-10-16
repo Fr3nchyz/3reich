@@ -100,12 +100,18 @@ describe("who is at war when minor forces are involved", () => {
   });
 });
 
-describe("Replacement counters (TODO(verify): they fight like other ground units)", () => {
-  it("can attack and be attacked", () => {
+describe("Replacement counters (Ref 12.1: they attack only as part of a Counterattack, which is not built)", () => {
+  it("defend but do not attack", () => {
     const a = at7h([unit("r1", "germany", "replacement", 1, "M32"), unit("p1", "poland", "infantry", 1, "M33")]);
-    expect(legalActions(CTX, a).some((x) => x.type === "ATTACK")).toBe(true);
+    expect(legalActions(CTX, a).some((x) => x.type === "ATTACK")).toBe(false);
+    expect(applyAction(CTX, a, { type: "ATTACK", side: "axis", units: ["r1"], target: "M33" })).toMatchObject({ ok: false });
     const d = at7h([unit("g1", "germany", "infantry", 3, "M32"), unit("p1", "poland", "replacement", 1, "M33")]);
     expect(legalActions(CTX, d).some((x) => x.type === "ATTACK")).toBe(true);
+  });
+  it("a Replacement stacked with an infantry unit does not join its attack", () => {
+    const s = at7h([unit("g1", "germany", "infantry", 3, "M32"), unit("r1", "germany", "replacement", 1, "M32"), unit("p1", "poland", "infantry", 1, "M33")]);
+    expect(applyAction(CTX, s, { type: "ATTACK", side: "axis", units: ["g1", "r1"], target: "M33" })).toMatchObject({ ok: false });
+    expect(applyAction(CTX, s, { type: "ATTACK", side: "axis", units: ["g1"], target: "M33" })).toMatchObject({ ok: true });
   });
   it("air units and airbases alone are not fought on the ground: the attack is a sweep with no roll (tests/lone-units.test.ts)", () => {
     const s = at7h([unit("g1", "germany", "infantry", 3, "M32"), unit("a1", "poland", "air", 3, "M33"), unit("b1", "poland", "airbase", 1, "M33")]);
