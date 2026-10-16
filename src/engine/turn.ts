@@ -10,6 +10,7 @@ import { hasCombatWork } from "./attack";
 import { legalBuilds } from "./construction";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { newAirTurn } from "./air-record";
 import { hasMoveWork } from "./move-action";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
@@ -52,9 +53,9 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
   return { state: settled.state, events: [...begun.events, ...settled.events] };
 }
 
-/** A Player Turn begins: spending starts again from nothing, Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
+/** A Player Turn begins: spending starts again from nothing, the air record is started (it keeps the control the turn began with, Ref 20.2), Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending(state)))));
+  return scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })))));
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
