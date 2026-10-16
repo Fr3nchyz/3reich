@@ -145,7 +145,7 @@ stateDiagram-v2
 - **Where all ticked units can end up together**: the hexes the group can reach at its slowest unit's factor (leaving a hex in enemy armor ZOC costs 2 more, spec 13; entering never stops the group), and the whole group must fit at the end. The engine already computes exactly this for the group (`reachableHexes` and `endProblem`).
 - **Different movement allowances.** The group takes the slowest. This equals the **overlap** of what each unit could reach alone, because a slower unit's reach lies inside a faster one's (every hex costs 1 today, and a larger budget never reaches less). Moving a group is only a shortcut for moving each unit to the same hex one by one, so nothing is lost: to send the fast unit further, untick the slow one (or move the slow one first, then the fast one).
 - **Stacking.** Two units need room for two. Hexes with one free place appear for one ticked unit and vanish for two; the card says so in the line for a refused tap.
-- **Refused tap.** A tap on a non-yellow hex says why when the engine can tell ("Radom (N34) holds an enemy unit: that is an attack, not a move"; "would hold 3 ground units, limit 2"), else "These units cannot get there together. The yellow hexes are the places they can." (ticket 10-7).
+- **Refused tap.** A tap on a non-yellow hex says why when the engine can tell ("Radom (N34) holds an enemy unit: that is an attack, not a move"; "a hex holds at most 2 ground units, so untick one or tap a hex with room"), else "These units cannot get there together. The yellow hexes are the places they can." (ticket 10-7).
 - **Nothing is hidden by the zoom**: spec 08's "zoom to the selected counter" button fits exactly these yellow hexes, so it keeps working.
 
 ### Units left behind

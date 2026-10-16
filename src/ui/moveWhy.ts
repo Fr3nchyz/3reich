@@ -39,16 +39,14 @@ export function whyNot(ctx: GameContext, state: GameState, units: readonly Unit[
   const owners = [...new Set(units.map((u) => u.owner))];
   const side = sideInWar(state, owners[0]!);
   if (adjacentHexes(ctx, from).includes(hex) && !canCross(ctx, from, hex)) return T.whyHexside(place);
-  if (entryProblem(ctx, state, owners, hex) !== null) {
-    const enemy = Object.values(state.units).some((u) => u.at === hex && sideInWar(state, u.owner) !== side);
-    return enemy ? T.whyEnemy(place) : T.whyNeutral(place);
-  }
+  const entry = entryProblem(ctx, state, owners, hex);
+  if (entry !== null) return /is neutral land/.test(entry) ? T.whyNeutral(place) : T.whyEnemy(place);
   if (reachableHexes(ctx, state, units).has(hex)) {
     const problem = endProblem(ctx, state, units, hex);
     if (problem && /Anglo|British and French/.test(problem)) return T.whyAngloFrench(place);
     const limit = problem ? /limit (\d+)/.exec(problem)?.[1] : undefined;
     if (!limit) return T.whyNoRoom(place);
-    const helps = units.length > 1 && endProblem(ctx, state, units.slice(0, -1), hex) === null;
+    const helps = units.length > 1 && units.some((gone) => endProblem(ctx, state, units.filter((u) => u !== gone), hex) === null);
     return T.whyFull(place, units.length, Number(limit), helps);
   }
   const mp = stackMovement([...units]);

@@ -3,6 +3,7 @@ import { MAP } from "../src/data/map";
 import { reachableHexes } from "../src/engine/movement";
 import { routeLength, whyNot } from "../src/ui/moveWhy";
 import * as T from "../src/ui/moveText";
+import { placeName } from "../src/ui/names";
 import { CTX } from "./helpers";
 import { at6f, inf } from "./helpers-move";
 
@@ -14,7 +15,7 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
   it("water", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 3)]);
     const sea = Object.values(MAP.hexes).find((h) => !h.land)!.id;
-    expect(whyNot(CTX, s, [s.units.u1!], sea)).toBe(T.whyWater(sea));
+    expect(whyNot(CTX, s, [s.units.u1!], sea)).toBe(`${placeName(CTX.map, sea)} is open water: ground units cannot go there.`);
   });
 
   it("an edge between two land hexes that ground units cannot cross: the Channel", () => {
@@ -37,7 +38,7 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
 
   it("too many ground units: the hex would hold more than two", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 3), inf("u2", "germany", "L33", 3, 3), inf("u3", "germany", "L33", 3, 3)]);
-    expect(whyNot(CTX, s, [s.units.u1!], "L33")).toMatch(/could not hold this unit: a hex holds at most 2 ground units/);
+    expect(whyNot(CTX, s, [s.units.u1!], "L33")).toMatch(/could not hold this unit: a hex holds at most 2 ground units, so tap a hex with room\.$/);
     const two = at6f([inf("u1", "germany", "L32", 3, 3), inf("u4", "germany", "L32", 3, 3), inf("u2", "germany", "L33", 3, 3)]);
     expect(whyNot(CTX, two, [two.units.u1!, two.units.u4!], "L33")).toMatch(/could not hold all 2 of them/);
   });
@@ -46,7 +47,7 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 2)]);
     expect(whyNot(CTX, s, [s.units.u1!], "L36")).toMatch(/too far for them: it is 4 hexes away and they can go up to 2 hexes\./);
     const zoc = at6f([inf("u1", "germany", "L34", 3, 4), inf("p1", "poland", "M34", 2, 3, "armor")]);
-    expect(whyNot(CTX, zoc, [zoc.units.u1!], "L29")).toMatch(/too far for them: it is 5 hexes away.*leaving the enemy zone of control they stand in costs 2 of those/);
+    expect(whyNot(CTX, zoc, [zoc.units.u1!], "L29")).toMatch(/too far for them: it is 5 hexes away.*leaving the enemy zone of control they stand in uses up 2 movement points/);
   });
 
   it("no route at all: the Channel lies between Harwich and the mainland", () => {
@@ -58,16 +59,16 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
     // M31 to M29 is 2 hexes; Polish armor next to the middle hex M30 puts it in a zone of control, and leaving it costs 2 more.
     const s = at6f([inf("u1", "germany", "M31", 3, 2), inf("p1", "poland", "L30", 2, 3, "armor")]);
     const sentence = whyNot(CTX, s, [s.units.u1!], "M29");
-    if (!reachableHexes(CTX, s, [s.units.u1!]).has("M29")) expect(sentence).toMatch(/too far|within 2 hexes, but leaving an enemy zone of control/);
-    expect(sentence).not.toMatch(/^M29 is too far for them: it is 2 hexes away and they can go up to 2 hexes/);
+    expect(reachableHexes(CTX, s, [s.units.u1!]).has("M29")).toBe(false);
+    expect(sentence).toMatch(/^M29 is within 2 hexes, but leaving an enemy zone of control on the way costs 2 extra movement points/);
   });
 
   it("a full hex: unticking only helps when it does", () => {
     const one = at6f([inf("u1", "germany", "L32", 3, 3), inf("u2", "germany", "L33", 3, 3), inf("u3", "germany", "L33", 3, 3)]);
-    expect(whyNot(CTX, one, [one.units.u1!], "L33")).toMatch(/Tap a hex with room\.$/);
+    expect(whyNot(CTX, one, [one.units.u1!], "L33")).toMatch(/so tap a hex with room\.$/);
     expect(whyNot(CTX, one, [one.units.u1!], "L33")).not.toMatch(/Untick/);
     const two = at6f([inf("u1", "germany", "L32", 3, 3), inf("u4", "germany", "L32", 3, 3), inf("u2", "germany", "L33", 3, 3)]);
-    expect(whyNot(CTX, two, [two.units.u1!, two.units.u4!], "L33")).toMatch(/Untick one, or tap a hex with room\.$/);
+    expect(whyNot(CTX, two, [two.units.u1!, two.units.u4!], "L33")).toMatch(/so untick one or tap a hex with room\.$/);
   });
 
   it("British and French together before 1942 get their own sentence", () => {
@@ -91,11 +92,17 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
       const sentence = whyNot(CTX, s, [u], c);
       const length = routeLength(CTX, s, ["germany"], a, c);
       checked++;
-      if (length === null) expect(sentence, `${a}->${c}`).toMatch(/There is no way through|open water|holds an enemy|neutral land|cannot cross into/);
+      if (length === null) expect(sentence, `${a}->${c}`).toMatch(/There is no way through to/);
       else if (length > mp) expect(sentence, `${a}->${c} mp ${mp}`).toMatch(/is too far for them: it is \d+ hexes? away/);
       else expect(sentence, `${a}->${c} mp ${mp}`).toMatch(/is within \d+ hexes?, but leaving an enemy zone of control/);
     }
     expect(checked).toBeGreaterThan(100);
+  });
+
+  it("a closed land holding an inactive minor's unit is neutral land, not an attack", () => {
+    const hex = Object.values(MAP.hexes).find((h) => h.country === "hungary" && h.land)!.id;
+    const s = at6f([inf("u1", "germany", "R30", 3, 3), inf("h1", "hungary", hex, 2, 3)]);
+    expect(whyNot(CTX, s, [s.units.u1!], hex)).toMatch(/neutral land/);
   });
 
   it("never puts a bare unit id or hex id in a sentence", () => {
