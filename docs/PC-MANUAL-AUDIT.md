@@ -1,6 +1,6 @@
 # Engine against the PC Reference Manual (audit of 2026-10-16)
 
-The PC Reference Manual text (local copy, never committed) was read for 14 rule questions (about 210 rows), then the engine was checked row by row. Counts: 185 rows with a stated or partly stated rule; the engine matches or is not built yet on most; the mismatches are below. Rule numbers are the manual's own. Key mismatches were re-read in the manual text by the project manager; the rest are as reported by the audit and should be re-read before a ticket is built. Nothing here changes the code; each line becomes a ticket after the product owner picks the order.
+The PC Reference Manual text (local copy, never committed) was read for 14 rule questions: 214 extracted rows, of which 174 are stated and 23 partly stated in the manual and 15 are not stated. The engine was then checked row by row (Q1, zones of control, is spec 13). Most rows match or are for features not built yet; the mismatches are below. Rule numbers are the manual's own. Key mismatches were re-read in the manual text by the project manager; the rest are as reported by the audit and should be re-read before a ticket is built. Nothing here changes the code; each line becomes a ticket after the product owner picks the order.
 
 ## Mismatches (engine does something different from the printed rule)
 
