@@ -14,6 +14,15 @@ export const AIR_PER_CITY = AIR_FACTOR_STACKING_LIMIT;
 /** Air factors an airbase counter adds to its hex (Ref 20.1): 5 on a plain hex, 10 on a city. */
 export const AIR_PER_AIRBASE = 5;
 
+/** Movable airbase counters each Major Power owns (Ref 20.1, 11.3). A fixed rule, so it is a constant and not in the scenario files. */
+export const AIRBASES_PER_MAJOR_POWER = 3;
+
+/**
+ * Whether an airbase may be set down in the opening setup (spec 09 R2, option c: "none, some or all at setup"), before any supply line is
+ * worked out. TODO(verify): the supply test is skipped at setup because the position is still being built; a placement at 6f is checked.
+ */
+export const AIRBASE_AT_SETUP = true;
+
 /**
  * A Capital that holds relocated airbases still bases at most this many air factors (Ref 20.1).
  * TODO(verify): whether the cap is the Capital's own (it is built so: the base cities plus airbases, never more than 10).
