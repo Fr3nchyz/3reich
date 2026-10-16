@@ -1,6 +1,6 @@
 # 13. Zones of control as the PC Reference Manual prints them
 
-Status: proposed 2026-10-16 (nothing built). Source: the PC Reference Manual, rule 7.0 (and 11.41, 12.31, 19.3, 21.42), read from a local copy; short quotes only. Replaces the ZOC part of spec 03, which was written before the manual text was available.
+Status: built 2026-10-16 (tickets 13-1 to 13-3; 13-4 waits for fleets and exploitation). See "As built" at the end. Source: the PC Reference Manual, rule 7.0 (and 11.41, 12.31, 19.3, 21.42), read from a local copy; short quotes only. Replaces the ZOC part of spec 03, which was written before the manual text was available.
 
 ## Goal
 
@@ -46,3 +46,13 @@ Each row 1 to 5 has a test citing the rule number; a mutation check breaks each 
 
 - Does the PC game apply the +2 cost exactly as printed (the manual is the printed board rule; the program may differ)? Frank can check: a lone infantry next to an enemy armor unit with 2 MF left.
 - Can a unit that cannot pay +2 stay put and still be attacked normally (assumed yes)?
+
+## As built (2026-10-16)
+
+- `src/engine/zoc.ts`: `ARMOR_ZOC_TYPES` (armor only), `ZOC_UNIT_TYPES` stays the ground units (each exerts a ZOC on its own hex, which does nothing by itself; supply still checks these counters), `ZOC_EXIT_COST` = 2, `ZOC_POLICY.friendlyUnitNegates` = false (the switch remains for tests), `armorZocCrosses` (land hexside only: not water, not a Crossing Arrow, not Qattara; rivers and the Suez Canal count as land), `zocOfUnit(ctx, state, unit)` now needs the state to see Fortress status (`state.fortresses`), `zocExitCost`. `mustStop`, `zocStopIndex` and `zocPathProblem` are gone.
+- `src/engine/movement.ts`: `reachableHexes` and `movePathProblem` charge the exit cost for leaving a hex in enemy armor ZOC, including the first step out of the start hex; entering never stops a unit. A unit with fewer than 2 factors left cannot leave (TODO(verify)). The refusal sentence names the extra cost.
+- Supply (`supply.ts`) follows through `enemyZocFor`: a line cannot pass a hex next to enemy armor, may end in one; friendly units no longer cancel.
+- UI: the overlay key now reads "armor Zones of Control ... pay 2 extra movement points to leave one".
+- Computer: unchanged code; it reads `reachableHexes` and so pays the exit cost. Over 30 seeds of 1939 against main: combats 829 to 760, Axis objectives held 359 to 287, Allied 601 to 673, idle Player Turns 62 to 70, churn runs 5 to 3; Campaign 10 seeds: combats 564 to 547, idle 22 to 31, churn 0 to 3; no anomaly, every game reaches game over. The seed 5 guards in `tests/ai-stability.test.ts` were loosened for this reason and say so.
+- Tests: `tests/zoc.test.ts` (geometry, armor only, Fortress and Crossing Arrow, no negation), `tests/movement.test.ts`, `tests/move-options.test.ts`, `tests/mutation-survivors.test.ts`, `tests/supply.test.ts`, `tests/map-overlay.test.ts`; five mutation checks (infantry exerts ZOC, negation on, exit cost 0, Fortress exception off, Crossing Arrow carries ZOC) each fail a test.
+- Not built: embarking in a port in enemy ZOC (21.42) and the Exploitation limit (12.31); both wait for fleets and exploitation.

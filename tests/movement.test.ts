@@ -3,14 +3,14 @@ import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { controllerOf } from "../src/engine/control";
 import { CONTROL_ON_PASS_THROUGH } from "../src/engine/move-action";
-import { GROUND_MOVERS, ONE_MOVE_PER_TURN, TERRAIN_MOVE_COST, movementFactor, reachableHexes } from "../src/engine/movement";
-import { adjacentHexes, zocPathProblem } from "../src/engine/zoc";
+import { GROUND_MOVERS, ONE_MOVE_PER_TURN, TERRAIN_MOVE_COST, movePathProblem, movementFactor, reachableHexes } from "../src/engine/movement";
+import { adjacentHexes } from "../src/engine/zoc";
 import { CTX, ctxFor } from "./helpers";
 import { legalActions } from "../src/engine/actions";
 import { hasMoveWork } from "../src/engine/move-action";
 import { at6f, errorOf, inf, move, movesIn, okOf } from "./helpers-move";
 
-// Step 6f, ground movement (Ref 5.45f; hexsides Ref 4.3, 4.6, 4.51; ZOC Ref 6.0; stacking Ref 5.0, 26.0; control Ref 7.0).
+// Step 6f, ground movement (Ref 5.45f; hexsides Ref 4.3, 4.6, 4.51; ZOC Ref 7.0, spec 13; stacking Ref 5.0, 26.0; control Ref 7.0).
 // Positions are on the real map: L32-L33-L34-L35 is a row of German then Polish plain, M34 is Polish plain next to
 // L34 and L35, M32-N31 a river hexside inside Germany, MM26-NN26 and NN25-NN26 Qattara hexsides, K24-L24 the Channel.
 
@@ -100,33 +100,52 @@ describe("hexsides (Ref 4.3, 4.6, 4.51)", () => {
   });
 });
 
-describe("Zones of Control (Ref 6.0)", () => {
-  const pol = inf("p1", "poland", "M34", 2, 3);
+describe("Zones of Control (Ref 7.0, 11.41; spec 13)", () => {
+  const pol = inf("p1", "poland", "M34", 2, 3, "armor"); // armor: its ZOC reaches L34 and L35 (and M33, M35, N33, N34)
 
-  it("a unit entering an enemy ZOC must stop there", () => {
+  it("entering an enemy armor ZOC costs nothing extra and does not stop the unit; leaving it costs 2 more", () => {
+    // L32-L33-L34-L35: L34 is in the ZOC. 1 + 1 (enter L34) + 2 (leave it) + 1 = 5.
     const s = at6f([inf("u1", "germany", "L32", 3, 5), pol]);
-    expect(zocPathProblem(CTX, s, "axis", ["L33", "L34", "L35"])).not.toBeNull();
     expect(okOf(move(s, ["u1"], ["L33", "L34"])).state.units.u1!.at).toBe("L34");
-    expect(errorOf(move(s, ["u1"], ["L33", "L34", "L35"]))).toMatch(/must stop there/);
+    expect(okOf(move(s, ["u1"], ["L33", "L34", "L35"])).state.units.u1!.at).toBe("L35");
+    const short = at6f([inf("u1", "germany", "L32", 3, 4), pol]);
+    expect(errorOf(move(short, ["u1"], ["L33", "L34", "L35"]))).toMatch(/costs 5 movement points \(leaving an enemy zone of control costs 2 more\); the slowest unit has 4/);
+    expect(okOf(move(short, ["u1"], ["L33", "L34"])).state.units.u1!.at).toBe("L34"); // may still end there
   });
 
-  it("no reachable path passes through a ZOC hex before its end", () => {
+  it("infantry does not exert a ZOC on the next hexes: the same walk past an infantry unit costs 3 (Ref 7.0, 'an armor unit, only')", () => {
+    const s = at6f([inf("u1", "germany", "L32", 3, 3), inf("p1", "poland", "M34", 2, 3)]);
+    expect(okOf(move(s, ["u1"], ["L33", "L34", "L35"])).state.units.u1!.at).toBe("L35");
+  });
+
+  it("every reachable path is a legal move, and the reachable set respects the exit cost", () => {
     const s = at6f([inf("u1", "germany", "L32", 3, 6), pol]);
     const reach = reachableHexes(CTX, s, [s.units.u1!]);
     expect(reach.has("L34")).toBe(true);
-    for (const [hex, path] of reach) expect(zocPathProblem(CTX, s, "axis", path), hex).toBeNull();
+    for (const [hex, path] of reach) expect(movePathProblem(CTX, s, [s.units.u1!], path), hex).toBeNull();
+    // L35 straight on costs 5 (1, 1, +2, 1): reachable with 6, but not with 4.
+    expect(reach.get("L35")!.length).toBeGreaterThan(0);
+    const four = at6f([inf("u1", "germany", "L32", 3, 4), pol]);
+    expect(reachableHexes(CTX, four, [four.units.u1!]).get("L35") ?? []).not.toEqual(["L33", "L34", "L35"]);
   });
 
-  it("starting in an enemy ZOC is free: the unit may leave it, even into another ZOC", () => {
+  it("starting in an enemy ZOC: the first step out costs 2 more", () => {
     const s = at6f([inf("u1", "germany", "L34", 3, 4), pol]);
-    expect(okOf(move(s, ["u1"], ["L33", "L32", "L31"])).state.units.u1!.at).toBe("L31");
-    expect(okOf(move(s, ["u1"], ["L35"])).state.units.u1!.at).toBe("L35");
-    expect(errorOf(move(s, ["u1"], ["L35", "L36"]))).toMatch(/must stop there/);
+    expect(okOf(move(s, ["u1"], ["L33"])).state.units.u1!.at).toBe("L33"); // 2 + 1 = 3
+    expect(errorOf(move(s, ["u1"], ["L33", "L32", "L31"]))).toMatch(/costs 5/); // 2 + 1 + 1 + 1
+    const fast = at6f([inf("u1", "germany", "L34", 3, 5), pol]);
+    expect(okOf(move(fast, ["u1"], ["L33", "L32", "L31"])).state.units.u1!.at).toBe("L31");
   });
 
-  it("a friendly ground unit in the hex cancels the ZOC there (ZOC_POLICY.friendlyUnitNegates, TODO(verify))", () => {
-    const s = at6f([inf("u1", "germany", "L32", 3, 5), inf("u2", "germany", "L34"), pol]);
-    expect(okOf(move(s, ["u1"], ["L33", "L34", "L35"])).state.units.u1!.at).toBe("L35");
+  it("a unit with fewer movement factors than the exit cost cannot leave (TODO(verify): the cost cannot be paid)", () => {
+    const s = at6f([inf("u1", "germany", "L34", 3, 1), pol]);
+    expect(errorOf(move(s, ["u1"], ["L33"]))).toMatch(/costs 3/);
+    expect(reachableHexes(CTX, s, [s.units.u1!]).size).toBe(0);
+  });
+
+  it("a friendly ground unit in the hex does NOT cancel the ZOC (Ref 7.0)", () => {
+    const s = at6f([inf("u1", "germany", "L32", 3, 4), inf("u2", "germany", "L34"), pol]);
+    expect(errorOf(move(s, ["u1"], ["L33", "L34", "L35"]))).toMatch(/costs 5/);
   });
 
   it("an enemy unit's hex cannot be entered: that is an attack", () => {

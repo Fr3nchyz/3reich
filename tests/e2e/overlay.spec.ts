@@ -26,7 +26,7 @@ test("the control overlay toggles on and off, changing the map and showing its k
   await expect(legend).toContainText("Zones of Control");
   await expect(button, "the label stays; only aria-pressed changes").toHaveText("Control and zones");
   expect(await control.count()).toBeGreaterThan(100);
-  expect(await zoc.count()).toBeGreaterThan(0);
+  // Only armor exerts a ZOC on the next hexes (Ref 7.0), and none stands on the map at the start of setup; the hatching itself is tested in tests/map-overlay.test.ts.
 
   // The overlay follows the game: placing a counter keeps it drawn, and a new game redraws it.
   await page.locator(".setup button[data-spec]").first().click();

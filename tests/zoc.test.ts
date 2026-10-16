@@ -6,7 +6,6 @@ import { board, counter } from "./board";
 import { CTX, ctxFor } from "./helpers";
 
 const german = (id: string, at: string, type: "infantry" | "armor" = "armor") => counter(id, "germany", type, 3, at, 4);
-const panzer = german;
 const foot = (id: string, at: string) => german(id, at, "infantry");
 const french = (id: string, at: string) => counter(id, "france", "armor", 2, at, 3);
 const sorted = (xs: Iterable<string>) => [...xs].sort();
