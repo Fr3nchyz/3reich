@@ -9,8 +9,8 @@ import { atWar, sideOfPower } from "./war";
  * giver pays out of the Player Turn's spending limit (Ref 11.6 counts grants with construction).
  *
  * Rules (from the rulebook text, see docs/RULES.md "Web research"): up to 40 BRPs to one allied Major
- * Power per turn; the Western Allies together up to 40 to the U.S.S.R.; the U.S.S.R. neither grants
- * nor receives until it is at war with Germany; France and the U.S.A. cannot grant before Spring
+ * Power per turn; the Western Allies together up to 40 to the U.S.S.R.; the U.S.S.R. may not grant at
+ * all, and may not receive until it is at war with Germany (Ref 11.71, PC Reference Manual: "may not Grant BRPs at all"); France and the U.S.A. cannot grant before Spring
  * 1942; a receiver may not grant back to its giver for the rest of the game.
  *
  * Not built yet (TODO(verify), spec 02): a grant cannot travel while either capital has an enemy
@@ -34,7 +34,7 @@ export function grantRoom(state: GameState, from: PowerId, to: PowerId): number 
   const side = sideOfPower(giver);
   if (side === null || side !== state.activeSide || sideOfPower(receiver) !== side) return 0;
   if (state.noGrants.some(([g, r]) => g === from && r === to)) return 0;
-  if ((from === "ussr" || to === "ussr") && !atWar(state, "ussr", "germany")) return 0;
+  if (from === "ussr" || (to === "ussr" && !atWar(state, "ussr", "germany"))) return 0; // Ref 11.71: the U.S.S.R. never grants
   if ((from === "france" || from === "usa") && turnIndex(state) < turnIndex({ year: 1942, season: "spring" })) return 0;
   const cap = to === "ussr" ? GRANT_LIMIT - WEST.reduce((n, w) => n + granted(state, w, "ussr"), 0) : GRANT_LIMIT - granted(state, from, to);
   return Math.max(0, Math.min(cap, spendable(giver)));

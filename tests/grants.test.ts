@@ -93,6 +93,9 @@ describe("a grant", () => {
     expect(grantRoom(ussr, "ussr", "britain")).toBe(0);
     const war = { ...ussr, wars: [...ussr.wars, ["ussr", "germany"] as [PowerId, PowerId]] };
     expect(grantRoom(war, "britain", "ussr")).toBeGreaterThan(0);
+    // Ref 11.71 (PC Reference Manual): "The U.S.S.R. may not Grant BRPs at all", even once at war with Germany.
+    expect(grantRoom(war, "ussr", "britain")).toBe(0);
+    expect(grantRoom(war, "ussr", "usa")).toBe(0);
     const usa = { ...s, nations: { ...s.nations, usa: { ...s.nations.usa, status: "allied" as const } } };
     expect(grantRoom(usa, "usa", "britain")).toBe(0);
     expect(grantRoom({ ...usa, year: 1942 }, "usa", "britain")).toBeGreaterThan(0);
