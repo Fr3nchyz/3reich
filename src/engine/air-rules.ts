@@ -39,10 +39,10 @@ export const STAGING_RANGE = MAX_OCEAN_AIR_STAGE_HEXES;
 export const ONE_STAGE_PER_TURN = true;
 
 /**
- * Whether step 7b waits for the player to commit air to Ground Support (spec 09 R8). Off until the screen for it exists (tickets 09-13 and 09-14):
- * with it off no air is ever committed, so no battle changes. A test names the step in `GameContext.implementedSteps` or sets the position itself.
+ * Whether step 7b waits for the player to commit air to Ground Support (spec 09 R8), with its buttons and notes on the screen (ticket 09-14).
+ * Off, no air is ever committed and no battle changes. A test names the step in `GameContext.implementedSteps` or sets the position itself.
  */
-export const AIR_MISSIONS_ENABLED = false;
+export const AIR_MISSIONS_ENABLED = true;
 
 /** Air factors counted in a Ground Support attack are at most this many times the ground factors attacking the hex (Ref 20.41). */
 export const GS_CAP_MULTIPLE = 3;

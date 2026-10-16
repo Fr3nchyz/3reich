@@ -18,16 +18,19 @@ const fnv = (text: string): number => {
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619) >>> 0;
   return h;
 };
+// Hashes of 2026-10-16 (ticket 09-14): step 7b now waits for a side with air in range of an attackable hex, so the computer's list gains one END_STEP at 7b
+// for each such turn. Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (1260916810, 3779823303,
+// 2114108264, 947755197), so nothing else in the computer's play changed.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1260916810));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3779823303));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2972029949));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3518474011));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(2114108264);
-    expect(hashOf("1939", 2, 4)).toBe(947755197);
+    expect(hashOf("1939", 5, 4)).toBe(1280678831);
+    expect(hashOf("1939", 2, 4)).toBe(4061975126);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1260916810));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2972029949));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in

@@ -41,7 +41,7 @@ export function unitsWhere(ctx: Pick<GameContext, "map">, state: Pick<GameState,
   return `${shown.join(" and ")}${rest.length ? ` and ${more} more unit${more === 1 ? "" : "s"} from ${rest.length} hex${rest.length === 1 ? "" : "es"}` : ""}`;
 }
 
-/** The Attack, Lose and Advance buttons, or null for any other action. */
+/** The Attack, Lose, Advance and air-support buttons, or null for any other action. */
 export function combatLabel(a: Action, ctx: GameContext, state: GameState): string | null {
   switch (a.type) {
     case "ATTACK":
@@ -50,6 +50,10 @@ export function combatLabel(a: Action, ctx: GameContext, state: GameState): stri
       return `Lose ${unitsWhere(ctx, state, a.units)}`;
     case "ADVANCE":
       return `Advance ${unitsWhere(ctx, state, a.units)} into ${placeName(ctx.map, a.to)}`;
+    case "DESIGNATE_AIR": {
+      const factors = unitsWithIds(state, a.units).reduce((n, u) => n + u.strength, 0);
+      return `Air support for ${placeName(ctx.map, a.target)}: ${unitsWhere(ctx, state, a.units)} (${factors} air factor${factors === 1 ? "" : "s"})`;
+    }
     default:
       return null;
   }
