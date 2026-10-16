@@ -2,6 +2,7 @@ import type { Action } from "../engine/actions";
 import { airOf } from "../engine/air-record";
 import { committedAt } from "../engine/air-support";
 import { combatOf } from "../engine/combat-record";
+import { computerToMove } from "./computerPlay";
 import { placeName } from "./names";
 import { escape } from "./mapGeometry";
 import type { Session } from "./session";
@@ -11,6 +12,12 @@ import type { Session } from "./session";
  * is committed to and that has not been attacked yet. No rule here: the buttons are the engine's `DESIGNATE_AIR` actions, and the hexes come from
  * the air record.
  */
+
+/** Whether it is step 7b of a game the player plays (not watched) and the player's turn: the step that waits for the air buttons. */
+export function atStep7b(s: Session): boolean {
+  const p = s.state.position;
+  return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7b" && !s.watch && !computerToMove(s);
+}
 
 /** The note above the air-support buttons of step 7b; empty when the engine lists none. */
 export function airPromptHtml(actions: readonly Action[]): string {

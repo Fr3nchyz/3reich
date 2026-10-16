@@ -38,6 +38,18 @@ describe("step 7b on the screen", () => {
     expect(html).not.toMatch(/\bu\d+\b|\ba\d\b/); // no raw id in any button or sentence
   });
 
+  it("step 7b has its Next bar: the sentence says what to do, and the air buttons and Done are inside it", () => {
+    const s = session("7b");
+    const html = statusHtml(s, null, legalActions(s.ctx, s.state));
+    const bar = /<div class="actions controls nextbar"[^>]*>(.*?)<\/div>/s.exec(html)![1]!;
+    expect(bar).toContain("Next: commit planes to a hex you will attack, or finish step 7b.");
+    expect(bar).toContain("Air support for Poznan (M33)");
+    expect(bar).toContain("Done with step 7b");
+    takeAction(s, legalActions(s.ctx, s.state).find((a) => a.type === "DESIGNATE_AIR")!);
+    const after = statusHtml(s, null, legalActions(s.ctx, s.state));
+    expect(after).toContain("Next: finish step 7b.");
+  });
+
   it("the note is empty when the engine lists no designation", () => {
     expect(airPromptHtml([])).toBe("");
   });

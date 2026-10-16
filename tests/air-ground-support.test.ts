@@ -246,9 +246,12 @@ describe("the numbers and the battle", () => {
     expect(r.state.units.a2).toBeDefined();
   });
 
-  it("an attack on a hex that holds only an air unit (a sweep) is an attack: the support is not lost", () => {
-    const s = at7h(okOf(applyAction(CTX, at7b([inf("u1", "germany", "M32", 4, 3), air("l1", "M33", 2, "poland"), air("a1", "J32", 3)]), commit(["a1"]))).state);
-    const r = okOf(applyAction(CTX, s, attack(["u1"])));
+  it("a hex that holds only an air unit (a sweep, no battle) is not a target for ground support; if a commitment is there anyway the sweep clears it and the air is not lost", () => {
+    const sweep = at7b([inf("u1", "germany", "M32", 4, 3), air("l1", "M33", 2, "poland"), air("a1", "J32", 3)]);
+    expect(errorOf(applyAction(CTX, sweep, commit(["a1"])))).toMatch(/not a hex the axis side can attack/);
+    expect(hasAirWork(CTX, sweep)).toBe(false);
+    const forced = at7h({ ...sweep, air: { ...airOf(sweep), groundSupport: { M33: ["a1"] } } });
+    const r = okOf(applyAction(CTX, forced, attack(["u1"])));
     expect(r.state.units.a1).toBeDefined();
     expect(airOf(r.state).groundSupport).toEqual({});
   });
