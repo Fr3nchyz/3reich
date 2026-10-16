@@ -4,13 +4,15 @@ import { ATTACK_DOOMED_IGNORE_EXCHANGE, chooseLosses, cutOffNow, exchangeFree, i
 import { MOVE_PREFER_SUPPLY, networkOf, preferSupplied, suppliedAfterMove, supplyRulesOn } from "../src/ai/lines";
 import type { Action } from "../src/engine/actions";
 import type { GameContext } from "../src/engine/context";
-import { isUnitSupplied } from "../src/engine/supply";
+import { isUnitSupplied, type SupplyNetwork } from "../src/engine/supply";
 import { SUPPLY_EFFECTS_ENABLED, supplyEffectsOn } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
 import { reachableHexes } from "../src/engine/movement";
 import { enemyZocFor } from "../src/engine/zoc";
 import { CTX } from "./helpers";
 import { at6f, inf, move, okOf } from "./helpers-move";
+import { combatOf, turnKey } from "../src/engine/combat-record";
+import { legalActions } from "../src/engine/actions";
 
 // The computer's supply rules (spec 05, "As built: supply-aware movement"): computer policy, not rules. Positions on the real 1939 map:
 // L31 Berlin, L32-L33 German plain, L34, M33, M34 Polish plain, M35 Warsaw (a minor capital: no source for the Axis), K35 German (East Prussia),
@@ -60,6 +62,38 @@ describe("suppliedAfterMove: whether a line reaches the hex once the move is mad
   it("counters whose supply is not checked (replacements) are never judged cut off", () => {
     const r = at6f([inf("r1", "germany", "L32", 1, 0, "replacement")]);
     expect(suppliedAfterMove(ON, r, networkOf(ON, r, "axis"), [r.units.r1!], "M34")).toBe(true);
+  });
+  it("a Fortress of the side supplies the units inside it (Ref 4.8, 19.2): a German unit cut off at Q23 is supplied once in a German-held Maginot hex", () => {
+    const f = at6f([inf("g1", "germany", "Q23", 3, 3)], "axis", undefined, { control: { Q23: "germany", P24: "germany" }, fortresses: { P24: true } });
+    expect(isUnitSupplied(ON, f, "g1")).toBe(false);
+    expect(suppliedAfterMove(ON, f, networkOf(ON, f, "axis"), [f.units.g1!], "P24")).toBe(true);
+    expect(isUnitSupplied(ON, okOf(move(f, ["g1"], ["P24"], ON)).state, "g1")).toBe(true);
+    const lost = { ...f, fortresses: { P24: false } };
+    expect(suppliedAfterMove(ON, lost, networkOf(ON, lost, "axis"), [lost.units.g1!], "P24")).toBe(false);
+  });
+  it("enemy ZOC: a line does not pass through a hex in it (Ref 19.3), so a hex whose only supplied neighbour is in enemy armor ZOC stays cut off", () => {
+    // Polish armor at M32 puts L32 in its ZOC (not K33); K33's other neighbours are made Polish, so L32 is its only way to Berlin.
+    const z = at6f([inf("g1", "germany", "L32", 3, 3), inf("p1", "poland", "M32", 3, 3, "armor")], "axis", undefined, { control: { K32: "poland", J33: "poland", J34: "poland", K34: "poland", L33: "poland", K33: "poland" } });
+    const ok = suppliedAfterMove(ON, z, networkOf(ON, z, "axis"), [z.units.g1!], "K33");
+    expect(ok).toBe(false);
+    expect(isUnitSupplied(ON, okOf(move(z, ["g1"], ["K33"], ON)).state, "g1")).toBe(ok);
+    const open = at6f([inf("g1", "germany", "L32", 3, 3)], "axis", undefined, { control: z.control });
+    expect(suppliedAfterMove(ON, open, networkOf(ON, open, "axis"), [open.units.g1!], "K33")).toBe(true); // without the armor, through L32
+  });
+  it("...a source passes its line on even from inside enemy ZOC, but not to a hex in the ZOC of the same enemy unit (Ref 19.3)", () => {
+    // Polish armor at M31 puts Berlin (L31) and L32 in its ZOC; L32's other neighbours are made Polish, so Berlin is its only way.
+    const z = at6f([inf("g1", "germany", "L31", 3, 3), inf("p1", "poland", "M31", 3, 3, "armor")], "axis", undefined, { control: { L32: "poland", L33: "poland", K33: "poland", K32: "poland", M32: "poland" } });
+    const ok = suppliedAfterMove(ON, z, networkOf(ON, z, "axis"), [z.units.g1!], "L32");
+    expect(ok).toBe(false);
+    expect(isUnitSupplied(ON, okOf(move(z, ["g1"], ["L32"], ON)).state, "g1")).toBe(ok);
+    expect(suppliedAfterMove(ON, z, networkOf(ON, z, "axis"), [z.units.g1!], "K32")).toBe(true); // next to Berlin, out of the armor's ZOC
+  });
+  it("a source set supplies only the owners it serves (19.2: Konigsberg for German units, the Soviet split)", () => {
+    const g = at6f([inf("g1", "germany", "L32", 3, 3), inf("i1", "italy", "L32", 3, 3)]);
+    const only: SupplyNetwork = { side: "axis", sources: ["L31"], zoc: new Set(), reaches: [{ kind: "main", sources: new Set(["L31"]), next: new Map([["L31", null], ["L32", "L31"]]), serves: (o) => o === "germany" }] };
+    expect(suppliedAfterMove(ON, g, only, [g.units.g1!], "L33")).toBe(true);
+    expect(suppliedAfterMove(ON, g, only, [g.units.i1!], "L33")).toBe(false);
+    expect(suppliedAfterMove(ON, g, only, [g.units.g1!, g.units.i1!], "L33")).toBe(false); // every unit of the stack must be supplied
   });
   it("the network is searched once per position, however many hexes are asked about", () => {
     expect(networkOf(ON, s, "axis")).toBe(net);
@@ -121,5 +155,21 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
     const fine: GameState = { ...s, units: { ...s.units, g1: { ...s.units.g1!, at: "L33" } } };
     expect(chooseLosses(ON, fine, sets, { seed: 1 })!.action).toBe(sets[0]);
     expect(chooseLosses(ON, s, [{ type: "END_STEP", side: "axis", step: "7h" }], { seed: 1 })).toBeUndefined();
+  });
+  it("step 7h: an Exchange waiting for the computer's losses gives up the cut-off unit, though the engine lists it second", () => {
+    const at7h: GameState = { ...s, position: { part: "player-turn", turn: 1, step: "7h" } };
+    const pending: GameState = { ...at7h, combat: { ...combatOf(at7h), turn: turnKey(at7h), pending: { chooser: "axis", target: "M35", candidates: ["g2", "g1"], values: { g1: 3, g2: 3 }, required: 2, attackers: ["g1", "g2"] } } };
+    const listed = legalActions(ON, pending).filter((a) => a.type === "ALLOCATE_LOSSES");
+    expect(listed.map((a) => (a as Extract<Action, { type: "ALLOCATE_LOSSES" }>).units)).toEqual([["g2"], ["g1"]]);
+    expect(chooseAction(ON, pending, { seed: 1 })!.action).toEqual(listed[1]);
+    expect(chooseAction(OFF, pending, { seed: 1 })!.action).toEqual(listed[0]);
+  });
+  it("step 7h: two units cut off in a pocket next to Warsaw attack at 1-1 an Exchange could cost them 15 factors of; supplied, they would not", () => {
+    // M34 and N34 held by Germany but ringed by Polish land: no line. 18 factors against 5, tripled in Warsaw: an Exchange costs 15, the limit is 8.
+    const base = at6f([inf("g1", "germany", "M34", 9, 3), inf("g2", "germany", "N34", 9, 3), inf("p1", "poland", "M35", 3, 3), inf("p2", "poland", "M35", 2, 3)], "axis", undefined, { control: { M34: "germany", N34: "germany" }, position: { part: "player-turn", turn: 1, step: "7h" } });
+    const doomed: GameState = { ...base, unsuppliedAtStart: ["g1", "g2"] };
+    expect(chooseAction(ON, doomed, { seed: 1 })!.action).toEqual({ type: "ATTACK", side: "axis", units: ["g1", "g2"], target: "M35" });
+    expect(chooseAction(ON, base, { seed: 1 })!.action.type).toBe("END_STEP");
+    expect(chooseAction(ON, doomed, { seed: 1, supplyRules: false })!.action.type).toBe("END_STEP");
   });
 });
