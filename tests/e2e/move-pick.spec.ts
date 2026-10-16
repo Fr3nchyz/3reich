@@ -176,7 +176,7 @@ test("no raw unit id is shown anywhere in the card or the list", async ({ page }
   expect((await page.locator(".moves").innerText()) + (await page.locator("#maptoast").innerText())).not.toMatch(/\bu\d+\b/);
 });
 
-test("keyboard only: Tab to a stack row, Enter opens the card, Space unticks a line, Tab reaches All and Cancel, Escape drops it", async ({ page }) => {
+test("keyboard only: a focused stack row, Enter opens the card, Space unticks a line, Tab reaches All and Cancel, Escape drops it", async ({ page }) => {
   await load(page);
   const row = page.locator('button.stack-row[data-stack="J36"]');
   await row.focus();
@@ -232,17 +232,29 @@ for (const size of SIZES) {
     await press(page.locator('button.stack-row[data-stack="J36"]'), hasTouch);
     await expect(card(page)).toBeVisible();
     await expect(card(page).locator("h2")).toBeFocused();
-    await expect(bar, "the Next bar with its button is on screen with the card open").toBeInViewport({ ratio: 1 });
+    // A phone on its side (height 480 or less) has no room for both: the Next bar is not sticky there and scrolls away above the card, which matters more.
+    const short = size[1] <= 480;
+    if (!short) await expect(bar, "the Next bar with its button is on screen with the card open").toBeInViewport({ ratio: 1 });
     for (const sel of ["#move-cancel", "#move-all", "#move-none"]) await expect(page.locator(sel), `${sel} is in reach`).toBeInViewport({ ratio: 1 });
     await expect(lines(page).first(), "the first unit line is in reach").toBeInViewport({ ratio: 1 });
-    const barBox = (await bar.boundingBox())!;
-    const cardTop = (await card(page).boundingBox())!.y;
-    expect(barBox.y + barBox.height, "the Next bar does not cover the card").toBeLessThanOrEqual(cardTop + 1);
+    for (const loc of [page.locator("#move-cancel"), page.locator("#move-all"), page.locator("#move-none"), lines(page).first()]) {
+      const free = await loc.evaluate((el) => {
+        const b = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
+        return hit !== null && (el === hit || el.contains(hit));
+      });
+      expect(free, "nothing (the pinned map, the Next bar) covers the middle of this control").toBe(true);
+    }
+    if (!short) {
+      const barBox = (await bar.boundingBox())!;
+      const cardTop = (await card(page).boundingBox())!.y;
+      expect(barBox.y + barBox.height, "the Next bar does not cover the card").toBeLessThanOrEqual(cardTop + 1);
+    }
     const map = (await page.locator(".map-wrap").boundingBox())!;
     expect(map.height, "the map is still on screen").toBeGreaterThan(size[1] * 0.25);
     expect(map.y + map.height).toBeGreaterThan(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size[0]);
-    for (const b of await page.locator(".nextbar button:visible, .movecard button:visible").all()) {
+    for (const b of await page.locator(short ? ".movecard button:visible" : ".nextbar button:visible, .movecard button:visible").all()) {
       const box = (await b.boundingBox())!;
       const name = (await b.innerText()).slice(0, 30).replace(/\n/g, " ");
       expect(box.height, `${name} is tall enough`).toBeGreaterThanOrEqual(44);
