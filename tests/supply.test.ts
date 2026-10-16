@@ -72,9 +72,19 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(lineOf(board([pole("p1", "M35")]), "allies", "p1")!.path).toEqual(["M35"]);
   });
 
-  it("Ref 19.3: enemy ZOC on the unit's hex and on the source does not cut it", () => {
-    const s = board([pole("p1", "M34"), german("g1", "L35")]); // L35 touches both Warsaw and M34
-    expect(lineOf(s, "allies", "p1")!.path).toEqual(["M34", "M35"]);
+  it("Ref 19.3: enemy ZOC on the unit's hex and on the source does not cut a line whose hexes between are free of it", () => {
+    // L35 touches both Warsaw (M35) and M34, so the direct step is out (next test); the line goes round through N34.
+    const s = board([pole("p1", "M34"), german("g1", "L35")]);
+    expect(lineOf(s, "allies", "p1")!.path).toEqual(["M34", "N34", "M35"]);
+  });
+
+  it("Ref 19.3: a unit next to its source is not supplied when both stand in the ZOC of the same enemy unit", () => {
+    const hold = board([pole("p1", "M34"), german("g1", "L35")]);
+    const around = Object.fromEntries(adjacentHexes(CTX, "M34").filter((h) => h !== "M35" && CTX.map.hexes[h]?.land).map((h) => [h, "germany" as const]));
+    const s = { ...hold, control: { ...hold.control, ...around } };
+    expect(lineOf(s, "allies", "p1")).toBeUndefined(); // the only way out is the direct step, and one armor unit covers both hexes
+    const apart = { ...s, units: { ...s.units, g1: { ...s.units.g1!, at: "L34" } } }; // L34 touches M34 but not Warsaw: the exception no longer applies
+    expect(lineOf(apart, "allies", "p1")!.path).toEqual(["M34", "M35"]);
   });
 
   it("Ref 19.3: cut by enemy ZOC on a hex between (Messina chain, Sicily to Rome)", () => {

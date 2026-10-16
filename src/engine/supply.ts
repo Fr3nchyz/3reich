@@ -3,7 +3,7 @@ import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
-import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, type ZocPolicy } from "./zoc";
+import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSources, type ZocPolicy } from "./zoc";
 
 /**
  * Supply (spec 03, roadmap 5.5). Pure queries only: nothing here is wired to a step or an action yet.
@@ -30,9 +30,8 @@ import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, type 
  * - sea supply (19.31: a designated fleet, one ground unit or airbase per naval factor, ports, Gibraltar, Kiel and
  *   Istanbul as transfer points) needs fleet designation at 6e / 9f and a port-to-port rule: a documented stub.
  * - replacement counters, bridgeheads and units in the off-map boxes (always supplied, U.S. Box) are not checked.
- * - CONFLICT: the same web text says (7.0) that friendly units do NOT negate enemy ZOC and that only armor exerts ZOC
- *   into adjacent hexes (supply cannot pass a hex next to enemy armor). Not followed: `ZOC_POLICY` and `ZOC_UNIT_TYPES`
- *   follow spec 03. For the product owner to decide, see docs/RULES.md "Open questions".
+ * - ZOC (Ref 7.0, 19.3, spec 13): only armor exerts ZOC into adjacent hexes, friendly units do not cancel it, and supply cannot pass
+ *   a hex next to enemy armor. A unit next to a source is supplied unless both stand in the ZOC of the same enemy armor unit.
  */
 
 /** Ground units, whose supply is checked, and airbases, which 9h relocates when unsupplied. Naval and air units are always supplied (19.3). */
@@ -145,8 +144,11 @@ function reach(ctx: GameContext, state: GameState, side: Side, sources: readonly
     const following: HexId[] = [];
     for (const here of frontier) {
       if (zoc.has(here) && !isSource.has(here)) continue;
+      const fromSource = zoc.has(here) ? zocSources(ctx, state, side, here) : [];
       for (const n of adjacentHexes(ctx, here)) {
         if (next.has(n) || !open(n) || !canCross(ctx, here, n)) continue;
+        // Ref 19.3: a unit next to a source is not supplied when both stand in the ZOC of the same enemy unit.
+        if (fromSource.length > 0 && zoc.has(n) && zocSources(ctx, state, side, n).some((id) => fromSource.includes(id))) continue;
         next.set(n, here);
         following.push(n);
       }
