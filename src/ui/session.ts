@@ -147,6 +147,10 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} change base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "AIR_RESHAPED": {
+      const side = before.units[e.before[0]!.id];
+      return `${side ? `${OWNER_NAMES[side.owner]} air` : "Air"} at ${placeName(ctx.map, e.at)}: ${e.before.map((b) => b.strength).join(" + ")} became ${e.after.map((a) => a.strength).join(" + ")} air factors.`;
+    }
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
     case "HEX_CONTROL_CHANGED":

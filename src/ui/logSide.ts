@@ -78,6 +78,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "AIR_STAGED":
     case "UNITS_MOVED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
+    case "AIR_RESHAPED": return sideOfUnits(e.before.map((b) => b.id), before) ?? actor;
     case "STEPS_PASSED": return actor;
   }
 }

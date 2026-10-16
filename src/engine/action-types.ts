@@ -33,6 +33,10 @@ export type Action =
   | { type: "PLACE_AIRBASE"; owner: PowerId; at: HexId }
   /** Step 6f: air units standing together change base, up to 8 hexes, to a base the side held at the start of its turn (Ref 20.2). */
   | { type: "STAGE_AIR"; side: Side; units: string[]; to: HexId }
+  /** Step 6f (or 7b): one air unit is split into smaller counters, factors conserved (Ref 20.6). */
+  | { type: "SPLIT_AIR"; side: Side; unit: string; parts: number[] }
+  /** Step 6f (or 7b): air units of one nationality in one hex are combined into one counter (Ref 20.6). */
+  | { type: "COMBINE_AIR"; side: Side; units: string[] }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -45,6 +49,8 @@ export type GameEvent =
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
   | { type: "AIRBASE_PLACED"; unitId: string; owner: PowerId; at: HexId }
+  /** Air counters were split or combined: the counters before and after, in one hex (Ref 20.6). */
+  | { type: "AIR_RESHAPED"; at: HexId; before: { id: string; strength: number }[]; after: { id: string; strength: number }[] }
   /** Step 6f: air units changed base (a straight move of counters; no control changes). */
   | { type: "AIR_STAGED"; units: string[]; from: HexId; to: HexId }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
