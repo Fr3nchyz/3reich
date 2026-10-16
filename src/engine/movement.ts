@@ -95,6 +95,14 @@ export function entryProblem(ctx: GameContext, state: GameState, owners: readonl
   const side = sideInWar(state, owners[0]!);
   const blocker = occupants(state, hex).find((u) => (sideOfOwner(u.owner) !== side || owners.some((o) => areEnemies(state, o, u.owner))));
   if (blocker) return `${hex} holds ${blocker.id} of the other side: that is an attack, not a move.`;
+  return neutralLandProblem(ctx, state, owners, hex);
+}
+
+/**
+ * Why units of these owners may not enter or pass over `hex` because it is neutral land (`NEUTRAL_LAND_CLOSED`, TODO(verify)), or null.
+ * One test for ground movement and for air flight (spec 09 R4: "the same test, so one rule decides both").
+ */
+export function neutralLandProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
   if (!NEUTRAL_LAND_CLOSED) return null;
   const control = controllerOf(ctx, state, hex);
   const country = ctx.map.hexes[hex]?.country;
