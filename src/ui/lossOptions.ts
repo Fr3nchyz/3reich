@@ -92,6 +92,9 @@ export function lossModel(ctx: GameContext, state: GameState, humanSide: "axis" 
   const units = unitsWithIds(state, p.candidates);
   const sum = chosen.reduce((n, id) => n + (p.values[id] ?? 0), 0);
   const sets = legalSets(actions);
+  // The card confirms only a set that `actions` lists. attack-losses.ts lists at most 100 sets (MAX_LISTED_SETS): with a bigger stack, a
+  // valid set past the 100 is refused here and reads as "more than the Exchange takes" (or "Take one unit off"), though it is enough.
+  // That is the behaviour the test in tests/choice-cards.test.ts documents. Fixing it means changing what the engine offers, not this card.
   const legal = sets.some((s) => sameSet(s, chosen));
   const groups = groupsOf(state, sets, p.values);
   const chips = units.map((u): LossChip => ({

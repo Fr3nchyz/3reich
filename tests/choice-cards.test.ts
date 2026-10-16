@@ -9,7 +9,8 @@ import { confirmAttack, openAttack } from "../src/ui/attackTap";
 import { confirmAdvance, confirmLosses, normaliseChoice, openOffers, pickedAdvance, pickedLosses, pickLossWay, stayOut, toggleAdvance, toggleLoss } from "../src/ui/choiceTap";
 import { choiceHtml } from "../src/ui/choiceView";
 import { e2eFixtureSession } from "./preview-helpers";
-import { MAX_GROUPS, lossModel, ownPending } from "../src/ui/lossOptions";
+import { MAX_GROUPS, legalSets, lossModel, ownPending } from "../src/ui/lossOptions";
+import { applyAllocation, legalAllocations } from "../src/engine/attack-losses";
 import { nextText } from "../src/ui/nextBar";
 import { createSession, type Session } from "../src/ui/session";
 import { attackHtml } from "../src/ui/attackView";
@@ -93,6 +94,21 @@ describe("Choose your losses: the model", () => {
     const m = lossModel(CTX, state, "axis", legal, [])!;
     expect(m.groups).toHaveLength(MAX_GROUPS);
     expect(m.moreGroups).toBe(true);
+  });
+
+  it("documents the 100-set limit (attack-losses.ts): past 100 ways only the first 100 are offered, and the card refuses a valid set beyond them", () => {
+    const twelve = Array.from({ length: 12 }, (_, i) => GER(`s${i}`, "M32", 1));
+    const state = withPending(twelve, { candidates: twelve.map((u) => u.id), values: Object.fromEntries(twelve.map((u) => [u.id, 1])), required: 6 });
+    const listed = legalAllocations(state);
+    expect(listed).toHaveLength(100); // C(12, 6) = 924 minimal sets; only the first 100 in walk order are listed
+    const past = ["s6", "s7", "s8", "s9", "s10", "s11"]; // a valid set, but not among the first 100
+    expect(legalSets(listed).some((ids) => ids.join() === past.join())).toBe(false);
+    expect(applyAllocation(state, { type: "ALLOCATE_LOSSES", side: "axis", units: past }).ok, "the engine accepts it").toBe(true);
+    const m = lossModel(CTX, state, "axis", listed, past)!;
+    expect(m.legal, "the card does not").toBe(false);
+    expect(m.total).toBe("Chosen 6 of at least 6 factors: more than the Exchange takes. Take one off.");
+    expect(m.button).toEqual({ text: "Take one unit off to lose exactly enough", disabled: true });
+    expect(lossModel(CTX, state, "axis", listed, legalSets(listed)[0]!)!.legal).toBe(true);
   });
 });
 
