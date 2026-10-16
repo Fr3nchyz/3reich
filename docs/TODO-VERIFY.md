@@ -87,7 +87,7 @@ Columns: ID, where in `src/` (file and line), the named constant or branch, what
 
 ### Fleets and naval warfare (spec 12, draft; not in `src/` yet, so not counted in the summary above)
 
-Added 2026-10-16 from `docs/specs/12-fleets-naval.md`. The rule numbers are the spec's (R1 to R21); the rule text is the PC Reference Manual 19.31 and 21.x, paraphrased. Each row has a matching bullet in `docs/RULES.md` ("Fleets and naval warfare open items"). Related existing rows: G4 (the sweep that destroys fleets), M15 (fleet stacking at sea), S2 (the sea-supply stub).
+Added 2026-10-16 from `docs/specs/12-fleets-naval.md` (rows N1 to N34; the spec's releases are I to IV, so no id collides). The rule numbers are the spec's (R1 to R21); the rule text is the PC Reference Manual 19.31 and 21.x, paraphrased. Each row has a matching bullet in `docs/RULES.md` ("Fleets and naval warfare open items"). Related existing rows: G4 (the sweep that destroys fleets), M15 (fleet stacking at sea), S2 (the sea-supply stub).
 
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
 |---|---|---|---|---|
@@ -122,7 +122,9 @@ Added 2026-10-16 from `docs/specs/12-fleets-naval.md`. The rule numbers are the 
 | N29 | spec 12 R14 | Air attacks on ports | Counter-Air before ship attack including at Malta (Peele), and who picks the fleet factors lost. | Listed ("Fleets and naval warfare open items"). |
 | N30 | spec 12 R15 | Air against fleets at sea | Whether the Option matters (Ref 20.431 says no, 20.52 names Offensive and Attrition) and that supply carriers are as immune to planes as to fleets. | Listed ("Fleets and naval warfare open items"). |
 | N31 | spec 12 R19 | Naval missions and Options | Naval missions use `frontAllowsAttack` (the Offensive Option of the Front that receives the action), not wired. | Listed ("Fleets and naval warfare open items"). |
-| N32 | spec 12 R16 to R18, R20 | Outlined rules | Shore Bombardment, Sea Transport, Seaborne Invasion and the U.S. Box rules are only outlined; their open items are listed when the addendum is written. Fleets in the U.S. Box are inert in release N1. | Listed ("Fleets and naval warfare open items"). |
+| N32 | spec 12 R16 to R18, R20 | Outlined rules | Shore Bombardment, Sea Transport, Seaborne Invasion and the U.S. Box rules are only outlined; their open items are listed when the addendum is written. Fleets in the U.S. Box are inert in release I. | Listed ("Fleets and naval warfare open items"). |
+| N33 | spec 12 R5 | Supply fleet and Strategic Redeployment | Whether a fleet that carried supply may be redeployed: Ref 21.3 excepts only escort jobs from the bar, Ref 11.72 says a fleet that gave sea supply cannot be redeployed. Nothing is built; recommended when SR exists: the stricter reading (cannot). | Listed ("Fleets and naval warfare open items"). |
+| N34 | spec 12 R8 | `ELIMINATE_ONLY_IF_CUT_OFF_AT_START` (`src/engine/supply-effects.ts`) | Which list the end-of-turn elimination reads once supply is re-read at 6e: the list taken when 6e was left replaces the at-start list, so only units cut off then and still cut off at the end are eliminated (Ref 19.4 says any unit unsupplied at the end, Ref 11.74 says unsupplied at the start and the end; already open as the supply-effects item in RULES.md, now with a spec-12 id). | Listed ("Supply effects"). |
 
 ### Map data and scenario rules
 
