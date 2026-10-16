@@ -22,6 +22,14 @@ function yss(scenario: Scenario, year: number, unused: Partial<Record<PowerId, n
   return { before: s, ...runYearStartSequence(ctxFor(scenario), s) };
 }
 
+describe("the yearly grant tally (Ref 11.71)", () => {
+  it("starts again from 0 at the Year Start Sequence", () => {
+    const base = { ...started(SCENARIO_1939, 1), year: 1941, season: "spring" as const };
+    const s = withNation(base, "britain", { grantedThisYear: 25 });
+    expect(runYearStartSequence(ctxFor(SCENARIO_1939), s).state.nations.britain.grantedThisYear).toBe(0);
+  });
+});
+
 describe("BRP growth (Ref 9.2)", () => {
   it("adds the unused BRPs times the Growth Rate to the Base, and the new total is the new Base", () => {
     const r = yss(SCENARIO_1939, 1941, { germany: 100 }); // Germany: Base 150, 50%
