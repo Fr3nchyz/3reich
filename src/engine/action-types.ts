@@ -29,6 +29,8 @@ export type Action =
   | { type: "ADVANCE"; side: Side; units: string[]; to: HexId }
   /** Step 6f: a unit, or units standing together, move along a path of adjacent hexes (start excluded; Ref 5.45f). */
   | { type: "MOVE"; side: Side; units: string[]; path: HexId[] }
+  /** Step 6f or opening setup: a Major Power sets one of its three movable airbases down in a hex its side controls and supplies (Ref 20.1, 11.3). */
+  | { type: "PLACE_AIRBASE"; owner: PowerId; at: HexId }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -40,6 +42,7 @@ export type Action =
 export type GameEvent =
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
+  | { type: "AIRBASE_PLACED"; unitId: string; owner: PowerId; at: HexId }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */

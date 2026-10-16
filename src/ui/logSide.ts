@@ -26,6 +26,7 @@ export function actorSide(a: Action): Side {
     case "DECLARE_WAR": return sideOfOwner(a.by);
     case "GRANT_BRPS": return sideOfOwner(a.from);
     case "BUILD":
+    case "PLACE_AIRBASE":
     case "SETUP_PLACE":
     case "SETUP_REMOVE":
     case "SETUP_DONE": return sideOfOwner(a.owner);
@@ -63,6 +64,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "WAR_DECLARED": return sideOfOwner(e.by); // also the scenario's own declaration, made as the other side's turn ends
     case "BRPS_GRANTED": return sideOfOwner(e.from);
     case "UNIT_BUILT":
+    case "AIRBASE_PLACED":
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
     case "UNIT_ELIMINATED": // the side that owns the unit lost, not the side that attacked

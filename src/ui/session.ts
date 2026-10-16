@@ -111,6 +111,8 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
       return null;
+    case "AIRBASE_PLACED":
+      return `${POWER_NAMES[e.owner]} places an airbase at ${placeName(ctx.map, e.at)}.`;
     case "SETUP_OWNER_DONE":
       return `${OWNER_NAMES[e.owner]} has set up.`;
     case "SETUP_COMPLETE":

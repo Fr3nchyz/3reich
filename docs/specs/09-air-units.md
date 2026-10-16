@@ -1,6 +1,6 @@
 # 09. Air units: bases, staging, air support in battle, counter-air and airdrops
 
-Status: **approved 2026-10-15 with the decision below (D1: displace). Ticket 09-1 is built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
+Status: **approved 2026-10-15 with the decision below (D1: displace). Tickets 09-1, 09-2 and 09-6 are built (see "As built"); the rest is not.** Words and sketches only; the build plan is part G. Builds on spec 03 (movement), spec 04 (combat, air section), spec 05 (computer) and spec 07 (tap to attack). Comes from the play-test (docs/FEEDBACK.md, entry 2: "Could not use air factors").
 
 
 ## Decisions (product owner, 2026-10-15)
@@ -635,6 +635,15 @@ Ref 3.0 (counters), 4.51, 4.7 (cities as bases), 5.0 (stacking), 9.1 (boundary o
 7. Every constant is in `air-rules.ts` with its rule, and every unclear rule is a `TODO(verify)` listed in docs/RULES.md; 09-0 has compared what the program allows.
 8. No existing test changed except the ones P1 changes; lint, typecheck, unit tests, build and the Playwright tests (mouse and touch) pass; every new button is at least 44 px.
 9. Mutation checks: changing the range (8 or 4), a cap (3), the half-rounded-down rule, the tie rule, the Game Turn key, the capacity (5) or the neutral-land test each makes a test fail.
+
+## As built (ticket 09-2: air record and airbases)
+
+- **Files.** `src/engine/air-record.ts` (`AirState { turn, placed }`, `airOf`, `airbasesPlaced`, `airbasesInReserve`), `air-actions.ts` (`applyPlaceAirbase`, `airbasePlacements`), constants `AIRBASES_PER_MAJOR_POWER = 3` and `AIRBASE_AT_SETUP` in `air-rules.ts`. `GameState.air?` (older saves still load), the action `PLACE_AIRBASE { owner, at }`, the event `AIRBASE_PLACED`, one log line ("Germany places an airbase at ...").
+- **Rule (R2).** A Major Power sets one of its three airbases down in a land hex its side controls, free of enemy units, with no airbase already there, and (at step 6f) supplied; allowed inside an enemy armor zone of control. When: in the opening setup by the owner now setting up (option c of R2), and at step 6f in the owner's own Player Turn. Each refusal names its reason in one sentence.
+- **Differences from the spec text.** (1) The reserve is kept as `GameState.airbasesPlaced` (airbases each Power has ever placed; the reserve is three minus that), not in the per-turn `AirState`, which a new Player Turn replaces. A destroyed airbase (a lone counter is destroyed by `ALONE_NONGROUND_DESTROYED`) is not replaced: `TODO(verify)`, the rule text read so far does not say. (2) `AirState` holds only `turn` and `placed` for now; the lists of later tickets (staging, missions, drops) are added with the tickets that use them. (3) `PLACE_AIRBASE` is not in `legalActions`: working out supply for every candidate hex is costly, the computer does not place airbases yet, and the list would change the computer's choices; `airbasePlacements(ctx, state, owner)` gives the hexes (supply worked out once, with a probe counter in every candidate hex) for the screen of ticket 09-13, and a test proves it agrees with `applyAction` on every hex of the map. (4) `hasMoveWork` is unchanged: step 6f is still passed without waiting when no ground unit can move, so in such a turn an airbase cannot be placed; the screen ticket (09-13) must decide whether placement keeps the step open.
+- **Not in this ticket.** Using a freshly placed airbase only by units of its own nationality (staging, 09-3); relocation of an unsupplied or captured airbase (09-5); the screen (09-13). Placement is not tested in a Campaign or 1942 position.
+- **`TODO(verify)`.** A Major Power that is not yet in the war (Italy, the USSR and the USA in 1939) cannot place an airbase, at setup or later, until it is. The supply test is skipped at setup (the position is still being built; `AIRBASE_AT_SETUP`); "friendly-controlled" is read as the side that controls the hex (`controllingSide`), so a hex of an inactive minor ally is refused.
+- **Tests.** `tests/air-airbase.test.ts` (15). Mutation checks (8 killed): supply test off, reserve check off, control test off, one-to-a-hex off, enemy-units test off, a fourth airbase, any step, water.
 
 ## As built (ticket 09-6: air combat resolver)
 
