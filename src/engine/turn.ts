@@ -1,6 +1,7 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
+import { refreshFortresses } from "./fortress";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
@@ -50,9 +51,9 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
   return { state: settled.state, events: [...begun.events, ...settled.events] };
 }
 
-/** A Player Turn begins: spending starts again from nothing and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
+/** A Player Turn begins: spending starts again from nothing, Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, resetFrontOptions(resetSpending(state)));
+  return scheduledDeclarations(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending(state))));
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
