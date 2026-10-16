@@ -1,3 +1,4 @@
+import { computerToMove } from "./computerPlay";
 import type { MapView } from "./mapView";
 import { placeName } from "./names";
 import type { Session } from "./session";
@@ -41,11 +42,18 @@ export const NOTHING_SELECTED = "Nothing is selected. Choose one of your counter
 export const NOTHING_SELECTED_WATCHING = "Nothing is selected. Tap a hex to look at it, then press this again.";
 /** Setup: the hex card is not shown, so a tap on a hex only places a counter; what the button can zoom to is the chosen counter's places. */
 export const NOTHING_SELECTED_SETUP = "Nothing is selected. Pick a counter to place first.";
+/** The computer's Player Turn (or its Exchange losses): the player has nothing to choose, but a tapped hex is still looked at. */
+export const NOTHING_SELECTED_COMPUTER = "It is the computer's turn. Tap a hex to look at it.";
+/** Step 3 (Front Options): the options are chosen on their card, not on the map; a tapped hex is still looked at. */
+export const NOTHING_SELECTED_STEP3 = "Nothing to select at this step. Tap a hex to look at it.";
 
-/** The words for pressing the target button with nothing to zoom to, true for what the game is doing now. */
-export function nothingSelectedText(s: Pick<Session, "state" | "watch">): string {
+/** The words for pressing the target button with nothing to zoom to, true for what the game is doing now (setup, watching, the computer's turn, step 3, else playing). */
+export function nothingSelectedText(s: Session): string {
   if (s.state.phase === "setup") return NOTHING_SELECTED_SETUP;
-  return s.watch ? NOTHING_SELECTED_WATCHING : NOTHING_SELECTED;
+  if (s.watch) return NOTHING_SELECTED_WATCHING;
+  if (computerToMove(s)) return NOTHING_SELECTED_COMPUTER;
+  if (s.state.position?.part === "player-turn" && s.state.position.step === "3") return NOTHING_SELECTED_STEP3;
+  return NOTHING_SELECTED;
 }
 
 /** How long the message for "nothing is selected" stays on the map before it goes by itself. */

@@ -63,6 +63,13 @@ describe("a slice of play", () => {
     expect(w(s).actions).toBeGreaterThan(1);
     expect(w(s).actions).toBeLessThanOrEqual(Math.ceil(SLICE_MS / 10) + 1);
   });
+  it("does not start another action when the last one cost more than is left of the slice (a slow decision is followed by a repaint)", () => {
+    const s = fresh(null, "turbo");
+    const clock = [0, 0, 30, 30, 30, 30]; // slice start, action 1 start and end (30 ms), then the check before action 2
+    let i = 0;
+    watchSlice(s, () => clock[Math.min(i++, clock.length - 1)]!);
+    expect(w(s).actions).toBe(1);
+  });
   it("'step to next turn' runs to the next Game Turn and stays paused there", () => {
     const s = fresh();
     const turn = `${s.state.year}${s.state.season}`;
