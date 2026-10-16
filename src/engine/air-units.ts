@@ -18,24 +18,28 @@ type Combine = Extract<Action, { type: "COMBINE_AIR" }>;
 /** The steps of the Player Turn at which air counters may be reshaped: movement, and the combat step of ground support (not yet a waiting step). */
 const RESHAPE_STEPS: readonly string[] = ["6f", "7b"];
 
+/** No list of parts or units is longer than this (the most air factors a nation could have is far fewer): a bound before any loop runs over it. */
+const MAX_PARTS = 100;
+
 const sizes = (): readonly number[] => AIR_COMBAT_RULES.counterSizes;
 
 /** True for a real array of whole numbers (a hole in a sparse array is refused). */
 function allWhole(x: unknown): x is number[] {
-  if (!Array.isArray(x)) return false;
+  if (!Array.isArray(x) || x.length > MAX_PARTS) return false;
   for (let i = 0; i < x.length; i++) if (!Number.isInteger(x[i])) return false;
   return true;
 }
 
 /** True for a real array of strings (a hole in a sparse array is refused). */
 function allStrings(x: unknown): x is string[] {
-  if (!Array.isArray(x)) return false;
+  if (!Array.isArray(x) || x.length > MAX_PARTS) return false;
   for (let i = 0; i < x.length; i++) if (typeof x[i] !== "string") return false;
   return true;
 }
 
 /** Every way to split `strength` into two or more counter sizes, largest part first, parts in falling order, e.g. 5 into [3, 2], [3, 1, 1], [2, 2, 1], [2, 1, 1, 1], [1, 1, 1, 1, 1]. */
 export function splitChoices(strength: number): number[][] {
+  if (!Number.isSafeInteger(strength) || strength < 2 || strength > 20) return []; // no counter is bigger than 5; the bound keeps the list short
   const out: number[][] = [];
   const fill = (left: number, max: number, parts: number[]): void => {
     if (left === 0) {
@@ -55,15 +59,15 @@ function momentProblem(state: GameState): string | null {
   return null;
 }
 
-/** Why this counter may not be reshaped (not an air counter, not the mover's, not a Major Power's), or null. Minor-country air is not partial (R6). */
+/** Why this counter may not be reshaped (not an air counter, not the mover's, not a Major Power's), or null. Air of a minor country, Poland or a free force is not partial (R6). */
 function reshapeProblem(state: GameState, u: Unit): string | null {
   if (u.type !== "air") return `${u.id} is not an air unit.`;
   if (sideInWar(state, u.owner) !== state.activeSide) return `${u.id} does not belong to the ${state.activeSide} side now.`;
-  if (!isMajorPower(u.owner)) return `${u.id} is minor-country air: it is not split or combined.`;
+  if (!isMajorPower(u.owner)) return `${u.id} is not a Major Power's air: only a Major Power's air is split or combined.`;
   return null;
 }
 
-/** A counter, with the same fields as its parent and a new id; `staged` parts are staged (a unit cannot stage twice by being split). */
+/** A counter with the same fields as its model (owner, nationality, movement, hex) and a new id and strength. */
 const copyOf = (u: Unit, id: string, strength: number): Unit => ({ ...u, id, strength });
 
 /** Splits one air unit into smaller counters of the same owner, nationality, movement and place. */
@@ -81,7 +85,7 @@ export function applySplitAir(state: GameState, action: Split): ActionResult {
   if (total !== u.strength) return { ok: false, error: `The parts add up to ${total}, but ${u.id} has ${u.strength} air factors.` };
   const rest = Object.fromEntries(Object.entries(state.units).filter(([id]) => id !== u.id));
   const made = [...action.parts].sort((a, b) => b - a).map((n, i) => copyOf(u, `u${state.nextUnitId + i}`, n));
-  const rec = airOf(state);
+  const rec = airOf(state); // the parent's id stays in `staged`: ids are never reused, so it does no harm
   return {
     ok: true,
     state: {
@@ -102,7 +106,7 @@ export function combineProblem(state: GameState, units: readonly Unit[]): string
   }
   const first = units[0]!;
   const other = units.find((u) => u.at !== first.at || u.owner !== first.owner || (u.nationality ?? null) !== (first.nationality ?? null) || u.movement !== first.movement);
-  if (other) return `${other.id} and ${first.id} are not the same nationality and movement in one hex: only like air counters combine.`;
+  if (other) return `${other.id} and ${first.id} are not the same owner, nationality and movement factor in one hex: only like air counters combine.`;
   const total = units.reduce((n, u) => n + u.strength, 0);
   if (!sizes().includes(total)) return `${total} air factors is not a counter size (${sizes().join(", ")}).`;
   return null;

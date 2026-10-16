@@ -5,7 +5,7 @@ import { AIR_COMBAT_RULES } from "../src/engine/air-combat";
 import { airOf } from "../src/engine/air-record";
 import { splitChoices } from "../src/engine/air-units";
 import type { GameState, Unit } from "../src/engine/types";
-import { CTX } from "./helpers";
+import { CTX, atStart } from "./helpers";
 import { at6f, errorOf, inf, okOf } from "./helpers-move";
 
 // Spec 09, ticket 09-4: partial air units (R6; Ref 20.6, Ops 4.11). Counter sizes 1, 2, 3 and 5 (`AIR_COMBAT_RULES.counterSizes`, TODO(verify)).
@@ -31,7 +31,7 @@ describe("SPLIT_AIR", () => {
     expect(s.units.a1!.strength).toBe(5); // the input state is untouched
   });
 
-  it("every split the list names is accepted, and nothing else that adds up is", () => {
+  it("every split the list names is accepted, and the list is bounded", () => {
     for (const strength of [2, 3, 5]) {
       const s = board([air("a1", "J32", strength)]);
       const listed = splitChoices(strength);
@@ -40,6 +40,7 @@ describe("SPLIT_AIR", () => {
     expect(splitChoices(5)).toEqual([[3, 2], [3, 1, 1], [2, 2, 1], [2, 1, 1, 1], [1, 1, 1, 1, 1]]);
     expect(splitChoices(1)).toEqual([]);
     expect(splitChoices(3)).toEqual([[2, 1], [1, 1, 1]]);
+    for (const odd of [Infinity, -Infinity, NaN, 2.5, -4, 0, 21, 1e308]) expect(splitChoices(odd), String(odd)).toEqual([]);
   });
 
   it("refuses a part that is no counter size (there is no 4), a wrong total, one part, and malformed lists", () => {
@@ -65,7 +66,7 @@ describe("SPLIT_AIR", () => {
     expect(errorOf(applyAction(CTX, s, split("a1", [3, 2], "allies")))).toMatch(/player turn/);
     expect(errorOf(applyAction(CTX, { ...s, position: { part: "player-turn", turn: 1, step: "8b" } }, split("a1", [3, 2])))).toMatch(/step 6f or 7b/);
     const fin = board([air("f1", "K33", 3, "finland")], { minorAllies: [{ owner: "finland", active: true }] } as Partial<GameState>);
-    expect(errorOf(applyAction(CTX, fin, split("f1", [2, 1])))).toMatch(/minor-country air/);
+    expect(errorOf(applyAction(CTX, fin, split("f1", [2, 1])))).toMatch(/not a Major Power's air/);
   });
 
   it("parts of a unit that staged this turn count as staged (one stage a turn cannot be dodged by splitting)", () => {
@@ -103,7 +104,16 @@ describe("COMBINE_AIR", () => {
     expect(errorOf(applyAction(CTX, s, combine(["a1", "a6"], "allies")))).toMatch(/player turn/);
   });
 
-  it("refuses ground units, minor-country air and the other side's air", () => {
+  it("refuses another step, a different owner on the same side and a free force's air", () => {
+    const s = board([air("a1", "J32", 2), air("a2", "J32", 3)]);
+    expect(errorOf(applyAction(CTX, { ...s, position: { part: "player-turn", turn: 1, step: "8b" } }, combine(["a1", "a2"])))).toMatch(/step 6f or 7b/);
+    const mixed = board([air("a1", "J32", 2), air("i1", "J32", 3, "italy")], { nations: { ...SCENARIO_1939.nations, italy: { ...atStart(SCENARIO_1939, 1).nations.italy, status: "axis" as const } } });
+    expect(errorOf(applyAction(CTX, mixed, combine(["a1", "i1"])))).toMatch(/same owner, nationality and movement factor/);
+    const free = board([air("f1", "J32", 2, "free-france"), air("f2", "J32", 3, "free-france")], { activeSide: "allies" });
+    expect(errorOf(applyAction(CTX, free, combine(["f1", "f2"], "allies")))).toMatch(/not a Major Power's air/);
+  });
+
+  it("refuses ground units, a Major Power's air that is not in the war, and the other side's air", () => {
     const s = board([air("a1", "J32", 3), inf("u1", "germany", "J32", 2, 3), air("p1", "J32", 2, "poland")]);
     expect(errorOf(applyAction(CTX, s, combine(["a1", "u1"])))).toMatch(/not an air unit/);
     expect(errorOf(applyAction(CTX, s, combine(["a1", "p1"])))).toMatch(/does not belong to the axis side/);
@@ -120,7 +130,7 @@ describe("COMBINE_AIR", () => {
 });
 
 describe("the rest of the game does not notice", () => {
-  it("are not in legalActions, and the counter sizes are the break-down sizes of air combat", () => {
+  it("are not in legalActions, and the counter sizes are those of air combat's break-down", () => {
     const s = board([air("a1", "J32", 5), inf("u1", "germany", "L32", 3, 3)]);
     expect(legalActions(CTX, s).some((a) => a.type === "SPLIT_AIR" || a.type === "COMBINE_AIR")).toBe(false);
     expect(AIR_COMBAT_RULES.counterSizes).toEqual([1, 2, 3, 5]);
