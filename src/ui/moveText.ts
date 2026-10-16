@@ -93,11 +93,15 @@ export const whyWater = (place: string): string => `${place} is open water: grou
 export const whyHexside = (place: string): string => `Ground units cannot cross into ${place} from there: the edge between them is water or the Qattara Depression.`;
 export const whyEnemy = (place: string): string => `${place} holds an enemy unit: that is an attack, not a move.`;
 export const whyNeutral = (place: string): string => `${place} is neutral land: you are not at war with its country, so your units may not enter it.`;
-export const whyFull = (place: string, units: number, limit: number): string =>
-  `${place} could not hold ${units === 1 ? "this unit" : `all ${units} of them`}: a hex holds at most ${limit} ground units. Untick one, or tap a hex with room.`;
+export const whyFull = (place: string, units: number, limit: number, untickHelps: boolean): string =>
+  `${place} could not hold ${units === 1 ? "this unit" : `all ${units} of them`}: a hex holds at most ${limit} ground units. ${untickHelps ? "Untick one, or tap a hex with room." : "Tap a hex with room."}`;
 export const whyNoRoom = (place: string): string => `There is no room for them in ${place}. The yellow hexes are the places they can go.`;
-export const whyTooFar = (place: string, points: number, exitCost: number): string =>
-  `${place} is too far for them: they can go up to ${reach(points)}${exitCost > 0 ? `, and leaving an enemy zone of control costs ${exitCost} more` : ""}. The yellow hexes are the places they can go.`;
+export const whyAngloFrench = (place: string): string => `British and French units may not stack together before 1942, so they cannot end in ${place}.`;
+export const whyBlocked = (place: string): string => `There is no way through to ${place}: enemy units, neutral land or water are in the way.`;
+export const whyTooFar = (place: string, length: number, points: number, exitCost: number): string =>
+  `${place} is too far for them: it is ${reach(length)} away and they can go up to ${reach(points)}${exitCost > 0 ? `, and leaving the enemy zone of control they stand in costs ${exitCost} of those` : ""}. The yellow hexes are the places they can go.`;
+export const whyZocCost = (place: string, points: number, exitCost: number): string =>
+  `${place} is within ${reach(points)}, but leaving an enemy zone of control on the way costs ${exitCost} more than they have. The yellow hexes are the places they can go.`;
 /** A tap on a hex when no stack is chosen. */
 export const CHOOSE_FIRST = "Tap one of your stacks that can move, then a yellow hex.";
 
