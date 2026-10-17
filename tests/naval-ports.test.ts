@@ -94,12 +94,15 @@ describe("capacity: 36 naval factors per port, 9 at Malta, Suda Bay and Famagust
   it("a hex of two ports would base 72, and a small one stays 9 (the list is empty on our map)", async () => {
     vi.resetModules();
     vi.doMock("../src/engine/naval-rules", async (original) => ({ ...(await original<typeof Rules>()), DOUBLE_PORT_HEXES: ["AA19", MALTA] }));
-    const ports = await import("../src/engine/naval-ports");
-    expect(ports.portCapacity(CTX, "AA19")).toBe(72);
-    expect(ports.portCapacity(CTX, MALTA)).toBe(9);
-    expect(ports.portCapacity(CTX, "AA24")).toBe(36);
-    vi.doUnmock("../src/engine/naval-rules");
-    vi.resetModules();
+    try {
+      const ports = await import("../src/engine/naval-ports");
+      expect(ports.portCapacity(CTX, "AA19")).toBe(72);
+      expect(ports.portCapacity(CTX, MALTA)).toBe(9);
+      expect(ports.portCapacity(CTX, "AA24")).toBe(36);
+    } finally {
+      vi.doUnmock("../src/engine/naval-rules");
+      vi.resetModules();
+    }
   });
 });
 
@@ -130,7 +133,7 @@ describe("the 67 ports and their Fronts (Ref 4.4, 21.1)", () => {
     }
   });
 
-  it("the table is the Front of the water for the 57 ports the map settles (Kiel is the 58th: its Baltic side is written by hand)", () => {
+  it("the table equals the Front of the water for the 57 clear ports other than Kiel; Kiel is the 58th clear port, and its Baltic side is written by hand", () => {
     const clear = PORTS.filter((h) => waterFronts(h).size === 1);
     expect(clear.length).toBe(58);
     for (const h of clear.filter((p) => p !== KIEL)) expect(portFronts(CTX, h), `${h} ${MAP.hexes[h]!.name}`).toEqual([...waterFronts(h)]);
@@ -190,7 +193,7 @@ describe("one-hex islands (Ref 4.9, 19.31)", () => {
     expect(MAP.hexes[SCAPA_FLOW]!.name).toBe("Scapa Flow");
   });
 
-  it("Sardinia, Corsica, Rhodes, Sicily and the mainland are not on the list", () => {
+  it("Sardinia, Corsica, Rhodes, Sicily, Berlin, Suda Bay, open sea and a hex off the map are not on the list", () => {
     for (const h of ["AA19", "X20", "FF30", "DD20", "L31", "GG26", "A24", "ZZ99"]) expect(isOneHexIsland(CTX, h), h).toBe(false);
   });
 

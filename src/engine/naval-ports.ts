@@ -12,8 +12,8 @@ import { NAVAL_BASE_FEATURES } from "./terrain";
 /**
  * The Front each port serves (Ref 4.4, 21.1): the Front of the water it opens on, which is not always the Front of its land. Marseilles is
  * western by land and Mediterranean by water; Constanta is Mediterranean by land and Black Sea (Eastern) by water. The Baltic and the Black
- * Sea count as Eastern. Kiel (Baltic and North Sea), Gibraltar (Atlantic and Mediterranean) and Istanbul (Black Sea and Mediterranean) serve
- * two Fronts. Made once from the Front of the water next to each port and checked in tests/naval-ports.test.ts; the seven marked
+ * Sea count as Eastern (TODO(verify), N5). Kiel (Baltic and North Sea), Gibraltar (Atlantic and Mediterranean) and Istanbul (Black Sea
+ * and Mediterranean) serve two Fronts. Made once from the Front of the water next to each port and checked in tests/naval-ports.test.ts; the seven marked
  * TODO(verify) are the ones the map data does not settle (they touch water of two Fronts or none): the Front is read from the all-water
  * hexes beside the port, and the open question to Frank is P4 (spec 12), N4 in docs/TODO-VERIFY.md.
  */

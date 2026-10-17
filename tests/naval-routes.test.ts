@@ -149,7 +149,7 @@ describe("the shortest sea route (breadth-first)", () => {
     expect(seaDistances(CTX, "K32").size).toBe(1);
   });
 
-  it("seaDistance and seaRoute agree with that search for every pair among a dozen ports from all the seas", () => {
+  it("seaDistance and seaRoute agree with that search for every pair among 14 ports from all the seas", () => {
     const some = [KIEL, DANZIG, PLYMOUTH, BREST, "AA7", CAGLIARI, GENOA, MALTA, TRIPOLI, ODESSA, ISTANBUL, "K32", PORT_SAID, SUEZ];
     for (const a of some) {
       const want = oracle(a);
