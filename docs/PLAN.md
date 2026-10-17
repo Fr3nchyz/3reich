@@ -37,7 +37,7 @@ In the tables below, everything is Beta except those Release 1 items. Decided by
 | 09-14 first slice | step 7b on the screen, air counted in the attack card | L | Done |
 | 09-14 rest | choose individual planes at 7b, the attack card lists them | M | Done |
 | 09-13 UI 1: planes on the map | select a plane, see range and bases, rebase, place an airbase, split and join from the screen | M | Done |
-| 09-16 Layout and browser pass | phone and iPad sizes, an air browser test | M | Next |
+| 09-16 Layout and browser pass | phone and iPad sizes, an air browser test | M | Done |
 | 09-0 Check constants against the game | ranges, caps, sizes, Malta | S | Waits: needs your game folder |
 | 09-5 Capture of a base | planes in a captured hex fly to the nearest friendly base within 8 hexes, and are lost only if there is none; airbases go to their Capital (decision D1, taken 2026-10-15) | M | Next |
 | 09-9 Counter-air | planes fight planes before the ground attack | M | Next |
