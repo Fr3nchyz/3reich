@@ -15,10 +15,11 @@ import type { Session } from "./session";
  * ending, the computer playing) gives a new position, so the history no longer fits and the button says there is nothing to take back.
  */
 
-type Move = Extract<Action, { type: "MOVE" }>;
+/** What "Take back last move" replays: ground moves, and the air work of step 6f (a change of base, a split, a join, an airbase placed), all pure and without dice. */
+export type Undoable = Extract<Action, { type: "MOVE" | "STAGE_AIR" | "SPLIT_AIR" | "COMBINE_AIR" | "PLACE_AIRBASE" }>;
 
 export interface MoveStep {
-  action: Move;
+  action: Undoable;
   /** "Moved 2 German infantry from Lodz (N33) to Radom (N34)." as the card said it, for the confirmation. */
   line: string;
   /** How many log lines there were before this move. */
@@ -53,7 +54,7 @@ function live(s: Session): MoveUndo | null {
 }
 
 /** Called after each MOVE of the player went through `run`: `before` and `logLen` are the position and the log length it was made in. */
-export function noteMove(s: Session, before: GameState, logLen: number, action: Move, line: string): void {
+export function noteMove(s: Session, before: GameState, logLen: number, action: Undoable, line: string): void {
   const u = s.undo && s.undo.tip === before && s.undo.tipLog === logLen ? s.undo : null;
   const base = u ? u.base : before;
   if (revealedHidden(before, s.state)) {
@@ -102,6 +103,8 @@ export function takeBack(s: Session): boolean {
   s.log.length = last.logLen;
   if (s.logSides) for (const i of [...s.logSides.keys()]) if (i >= last.logLen) s.logSides.delete(i);
   s.moveChosen = null;
+  s.airMove = null;
+  s.airbase = null;
   s.undo = { base: u.base, steps: kept, tip: state, tipLog: s.log.length, hidden: u.hidden };
   s.toast = T.tookBack(last.line);
   return true;

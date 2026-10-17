@@ -5,7 +5,7 @@ import { applyAction, legalActions, replay, type Action } from "../src/engine/ac
 import { availableBuilds, buildCost, buildPlaces, legalBuilds } from "../src/engine/construction";
 import { hex, hexId as hexIdOf, neighbors, ROW_COUNT } from "../src/engine/hex";
 import type { GameState, PowerId, Unit } from "../src/engine/types";
-import { CTX, atStart, ctxFor } from "./helpers";
+import { CTX, NO_AIRBASES_LEFT, atStart, ctxFor } from "./helpers";
 
 /** Spec 02: construction at step 8b (Ref 11.6): costs, the spending limit, Allowable Builds, dates and where a build may stand. */
 
@@ -15,7 +15,7 @@ const ok = (r: ReturnType<typeof applyAction>) => {
 };
 /** The Axis turn of Fall 1939, moved on to step 8b (past step 3, where Front Options are chosen). */
 const at8b = (): GameState => {
-  const at3 = ok(applyAction(CTX, atStart(SCENARIO_1939, 1), { type: "END_STEP", side: "axis", step: "1" })).state;
+  const at3 = ok(applyAction(CTX, { ...atStart(SCENARIO_1939, 1), airbasesPlaced: NO_AIRBASES_LEFT }, { type: "END_STEP", side: "axis", step: "1" })).state;
   return ok(applyAction(CTX, at3, { type: "END_STEP", side: "axis", step: "3" })).state;
 };
 const build = (s: GameState, owner: PowerId, type: Unit["type"], strength: number, at: string) =>
@@ -143,7 +143,7 @@ describe("building a counter at step 8b", () => {
   });
 
   it("step 8b is passed when there is nothing to build", () => {
-    const s = atStart(SCENARIO_1939, 1);
+    const s = { ...atStart(SCENARIO_1939, 1), airbasesPlaced: NO_AIRBASES_LEFT };
     const broke = { ...s, nations: { ...s.nations, germany: { ...s.nations.germany, spendLimit: 0 } } };
     const at3 = ok(applyAction(CTX, broke, { type: "END_STEP", side: "axis", step: "1" })).state;
     const r = ok(applyAction(CTX, at3, { type: "END_STEP", side: "axis", step: "3" }));
@@ -156,6 +156,7 @@ describe("building a counter at step 8b", () => {
     const actions: Action[] = [
       { type: "END_STEP", side: "axis", step: "1" },
       { type: "END_STEP", side: "axis", step: "3" },
+      { type: "END_STEP", side: "axis", step: "6f" }, // an airbase is left to place, so the step waits (spec 09 C5)
       { type: "BUILD", owner: "germany", unit: { type: "infantry", strength: 3 }, at: berlinArea() },
       { type: "BUILD", owner: "germany", unit: { type: "armor", strength: 4 }, at: Object.values(CTX.map.hexes).filter((h) => h.land && h.country === "germany")[5]!.id },
     ];

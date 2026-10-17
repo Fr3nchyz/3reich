@@ -10,6 +10,9 @@ import type { GameState, Scenario } from "../src/engine/types";
 export const ctxFor = (scenario: Scenario = SCENARIO_1939): GameContext => ({ map: MAP, scenario });
 export const CTX = ctxFor();
 
+/** Every Major Power has placed its three airbases: a position with no unit on the map then has no air work at step 6f either (spec 09 C5, ticket 09-13), so the step is passed as it was with only ground rules. */
+export const NO_AIRBASES_LEFT = { germany: 3, italy: 3, ussr: 3, britain: 3, france: 3, usa: 3 };
+
 /**
  * A game with the opening setup skipped, for tests of the turn sequence that do not care where
  * the counters are, standing where play begins (step 1, declarations of war, if the first side

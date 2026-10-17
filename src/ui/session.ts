@@ -10,6 +10,7 @@ import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from ".
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
 import { actorSide, eventSide, logLine } from "./logSide";
+import type { AirbasePick, AirMoveChoice } from "./airMoveTap";
 import type { AirDraft } from "./airTap";
 import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
@@ -75,6 +76,10 @@ export interface Session {
   attack?: AttackDraft | null;
   /** The last battle of the player's own attack, for the result card (spec 07, State 3). Screen state, never saved. */
   battle?: BattleResult | null;
+  /** The planes chosen at a base at step 6f (spec 09, part D1; the yellow hexes are the bases they can change to). Screen state, never saved. */
+  airMove?: AirMoveChoice | null;
+  /** The airbase being placed at step 6f (its places are outlined on the map). Screen state, never saved. */
+  airbase?: AirbasePick | null;
   /** The ground-support card being put together at step 7b (spec 09, part D2): the hex and the planes chosen. Screen state, never saved. */
   airDraft?: AirDraft | null;
   /** The units picked for the losses of an Exchange or an advance after a battle (spec 07, State 4). Screen state, never saved. */

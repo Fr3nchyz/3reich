@@ -12,7 +12,7 @@ import { hasMoveWork } from "../src/engine/move-action";
 import { movesOf } from "../src/engine/move-record";
 import { settle } from "../src/engine/turn";
 import type { GameState } from "../src/engine/types";
-import { CTX } from "./helpers";
+import { CTX, NO_AIRBASES_LEFT } from "./helpers";
 import { at6f, errorOf, inf, move, movesIn, okOf } from "./helpers-move";
 
 // Step 6f as a step of the Sequence of Play (Ops 5.45f): when it waits, what it lists, how it refuses bad input.
@@ -30,7 +30,7 @@ describe("the step waits only while some unit can move", () => {
   });
 
   it("is passed, and recorded as passed, when no unit can move", () => {
-    const s = settle(CTX, at6f([inf("u1", "germany", "L32", 2, 0, "replacement")], "axis", SCENARIO_1939, { position: { part: "player-turn", turn: 1, step: "5" } }));
+    const s = settle(CTX, at6f([inf("u1", "germany", "L32", 2, 0, "replacement")], "axis", SCENARIO_1939, { airbasesPlaced: NO_AIRBASES_LEFT, position: { part: "player-turn", turn: 1, step: "5" } }));
     expect(hasMoveWork(CTX, at6f([inf("u1", "germany", "L32", 2, 0, "replacement")]))).toBe(false);
     expect(waitingAt(s.state)).not.toBe("6f");
     expect(s.events.flatMap((e) => (e.type === "STEPS_PASSED" ? e.steps : []))).toContain("6f");

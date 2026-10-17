@@ -19,6 +19,7 @@ import { attackHtml } from "./attackView";
 import { leadsStatus, nextBarHtml } from "./nextBar";
 import { moveHtml } from "./moveView";
 import { airHtml } from "./airCardView";
+import { airMoveHtml } from "./airMoveView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -109,7 +110,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
-      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}` : ""}
+      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       ${lead ? "" : toast}
