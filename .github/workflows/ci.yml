@@ -10,10 +10,29 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
+  # Decides whether the browser tests are needed. A pull request that only touches docs/ or Markdown files cannot change them, so they are skipped; a
+  # push to main always runs them. Lint, typecheck, unit tests and the build run for every change (some unit tests read the docs).
+  scope:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      e2e: ${{ steps.scope.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT" != "pull_request" ]; then echo "e2e=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          changed=$(git diff --name-only "origin/$BASE...HEAD")
+          echo "$changed"
+          if [ -z "$changed" ] || echo "$changed" | grep -qvE '^docs/|\.md$'; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
   check:
     runs-on: ubuntu-latest
-    # Lint, unit tests with coverage, build and the browser suite take 11 to 16 minutes on a runner; 15 cancelled two runs in a row.
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -26,12 +45,28 @@ jobs:
       # Unit tests with the coverage floor for src/engine (thresholds in vite.config.ts).
       - run: npm run coverage
       - run: npm run build
+  # Browser tests against `vite preview` on a build made for them (see playwright.config.ts), in three parallel shards so the wait is a third as long.
+  e2e:
+    needs: scope
+    if: needs.scope.outputs.e2e == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npx playwright install --with-deps --only-shell chromium
-      # Browser smoke test against `vite preview` on the build from the step above.
-      - run: npx playwright test
+      - run: npx playwright test --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard }}
           path: test-results/
           if-no-files-found: ignore
