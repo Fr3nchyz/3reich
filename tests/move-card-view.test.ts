@@ -7,6 +7,8 @@ import type { Session } from "../src/ui/session";
 import { normaliseMode, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import type { WatchInfo } from "../src/ui/watchController";
+import { SCENARIO_1939 } from "../src/data/scenario-1939";
+import { NO_AIRBASES_LEFT } from "./helpers";
 import { realPositions } from "./helpers-positions";
 import { at6f, inf } from "./helpers-move";
 import { crafted, sessionAt, withUnits } from "./helpers-move-session";
@@ -40,7 +42,7 @@ describe("the list of stacks (nothing chosen)", () => {
 
   it("with no stack that can move the bar says so and there is no list", () => {
     const s = withUnits([inf("u1", "germany", "L32", 3, 4)]);
-    s.state = at6f([]);
+    s.state = at6f([], "axis", SCENARIO_1939, { airbasesPlaced: NO_AIRBASES_LEFT }); // no airbase left to place either: nothing at all to do at 6f
     const h = html(s);
     expect(h).toContain("Next: no unit can move now. Finish step 6f.");
     expect(h).not.toContain("movelist");

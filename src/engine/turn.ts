@@ -13,6 +13,7 @@ import { legalGrants } from "./grants";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
+import { hasAirMoveWork } from "./air-work";
 import { hasMoveWork } from "./move-action";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
@@ -119,7 +120,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case FIRST_STEP:
       return legalDeclarations(ctx, state).length > 0;
     case "6f":
-      return hasMoveWork(ctx, state);
+      return hasMoveWork(ctx, state) || hasAirMoveWork(ctx, state);
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":

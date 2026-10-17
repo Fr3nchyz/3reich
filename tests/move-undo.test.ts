@@ -177,7 +177,7 @@ describe("what clears or blocks it", () => {
     moveInto(s, "L32", "K33", ["u2"]);
     moveInto(s, "L32", "K32");
     const before = s.state;
-    s.undo!.steps[0] = { ...s.undo!.steps[0]!, action: { ...s.undo!.steps[0]!.action, units: ["nobody"] } };
+    s.undo!.steps[0] = { ...s.undo!.steps[0]!, action: { ...s.undo!.steps[0]!.action, units: ["nobody"] } as NonNullable<Session["undo"]>["steps"][number]["action"] };
     expect(takeBack(s)).toBe(false);
     expect(s.state).toBe(before);
   });

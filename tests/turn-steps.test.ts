@@ -7,7 +7,7 @@ import { newGame } from "../src/engine/game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, LAST_STEP, PLAYER_TURN_STEPS, playerTurnStepIds } from "../src/engine/sequence";
 import { beginPlay, positionId } from "../src/engine/turn";
 import type { GameState, Scenario } from "../src/engine/types";
-import { CTX, atStart, ctxFor, started } from "./helpers";
+import { CTX, NO_AIRBASES_LEFT, atStart, ctxFor, started } from "./helpers";
 
 /** Spec 01: the engine knows where in the Sequence of Play it is and refuses actions out of order. */
 
@@ -49,7 +49,7 @@ describe("the position in the game", () => {
   });
 
   it("leaves step 1 for 3 once the side is done (passing step 2), then 3 for 8b (passing steps 4 to 8a)", () => {
-    const s = atStart(SCENARIO_1939, 1);
+    const s = { ...atStart(SCENARIO_1939, 1), airbasesPlaced: NO_AIRBASES_LEFT }; // with an airbase left to place, step 6f would wait (spec 09 C5)
     const r = apply(CTX, s, moveOn(CTX, s));
     expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: "3" });
     expect(passedIn(r.events)).toEqual(["2"]);
@@ -59,7 +59,8 @@ describe("the position in the game", () => {
   });
 
   it("passes 9a when there is nothing to grant and waits at 10b", () => {
-    const at3 = apply(CTX, atStart(SCENARIO_1939, 1), moveOn(CTX, atStart(SCENARIO_1939, 1))).state;
+    const start = { ...atStart(SCENARIO_1939, 1), airbasesPlaced: NO_AIRBASES_LEFT };
+    const at3 = apply(CTX, start, moveOn(CTX, start)).state;
     const at8b = apply(CTX, at3, moveOn(CTX, at3)).state;
     const r = apply(CTX, at8b, moveOn(CTX, at8b));
     expect(r.state.position).toEqual({ part: "player-turn", turn: 1, step: LAST_STEP });
@@ -109,12 +110,12 @@ describe("steps without rules are passed, and the passing is recorded", () => {
   it("records exactly the steps that are not waited at, and never a step that is", () => {
     const events = oneGameTurn(CTX, atStart(SCENARIO_1939, 1));
     const passed = passedIn(events);
-    // Both sides had something to declare, to choose (Front Options, both at war) and to build, so steps 1, 3 and 8b
-    // were waited at and never recorded as passed. Germany has nobody to grant to, so 9a passed for the Axis; the
+    // Both sides had something to declare, to choose (Front Options, both at war), to do at movement (an airbase left to place, spec 09 C5) and to build,
+    // so steps 1, 3, 6f and 8b were waited at and never recorded as passed. Germany has nobody to grant to, so 9a passed for the Axis; the
     // Allies (Britain to France) waited at it.
     const without = (waited: string[]) => STEPS.slice(1, -1).filter((id) => !waited.includes(id));
-    expect(passed).toEqual([...without(["3", "8b"]), ...without(["3", "8b", "9a"]), "II.A"]);
-    // Nobody has a counter on the map here, so ground movement (6f) found nothing to do and was passed.
+    expect(passed).toEqual([...without(["3", "6f", "8b"]), ...without(["3", "6f", "8b", "9a"]), "II.A"]);
+    // Nobody has a counter on the map here, so ground movement (6f) found nothing to do; only the airbases still to place kept the step open.
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
     for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "6f", "7b", "7h", "8b", "9a"].includes(id)).toBe(true);
   });

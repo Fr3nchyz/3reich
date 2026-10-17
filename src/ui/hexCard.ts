@@ -1,3 +1,4 @@
+import { airOf } from "../engine/air-record";
 import { combatOf } from "../engine/combat-record";
 import type { GameContext } from "../engine/context";
 import { controllerOf } from "../engine/control";
@@ -82,6 +83,7 @@ function holder(ctx: GameContext, state: GameState, id: string): string {
 function counter(ctx: GameContext, state: GameState, u: Unit): CardCounter {
   const notes = [defends(u.type) ? "defends" : "does not defend"];
   if (movesOf(state).moved.includes(u.id)) notes.push("moved");
+  if (u.type === "air" && airOf(state).staged.includes(u.id)) notes.push("changed base this turn");
   const combat = combatOf(state);
   if (combat.attacked.includes(u.id)) notes.push("has attacked");
   for (const a of combat.advances) if (a.units.includes(u.id)) notes.push(`can advance into ${placeName(ctx.map, a.to)}`);
