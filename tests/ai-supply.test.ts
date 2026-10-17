@@ -98,6 +98,7 @@ describe("suppliedAfterMove: whether a line reaches the hex once the move is mad
   it("the network is searched once per position, however many hexes are asked about", () => {
     expect(networkOf(ON, s, "axis")).toBe(net);
     expect(networkOf(ON, { ...s }, "axis")).not.toBe(net);
+    expect(networkOf({ ...ON }, s, "axis")).not.toBe(net); // kept per context too: the answer depends on it
   });
 });
 
@@ -146,7 +147,7 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
     expect(exchangeFree(OFF, s, ["g1"], { seed: 1 })).toBe(false);
     expect(exchangeFree(ON, s, ["g1"], { seed: 1, supplyRules: false })).toBe(false);
   });
-  it("LOSSES_CUT_OFF_FIRST: of the Exchange loss sets, the one with the most factors of units out of supply; the first listed otherwise", () => {
+  it("LOSSES_CUT_OFF_FIRST: of the Exchange loss sets, the one with the most factors of doomed units; the first listed otherwise", () => {
     expect(LOSSES_CUT_OFF_FIRST).toBe(true);
     const sets: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
     expect(chooseLosses(ON, s, sets, { seed: 1 })!.action).toBe(sets[1]);
@@ -155,6 +156,21 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
     const fine: GameState = { ...s, units: { ...s.units, g1: { ...s.units.g1!, at: "L33" } } };
     expect(chooseLosses(ON, fine, sets, { seed: 1 })!.action).toBe(sets[0]);
     expect(chooseLosses(ON, s, [{ type: "END_STEP", side: "axis", step: "7h" }], { seed: 1 })).toBeUndefined();
+  });
+  it("...a unit cut off only now is not doomed (it survives the turn, Ref 11.74 as built): it is not given up first", () => {
+    const sets: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
+    const nothingRecorded: GameState = { ...s, unsuppliedAtStart: undefined }; // g1 cut off now, but not when the turn began
+    expect(chooseLosses(ON, nothingRecorded, sets, { seed: 1 })!.action).toBe(sets[0]);
+    // g1 doomed, g2 cut off only now (also on neutral Hungarian land), g3 supplied: the doomed g1 goes, though listed last.
+    const three: GameState = { ...at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "S31", 3, 3), inf("g3", "germany", "L32", 3, 3)]), unsuppliedAtStart: ["g1"] };
+    expect(cutOffNow(ON, three, "axis").has("g2")).toBe(true);
+    const by3: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g3"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
+    expect(chooseLosses(ON, three, by3, { seed: 1 })!.action).toBe(by3[2]);
+  });
+  it("...when the other side chooses (its units defended), none of its units is doomed this turn: the first set listed", () => {
+    const def: GameState = { ...at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "L32", 3, 3)], "allies"), unsuppliedAtStart: [] };
+    const sets: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
+    expect(chooseLosses(ON, def, sets, { seed: 1 })!.action).toBe(sets[0]);
   });
   it("step 7h: an Exchange waiting for the computer's losses gives up the cut-off unit, though the engine lists it second", () => {
     const at7h: GameState = { ...s, position: { part: "player-turn", turn: 1, step: "7h" } };

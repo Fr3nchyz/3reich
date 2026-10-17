@@ -14,7 +14,8 @@ import type { AiConfig } from "./types";
  * decision, so this reads the engine's own line search (`supplyNetwork`) once per position and asks, for one hex, whether a line would reach it
  * once the move has been made. Of what supply reads, a move changes only the units' new hex, which their entry may bring under their side's
  * control (`controlAfterEntry`): control of the hexes passed through and left does not change (CONTROL_ON_PASS_THROUGH is off), and a friendly
- * unit does not cancel enemy ZOC (ZOC_POLICY), so no other unit's supply changes. So the hex is supplied after the move when a line already reaches it, when a line reaches a neighbour
+ * unit does not cancel enemy ZOC (ZOC_POLICY). So no line is lost by a move; the newly controlled hex may open a line for another cut-off unit,
+ * which does not change the answer for the stack that moved. So the hex is supplied after the move when a line already reaches it, when a line reaches a neighbour
  * from which the search would step into it (same test as the engine's search: the neighbour is not in enemy ZOC unless it is a source,
  * the hexside can be crossed, and the two are not in the ZOC of the same enemy unit when the neighbour is a source), when a Fortress of the
  * side stands there (Ref 4.8, 19.2), or when it is a Major Power's capital, which supplies whoever holds it (19.2).
@@ -23,12 +24,14 @@ import type { AiConfig } from "./types";
  * (`SUPPLY_POLICY.maxLength` is null). Sea supply is a stub in the engine, so it is not foreseen either.
  */
 
-const networks = new WeakMap<GameState, Map<Side, SupplyNetwork>>();
+const networks = new WeakMap<GameContext, WeakMap<GameState, Map<Side, SupplyNetwork>>>();
 
-/** The side's supply network for this position, built once per position (a state is never changed in place). */
+/** The side's supply network for this position, built once per context and position (a state is never changed in place). */
 export function networkOf(ctx: GameContext, state: GameState, side: Side): SupplyNetwork {
-  let bySide = networks.get(state);
-  if (!bySide) networks.set(state, (bySide = new Map<Side, SupplyNetwork>()));
+  let byState = networks.get(ctx);
+  if (!byState) networks.set(ctx, (byState = new WeakMap<GameState, Map<Side, SupplyNetwork>>()));
+  let bySide = byState.get(state);
+  if (!bySide) byState.set(state, (bySide = new Map<Side, SupplyNetwork>()));
   let hit = bySide.get(side);
   if (!hit) bySide.set(side, (hit = supplyNetwork(ctx, state, side)));
   return hit;

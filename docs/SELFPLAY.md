@@ -26,7 +26,7 @@ Examples: `npm run selfplay -- --scenario 1942 --turns end --seed 1` (about 25 s
 
 For each game, in the output folder:
 
-- `<scenario>-seed<n>.json`: the recorded action list (setup and play, in order) with the scenario and seed. Replay it with the engine: `replay(ctx, newGame(scenario, seed), recording.actions)` gives the identical final state (a test checks this for every scenario).
+- `<scenario>-seed<n>.json`: the recorded action list (setup and play, in order) with the scenario, the seed and `supplyEffects` (whether the supply effects applied). Replay it with the engine in the context the recording names: `replay(recordingContext(recording), newGame(scenario, seed), recording.actions)` (`scripts/selfplay/args.ts`) gives the identical final state (a test checks this for every scenario, and for a game with the effects on). `supplyEffects: true` is written only when the effects were on; a recording without it (effects off, older ones, the browser's watch mode) replays with them off, the setting every such game was played with.
 - `<scenario>-seed<n>.md`: a Markdown report with a final summary, the list of anomalies, and per Game Turn: BRP totals per nation, BRPs spent (by nation and by war / construction / grants / Front Options), wars declared, units built, grants, units moved (and by which side, with each side's ground units), ground combats (attacker eliminated / defender eliminated / Exchange), units and factors lost per side, hexes that changed hands, hexes and capitals/objectives held per side, units and factors per side, and the Front Options chosen.
 - `comparison-<scenario>-seed<n>x<k>.md`: the one-page table of all games of the run (also printed), with the runtime of each.
 

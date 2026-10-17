@@ -9,7 +9,7 @@ import { chooseAction } from "../src/ai";
 import { newGame } from "../src/engine/game";
 import { SUPPLY_EFFECTS_ENABLED } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
-import { MAX_SEED, parseArgs, recording } from "../scripts/selfplay/args";
+import { MAX_SEED, parseArgs, recording, recordingContext } from "../scripts/selfplay/args";
 import { prepareOut } from "../scripts/selfplay/out";
 import { comparison, gameReport } from "../scripts/selfplay/report";
 import { auditState, runGame } from "../scripts/selfplay/runner";
@@ -30,10 +30,30 @@ describe("self-play runner: a short game per scenario", () => {
       expect(r.actions.length).toBeGreaterThan(r.setupActions);
       // The recorded list goes through JSON and back, as a file would, then replays from the new game.
       const saved = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
-      const again = replay(r.ctx, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+      const again = replay(recordingContext(saved), newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
       expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
     }, 60_000);
   }
+
+  it("a recording made with the supply effects on says so, and replays in a context with them on to the identical final state", () => {
+    const r = runGame({ scenario: "1942", seed: 3, turns: 2, verify: false, supplyEffects: true });
+    const saved = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
+    expect(saved.supplyEffects).toBe(true);
+    expect(recordingContext(saved).supplyEffects).toBe(true);
+    const again = replay(recordingContext(saved), newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+    expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
+    // The setting matters: in a context with the effects off the same actions end elsewhere (the cut-off units are not eliminated).
+    const off = replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+    expect(JSON.stringify(off.state)).not.toBe(JSON.stringify(r.final));
+  }, 60_000);
+
+  it("a recording with the effects off (or an older one) has no such field and replays with them off", () => {
+    const r = runGame({ scenario: "1939", seed: 3, turns: 1, verify: false, supplyEffects: false });
+    const old = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
+    expect("supplyEffects" in old).toBe(false); // written only when on: the keys are those of older recordings
+    expect(recordingContext(old).supplyEffects).toBe(false);
+    expect(JSON.stringify(replay(recordingContext(old), newGame(SCENARIOS[old.scenario], old.seed), old.actions).state)).toBe(JSON.stringify(r.final));
+  }, 60_000);
 
   it("is deterministic per seed and differs between seeds", () => {
     const a = runGame({ scenario: "1939", seed: 5, turns: 2 });
