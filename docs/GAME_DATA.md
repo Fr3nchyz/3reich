@@ -114,6 +114,27 @@ There is no `TABLE4.TAB`. The numbers on these screens are the same as the print
 | `airNationalityDrm` | Matches the game | `TABLE1.TAB`; air routine in `3R2.EXE` (script) |
 | `MINOR_COUNTRY_FORCES` | Matches the chart, all 114 entries; entries count counters | `TABLE9.TAB` |
 
+## Program messages (spec 16)
+
+Found on 2026-10-17 by searching `3R2.EXE` for text (the same way as the rule tables above), for [spec 16](specs/16-attrition-exploitation-redeployment.md). Offsets are file offsets in hexadecimal; the wording is paraphrased here and no message is copied. They show what the game says, not what the rules are: where a message differs from the manual, spec 16 marks the point `TODO(verify)`. Several messages occur twice in the file; the first offset is given.
+
+| What the game says (paraphrased) | Offset | Used in spec 16 |
+|---|---|---|
+| Attrition titles by group and Front: Allied, Russian, Axis and Italian, each for the Western, Eastern and Mediterranean Fronts (a second copy at `0x53268`) | `0x52f04` to `0x52f78` (Western Front titles) | AER1 |
+| Attacker: choose up to a stated number of adjacent hexes the defender must leave | `0x52d7c` | R5, AER11 |
+| A hex that was empty before the Attrition cannot be chosen | `0x52cf4` | R5 |
+| Retreat is allowed only into a friendly or enemy hex | `0x52b88` | R6, AER6 |
+| Anglo-French cooperation forbids this Attrition retreat | `0x52bbc` | R6, R32 |
+| The retreat is unfinished: destroy the units left? | `0x530d8` | R6 |
+| A unit cannot end its move overstacked | `0xa01c4` | R15 |
+| Overstacked units will be removed: continue? | `0x79ab8` | R15 |
+| Select armor to move to the Breakthrough hex | `0x794e0` | R11 |
+| French units may attack only Paris in the Exploitation phase | `0x7dc08` | spec 14 R5 |
+| Replacement counters can move only in the SR phase | `0x76cd8` | R19 |
+| A unit may not be SR'd directly from one Front to another | `0xc6810` | R20, AER25 |
+| A SR can be aborted; a combined group of units cannot abort it | `0xc6c14`, `0xc6c70` | R25 |
+| Sevastopol has regained / lost its fortress status | `0xaca14`, `0xaca44` | R28, AER35 |
+
 ## Not decoded yet
 
 `AREAADJ.BIN`, `AREADIST.BIN` (see above), and the scenario `.BIN` files. The game's files hold no bitmap for European Turkey or for which sea a port is on, so those two zones are read off our map (see RULES.md "Zones").

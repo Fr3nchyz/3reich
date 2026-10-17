@@ -107,7 +107,7 @@ Release I: 9 tickets (5 M, 4 S). Release II: 6 (3 M, 2 L, 1 S). Release III: 3 M
 
 ## D. Rules that have no spec yet
 
-Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec, except the victory rows, whose spec (14) is written and gives its own ticket sizes. These are the largest unknowns on the way to Beta.
+Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec, except the victory rows, the minor-country row and the attrition, exploitation, redeployment and fortress rows, whose specs (14, 15 and 16) are written and give their own ticket sizes. These are the largest unknowns on the way to Beta.
 
 | Rule | Roadmap item | Guess |
 |---|---|---|
@@ -120,11 +120,17 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-19, 14-20, 14-24 Computer answers, self-play gate, docs | | S, S, S (Beta) |
 | 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
 | Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
-| Attrition | 6.2 | M |
-| Exploitation | 6.3 | M |
-| Strategic warfare, Murmansk and U.S. boxes | 6.6 | L |
-| Strategic redeployment (step 9e) | 5.6 | M |
-| Fortress changes (Maginot, West Wall, Sevastopol) | 5.7 | S |
+| **Attrition, Exploitation, Strategic Redeployment, Fortress changes: spec written** ([16](specs/16-attrition-exploitation-redeployment.md), draft for review, 28 tickets; sizes below are the spec's, not guesses; who owns what is in part H of spec 16) | 6.2, 6.3, 5.6, 5.7 | 24 Beta tickets (5 S, 13 M, 6 L), of which 12 are Beta-critical (1 S, 8 M, 3 L); 4 Release 1 tickets (3 M, 1 L); not in the 47 counted above |
+| 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) |
+| 16-2 Attacks need the Offensive Option (spec 16, owner's Q1) | | M (Beta) |
+| 16-9 to 16-13 Exploitation (owner's Q2): Breakthrough, movement, combat, screens, computer | 6.3 | M, L, M, L, M (Beta) |
+| 16-14, 16-15 The vacant-hex attack, air support in Exploitation | | M, M (Release 1) |
+| 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta) |
+| 16-21 Sea Escort for ground units (owner's Q3) | | L (Beta) |
+| 16-22, 16-23 Air units and airbases, fleets and escort chains, by redeployment | | M, L (Release 1) |
+| 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta) |
+| 16-27 Gate and docs | | M (Beta-critical) |
+| Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec 17, owner's Q6) |
 | Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
@@ -134,7 +140,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | Supply-aware computer | stops walking into cut-off positions while supply penalties are on | M | In review (PR 93) |
 | Defend Berlin | its capital is the main supply source; it falls in 13 of 30 1939 games with penalties on | M | Next (a spec 05 note first) |
 | Stall breaker | the computer no longer stands still in front of fortified hexes | M | Next |
-| Front Options and Italy declaring | the computer makes the choices it skips today | M | Next |
+| Front Options and Italy declaring | the computer makes the choices it skips today (the Front Options half is ticket 16-1 of spec 16) | M | Next |
 | Computer air (09-12), naval (12-5, 12-13) | listed above | | |
 | Evaluator and strength levels | a stronger and a weaker computer | L | Later |
 | Watch mode reads the supply setting | a watched game replays with the penalties on once they are on | S | Later |
