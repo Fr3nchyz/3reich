@@ -22,7 +22,7 @@ export const tickedCount = (ticked: number, all: number): string => `${ticked} o
 
 export const basesTitle = (n: number): string => `Change base (up to 8 hexes): ${n} base${n === 1 ? "" : "s"}`;
 export const baseRow = (hexes: number, room: number): string => `${hexes} hex${hexes === 1 ? "" : "es"}, room for ${factors(room)}`;
-export const BASES_NOTE = "Planes cannot cross neutral land. A change of base cannot be taken back.";
+export const BASES_NOTE = "Planes cannot cross neutral land. “Take back last move” undoes a change of base, until you press Done with the step.";
 export const NOTHING_TICKED = "Tick at least one plane.";
 export const ALREADY_STAGED = "These planes have already changed base this turn: a plane changes base once a turn.";
 export const NO_BASE = "No base is in reach for these planes together.";
