@@ -3,6 +3,7 @@ import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
 import type { AirFlown, AirState } from "./air-record";
+import type { NavalState } from "./naval-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -307,6 +308,8 @@ export interface GameState {
   airbasesPlaced?: Partial<Record<PowerId, number>>;
   /** The air units that have used their mission this Game Turn (spec 09 R5); absent in an older saved game. */
   airFlown?: AirFlown;
+  /** What the fleet rules have recorded (spec 12): fleets used this Game Turn, and this Player Turn's lists; absent in an older saved game. */
+  naval?: NavalState;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
   /**

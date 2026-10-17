@@ -4,9 +4,10 @@ import { flightProblem, hexesWithin } from "./air-range";
 import { ONE_STAGE_PER_TURN, STAGING_RANGE } from "./air-rules";
 import type { Action, ActionResult } from "./action-types";
 import type { GameContext } from "./context";
-import { controllingSide, sideInWar } from "./control";
+import { sideInWar } from "./control";
 import type { HexId } from "./hex";
 import { endProblem } from "./movement";
+import { heldAtStart } from "./naval-record";
 import type { GameState, Unit } from "./types";
 
 /**
@@ -23,11 +24,6 @@ function allStrings(x: unknown): x is string[] {
   if (!Array.isArray(x)) return false;
   for (let i = 0; i < x.length; i++) if (typeof x[i] !== "string") return false;
   return true;
-}
-
-/** Whether the side held the hex when its Player Turn began (the air record keeps that control). */
-function heldAtStart(ctx: GameContext, state: GameState, side: "axis" | "allies", hex: HexId): boolean {
-  return controllingSide(ctx, { ...state, control: airOf(state).controlAtStart }, hex) === side;
 }
 
 /** Finds the units named and the first reason they may not stage together at all (not air, not the mover's, apart, already staged), or the units. */
