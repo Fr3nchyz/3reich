@@ -5,7 +5,7 @@ import { useOf, type SeaSupplyDesignation } from "./naval-record";
 import { isPort, portFronts, portsOf } from "./naval-ports";
 import { ONE_HEX_ISLANDS } from "./naval-rules";
 import { checkDesignations, designationProblem, freeCapacity, placeFronts, portReached } from "./naval-supply";
-import { supplyNetwork, supplyStatus, type SupplyLine } from "./supply";
+import { byId, supplyNetwork, supplyStatus, type SupplyLine } from "./supply";
 import type { ForceOwner, GameState, Side, Unit } from "./types";
 
 /**
@@ -14,7 +14,6 @@ import type { ForceOwner, GameState, Side, Unit } from "./types";
  * in naval-supply.ts, which supply.ts uses. Pure queries: nothing here records a designation (ticket 12-3).
  */
 
-const natural = (a: string, b: string): number => a.localeCompare(b, "en", { numeric: true });
 const byHex = (a: HexId, b: HexId): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The designations of the state that stand for the side, in order: the valid ones, each counted against the later ones. */
@@ -43,7 +42,7 @@ export interface SeaSupplyOption extends SeaSupplyDesignation {
 
 /**
  * The designations that would save at least one cut-off unit, one per origin port and receiving place (spec 12 C2, B7), best first: most units
- * saved, then the lowest port hex, then the lowest place hex (the places are built in hex order and the sort is stable). The fleets are the fewest of that port, by id, whose free naval factors cover the
+ * saved, then the lowest port hex, then the lowest place hex. The fleets are the fewest of that port, by id, whose free naval factors cover the
  * units; the units are the cut-off ones joined to the place by land, by id, as many as those fleets carry. Every option is valid (`seaSupplyProblem`
  * is null). Units already saved by a recorded designation, and fleets with no capacity left, are not offered again.
  */
@@ -55,7 +54,7 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
   const room = freeCapacity(state, standing);
   // Fleets that could carry, by port and group, in id order.
   const crews = new Map<string, Unit[]>();
-  for (const f of Object.values(state.units).sort((a, b) => natural(a.id, b.id))) {
+  for (const f of Object.values(state.units).sort((a, b) => byId(a.id, b.id))) {
     const use = useOf(state, f.id);
     if (f.type !== "fleet" || sideInWar(state, f.owner) !== side || !isPort(ctx, f.at) || (use !== undefined && use !== "supply") || room(f.id) <= 0) continue;
     if (!portReached(network, f.at, f.owner)) continue;
@@ -83,7 +82,7 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
       if (designationProblem(ctx, state, network, d, standing) === null) out.push({ ...d, saves: units.length });
     }
   }
-  return out.sort((a, b) => b.saves - a.saves || byHex(a.from, b.from));
+  return out.sort((a, b) => b.saves - a.saves || byHex(a.from, b.from) || byHex(a.to, b.to));
 }
 
 /**

@@ -77,7 +77,7 @@ export interface SupplyStatus {
   unsupplied: string[];
 }
 
-const byId = (a: string, b: string): number => {
+export const byId = (a: string, b: string): number => {
   const na = Number(a.replace(/\D/g, ""));
   const nb = Number(b.replace(/\D/g, ""));
   return na !== nb ? na - nb : a < b ? -1 : a > b ? 1 : 0;
@@ -264,7 +264,7 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
   };
   const seaLineIn = (u: Unit, r: SupplyReach): SupplyLine | null => {
     const land = r.units?.has(u.id) && r.sea ? lineIn(u, r.next) : null;
-    return land ? { ...land, via: "sea", sea: { fleets: r.sea!.fleets, from: r.sea!.from, to: land.source } } : null;
+    return land ? { ...land, via: "sea", sea: { fleets: [...r.sea!.fleets], from: r.sea!.from, to: land.source } } : null;
   };
   for (const u of checkedUnits(ctx, state, side)) {
     const main = network.reaches.find((r) => r.kind === "main" && r.serves(u.owner));

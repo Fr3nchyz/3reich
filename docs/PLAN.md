@@ -61,7 +61,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-1 Naval record | what each fleet did this turn | S | Done |
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Done |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Next |
-| 12-4 Fleets displaced on capture | the fleet in a captured port moves away | M | Waits for 12-0, 12-1 |
+| 12-4 Fleets displaced on capture | the fleet in a captured port moves away | M | Next |
 | 12-5 Computer: sea supply | the computer answers the prompts | S | Waits for 12-3 |
 | 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | Waits for 12-3 |
 | 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | Waits for 12-3 |

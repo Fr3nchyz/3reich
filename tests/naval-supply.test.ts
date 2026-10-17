@@ -53,7 +53,7 @@ describe("the Sardinia pocket: a fleet at Genoa saves the infantry at Cagliari (
     expect(line).toEqual({ unitId: "i1", source: "AA19", path: ["AA19"], via: "sea", sea: { fleets: ["f1"], from: "U22", to: "AA19" } });
   });
 
-  it("the doing is for the units named, not for their neighbours", () => {
+  it("only the units named are fed: a unit of the same side in the same pocket that is not named stays cut off", () => {
     const s = position([...units, inf("i2", "italy", "Z19")], [d]);
     expect(unsupplied(s)).toEqual(["i2"]);
   });
@@ -263,7 +263,7 @@ describe("groups (Ref 26.0, 27.0)", () => {
     expect(seaSupplyProblem(CTX, s, "allies", named(["fr2"], "LL29", "X20", ["bi1"]))).toBeNull();
   });
 
-  it("the Soviets and the Western Allies do not carry for each other, and the Axis fleet carries for the Axis (Italian for German)", () => {
+  it("the Soviets and the Western Allies do not carry for each other, and an Italian fleet at Genoa is refused for a German unit in Norway by the Front, not by the group", () => {
     const base = board([]);
     const ussr = { ...base.nations.ussr, status: "allied" as const };
     const s = position([fleet("b1", "britain", "LL29"), french("fr1", "X20"), inf("ru1", "ussr", "X20"), fleet("ru2", "ussr", "LL29")], [], { nations: { ...base.nations, italy: { ...base.nations.italy, status: "axis" }, ussr } });
