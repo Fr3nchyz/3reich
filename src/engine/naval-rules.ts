@@ -30,3 +30,9 @@ export const DOUBLE_PORT_HEXES: readonly HexId[] = [];
  * DD29, EE28); NN26 (Egypt) is a Qattara hex, arguably no island.
  */
 export const ONE_HEX_ISLANDS: readonly HexId[] = ["B29", "GG19"];
+
+/**
+ * Ground units or airbases one naval factor of a supply fleet feeds (Ref 19.31), whatever the printed factors of the unit: a 9-factor fleet
+ * feeds nine counters. Spec 12 R6, R7. The capacity is the sum over all the designations that use the fleet. TODO(verify): N8, N9 (charged when named), N35 (several fleets in one designation).
+ */
+export const SEA_SUPPLY_UNITS_PER_FACTOR = 1;
