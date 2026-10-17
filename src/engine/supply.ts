@@ -32,8 +32,8 @@ import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSo
  * - a maximum length: none found (`maxLength: null`); the unit's own hex must be friendly-controlled here.
  * - sea supply (19.31: a designated fleet, one ground unit or airbase per naval factor, ports, Gibraltar, Kiel and
  *   Istanbul as transfer points): built as pure queries in naval-supply.ts (spec 12, ticket 12-2): a designation recorded in `GameState.naval`
- *   that passes `seaSupplyProblem` adds a source set here, `kind: "sea"`, tried last. Nothing records a designation yet (ticket 12-3), so with
- *   no designation every answer is what it was. Chains through Gibraltar, Kiel and Istanbul (two fleets) are ticket 12-8.
+ *   that passes `seaSupplyProblem` adds a source set here, `kind: "sea"`, tried last. `DESIGNATE_SEA_SUPPLY` (naval-actions.ts) records one at steps 6e and 9f;
+ *   with no designation every answer is what it was. Chains through Gibraltar, Kiel and Istanbul (two fleets) are ticket 12-8.
  * - replacement counters, bridgeheads and units in the off-map boxes (always supplied, U.S. Box) are not checked.
  * - ZOC (Ref 7.0, 19.3, spec 13): only armor exerts ZOC into adjacent hexes, friendly units do not cancel it, and supply cannot pass
  *   a hex next to enemy armor. A unit next to a source is supplied unless both stand in the ZOC of the same enemy armor unit.

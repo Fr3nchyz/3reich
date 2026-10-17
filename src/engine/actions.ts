@@ -78,8 +78,12 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
     case "DESIGNATE_SEA_SUPPLY": {
       const at = waitingStep(state);
-      if (at !== "6e" && at !== "9f") return { ok: false, error: `Fleets are named to carry supply in step ${describeStep("6e")} or ${describeStep("9f")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
-      return applySeaSupply(ctx, state, action);
+      if (at !== "6e" && at !== "9f") return { ok: false, error: `Fleets are named to carry supply in step 6e or 9f; the game is at step ${at ?? "none"}.` };
+      // The step goes on by itself once no legal designation could save another unit (C5), as after any action that used up a step's work.
+      const named = applySeaSupply(ctx, state, action);
+      if (!named.ok) return named;
+      const settled = settle(ctx, named.state);
+      return { ok: true, state: settled.state, events: [...named.events, ...settled.events] };
     }
     case "MOVE":
       return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));

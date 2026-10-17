@@ -98,6 +98,16 @@ describe("DESIGNATE_SEA_SUPPLY", () => {
     expect(s.naval).toBeUndefined(); // the old state is untouched
   });
 
+  it("the step goes on by itself when no legal designation could save another unit, and stays while one could", () => {
+    const all = ok(applyAction(ON, start(), sea(["f1"], "C33", ["g1", "g2", "g3", "g4"])));
+    expect(stepOf(all.state)).toBe("6f"); // all four are saved
+    expect(all.events.map((e) => e.type)).toEqual(["FLEET_DESIGNATED_FOR_SUPPLY", "STEPS_PASSED"]);
+    const some = ok(applyAction(ON, start(), sea(["f1"], "C33", ["g1"])));
+    expect(stepOf(some.state)).toBe("6e");
+    expect(some.events.map((e) => e.type)).toEqual(["FLEET_DESIGNATED_FOR_SUPPLY"]);
+    expect(legalActions(OFF, all.state).some((a) => a.type === "END_STEP" && a.step === "6e")).toBe(false);
+  });
+
   it("a fleet may be named again for the capacity it has left (N8), and a spent one is not offered", () => {
     const s = ok(applyAction(ON, start(), sea(["f1"], "C33", ["g1", "g2"]))).state;
     const again = legalActions(ON, s).filter((a) => a.type === "DESIGNATE_SEA_SUPPLY");
@@ -127,6 +137,11 @@ describe("DESIGNATE_SEA_SUPPLY", () => {
     expect(refused({ type: "DESIGNATE_SEA_SUPPLY", side: "axis", fleets: ["f1"], to: undefined as unknown as string, units: ["g1"] })).toMatch(/names one or more distinct fleets/);
     expect(refused(sea(["f1", "f1"], "C33", ["g1"]))).toMatch(/names one or more distinct fleets/);
     expect(refused(sea(["nobody"], "C33", ["g1"]))).toMatch(/not a fleet on the map/);
+    for (const id of ["constructor", "__proto__", "toString", "hasOwnProperty"]) {
+      expect(refused(sea(["f1"], id, ["g1"])), id).toMatch(/not a port or a one-hex island/);
+      expect(refused(sea([id], "C33", ["g1"])), id).toMatch(/not a fleet on the map/);
+      expect(refused(sea(["f1"], "C33", [id])), id).toMatch(/not a ground unit or airbase/);
+    }
     expect(s.naval).toBeUndefined();
   });
 
@@ -141,14 +156,14 @@ describe("DESIGNATE_SEA_SUPPLY", () => {
   it("is refused at any other step, naming 6e and 9f", () => {
     const s = at("6f", [...pocket(), fleet("f1", "K28")]);
     const r = applyAction(ON, s, sea(["f1"], "C33", ["g1"]));
-    expect(!r.ok && r.error).toMatch(/Fleets are named to carry supply in step 6e \(.*\) or 9f \(.*\); the game is at step 6f/);
+    expect(!r.ok && r.error).toMatch(/Fleets are named to carry supply in step 6e or 9f; the game is at step 6f/);
     const none = applyAction(ON, { ...s, position: null }, sea(["f1"], "C33", ["g1"]));
     expect(none.ok).toBe(false);
   });
 
   it("works at 9f as well, and a recorded game replays to the same state", () => {
     const s = at("9f", [...pocket(), fleet("f1", "K28")]);
-    const actions: Action[] = [sea(["f1"], "C33", ["g1", "g2", "g3"]), done(s)];
+    const actions: Action[] = [sea(["f1"], "C33", ["g1", "g2", "g3"])];
     const a = replay(ON, s, actions);
     const b = replay(ON, s, actions);
     expect(b.state).toEqual(a.state);
@@ -163,13 +178,23 @@ describe("supply is read again when 6e is left (R8, Ref 19.1)", () => {
   it("a unit saved at 6e is no longer cut off at 6f and may move; one that was not saved still cannot", () => {
     const s = at("6e", [...pocket(["g1", "g2", "g3"]), fleet("f1", "K28", 2)]);
     expect(s.unsuppliedAtStart).toEqual(["g1", "g2", "g3"]);
-    const named = ok(applyAction(ON, s, sea(["f1"], "C33", ["g1", "g2"]))).state;
-    expect(wasCutOff(named, "g1")).toBe(true); // the record is not changed until 6e is left
+    // The small fleet is used up by two units, so no designation could save the third: the step goes on by itself and supply is read again.
+    const left = ok(applyAction(ON, s, sea(["f1"], "C33", ["g1", "g2"])));
+    expect(stepOf(left.state)).toBe("6f");
+    expect(left.events.map((e) => e.type)).toEqual(["FLEET_DESIGNATED_FOR_SUPPLY", "STEPS_PASSED"]);
+    expect(left.state.unsuppliedAtStart).toEqual(["g3"]);
+    expect(moves(left.state)).toContain("g1");
+    expect(moves(left.state)).not.toContain("g3");
+  });
+
+  it("the record is not changed while the step still waits for another designation, and is when it is left", () => {
+    const s = at("6e", [...pocket(["g1", "g2", "g3"]), fleet("f1", "K28")]);
+    const named = ok(applyAction(ON, s, sea(["f1"], "C33", ["g1"]))).state;
+    expect(stepOf(named)).toBe("6e"); // the fleet could still carry the others
+    expect(wasCutOff(named, "g1")).toBe(true);
     const left = ok(applyAction(ON, named, done(named))).state;
     expect(stepOf(left)).toBe("6f");
-    expect(left.unsuppliedAtStart).toEqual(["g3"]);
-    expect(moves(left)).toContain("g1");
-    expect(moves(left)).not.toContain("g3");
+    expect(left.unsuppliedAtStart).toEqual(["g2", "g3"]);
   });
 
   it("with the effects off the record is not touched, and leaving 6e changes nothing else", () => {

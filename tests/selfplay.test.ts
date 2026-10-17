@@ -44,7 +44,7 @@ describe("self-play runner: a short game per scenario", () => {
     expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
     // The setting matters: in a context with the effects off the same actions cannot be replayed. The game waited at step 6e or 9f for a fleet to be named (ticket 12-3),
     // which it does not do with the effects off, so the recorded "done with step 6e" is refused there.
-    expect(() => replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions)).toThrow(/Step 6e|Step 9f/);
+    expect(() => replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions)).toThrow(/Action \d+ is illegal: Step (6e|9f)/);
   }, 60_000);
 
   it("a recording with the effects off (or an older one) has no such field and replays with them off", () => {
