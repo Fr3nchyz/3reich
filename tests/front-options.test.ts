@@ -5,7 +5,7 @@ import { applyAction, legalActions, replay, type Action } from "../src/engine/ac
 import { frontOptionOf, FRONTS, legalFrontOptions, optionCost } from "../src/engine/frontoptions";
 import { BRP_COSTS } from "../src/engine/tables";
 import type { GameState, PowerId } from "../src/engine/types";
-import { CTX, atStart, ctxFor } from "./helpers";
+import { CTX, NO_AIRBASES_LEFT, atStart, ctxFor } from "./helpers";
 
 /** Spec 02 / roadmap 4.4: Front Options chosen at step 3 (Ref 11.21), stored in the state. */
 
@@ -33,7 +33,7 @@ describe("step 3, Select Front Options (Ref 11.21)", () => {
   });
 
   it("is passed by a side at war with nobody", () => {
-    const s = { ...atStart(SCENARIO_1939, 1), wars: [] };
+    const s = { ...atStart(SCENARIO_1939, 1), wars: [], airbasesPlaced: NO_AIRBASES_LEFT };
     const r = ok(applyAction(CTX, s, { type: "END_STEP", side: "axis", step: "1" }));
     expect(r.state.position).toMatchObject({ step: "8b" });
     expect(r.events.flatMap((e) => (e.type === "STEPS_PASSED" ? e.steps : []))).toContain("3");

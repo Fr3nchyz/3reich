@@ -81,6 +81,8 @@ export function chooseStack(s: Session, hex: string, fromList = false): boolean 
   const ticked = defaultTicks(s.ctx, s.state, hex);
   if (ticked.length === 0) return false;
   s.toast = "";
+  s.airMove = null;
+  s.airbase = null;
   s.moveChosen = newChoice(s.state, hex, ticked, fromList);
   return true;
 }

@@ -1,5 +1,8 @@
 import type { Action } from "../engine/actions";
 import { attackTargets } from "./attackDraft";
+import { planeBases } from "./airMove";
+import { airbaseOwners, airMoveNow } from "./airMoveTap";
+import * as A from "./airMoveText";
 import { atStep7b } from "./airView";
 import { atStep7h, attacking } from "./attackTap";
 import { openOffers } from "./choiceTap";
@@ -22,7 +25,12 @@ export const leadsStatus = (s: Session): boolean => attacking(s) || (atStep7h(s)
 function moveNext(s: Session, actions: readonly Action[]): string {
   const sel = selectionNow(s);
   if (sel) return T.nextTick(sel.ticked.length);
-  return actions.some((a) => a.type === "MOVE") ? T.NEXT_CHOOSE : T.NEXT_NOTHING_TO_MOVE;
+  if (s.airbase) return A.NEXT_PLACE;
+  const card = airMoveNow(s);
+  if (card) return card.ticked.length === 0 ? A.nextTickPlanes(0) : card.bases.length === 0 ? A.NEXT_NO_BASE : A.nextTickPlanes(card.ticked.length);
+  const air = planeBases(s.ctx, s.state).length > 0 || airbaseOwners(s).length > 0;
+  if (actions.some((a) => a.type === "MOVE")) return T.NEXT_CHOOSE;
+  return air ? A.NEXT_AIR_ONLY : T.NEXT_NOTHING_TO_MOVE;
 }
 
 /** What the game waits for, in one sentence. */

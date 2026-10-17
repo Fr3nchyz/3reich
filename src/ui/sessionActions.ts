@@ -4,6 +4,7 @@ import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
 import { computerToMove } from "./computerPlay";
+import { normaliseAirMove, tapToAirMove } from "./airMoveTap";
 import { normaliseAir, tapToAir } from "./airTap";
 import { normaliseAttack, tapToAttack } from "./attackTap";
 import { normaliseChoice } from "./choiceTap";
@@ -26,6 +27,7 @@ export function normaliseMode(s: Session): void {
   if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
   normaliseAttack(s);
   normaliseAir(s);
+  normaliseAirMove(s);
   normaliseChoice(s);
   normaliseMove(s);
 }
@@ -65,7 +67,7 @@ export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
   lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
-    if (!computerToMove(s) && !tapToMove(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) tapToBuild(s, h);
+    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) tapToBuild(s, h);
     return;
   }
   const owner = currentSetupOwner(s.state);
@@ -102,6 +104,8 @@ export function takeAction(s: Session, action: Action): void {
   s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
   s.moveChosen = null;
+  s.airMove = null;
+  s.airbase = null;
   s.undo = null; // any step button that is not a move ends what "Take back last move" can undo (spec 10, 10-6)
   run(s, action);
 }

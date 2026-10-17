@@ -47,7 +47,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "The computer does not choose Front Options yet: every Front stays on the default (defensive) Option.",
-    "6f": "No ground move brings a stack closer to an enemy objective.",
+    "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
