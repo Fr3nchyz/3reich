@@ -14,7 +14,13 @@ Written 2026-10-17 from the specs (09, 11, 12), `docs/ROADMAP.md` and `docs/PROG
 
 The ground war is playable on the iPad: set up, declare war, build, grants, move (choosing units of a stack), attack with an odds preview, losses, advance. Air support in attacks works. The computer plays either side and can play itself. A game cannot be won or lost yet, nothing is saved, and fleets, supply penalties, minor countries, strategic warfare and surrender are not built. Roughly 40 percent of a complete game exists (a judgement, not a measurement).
 
-**Release 1** (from the roadmap): the 1939 scenario against the computer, start to finish, with saves, on the iPad. Decision for you in section G: may Release 1 ship without naval combat and the air missions beyond ground support?
+## Two milestones
+
+**Beta** (the next goal): the 1939 scenario against the computer, start to finish, on the iPad, with saves. It has the ground war, air support in attacks, supply by sea (fleets Release I) with supply penalties switched on, the rules in section D (victory and surrender, minor countries, attrition, and so on), save and load, and a computer that defends its capital and does not stall. No naval combat and no air missions beyond ground support.
+
+**Release 1** (the full specified game) is Beta plus: the air missions (counter-air 09-9, defensive air support 09-8, its interception 09-10, airdrops 09-11, the computer's air 09-12 and the cards 09-15), fleet movement and interception (fleets Releases II to IV), and a stronger and weaker computer. The French interface and the map clarity pass come after.
+
+In the tables below, everything is Beta except those Release 1 items. Decided by the owner on 2026-10-17.
 
 ---
 
@@ -101,7 +107,7 @@ Release I: 9 tickets (5 M, 4 S). Release II: 6 (3 M, 2 L, 1 S). Release III: 3 M
 
 ## D. Rules that have no spec yet
 
-Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec. These are the largest unknowns on the way to Release 1.
+Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec. These are the largest unknowns on the way to Beta.
 
 | Rule | Roadmap item | Guess |
 |---|---|---|
@@ -135,15 +141,16 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | French interface | L | After Release 1 |
 | CI: parallel browser tests, docs-only skip | S | PR 95 |
 
-## G. Decisions I need from you
+## G. Decisions (all taken)
 
-Already decided, so not open: planes and fleets in a captured city are **displaced** (they move to the nearest friendly base or port, and are lost only if there is none). You decided this on 2026-10-15 (spec 09, decision D1). It is tickets 09-5 and 12-4, ready to build. What Frank remembers of the DOS game is only a cross-check.
-
-1. **What counts as Release 1?** The roadmap includes air and naval combat. A faster route: ground war, ground support, supply by sea (Release I), the rules in section D, save and load, and the computer fixes in E. Naval combat (Releases II to IV) and the air missions beyond ground support (09-8 to 09-11) come after. My guess is that this cuts the work before a full 1939 game by about a third. Your call.
-2. **Spec 12 (fleets) is a draft waiting for your yes on three points:** DF-1, the release order (I supply by sea, II fleet movement, III air against ships, IV naval missions); DF-2, supply penalties go on only after a measured gate, never by editing the switch alone; DF-3, a player whose units are cut off gets one button that proposes the fleet and the port, and can still choose another.
-3. **The bound for that gate.** I suggest: no scenario loses more than about 10 percent of objectives held with the penalties off.
-4. **Malta** is over-filled by the automatic setup (18 in 1942, 36 in 1944, against a limit of 9). Fixing it changes those two starts.
-5. **Order.** My suggestion: your playtest now; meanwhile finish the air screens (09-14 rest, 09-13, 09-16) and write the specs in section D; then fleets Release I and the switch; then save and load.
+- **Planes and fleets in a captured city are displaced:** they move to the nearest friendly base or port, and are lost only if none is in reach. Owner, 2026-10-15 (spec 09, decision D1). Tickets 09-5 and 12-4, ready to build. What Frank remembers of the DOS game would only confirm it.
+- **Two milestones, Beta then Release 1**, as above. Owner, 2026-10-17.
+- **Order of work:** the owner follows the project manager's lead. Your playtest now; meanwhile finish the air screens (09-14 rest, 09-13, 09-16) and write the specs in section D; then fleets Release I and the supply switch; then save and load.
+- **Fleets spec (DF-1, DF-2, DF-3), the gate bound and Malta:** the owner had no view, so the project manager takes the recommended answers, which can be changed at any time:
+  - DF-1: build fleets in the order I supply by sea, II fleet movement, III air against ships, IV naval missions. Only Release I is in Beta.
+  - DF-2: supply penalties go on only after a measured test, never by editing the switch alone. The bound: no scenario may lose more than about 10 percent of the objectives held with the penalties off.
+  - DF-3: a player whose units are cut off gets one button that proposes the fleet and the port, and can still pick another.
+  - Malta: the automatic setup puts too many ships at Malta at the start of 1942 and 1944 (18 and 36, against a limit of 9). Cap it at the limit when fleets Release I is built. Only those two starts change.
 
 ## Open questions for Frank
 

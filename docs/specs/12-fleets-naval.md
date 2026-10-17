@@ -1,15 +1,15 @@
 # 12. Fleets and naval warfare: ports, sea supply, displacement, movement, interception and naval missions
 
-Status: **draft for review, 2026-10-16. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 03 (supply tracing), spec 04 (naval section), spec 05 (computer), spec 07 (tap to attack), spec 09 (air units, and its decision D1 on captured bases) and spec 13 (zones of control). Comes from the audit of 2026-10-16 (docs/PC-MANUAL-AUDIT.md, mismatch 8), from the supply switch that had to stay off (`SUPPLY_EFFECTS_ENABLED = false`) and from spec 09 leaving "everything at sea" to this spec.
+Status: **draft for review, 2026-10-16; DF-1 to DF-3 accepted as recommended on 2026-10-17. Only Release I is in the Beta milestone (docs/PLAN.md). Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 03 (supply tracing), spec 04 (naval section), spec 05 (computer), spec 07 (tap to attack), spec 09 (air units, and its decision D1 on captured bases) and spec 13 (zones of control). Comes from the audit of 2026-10-16 (docs/PC-MANUAL-AUDIT.md, mismatch 8), from the supply switch that had to stay off (`SUPPLY_EFFECTS_ENABLED = false`) and from spec 09 leaving "everything at sea" to this spec.
 
 ## Decisions already taken, and decisions needed
 
 | # | Question | Status |
 |---|---|---|
 | D1 (spec 09) | A fleet in a port that is captured is **displaced**, not destroyed: it goes to the nearest friendly port on its Front with room, or is eliminated if there is none. | **Taken** by the product owner on 2026-10-15 for air and fleets together. This spec writes the fleet half (rule R9, ticket 12-4). Until 12-4 is built, the Warsaw sweep keeps destroying fleets. |
-| DF-1 | Release order: **I supply fleets and displacement, then II fleet movement and interception, then III air against ships, then IV naval missions** (part G). | Recommended. Needs your yes. |
-| DF-2 | Turn supply effects on only after a measured gate (part G, ticket 12-7), never by editing the switch alone. | Recommended. Needs your yes. |
-| DF-3 | A human whose units are cut off gets **one button that proposes the fleet and the port**, and can still choose another (the DOS game makes you click fleet, port and each unit). | Recommended (rule R6). Needs your yes. |
+| DF-1 | Release order: **I supply fleets and displacement, then II fleet movement and interception, then III air against ships, then IV naval missions** (part G). | Accepted 2026-10-17: the owner left it to the project manager, who took the recommendation. |
+| DF-2 | Turn supply effects on only after a measured gate (part G, ticket 12-7), never by editing the switch alone. | Accepted 2026-10-17: the owner left it to the project manager, who took the recommendation. |
+| DF-3 | A human whose units are cut off gets **one button that proposes the fleet and the port**, and can still choose another (the DOS game makes you click fleet, port and each unit). | Accepted 2026-10-17: the owner left it to the project manager, who took the recommendation (rule R6). |
 
 ## Summary (read this first)
 
