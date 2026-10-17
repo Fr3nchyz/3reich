@@ -110,6 +110,15 @@ describe("the air card at step 7b", () => {
     expect(p.available).toEqual({ planes: 0, factors: 0 });
   });
 
+  it("a plane of the other side that stands in range is not listed, and not committed to the Axis attack", () => {
+    const s = session([...UNITS(), inf("b1", "britain", "J32", 3, 4, "air")]); // a British 3-4 next to the German planes
+    expect(airPick(s.ctx, s.state, "M33", ["b1"])!.chips.map((c) => c.id)).toEqual(["a1", "a2"]);
+    expect(airPick(s.ctx, s.state, "M33", ["b1"])!.chosen).toBe(0);
+    openAir(s, "M33");
+    expect(s.airDraft!.units).toEqual(["a1", "a2"]);
+    expect(text(page(s))).not.toContain("British air");
+  });
+
   it("a plane out of range is not listed at all, and a hex that cannot be attacked has no card", () => {
     const s = session([...UNITS(), air("a3", "A1", 5)]);
     expect(airPick(s.ctx, s.state, "M33", [])!.chips.map((c) => c.id)).toEqual(["a1", "a2"]);

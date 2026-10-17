@@ -1,4 +1,5 @@
 import type { Action } from "../engine/actions";
+import { MISSION_RANGE } from "../engine/air-rules";
 import { airPick, type AirChip, type AirPick } from "./airPick";
 import { airTargets } from "./airTap";
 import * as T from "./airText";
@@ -38,8 +39,8 @@ function chipHtml(c: AirChip): string {
 
 function cardHtml(p: AirPick): string {
   return `<section class="attackcard aircard" aria-labelledby="air-title">
-      <div class="card-head"><h2 id="air-title" tabindex="-1">${e(T.cardTitle(p.targetName))}</h2><button type="button" id="air-cancel">Cancel</button></div>
-      <h3 id="air-with">Planes within 4 hexes <small>(${T.CARD_HINT})</small></h3>
+      <div class="card-head"><h2 id="air-title" tabindex="-1">${e(T.cardTitle(p.targetName))}</h2><button type="button" id="air-cancel">${T.CANCEL}</button></div>
+      <h3 id="air-with">${T.cardPlanes(MISSION_RANGE)} <small>(${T.CARD_HINT})</small></h3>
       <ul class="chips attack-chips" aria-labelledby="air-with">${p.chips.map(chipHtml).join("")}</ul>
       <p class="odds">${e(T.cardTotals(p.chosen, p.committed, p.cap))}</p>
       <p class="warn">${e(T.MUST_ATTACK)}</p>

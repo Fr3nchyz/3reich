@@ -70,16 +70,16 @@ export function airPick(ctx: GameContext, state: GameState, target: string, chos
     state: st,
     reason,
   });
+  const have = committed.reduce((n, u) => n + u.strength, 0);
+  const add = chosen.reduce((n, u) => n + u.strength, 0);
   const chips: AirChip[] = committed.map((u) => chip(u, "committed", null));
   for (const u of planesInRange(ctx, state, target)) {
     if (committed.includes(u)) continue;
     if (chosen.includes(u)) chips.push(chip(u, "chosen", null));
     else if (Object.hasOwn(flown, u.id)) chips.push(chip(u, "greyed", flown[u.id] === "new" ? T.REASON_NEW : T.REASON_FLOWN));
-    else if (designateProblem(ctx, state, [...chosen, u], target, targets) !== null) chips.push(chip(u, "greyed", T.reasonOverCap(cap)));
+    else if (designateProblem(ctx, state, [...chosen, u], target, targets) !== null) chips.push(chip(u, "greyed", have + add + u.strength > cap ? T.reasonOverCap(cap) : T.REASON_OTHER));
     else chips.push(chip(u, "free", null));
   }
-  const have = committed.reduce((n, u) => n + u.strength, 0);
-  const add = chosen.reduce((n, u) => n + u.strength, 0);
   const place = placeName(ctx.map, target);
   const bad = chosen.length > 0 && designateProblem(ctx, state, chosen, target, targets) !== null;
   const button = chosen.length === 0 || bad ? { text: T.NOTHING_CHOSEN, disabled: true } : { text: T.commitButton(chosen.length, add, place), disabled: false };

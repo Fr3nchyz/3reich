@@ -14,6 +14,8 @@ export const MARK_GREYED = "Cannot fly";
 /** The reasons a plane in range cannot be added. */
 export const REASON_FLOWN = "has already flown a mission this Game Turn";
 export const REASON_NEW = "was built this Game Turn and cannot fly a mission yet";
+/** Any other refusal of the engine for a plane in range (none is reachable today: the engine refuses only for the flown mark, the range and the cap, which have their own words). */
+export const REASON_OTHER = "cannot be committed to this hex now";
 export const reasonOverCap = (cap: number): string => `would take the air over the limit of ${factors(cap)} for this hex`;
 
 export const NOTHING_CHOSEN = "Choose at least one plane";
@@ -33,3 +35,15 @@ export const cardTotals = (chosen: number, committed: number, cap: number): stri
 export const MUST_ATTACK = "You must attack this hex this turn, or these planes are lost.";
 export const commitButton = (n: number, f: number, place: string): string => `Commit ${planes(n)} (${factors(f)}) to ${place}`;
 export const hexesAway = (n: number): string => `${n} hex${n === 1 ? "" : "es"} away`;
+export const CANCEL = "Cancel";
+export const cardPlanes = (range: number): string => `Planes within ${range} hexes`;
+
+/** The "Air support" part of the attack card at step 7h (spec 09, part D2). */
+export const ATTACK_AIR_TITLE = "Air support";
+export const ATTACK_AIR_HINT = "committed at step 7b";
+export const PLANE_COUNTS = "Counts in this attack";
+export const PLANE_LEFT_OUT = "Not counted: over the limit";
+export const planeFrom = (place: string): string => `from ${place}`;
+export const airCounts = (n: number): string => `${factors(n)} count in this attack. They cannot be taken back; they win or are lost with the attackers.`;
+export const AIR_NONE_COUNT = "No committed air counts in this attack.";
+export const AIR_LEFT_OUT_NOTE = "The air in an attack counts up to three times the ground factors. The planes not counted stay committed and are not lost.";
