@@ -32,4 +32,4 @@ Template:
 | 13 | [Zones of control as the PC manual prints them](13-zoc-pc-rules.md) |
 | 15 | [Minor countries: an attacked minor's army, Intervention, Minor-Allies, conquest, BRPs from territory](15-minor-countries.md) |
 
-The status of each spec is on the first line of the file.
+The status of each spec is on its "Status:" line, near the top of the file. Spec 14 (victory, surrender and the Russian winter) is in review (PR 100) and joins this index when it merges.

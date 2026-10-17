@@ -112,7 +112,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | Rule | Roadmap item | Guess |
 |---|---|---|
 | Victory, surrender, Russian winter | 6.7 | L |
-| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 18 Beta tickets, 5 S and 13 M; 5 more for Release 1, 4 M and 1 L) | 4.3 rest | 5 S + 13 M (Beta) |
+| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 18 Beta tickets, 5 S and 13 M; 5 more for Release 1, 4 M and 1 L) | 4.3 rest | Beta: 5 S + 13 M. Release 1: 4 M + 1 L |
 | Attrition | 6.2 | M |
 | Exploitation | 6.3 | M |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L |

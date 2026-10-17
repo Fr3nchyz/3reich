@@ -1,23 +1,23 @@
 # 15. Minor countries: an attacked minor's army, Intervention, the Axis Minor-Allies, conquest, and the BRPs that come from territory
 
-Status: **draft for review, 2026-10-17. Belongs to the Beta milestone (docs/PLAN.md): 18 of its 23 tickets are needed for a full 1939 game against the computer; the other 5 are Release 1. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 02 (economy: declarations, the Year Start Sequence, Front Options), spec 03 (movement and supply), spec 05 (computer), spec 12 (fleets: supply by sea; ports), spec 13 (zones of control). Closes the audit items 9, 10, 11 and 13 of docs/PC-MANUAL-AUDIT.md and leaves item 12 open (part G).
+Status: **draft for review, 2026-10-17. Belongs to the Beta milestone (docs/PLAN.md): 18 of its 23 tickets are needed for a full 1939 game against the computer; the other 5 are Release 1. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 02 (economy: declarations, the Year Start Sequence, Front Options), spec 03 (movement and supply), spec 05 (computer), spec 12 (fleets: supply by sea; ports), spec 13 (zones of control). Closes the audit items 9, 10 and 13 of docs/PC-MANUAL-AUDIT.md, designs item 11 (it closes once Frank has confirmed the eye-read values, MC12), and leaves item 12 open (part G).
 
 ## Decisions needed (plain questions; each has my recommendation)
 
 | # | Question | My recommendation |
 |---|---|---|
-| Q1 | A small country that is attacked: may its army **only defend** in the first playable version (Beta)? In the full game it also gets a short turn of its own (it may attack the units next to its border). | **Yes, defend only.** The own-turn rule is a large piece of work for a small gain (ticket 15-18, Release 1). |
-| Q2 | When **you** are the one defending, may the game place the small country's army for you with **one button** ("Place automatically"), while you can still place each counter by hand? | **Yes.** Automatic first; by hand stays available. The computer uses the same placement. |
+| Q1 | A small country that is attacked: may its army **only defend** in the first playable version (Beta)? In the full game it also gets a short turn of its own (it may attack the units next to its border). | **Yes, defend only.** Their own turn is a lot of work for a small gain; I would add it in the full version, after the first playable one. |
+| Q2 | When **you** are the one defending, may the game place the small country's army for you with **one button** ("Place automatically"), while you can still place each counter by hand? | **Yes.** Automatic first; by hand stays available. The computer places its own armies the same way. |
 | Q3 | Should the computer, when it plays Germany, **attack the small countries on a historical timetable** (Denmark, Norway and the Low Countries in Spring 1940; Yugoslavia and Greece in Spring 1941)? Dates can be changed later. | **Yes.** Without it the Axis computer never leaves Poland and France and the game is not recognisable. |
-| Q4 | Should the computer, when it plays the Allies, **send units to help** an attacked small country? | **Not in Beta** (ticket 15-17, Release 1). You can help a small country yourself from the start. |
+| Q4 | Should the computer, when it plays the Allies, **send units to help** an attacked small country? | **Not in the first playable version; in the full version.** You can help a small country yourself from the start. |
 | Q5 | When you press "Done with combat" and a small country you declared war on has not been entered or attacked yet, should the game show an **"Are you sure? You lose the BRPs"** box? | **Yes.** The rule cancels the declaration and the BRPs are lost; it is easy to do by accident. |
-| Q6 | Is Eastern Europe (the Baltic States, eastern Poland, Bessarabia) **part of Beta**? Germany needs it to reach the Soviet border, so without it the 1941 attack cannot happen. | **Yes** (ticket 15-11). |
+| Q6 | Is Eastern Europe (the Baltic States, eastern Poland, Bessarabia) **part of Beta**? Germany needs it to reach the Soviet border, so without it the 1941 attack cannot happen. | **Yes.** |
 
 Questions for Frank about how the DOS game behaves are in part J (P1 to P8); none of them blocks Beta, each has a recommended reading.
 
 ## Summary (read this first)
 
-- **Today** a declaration of war on a small country costs 10 BRPs and writes a pair into the list of wars. Nothing else happens: no army appears, nothing forces the attacker to enter or attack, nobody can conquer the country, the war brings no income, and the "neutral land is closed" rule (`NEUTRAL_LAND_CLOSED`) stops everyone from walking in even after the declaration unless a counter is already inside. Germany cannot enter Hungary, Rumania, Bulgaria or Finland, which the rules treat as German ground (audit item 9). The four Axis Minor-Allies do not exist at all in the 1939 and Campaign scenarios, so they cannot join in Summer 1941. The year-start income of the Minor-Allies is a lump sum (45) that vanishes if one of them is missing (audit item 11).
+- **Today** a declaration of war on a small country costs 10 BRPs and writes a pair into the list of wars. Nothing else happens: no army appears, nothing forces the attacker to enter or attack, nobody can conquer the country, the war brings no income, and the closed-neutral-land rule (`NEUTRAL_LAND_CLOSED`) lets the declarer walk in once the war exists (`atWar` is true, and `tests/movement.test.ts` pins it) while it blocks every nation that is not at war with the minor, so nobody can Intervene. Germany cannot enter Hungary, Rumania, Bulgaria or Finland, which the rules treat as German ground (audit item 9). The four Axis Minor-Allies do not exist at all in the 1939 and Campaign scenarios, so they cannot join in Summer 1941. The year-start income of the Minor-Allies is a lump sum (45) that vanishes if one of them is missing (audit item 11).
 - **What this spec adds, in the order Frank would meet it:**
   1. **Declare** on a small country with its price and its duty explained; **its army appears** (step 2), set up by the *other* side, inside its borders, with a unit in its capital.
   2. **The duty:** the attacker must enter the country or attack it in the same turn, or the declaration is cancelled and the BRPs are lost (PC rule 21.4).
@@ -25,7 +25,7 @@ Questions for Frank about how the DOS game behaves are in part J (P1 to P8); non
   4. **The Axis Minor-Allies:** Germany may enter and supply units in the four sleeping allies (a **Garrison**); they **wake up** by themselves in Summer 1941 with their armies and 45 BRPs.
   5. **Money from land:** at each Year Start Sequence, each Major Power adds the value of the allies it has, the countries and colonies it holds, Moscow and Leningrad (15 each), and Eastern Europe (25). A value table is part of the work (15-0).
   6. **Small special cases:** Persia, Eastern Europe, Front Options changed inside the step.
-- **Out of scope:** Vichy France and its colonies (35.0), the surrender and conquest of a Major Power (Ref 18.0: the victory spec), Lend-Lease itself (24.0: only the Persia hook is here), the Russian winter, strategic warfare, partisans (not in the PC game), rebuilding a Minor-Ally's lost units (Release 1). See part H.
+- **Out of scope:** Vichy France and its colonies (35.0), the surrender and conquest of a Major Power (Ref 18.0: spec 14, victory, surrender and the Russian winter), Lend-Lease itself (24.0: only the Persia hook is here), the Russian winter, strategic warfare, partisans (not in the PC game), rebuilding a Minor-Ally's lost units (Release 1). See part H.
 - **Size:** 23 tickets, 15-0 to 15-22. **Beta: 18 (5 S, 13 M). Release 1: 5 (4 M, 1 L).** The smallest useful stop is after 15-6: attacked minors appear, can be helped and conquered.
 - **Rules check:** 22 `TODO(verify)` rows (MC1 to MC22) in docs/TODO-VERIFY.md and docs/RULES.md. The ones that matter most: where activation happens in Summer 1941 (MC9), what counts as "entering" for the duty (MC3), whether the sleeping Axis minors' capitals feed German supply (MC10), who gets a minor's BRPs when two powers Intervene (MC19), and the unread colony values (MC12).
 
@@ -62,17 +62,17 @@ Done means: the 1939 scenario can be played from Fall 1939 to Summer 1942 agains
 | Fact | Where | Consequence |
 |---|---|---|
 | The chart is data: 19 minors, six counter kinds, all 114 counts checked against the game's chart screen. `minorForceEntries(minor)` turns a row into counters; empty for the five defenseless minors. Poland's and the four Axis allies' chart rows equal their scenario force pools. | `tables.ts` `MINOR_COUNTRY_FORCES`, `minors.ts`, `tests/minors.test.ts`, docs/GAME_DATA.md | The counters needed exist. Nothing calls `minorForceEntries` yet. |
-| `DECLARE_WAR { by, on }` at step 1: 10 BRPs against a minor, 35 against a Major Power, within the spending limit; adds a pair to `state.wars`. Targets exclude a minor already at war with a Major Power, active Minor-Allies, and all minors in a "no war on neutrals" scenario (1944). | `war.ts` | No follow-up duty, no army, no 35-BRP case, none of the "who may declare on whom" limits (Ref 13.1). A **neutral** Major Power (Italy, the U.S.S.R.) cannot declare at all (`sideOfPower` is null); that is the "Italy declaring" item of PLAN section E, not this spec. |
+| `DECLARE_WAR { by, on }` at step 1: 10 BRPs against a minor, 35 against a Major Power, within the spending limit; adds a pair to `state.wars`. Targets exclude a minor already at war with a Major Power, every minor listed in `state.minorAllies` (active or not: `minorAllies.has`), and all minors in a "no war on neutrals" scenario (1944). | `war.ts` | No follow-up duty, no army, no 35-BRP case, none of the "who may declare on whom" limits (Ref 13.1). Once the four sleeping allies are added to the 1939 scenario (15-1) the `minorAllies.has` exclusion would also hide them from the Allies, so 15-2 narrows it to allies that are active. A **neutral** Major Power (Italy, the U.S.S.R.) cannot declare at all (`sideOfPower` is null); that is the "Italy declaring" item of PLAN section E, not this spec. |
 | Persia is an ordinary declaration target at 10 BRPs, for both sides. | `war.ts` (the chart row is all zero) | Audit item 10. |
-| Neutral land is closed: a unit may not enter, and air may not cross, land of a minor that is not at war with its owner, or land held by a power that takes no side. | `movement.ts` `NEUTRAL_LAND_CLOSED`, `neutralLandProblem` (also read by air range) | Germany cannot enter the inactive Axis allies (audit item 9). Nobody can Intervene. |
+| Neutral land is closed: a unit may not enter, and air may not cross, land of a minor that is not at war with its owner, or land held by a power that takes no side. The declarer is let in as soon as `atWar` holds (nothing checks for a counter already inside). | `movement.ts` `NEUTRAL_LAND_CLOSED`, `neutralLandProblem` (also read by air range) | Germany cannot enter the inactive Axis allies (audit item 9). Nobody can Intervene. |
 | A counter's owner must be a Major Power, Poland, the Free or Vichy French, or one of the four Axis allies (`ForceOwner`). An attacked Belgium has no way to own a counter. `sideInWar` knows Poland (Allied for good) and the four allies (Axis only while active). | `types.ts`, `control.ts` | The owner type must widen (15-1). |
 | `state.minorAllies`: the four Axis allies with an `active` flag, present in 1942 and 1944; **empty in the 1939 scenario and the Campaign**, so they can never wake. | `scenario-1939.ts`, `scenario-campaign.ts`, `scenario-1942.ts`, `scenario-1944.ts` | Scenario data change (15-1). |
 | Year Start Sequence part B adds one lump `brpTotal - brpBase` for a nation's Minor-Allies, and only while every Minor-Ally active at the start is still active; otherwise 0. No conquests, no Moscow or Leningrad, no Eastern Europe. | `yearstart.ts` `minorAllyBrps` | Audit item 11. |
 | Control of hexes: only the differences from "controlled at start" are kept in `state.control`. Land nobody controls (neutral minors) has no controller. A ground unit at war with a minor takes the hex it enters. No conquest of a whole country exists. | `control.ts` | A fighting minor's land needs a controller (derived, C4). Conquest is new (15-5). |
-| Supply: a line runs through hexes the side controls to a capital the side controls; a minor's capital is a source "while that minor fights on the side" (`capitalCounts` through `sideInWar`). German units in inactive Axis minor land have no controlled hexes to trace through. Supply effects exist but are switched off (`SUPPLY_EFFECTS_ENABLED`, spec 12 gate 12-7). | `supply.ts`, `supply-effects.ts` | With the switch on (Beta), a German garrison in Rumania would be cut off. Spec 12 measured one such case already: a German armor at Helsinki in 1939 and Campaign. Ticket 15-7. |
+| Supply: a line runs through hexes the side controls to a capital the side controls; a minor's capital is a source "while that minor fights on the side" (`capitalCounts` through `sideInWar`, which today knows only Poland and the four allies, so an attacked Belgium's capital is not yet a source). German units in inactive Axis minor land have no controlled hexes to trace through. Supply effects exist but are switched off (`SUPPLY_EFFECTS_ENABLED`, spec 12 gate 12-7). | `supply.ts`, `supply-effects.ts` | With the switch on (Beta), a German garrison in Rumania would be cut off. Spec 12 measured one such case already: a German armor at Helsinki in 1939 and Campaign. Ticket 15-7. |
 | Front Options: one choice per Front per Player Turn for the whole side, chosen at step 3, no change inside the step (`state.frontOptions`). | `frontoptions.ts` | Audit items 12 and 13. |
-| Sequence: steps 2 and 4 are in `sequence.ts` and are **passed**; `IMPLEMENTED_STEPS` has II.B, 1, 3, 6f, 7b, 7h, 8b, 9a, 10b. There is no function that says which side is asked at a step: the active side always acts (spec 09 C6 proposes `sideToAct`; not on main). | `sequence.ts`, `turn.ts`, `actions.ts` | Step 2 is the first step where the non-active side acts (15-3). |
-| The map has a `capital` feature for 16 of the 19 minors (Oslo, Helsinki, Stockholm, Dublin, Copenhagen, The Hague, Brussels, Warsaw, Budapest, Lisbon, Madrid, Belgrade, Bucharest, Sofia, Ankara, Athens). **Luxembourg, Persia and Arabia have none.** Switzerland is not on our map (unplayable). Persia has 19 hexes (Tabriz a city), Arabia 13. | `map.json` | Conquest needs a rule for the three (R7, MC7). |
+| Sequence: steps 2 and 4 are in `sequence.ts` and are **passed**; `IMPLEMENTED_STEPS` has II.B, 1, 3, 6f, 7b, 7h, 8b, 9a, 10b. The active side acts at every step except one case: at 7h the side that must choose Exchange losses can be the non-active side (`PendingLosses.chooser`, read by `computerToMove` in `src/ui/computerPlay.ts`). There is no general `sideToAct` (spec 09 C6 proposes one for 7d and spec 12 needs one for 6c; not on main). | `sequence.ts`, `turn.ts`, `actions.ts`, `attack-losses.ts` | Step 2 is a second place where the non-active side acts, so 15-3 builds or shares `sideToAct`, which also covers the 7h chooser. |
+| The map has a capital for 16 of the 19 minors (the `capital` feature, or `capital-port` for Athens and Stockholm: Oslo, Helsinki, Stockholm, Dublin, Copenhagen, The Hague, Brussels, Warsaw, Budapest, Lisbon, Madrid, Belgrade, Bucharest, Sofia, Ankara, Athens). **Luxembourg, Persia and Arabia have none.** Switzerland is not on our map (unplayable). Persia has 19 hexes (Tabriz a city), Arabia 13. | `map.json` | Conquest needs a rule for the three (R7, MC7). |
 | The computer declares only Major-Power wars (`DECLARATION_PLANS`: Italy on France and Britain, Germany on the U.S.S.R.) and never attacks a minor. | `ai/declare.ts` | Ticket 15-14. |
 | Eastern Europe, Poland's partition, the Baltic States: the 1939 scenario has the partition-line zone and an `eliminate-in-zone` rule for German units at the end of Axis Fall 1939. Nothing creates the country. `baltic-states` is a map country with no owner. | `scenario-1939.ts`, `zones.ts`, `map.json` | Ticket 15-11. |
 
@@ -86,14 +86,14 @@ From docs/PC-MANUAL-AUDIT.md (read again on 2026-10-17 against `main`; "closed i
 | 3 | A Major Power may grant at most half its yearly allotment | **Closed in code** (`grantedThisYear`) | nothing to do |
 | 9 | Germany may enter an uninvaded inactive Axis Minor-Ally without declaring war (a Garrison, Ref 17.2) | Open | **Closed by 15-7** (entry, Garrison, supply), with 15-8 (wake-up) |
 | 10 | The Axis pays nothing to enter Persia once the Allies have opened the route (Ref 24.0) | Open (Persia costs 10) | **Closed by 15-12** (the hook that opens Persia and the declaration list); the opening itself is the Lend-Lease ticket of strategic warfare |
-| 11 | Each active Minor-Ally's own value is added at the YSS (Ref 9.2); only Bulgaria's 10 was known | Open | **Closed by 15-0 and 15-9**: the values are on the printed map card (part A, R13) and the four allies sum to the scenario pages' 45 |
+| 11 | Each active Minor-Ally's own value is added at the YSS (Ref 9.2); only Bulgaria's 10 was known | Open | **Designed by 15-0 and 15-9**: the values are on the printed map card (part A, R13) and the four allies sum to the scenario pages' 45. It stays open until Frank confirms the eye-read values (MC12, P8) |
 | 12 | Each at-war country designates its own Option per Front (Ref 11.2); the engine keeps one per side | Open | **Stays open** for Major Powers: ask Frank (P7). Minors' Options are in 15-13 and 15-18 |
 | 13 | A Front Option can be changed until the step is left (Ops 5.42) | Open (no change allowed) | **Closed by 15-13** |
 | 1, 4, 5, 6, 7, 8, 14, 15 | ZOC, Replacements, supply on advance and at turn end, captured bases, displaced fleets, stacking, one attack per hex | spec 13, built, spec 09, spec 12 or no change proposed | not here |
 
 ## Sources, and how they were read
 
-- **Primary:** the PC Reference Manual, 9.2 (income), 11.2 and 11.21 (declarations, Options), 13.0 and 13.1 (declaring on minors), 14.0 (a minor's army), 15.0 (Intervention), 16.0 (conquest), 17.0 to 17.4 (Minor-Allies, Garrison), 18.1 (conquered Major Powers, for the half-value hook), 24.0 (Persia), 29.0 (Poland and Eastern Europe), 35.0 to 40.0 (Vichy, Spain, Turkey, Ireland, Switzerland, Iraq: only what bears on minors); the Operations Manual 5.41, 5.41a, 5.42, 5.43 (how the PC program asks), 4.1 (setup exception for minors); Peele's errata (rules differences 21.4, 24.23, 25.6; the Bulgaria value); the Minor Country Forces chart (verified in docs/GAME_DATA.md). Read from a local text copy kept outside the repo. **Everything below is in our own words; no manual text is copied.**
+- **Primary:** the PC Reference Manual, 9.2 (income), 11.2 and 11.21 (declarations, Options), 13.0 and 13.1 (declaring on minors), 14.0 (a minor's army), 15.0 (Intervention), 16.0 (conquest), 17.0 to 17.4 (Minor-Allies, Garrison), 18.1 (conquered Major Powers, for the half-value hook), 24.0 (Persia), 29.0 (Poland and Eastern Europe), 35.0 to 40.0 (Vichy, Spain, Turkey, Ireland, Switzerland, Iraq: only what bears on minors); the Operations Manual 5.41, 5.41a, 5.42, 5.43 (how the PC program asks), 4.1 (setup exception for minors); Peele's errata (rules differences 21.4, the two entries numbered 24.23, 25.6; the Reference Manual page 39 sentence on Polish units; the Bulgaria value; the repo's docs cite Peele only for 21.4 and 25.6 so far); the Minor Country Forces chart (verified in docs/GAME_DATA.md). Read from a local text copy kept outside the repo. **Everything below is in our own words; no manual text is copied.**
 - **The map card** (docs/SOURCES.md, the printed values): country values are small print on the map. I read them by eye from the scan on 2026-10-17 (part A, R13). Five facts cross-check them: the Low Countries, Poland, the four Axis allies and Eastern Europe.
 - **Cross-check:** the Advanced Third Reich text (docs/RULES.md "Web research") has the same 13.0, 14.0, 16.0 and 17.0 as the PC manual in the sentences compared.
 - **Where the sources differ or are silent** the rule is a `TODO(verify)` here and in part J. Nothing is invented: each number is cited, or is a named constant with a `TODO(verify)`.
@@ -144,12 +144,13 @@ Each rule says what the manual says (our words), what the engine does today, and
   - Germany and Italy not on the same minor until Italy is at war with the Western Allies;
   - the U.S.S.R. and the Western Allies not on the same minor until Russia is at war with Germany or Italy;
   - the U.S.S.R., before it is at war with Germany or Italy: only a bordering minor, and not an Axis Minor-Ally that holds a German ground factor (even a Replacement), and not before Fall 1941 against Germany; after it has conquered a minor it may declare on those that border the conquered one.
+  These 13.1 bullets are in the PC Reference Manual (pp. 19 to 20), read from the local manual copy; of them the repo's own docs carry only the U.S.S.R.-before-Fall-1941 line (the 1939 scenario notes).
   The last three need a neutral Major Power that can declare, which the engine does not allow yet, so they are **Release 1** (15-21). The rest is Beta (15-2).
 - Eastern Europe: Germany not before 1940; the U.S.S.R. from the Allied Fall 1939 turn (R12).
 - **Reading chosen:** the declaration is recorded as a pair in `wars` as today, plus the new country record (C1) that marks it attacked, "army to place" and "duty open".
 
-### R3. The attacked minor's army, and who sets it up (Ref 14.0; Ops 5.41a, 4.1) settled; stacking and bases TODO(verify), MC1
-- The chart row becomes counters (`minorForceEntries`). **The side that did not declare** sets them up, inside the minor's borders, with **at least one ground unit in the capital**, at step 2 of the same Player Turn, before Front Options. That side then moves and controls them while they live.
+### R3. The attacked minor's army, and who sets it up (Ref 14.0, p. 19; Ops 5.41a, 4.1) settled for who and the capital; stacking and bases TODO(verify), MC1
+- The chart row becomes counters (`minorForceEntries`). **The side that did not declare** sets them up, inside the minor's borders, with **at least one ground unit in the capital**, at step 2 of the same Player Turn, before Front Options. That side then moves and controls them while they live. **Both manuals say so:** Ref 14.0 (p. 19) says the opposing side sets up the minor's forces within its borders, with a ground unit in the capital, and then moves and controls them; Ops 5.41a says the Phasing Player's opponent deploys them. The older notes that call this unknown (docs/TODO-VERIFY.md row O4, spec 02 "As built, part 3", the header comment of `minors.ts`) were written from the web text, which does not give it; this PR updates O4 and spec 02, and ticket 15-3 changes the code comment. What the manual does not say is where inside the country and how stacking applies (MC1).
 - Defenseless minors: nothing to place; step 2 is skipped for them.
 - Poland in the 1939 scenario: set up at the opening setup as today; it is recorded as attacked by Germany from the start.
 - **Not stated, readings chosen (MC1):** the normal stacking limit applies to the placed counters (2 ground units a hex; air factors by base size; fleets by port capacity); air counters stand in a city, fleets in a port of the minor (Sweden, Spain and Turkey have fleets and ports); nothing else restricts the choice. The same functions that check the opening setup check this.
@@ -181,8 +182,8 @@ Closed to everyone unless one of these opens it for that unit's owner. Ground mo
 - A minor already conquered cannot be helped. A conquered minor's units are gone.
 - If the Allies declare on an inactive Axis ally while a German unit stands in it, Germany's Intervention is automatic (17.2). In Beta this is covered by R10's rule (a German unit is already inside, so the DoW creates a war that Germany already joins).
 
-### R7. Conquest (Ref 16.0; Peele on 24.23) settled; edges TODO(verify), MC7, MC8
-- A minor is **conquered when a hostile unit occupies its capital**. It gets no turn to retake it. At the **end of the attacker's Combat Phase** all its units are removed for good (Minor-Allies too), and all its hexes become controlled by the conqueror.
+### R7. Conquest (Ref 16.0, pp. 20 to 21; Peele's two entries numbered 24.23) settled; edges TODO(verify), MC7, MC8
+- A minor is **conquered when a hostile unit occupies its capital**. It gets no turn to retake it. At the **end of the attacker's Combat Phase** all its units are removed for good (Minor-Allies too), and all its hexes become controlled by the conqueror (Ref 16.0 says so in terms; that answers the open note in `control.ts` and the "Minor conquest" question in docs/RULES.md for minors, and 15-5 closes both; the Baltic States part of that question is Eastern Europe, R12).
 - Exception in the printed text: hostile Major-Power units inside the country that can still trace supply keep the hexes they stand in and their supply line; the program chooses a shortest line to the nearest port or friendly border; the conqueror may not move armor next to those hexes until a later turn. The errata lines on this are contradictory (one says "not implemented", the next says the program picks the hexes). **Beta reading (MC8):** only the hexes holding such units stay as they were; no supply line is picked; no armor restriction. Release 1 may complete it.
 - **Capital-less minors (MC7):** Luxembourg has one hex and no capital on our map; **recommended: its one hex is its capital.** Persia and Arabia have no capital and no value; they are never conquered (nothing is lost).
 - Conquest, in Beta, is settled **leaving 7p** with the follow-up check (R4), in this order: the duty check first, then conquests.
@@ -191,7 +192,7 @@ Closed to everyone unless one of these opens it for that unit's owner. Ground mo
 ### R8. Limits on a minor's units, and their supply (Ref 14.0, 15.0) settled
 - A minor's ground units may **not leave their country**, and after a cross-border attack they **may not advance** over the border. Air and naval units base only inside the home country. On the turn of invasion its air and naval units act only against the units attacking it.
 - Its units can be supplied from its own capital, or from any supply source of a Major Power already at war with its attacker, even before Intervention; that power may supply them by sea.
-- A minor's units, once eliminated, never come back (Release 1 adds the rebuilding of active Minor-Allies, 15-19).
+- A minor's units, once eliminated, never come back (Ref 14.0), **except those of an active Minor-Ally**, which its Major Power rebuilds at its own cost, at home (17.1, 17.3). Beta builds no rebuilding (15-19, Release 1); where an eliminated Minor-Ally unit waits meanwhile is MC18.
 - Beta applies the first two sentences through the same functions as ground movement (`movableProblem`, `entryProblem`, the advance test); the air rules read the same home-country test when a minor's air unit exists in play; the supply sentence is `capitalCounts` plus the helper list.
 
 ### R9. The Axis Minor-Allies wake up (Ref 17.0 to 17.3, 9.2; Ops 5.41a) settled; timing MC9
@@ -211,14 +212,14 @@ Closed to everyone unless one of these opens it for that unit's owner. Ground mo
 
 ### R11. Persia and the other defenseless minors (Ref 24.0; Ops 5.41a; audit item 10) settled; the earlier state MC14
 - Persia, Arabia, Ireland, Luxembourg and Portugal: no army (R1).
-- **Persia:** when a Western Allied power pays 25 BRPs to open the Lend-Lease route (24.0, the Lend-Lease ticket of strategic warfare), **all Persian hexes become Allied-controlled**; Allied units may but need not enter; Soviet units only with the payer's agreement; **the Axis need not declare war to enter Persia afterwards.**
+- **Persia** (Ref 24.0, p. 36; the repo has no Lend-Lease code yet, so these figures come from the manual copy alone): when a Western Allied power pays 25 BRPs the first time it tries Lend-Lease (the Lend-Lease ticket of strategic warfare), **all Persian hexes become Allied-controlled**; Allied units may but need not enter; Soviet units only with the payer's agreement; **the Axis need not declare war to enter Persia afterwards.**
 - **Before the route is opened,** Persia is an ordinary defenseless minor: either side may declare on it for 10 BRPs (assumed, MC14).
 - **Built here (15-12):** `openPersia(state, by)`, which the Lend-Lease ticket calls; it sets control of the Persian hexes, marks Persia opened, and removes it from every declaration list and from the closed-land test. A test calls it directly. The engine's current "Persia costs the Axis 10" is the behaviour after the call: none.
 
-### R12. Eastern Europe (Ref 29.0; errata) settled; details TODO(verify), MC13
+### R12. Eastern Europe (Ref 29.0, pp. 39 to 40; Peele's errata) settled; details TODO(verify), MC13
 - Created at the **end of the Axis Fall 1939 turn**: the Baltic States, Poland east of the Partition Line, and Bessarabia (the east of Rumania). **Value 25** (it does not lower Poland's or Rumania's). Those lands stop belonging to Poland and Rumania for good.
-- It acts as a normal country, except it is conquered like a colony: **all its cities**. Entering it needs a declaration (10 BRPs). Germany may not declare on it before 1940; the U.S.S.R. may from the Allied Fall 1939 turn. Germany may not set up in Bessarabia in Fall 1939.
-- If Poland is unconquered, Polish units east of the line are eliminated at the end of that Axis turn (errata). German units there already are (the scenario rule exists).
+- It acts as a normal country, except it is conquered like a colony: **all its cities**. Entering it needs a declaration (10 BRPs). Germany may not declare on it before 1940; the U.S.S.R. may from the Allied Fall 1939 turn (all Ref 29.0, p. 40). Germany may not set up in Bessarabia in Fall 1939.
+- **German** units still east of the Partition Line at the end of that Axis turn are eliminated (Ref 29.0, p. 40; the scenario rule `eliminate-in-zone` already does it). **Polish** units east of the line are eliminated at the same moment if Poland is still unconquered: that sentence is in Peele's errata for the Reference Manual's page 39 (Poland and Eastern Europe), not in the repo yet; 15-11 adds it.
 - **No chart row,** so no army (defenseless) is the reading (MC13); its cities come from the map features.
 - Who controls its hexes when it appears: nobody (neutral), so the closed-land rule applies until someone declares.
 
@@ -229,17 +230,17 @@ At each YSS (part B, spec 02) a Major Power's **total = Base + the following**:
 2. the value of each **attacked minor it Intervened in** that is not conquered (the invader did not take the capital);
 3. the value of every **country and colony it holds** that its side did not hold when the scenario began (a minor needs the capital; a colony or Eastern Europe needs **all cities**; once held after a YSS, the opponent's retaking one turn later is Release 1, 15-20);
 4. **Germany +15 for each of Moscow and Leningrad it holds** (unless the U.S.S.R. has surrendered); **the U.S.S.R. −15 for each it does not hold**;
-5. half (rounded down) of a **conquered Major Power's starting BRPs** to its conqueror: the **hook** here, the event is the victory spec (Ref 18.1).
+5. half (rounded down) of a **conquered Major Power's starting BRPs** to its conqueror: the **hook** here, the event belongs to spec 14 (victory, surrender and the Russian winter; Ref 18.1).
 
-Also: a nation can neither gain nor lose BRPs from land its side held at the start (the 1942 and 1944 allies are the printed exception, counted in the start totals); losing a country it was not paid for this year costs nothing; the unused-BRP and growth arithmetic is spec 02's and unchanged.
+Also: a nation can neither gain nor lose BRPs from land its side held at the start (Ref 16.0, p. 21; the 1942 and 1944 allies are the printed exception, counted in the start totals); losing a country it was not paid for this year costs nothing (Ref 16.0, p. 21, with an exception for Minor-Allies paid in the middle of a year; the same page has the rule about land held at the start); the unused-BRP and growth arithmetic is spec 02's and unchanged.
 
 **The values** (the table that audit item 11 asked for; "card" means read by eye from the printed map card scan on 2026-10-17):
 
 | Country | Value | How known |
 |---|---|---|
 | Finland 10, Hungary 10, Rumania 15, Bulgaria 10 | 45 together | **Sum equals** Germany's total minus Base on the 1942 and 1944 pages; Bulgaria's 10 is also in the PC README |
-| Denmark 10, Belgium 15, the Netherlands 10, Luxembourg 5 | 40 together | **Sum equals** the 1941 worked example in 9.2 |
-| Poland | 20 | card, and the 1940 worked example in 9.2 |
+| Denmark 10, Belgium 15, the Netherlands 10, Luxembourg 5 | 40 together | **Sum equals** the 40 BRPs the 1941 worked example in Ref 9.2 (pp. 9 to 10) adds for conquering those four |
+| Poland | 20 | card, and the 20 conquered Polish BRPs in the 1940 worked example in Ref 9.2 (the 1942 example in the same section counts 45 for Germany's active Minor-Allies, matching the four-ally sum). These three figures are read from the local manual copy; spec 02 notes that only part of the examples was available when it was written |
 | Eastern Europe | 25 | Ref 29.0 |
 | Norway 10, Sweden 15, Yugoslavia 20, Greece 10, Spain 30, Turkey 30, Portugal 5 | | card only (MC12) |
 | Albania 5, Algeria 5, Morocco 5, Tunisia 5, Lebanon-Syria 5, Egypt 5, Palestine 5 | | card only (MC12) |
@@ -349,7 +350,7 @@ interface CountryRecord {
 English text for now (the French interface is later); each sentence below is short, in the present tense and avoids abbreviations, so it translates cleanly. "BRP" stays, as in the game. Touch targets at least 44 px, as everywhere.
 
 ### D1. Declaring war on a small country (step 1)
-- The declare list groups **Major Powers** and **Small countries**. Each small-country row: name, price, one line of what it has ("Belgium: 15 BRPs. 5 infantry, 1 air.") and its state ("neutral", "sleeping ally of Germany", "closed to you: a German garrison").
+- The declare list groups **Major Powers** and **Small countries**. Each small-country row: name, price, one line of what it has ("Belgium: 15 BRPs. 5 infantry factors, 1 air.") and its state ("neutral", "sleeping ally of Germany", "closed to you: a German garrison").
 - Tapping a row opens a card, not an immediate declaration: **"Declare war on Belgium for 10 BRPs? This turn you must move a unit into Belgium or attack it. If you cannot, the declaration is cancelled and the 10 BRPs are lost."** Buttons: "Declare war" and "Cancel". Rows that are not allowed show the reason in plain words ("Italy is not yet at war with the Western Allies").
 - After declaring, the status line shows a small red chip: **"Belgium: enter or attack this turn"**.
 
@@ -399,7 +400,7 @@ The computer plays by `legalActions` only (spec 05). Its minor policy is the com
 | Minor values, defenseless list, capitals, wake-up turn | New (15-0): the sums 45 and 40 and Poland's 20 and Eastern Europe's 25 are tests; the rest cite the card. |
 
 ### F2. Checking against the original game
-Ticket 15-0 reads the values from the program's data where it can be found; otherwise the map card stays the source and Frank confirms the seven unread or card-only rows (P8). The game folder is on the owner's side; no game file is committed.
+Ticket 15-0 reads the values from the program's data where it can be found; otherwise the map card stays the source and Frank confirms the 17 card-only or unread values (7 European countries, 7 colonies, 3 not read; P8). The game folder is on the owner's side; no game file is committed.
 
 ### F3. Unit tests (Vitest; each cites its rule; each rule gets a mutation check: break it, see a test fail, restore)
 - **R2:** each row of `minorDeclarationProblem` with its rule; the 10 and the 35 case (`declarationCost`); a minor already at war, allied or conquered is not a target.
@@ -428,7 +429,7 @@ Difficulty: easy, medium, hard. Size: S (under half a day), M (about a day), L (
 |---|---|---|---|---|---|---|
 | 15-0 | **Facts and constants.** `minors-rules.ts`: the value table (R13), defenseless list, each minor's capital hex (Luxembourg's one hex by MC7), colony city lists, the wake-up turn, the Axis ally list; read the three unread values at higher zoom; tests: sums 45, 40, 20, 25; every chart minor has a value or an explicit "none". | easy | S | none | **Beta** | `minors-rules.ts`, tests |
 | 15-1 | **State.** Widen `ForceOwner`; `CountryRecord` and `GameState.countries`; the four sleeping allies in the 1939 scenario and the Campaign; Poland recorded as attacked; `sideInWar` and the derived minor control in `control.ts`; owner names. | medium | M | 15-0 | **Beta** | `types.ts`, `minors-record.ts`, `control.ts`, `nations.ts`, `scenario-1939.ts`, `scenario-campaign.ts`, tests |
-| 15-2 | **Declaration rules (pure).** `minorDeclarationProblem` (Beta rows of R2), `declarationCost` (the 35 case), `declarationTargets` uses them; `DECLARE_WAR` on a minor records the country and the open duty. | medium | M | 15-1 | **Beta** | `minors-declare.ts`, `war.ts`, tests |
+| 15-2 | **Declaration rules (pure).** `minorDeclarationProblem` (Beta rows of R2), `declarationCost` (the 35 case), `declarationTargets` uses them and stops excluding sleeping allies (only active ones are out); `DECLARE_WAR` on a minor records the country and the open duty. | medium | M | 15-1 | **Beta** | `minors-declare.ts`, `war.ts`, tests |
 | 15-3 | **Step 2: place the army.** `PLACE_MINOR_FORCES`, `legalMinorPlacements`, `suggestMinorPlacement`, step "2" waits, `sideToAct`, events. | hard | M | 15-1, 15-2 | **Beta** | `minors-place.ts`, `actions.ts`, `action-types.ts`, `sequence.ts`, `turn.ts`, tests |
 | 15-4 | **The duty, check and revocation (R4).** Record entries from `MOVE` and `ATTACK`; the check leaving 7p; revoke and its consequences. | medium | M | 15-3 | **Beta** | `minors-declare.ts`, `move-action.ts`, `attack.ts`, `turn.ts`, tests |
 | 15-5 | **Conquest (R7).** Capital taken, settle leaving 7p, units removed, hexes pass, the shared `afterHexTaken` hook, Poland and Warsaw. | hard | M | 15-3 | **Beta** | `minors-conquest.ts`, `control.ts`, `turn.ts`, tests |
@@ -436,7 +437,7 @@ Difficulty: easy, medium, hard. Size: S (under half a day), M (about a day), L (
 | 15-7 | **Sleeping Axis allies: Germany walks in, Garrison, supply (R10; audit item 9).** Entry for German units, Garrison revokes a declaration, `supplyFriendly`, the Helsinki case, tests with the supply switch on. | hard | M | 15-1 | **Beta** | `minors-axis.ts`, `movement.ts`, `supply.ts`, tests |
 | 15-8 | **The Axis allies wake (R9).** Summer 1941 at step 2, earlier by Intervention, value added at once, army placed by the Axis (15-3), a conquered sleeper never wakes. | medium | M | 15-3, 15-6, 15-7 | **Beta** | `minors-axis.ts`, `turn.ts`, tests |
 | 15-9 | **BRPs from territory (R13; audit item 11).** `territoryIncome`: allies by value, helped minors, conquered minors and colonies, the half-value hook for a conquered Major Power, the "not held at the start" rule; replaces `minorAllyBrps`; `COUNTRY_INCOME` event. | medium | M | 15-0, 15-5, 15-6, 15-8 | **Beta** | `minors-income.ts`, `yearstart.ts`, tests |
-| 15-10 | **Moscow and Leningrad (R13 item 4).** Germany +15 each held, the U.S.S.R. −15 each not held, not after surrender (the victory spec's flag). | easy | S | 15-9 | **Beta** | `minors-income.ts`, tests |
+| 15-10 | **Moscow and Leningrad (R13 item 4).** Germany +15 each held, the U.S.S.R. −15 each not held, not after surrender (spec 14's flag). | easy | S | 15-9 | **Beta** | `minors-income.ts`, tests |
 | 15-11 | **Eastern Europe (R12).** Creation at the end of Axis Fall 1939, its declaration rules, hold-all-cities conquest, 25 BRPs, Poland's eastern units. | medium | M | 15-2, 15-5, 15-9 | **Beta** | `minors-special.ts`, `turn.ts`, `zones.ts`, tests |
 | 15-12 | **Persia and the defenseless minors (R11; audit item 10).** `openPersia` and the closed-land and declaration-list effects; a test calls it. | easy | S | 15-1, 15-2 | **Beta** | `minors-special.ts`, `war.ts`, `movement.ts`, tests |
 | 15-13 | **Front Options: change inside the step, refund; a helped minor reads its helper's choice (R14; audit item 13).** | easy | S | none (the helped-minor line waits for 15-6) | **Beta** | `frontoptions.ts`, `statusView.ts`, tests |
@@ -455,29 +456,48 @@ Difficulty: easy, medium, hard. Size: S (under half a day), M (about a day), L (
 ```mermaid
 flowchart LR
   T0["15-0 facts"] --> T1["15-1 state"]
+  T0 --> T9
   T1 --> T2["15-2 declare rules"]
   T1 --> T7["15-7 garrison and supply"]
+  T1 --> T12["15-12 Persia"]
+  T2 --> T12
   T2 --> T3["15-3 step 2 placement"]
   T3 --> T4["15-4 the duty"]
   T3 --> T5["15-5 conquest"]
   T3 --> T6["15-6 Intervention"]
-  T6 --> T8["15-8 the allies wake"]
+  T3 --> T8["15-8 the allies wake"]
+  T6 --> T8
   T7 --> T8
   T5 --> T9["15-9 income"]
   T6 --> T9
   T8 --> T9
   T9 --> T10["15-10 Moscow and Leningrad"]
-  T5 --> T11["15-11 Eastern Europe"]
+  T2 --> T11["15-11 Eastern Europe"]
+  T5 --> T11
   T9 --> T11
-  T2 --> T12["15-12 Persia"]
-  T3 --> T14["15-14 computer"]
+  T6 -.-> T13["15-13 Front Options"]
+  T2 --> T14["15-14 computer"]
+  T3 --> T14
   T4 --> T14
   T8 --> T14
   T3 --> T15["15-15 UI 1"]
   T4 --> T16["15-16 UI 2"]
+  T5 --> T16
+  T6 --> T16
   T9 --> T16
   T6 --> T17["15-17 computer helps (R1)"]
+  T14 --> T17
+  T6 --> T18["15-18 minor's own turn (R1)"]
+  T13 --> T18
+  T8 --> T19["15-19 rebuild allies (R1)"]
+  T9 --> T20["15-20 retaken capital (R1)"]
+  T2 --> T21["15-21 U.S.S.R. rules (R1)"]
+  T7 --> T21
+  T16 --> T22["15-22 docs"]
+  T21 --> T22
 ```
+
+In the diagram "R1" means Release 1; the dotted edge is the one line of 15-13 (a helped minor reads its helper's Option) that waits for 15-6.
 
 **Order of work:** 15-0, 15-1, 15-2, 15-3 first (one worker at a time, they share `types.ts` and `actions.ts`); then 15-4, 15-5, 15-6, 15-7 in parallel (different files, four workers); then 15-8, 15-12, 15-13; then 15-9, 15-10, 15-11; then 15-14 to 15-16 with the screens; 15-22 last. **Smallest useful stops:** after 15-6 attacked minors appear, can be helped and conquered; after 15-9 the year-start totals are right; after 15-16 Frank can play it.
 
@@ -486,7 +506,7 @@ flowchart LR
 ## Part H. Out of scope
 
 - **Vichy France and its colonies, Free French income** (Ref 35.0): created when France falls; its own spec, with the half-units, the activation die roll (8c) and the Vichy BRP rules. This spec only leaves room: `CountryId` can grow, `territoryIncome` has the "never yields BRPs to Germany" case as a named exception to add.
-- **Conquest and surrender of a Major Power** (Ref 18.0): the victory spec. 15-9 has the hook (half the starting BRPs) and 15-10 reads its "surrendered" flag.
+- **Conquest and surrender of a Major Power** (Ref 18.0): spec 14 (victory, surrender and the Russian winter). 15-9 has the hook (half the starting BRPs) and 15-10 reads its "surrendered" flag.
 - **Lend-Lease** (24.0): the activation, the 25 BRPs, the boxes. Only `openPersia` is here.
 - **Spain and Turkey specials** (36.0, 37.0): the Spanish Morocco passing to the first conqueror, Tangiers as a source, the Vichy die-roll modifier for a declaration on Spain. They become allies by Intervention through the general rule (R6); the extras are left.
 - **Strategic Redeployment of a minor's units** (not built), **seaborne invasions of minors**, **partisans** (not in the PC game).
@@ -508,7 +528,7 @@ Ref 9.2, 11.1, 11.2, 11.21, 13.0, 13.1, 14.0, 15.0, 16.0, 17.0 to 17.4, 18.1, 19
 - **P5.** Can you march German units into Hungary or Rumania in 1940 without declaring anything? Are they in supply there? What about Finland?
 - **P6.** If two countries help the same small country, who gets its BRPs?
 - **P7.** Does each country (Germany, Italy) choose its own Front Option, or one for the whole side? (audit item 12)
-- **P8.** Please read the value printed on the map for Norway, Sweden, Yugoslavia, Greece, Spain, Turkey, Portugal, Libya, Transjordan and Iraq (the table in R13 has my reading).
+- **P8.** Please read the value printed on the map for Norway, Sweden, Yugoslavia, Greece, Spain, Turkey, Portugal, Albania, Algeria, Morocco, Tunisia, Lebanon-Syria, Egypt, Palestine, Libya, Transjordan and Iraq (the table in R13 has my reading).
 
 **Rules to check against the PC manual or the program (all `TODO(verify)`; also added to docs/RULES.md ("Minor countries open items") and to docs/TODO-VERIFY.md as rows MC1 to MC22):**
 
@@ -529,7 +549,7 @@ Ref 9.2, 11.1, 11.2, 11.21, 13.0, 13.1, 14.0, 15.0, 16.0, 17.0 to 17.4, 18.1, 19
 15. **MC15.** R14: a minor's Options are free; a minor's own Options before it is helped; the refund on a replaced Option.
 16. **MC16.** R8: a minor's air and naval units on the turn of invasion; a helped minor's units after the helper leaves.
 17. **MC17.** R8: supply of a minor's units from a Major Power's source before Intervention.
-18. **MC18.** R8, R9: whether eliminated active Minor-Ally units return to a pool for rebuilding.
+18. **MC18.** R8, R9: the text lets an active Minor-Ally's lost units be rebuilt (17.1, 17.3); where they wait until then is not stated.
 19. **MC19.** R13: how two intervening powers share a minor's value (built as one holder, the first).
 20. **MC20.** R13: a minor attacked and helped yields its value to the helper only while its capital stays; the case of conquest the next year.
 21. **MC21.** R2: a neutral Major Power's declarations (Italy, the U.S.S.R.) are not built in the engine (PLAN section E); the 13.1 rows for them are written but cannot fire.
@@ -552,7 +572,7 @@ Nothing built yet. Each ticket adds its own section here, as in spec 09 ("As bui
 1. In the 1939 scenario, Germany declares war on Denmark at step 1 (10 BRPs, card with the duty); at step 2 the Allied side places Denmark's army (the computer, or the human with one tap) with a unit in Copenhagen; Germany enters or attacks that turn, or the declaration is cancelled with the BRPs lost; capturing Copenhagen conquers Denmark: its units leave, its land turns German, and the next year start adds 10.
 2. Britain or France walking into an attacked minor Intervenes; the minor fights beside it; conquest of the capital ends it.
 3. Germany walks into Hungary, Rumania and Bulgaria without declaring anything, is in supply there with the supply switch on, and the four allies wake in Summer 1941 with their armies and 45 BRPs; an Allied declaration on a sleeping ally is revoked by a Garrison.
-4. The year-start total of every Major Power equals Base, growth, allies, held countries and colonies, Moscow and Leningrad, line by line in the log, in 1939, 1942 and 1944; values sum to the scenario pages; nothing changes a total without an event.
+4. The year-start total of every Major Power equals Base, growth, allies, held countries and colonies, Moscow and Leningrad, line by line in the log, at the 1940 Year Start Sequence of the 1939 scenario (that scenario has none in 1939) and at the first one of the 1942 and 1944 scenarios; values sum to the scenario pages; nothing changes a total without an event.
 5. Eastern Europe appears after Axis Fall 1939, needs a declaration, is conquered by holding every city and is worth 25. `openPersia` removes Persia from the declaration lists.
 6. A Front Option can be replaced inside step 3 with the BRPs refunded.
 7. The computer attacks the minors of its plan, meets the duty, places defenders and its woken allies, and a full 1939 self-play game reaches the end with no anomaly in the minor lines.
