@@ -33,7 +33,7 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 | 09-13 UI 1: planes on the map | select a plane, see range and bases, rebase, split and join from the screen | M | Next |
 | 09-16 Layout and browser pass | phone and iPad sizes, an air browser test | M | Waits for 09-13 |
 | 09-0 Check constants against the game | ranges, caps, sizes, Malta | S | Waits: needs your game folder |
-| 09-5 Capture of a base | planes and airbases in a captured hex move away (decision D1) | M | Waits: your answer to question P1 |
+| 09-5 Capture of a base | planes in a captured hex fly to the nearest friendly base within 8 hexes, and are lost only if there is none; airbases go to their Capital (decision D1, taken 2026-10-15) | M | Next |
 | 09-9 Counter-air | planes fight planes before the ground attack | M | Next |
 | 09-8 Defensive air support | the defender's planes help at step 7d | M | Waits for 09-9 |
 | 09-10 DAS interception | the attacker's planes meet them (step 7e) | M | Waits for 09-8 |
@@ -137,12 +137,14 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 
 ## G. Decisions I need from you
 
+Already decided, so not open: planes and fleets in a captured city are **displaced** (they move to the nearest friendly base or port, and are lost only if there is none). You decided this on 2026-10-15 (spec 09, decision D1). It is tickets 09-5 and 12-4, ready to build. What Frank remembers of the DOS game is only a cross-check.
+
 1. **What counts as Release 1?** The roadmap includes air and naval combat. A faster route: ground war, ground support, supply by sea (Release I), the rules in section D, save and load, and the computer fixes in E. Naval combat (Releases II to IV) and the air missions beyond ground support (09-8 to 09-11) come after. My guess is that this cuts the work before a full 1939 game by about a third. Your call.
-2. **Question P1** (spec 09): what the DOS game does with planes and fleets in a captured city. Frank may remember. It unblocks 09-5 and 12-4.
-3. **Malta** is over-filled by the automatic setup (18 in 1942, 36 in 1944, against a limit of 9). The fix changes those two starts.
-4. **Supply penalties on:** keep them off until 12-7 shows numbers you accept. I suggest the bound "no scenario loses more than about 10 percent of objectives held with them off".
+2. **Spec 12 (fleets) is a draft waiting for your yes on three points:** DF-1, the release order (I supply by sea, II fleet movement, III air against ships, IV naval missions); DF-2, supply penalties go on only after a measured gate, never by editing the switch alone; DF-3, a player whose units are cut off gets one button that proposes the fleet and the port, and can still choose another.
+3. **The bound for that gate.** I suggest: no scenario loses more than about 10 percent of objectives held with the penalties off.
+4. **Malta** is over-filled by the automatic setup (18 in 1942, 36 in 1944, against a limit of 9). Fixing it changes those two starts.
 5. **Order.** My suggestion: your playtest now; meanwhile finish the air screens (09-14 rest, 09-13, 09-16) and write the specs in section D; then fleets Release I and the switch; then save and load.
 
 ## Open questions for Frank
 
-These are in `docs/TODO-VERIFY.md`. The ones that matter most: whether supply and Berlin work as in the PC game (19.4 against 11.74), spec 12 questions P1 to P7, and whether Germany gets another supply source after Berlin falls.
+These are in `docs/TODO-VERIFY.md`. The ones that matter most: whether supply and Berlin work as in the PC game (19.4 against 11.74), how the DOS game words the supply-by-sea prompt (spec 12, P1 to P7), and whether Germany gets another supply source after Berlin falls. What happens to planes and fleets in a captured city is decided (displace); Frank's answer would only confirm it.
