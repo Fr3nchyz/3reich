@@ -14,6 +14,8 @@ Written 2026-10-17 from the specs (09, 11, 12), `docs/ROADMAP.md` and `docs/PROG
 
 The ground war is playable on the iPad: set up, declare war, build, grants, move (choosing units of a stack), attack with an odds preview, losses, advance. Air support in attacks works. The computer plays either side and can play itself. A game cannot be won or lost yet, nothing is saved, and fleets, supply penalties, minor countries, strategic warfare and surrender are not built. Roughly 40 percent of a complete game exists (a judgement, not a measurement).
 
+**Paused 2026-10-17 (usage limit).** Everything on `main` is reviewed and CI-green; no pull request is open. Since the last update: specs 14, 15 and 16 are merged (victory and surrender, minor countries, attrition, exploitation, redeployment, fortress changes: 70 tickets, all still to build), and fleets tickets 12-0 to 12-3 are built (port facts and sea routes, the naval record, the rules of sea supply, the designation action). They add nothing you can see on screen yet: supply penalties are still off. Ticket 12-4 (a fleet in a captured port moves away, and the Malta cap) is half done on branch `fleet-4` (a work-in-progress commit, not reviewed, gates not run): resume it from there. Next after that: 12-5, 12-6, 12-8, then the gate 12-7. Save and load stays blocked until the playtest. **Is it playable?** Yes, exactly as before: the guide `docs/PLAYTEST-FR.md` describes what to try.
+
 ## Two milestones
 
 **Beta** (the next goal): the 1939 scenario against the computer, start to finish, on the iPad, with saves. It has the ground war, air support in attacks, supply by sea (fleets Release I) with supply penalties switched on, the rules in section D (victory and surrender, minor countries, attrition, and so on), save and load, and a computer that defends its capital and does not stall. No naval combat and no air missions beyond ground support.
@@ -61,7 +63,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-1 Naval record | what each fleet did this turn | S | Done |
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Done |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Done |
-| 12-4 Fleets displaced on capture | the fleet in a captured port moves away | M | Next |
+| 12-4 Fleets displaced on capture | the fleet in a captured port moves away | M | Started (branch fleet-4, unfinished) |
 | 12-5 Computer: sea supply | the computer answers the prompts | S | Next |
 | 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | Next |
 | 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | Next |
