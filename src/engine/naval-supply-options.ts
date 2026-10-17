@@ -11,7 +11,7 @@ import type { ForceOwner, GameState, Side, Unit } from "./types";
 /**
  * Sea supply, the questions a caller asks (spec 12 R6, R7, C4): is this port supplied, why is this designation refused, which designations would
  * save cut-off units, and along which path a named unit is supplied. They build the side's land network themselves; the checks they rely on are
- * in naval-supply.ts, which supply.ts uses. Pure queries: nothing here records a designation (ticket 12-3).
+ * in naval-supply.ts, which supply.ts uses. Pure queries: nothing here records a designation (naval-actions.ts does).
  */
 
 const byHex = (a: HexId, b: HexId): number => (a < b ? -1 : a > b ? 1 : 0);

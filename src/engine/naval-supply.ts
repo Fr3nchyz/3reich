@@ -2,7 +2,7 @@ import { controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { navalOf, useOf, type SeaSupplyDesignation } from "./naval-record";
-import { isOneHexIsland, isPort, portFronts } from "./naval-ports";
+import { hexOf, isOneHexIsland, isPort, portFronts } from "./naval-ports";
 import { SEA_SUPPLY_UNITS_PER_FACTOR } from "./naval-rules";
 import type { SeaNetwork, SupplyReach } from "./supply";
 import type { Front } from "./map";
@@ -11,7 +11,7 @@ import { ZOC_UNIT_TYPES } from "./zoc";
 
 /**
  * Sea supply, the rules (spec 12 R6, R7, C4; Ref 19.31, 19.2, 26.0, 27.0): whether a designation recorded in `GameState.naval` is valid, and the
- * source sets that `supplyNetwork` (supply.ts) adds for the valid ones. Pure queries: no action records a designation yet (ticket 12-3), and the
+ * source sets that `supplyNetwork` (supply.ts) adds for the valid ones. Pure queries: the action that records a designation is in naval-actions.ts, and the
  * entry points that build a network of their own are in naval-supply-options.ts. This module takes the side's land network as it stands (the
  * main sources and the special nets), so it imports nothing from supply.ts at run time.
  *
@@ -29,7 +29,7 @@ import { ZOC_UNIT_TYPES } from "./zoc";
 export const FED_TYPES: readonly UnitType[] = [...ZOC_UNIT_TYPES, "airbase"];
 
 /** A hex with a name for a sentence: "Cagliari (AA19)". */
-const where = (ctx: GameContext, hex: HexId): string => (ctx.map.hexes[hex]?.name ? `${ctx.map.hexes[hex].name} (${hex})` : hex);
+const where = (ctx: GameContext, hex: HexId): string => (hexOf(ctx, hex)?.name ? `${hexOf(ctx, hex)!.name} (${hex})` : hex);
 
 /** True for a real array of distinct strings (a hole in a sparse array, a number, a repeat is refused). */
 function distinctStrings(x: unknown): x is string[] {
@@ -89,7 +89,7 @@ export function designationProblem(ctx: GameContext, state: GameState, network: 
   const named = new Set(earlier.flatMap((e) => e.units));
   for (const id of d.units) {
     const u = state.units[id];
-    if (!u || !FED_TYPES.includes(u.type) || !ctx.map.hexes[u.at]) return `${id} is not a ground unit or airbase on the map: only those are fed by sea (Ref 19.31).`;
+    if (!u || !FED_TYPES.includes(u.type) || !hexOf(ctx, u.at)) return `${id} is not a ground unit or airbase on the map: only those are fed by sea (Ref 19.31).`;
     if (sideInWar(state, u.owner) !== side) return `${id} is not a unit of the ${side} side.`;
     if (network.groupOf(u.owner) !== group) return `${id} belongs to another group than the fleet: the Axis, the Western Allies and the Soviets do not carry supply for each other (Ref 26.0, 27.0).`;
     if (named.has(id)) return `${id} is already named in another sea supply this Player Turn.`;

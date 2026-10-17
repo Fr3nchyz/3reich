@@ -15,6 +15,7 @@ import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
 import { hasMoveWork } from "./move-action";
+import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 
@@ -89,11 +90,15 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       if (step) {
         // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
         const lost = pos.step === "7h" ? loseUnusedGroundSupport(state) : { state, events: [] };
-        return { state: { ...lost.state, position: { ...pos, step } }, events: lost.events };
+        // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
+        // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
+        const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
+        return { state: { ...read, position: { ...pos, step } }, events: lost.events };
       }
+      const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
       const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
       const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ended.state);
-      return { state: next.state, events: [...ended.events, ...next.events] };
+      return { state: next.state, events: [...lapsed, ...ended.events, ...next.events] };
     }
   }
 }
@@ -121,6 +126,9 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return legalDeclarations(ctx, state).length > 0;
     case "6f":
       return hasMoveWork(ctx, state) || hasAirMoveWork(ctx, state);
+    case "6e":
+    case "9f":
+      return hasSeaSupplyWork(ctx, state);
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":

@@ -1,6 +1,6 @@
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import type { Front } from "./map";
+import type { Front, MapHex } from "./map";
 import { DOUBLE_PORT_HEXES, NAVAL_PER_PORT, ONE_HEX_ISLANDS, SMALL_PORT_CAPACITY, SMALL_PORT_HEXES } from "./naval-rules";
 import { NAVAL_BASE_FEATURES } from "./terrain";
 
@@ -87,8 +87,11 @@ export const PORT_FRONTS: Readonly<Record<HexId, readonly Front[]>> = {
   MM30: ["mediterranean"], // Suez
 };
 
+/** The map's hex with this id, or undefined: an id that is not the map's own ("constructor" from a hand-edited action) is no hex. */
+export const hexOf = (ctx: GameContext, hex: HexId): MapHex | undefined => (typeof hex === "string" && Object.hasOwn(ctx.map.hexes, hex) ? ctx.map.hexes[hex] : undefined);
+
 /** Whether the hex holds a port (a city marked with an open circle, or a capital-port, Ref 4.7). */
-export const isPort = (ctx: GameContext, hex: HexId): boolean => ctx.map.hexes[hex]?.features.some((f) => NAVAL_BASE_FEATURES.includes(f)) ?? false;
+export const isPort = (ctx: GameContext, hex: HexId): boolean => hexOf(ctx, hex)?.features.some((f) => NAVAL_BASE_FEATURES.includes(f)) ?? false;
 
 /** Every port on the map, in the map's order. */
 export const portsOf = (ctx: GameContext): HexId[] => Object.keys(ctx.map.hexes).filter((hex) => isPort(ctx, hex));
@@ -113,4 +116,4 @@ export const isTwoFrontPort = (ctx: GameContext, hex: HexId): boolean => portFro
 export const portsOnFront = (ctx: GameContext, front: Front): HexId[] => portsOf(ctx).filter((hex) => portFronts(ctx, hex).includes(front));
 
 /** Whether the hex is a playable one-hex island (Ref 4.9; see `ONE_HEX_ISLANDS`). */
-export const isOneHexIsland = (ctx: GameContext, hex: HexId): boolean => ONE_HEX_ISLANDS.includes(hex) && ctx.map.hexes[hex]?.land != null;
+export const isOneHexIsland = (ctx: GameContext, hex: HexId): boolean => ONE_HEX_ISLANDS.includes(hex) && hexOf(ctx, hex)?.land != null;
