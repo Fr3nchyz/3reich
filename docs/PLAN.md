@@ -34,8 +34,8 @@ In the tables below, everything is Beta except those Release 1 items. Decided by
 | 09-4 Partial units | split and combine air counters | S | Done |
 | 09-6 Air combat resolver | the pure dice and losses logic | S | Done |
 | 09-7 Ground support | planes add to an attack's odds and share its losses | M | Done |
-| 09-14 first slice | step 7b on the screen, air counted in the attack card | L | Done (the rest below) |
-| 09-14 rest | choose individual planes at 7b, the attack card lists them | M | Next |
+| 09-14 first slice | step 7b on the screen, air counted in the attack card | L | Done |
+| 09-14 rest | choose individual planes at 7b, the attack card lists them | M | Done |
 | 09-13 UI 1: planes on the map | select a plane, see range and bases, rebase, split and join from the screen | M | Next |
 | 09-16 Layout and browser pass | phone and iPad sizes, an air browser test | M | Waits for 09-13 |
 | 09-0 Check constants against the game | ranges, caps, sizes, Malta | S | Waits: needs your game folder |
@@ -107,11 +107,18 @@ Release I: 9 tickets (5 M, 4 S). Release II: 6 (3 M, 2 L, 1 S). Release III: 3 M
 
 ## D. Rules that have no spec yet
 
-Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec. These are the largest unknowns on the way to Beta.
+Each of these needs a short spec first (docs only, size S to M, reviewed), then tickets. The sizes below are guesses for the whole job after the spec, except the victory rows, whose spec (14) is written and gives its own ticket sizes. These are the largest unknowns on the way to Beta.
 
 | Rule | Roadmap item | Guess |
 |---|---|---|
-| Victory, surrender, Russian winter | 6.7 | L |
+| **Victory, surrender, Russian winter: spec written** ([14](specs/14-victory-surrender-winter.md), draft for review, 24 tickets; sizes below are the spec's, not guesses; who owns what between specs 14 and 15 is in part H of spec 14) | 6.7 | 17 Beta tickets (6 S, 8 M, 3 L), 7 Release 1 tickets (1 S, 6 M); not in the 47 counted above |
+| 14-1 to 14-4 The game ends and says who won: objective count, results for all four scenarios, result at the last turn or on a decisive conquest, score line and end card | | S, M, M, M (Beta) |
+| 14-5 to 14-7 Countries fall: a Major Power by its capital (14-5), the conquest mechanics for every other country, Poland first, which spec 15 reuses (14-6), France with Vichy France (14-7; spec 14 owns Vichy) | | L, M, L (Beta) |
+| 14-11 to 14-13 The Russian winter: roll and choice at II.A, no doubling and no Axis Offensive in the East, the screens | | M, M, S (Beta) |
+| 14-14 to 14-16 Russia: Moscow and Leningrad BRPs (spec 14 owns them), the surrender offer, its screens | | S, L, M (Beta) |
+| 14-18 Free Siberian Transfer | | M (Beta if the owner says yes to Q3) |
+| 14-19, 14-20, 14-24 Computer answers, self-play gate, docs | | S, S, S (Beta) |
+| 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
 | Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
 | Attrition | 6.2 | M |
 | Exploitation | 6.3 | M |

@@ -28,7 +28,7 @@ function moveNext(s: Session, actions: readonly Action[]): string {
 /** What the game waits for, in one sentence. */
 export function nextText(s: Session, actions: readonly Action[]): string {
   if (atStep6f(s)) return moveNext(s, actions);
-  if (atStep7b(s)) return actions.some((a) => a.type === "DESIGNATE_AIR") ? "Next: commit planes to a hex you will attack, or finish step 7b." : "Next: finish step 7b.";
+  if (atStep7b(s)) return s.airDraft ? "Next: check the planes, then commit them." : actions.some((a) => a.type === "DESIGNATE_AIR") ? "Next: choose planes for a hex you will attack, or finish step 7b." : "Next: finish step 7b.";
   if (!attacking(s)) return "Waiting for the computer to choose its losses.";
   if (ownPending(s.state, s.humanSide)) return "Next: choose your losses.";
   const offers = openOffers(s, actions);

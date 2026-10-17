@@ -18,18 +18,19 @@ Template:
 | # | Spec |
 |---|---|
 | 01 | [Turn steps](01-turn-steps.md) |
-| 02 | [Economy: BRPs, declarations, construction](02-economy.md) |
-| 03 | [Control, stacking, movement and supply](03-movement-supply.md) |
-| 04 | [Combat, air and naval operations, victory](04-combat-victory.md) |
+| 02 | [Economy: BRPs, the Year Start Sequence, declarations of war and construction](02-economy.md) |
+| 03 | [Control, stacking, movement, Zones of Control and supply](03-movement-supply.md) |
+| 04 | [Combat, air and naval operations, strategic warfare and victory](04-combat-victory.md) |
 | 05 | [The computer opponent](05-computer-opponent.md) |
 | 06 | [Watch two computers play](06-watch-mode.md) |
-| 07 | [Tap to attack, odds preview](07-tap-to-attack.md) |
+| 07 | [Tap to attack, with an odds preview, and a unit inspector](07-tap-to-attack.md) |
 | 08 | [Zoom buttons and iPad touch checks](08-ipad-zoom.md) |
 | 09 | [Air units](09-air-units.md) |
 | 10 | [Choosing which units of a stack move](10-stack-unit-selection.md) |
 | 11 | [Save and load](11-save-load.md) |
 | 12 | [Fleets and naval warfare](12-fleets-naval.md) |
-| 13 | [Zones of control as the PC manual prints them](13-zoc-pc-rules.md) |
-| 15 | [Minor countries: an attacked minor's army, Intervention, Minor-Allies, conquest, BRPs from territory](15-minor-countries.md) |
+| 13 | [Zones of control as the PC Reference Manual prints them](13-zoc-pc-rules.md) |
+| 14 | [Victory, surrender, conquest and the Russian winter](14-victory-surrender-winter.md) (draft for review; Beta milestone) |
+| 15 | [Minor countries: an attacked minor's army, Intervention, Minor-Allies, BRPs from territory](15-minor-countries.md) (draft for review; Beta milestone) |
 
-The status of each spec is on its "Status:" line, near the top of the file. Spec 14 (victory, surrender and the Russian winter) is in review (PR 100) and joins this index when it merges.
+Status lives at the top of each file; the build order and sizes are in [../PLAN.md](../PLAN.md).

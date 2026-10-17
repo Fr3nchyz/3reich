@@ -1,5 +1,6 @@
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
+import { bindAir } from "./airBind";
 import { bindAttack } from "./attackBind";
 import { bindChoice } from "./choiceBind";
 import { bindMove } from "./moveBind";
@@ -21,6 +22,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on<HTMLButtonElement>("button[data-buildbox]", (b) => buildInBox(s, b.dataset.buildbox as OffMapBox));
   on<HTMLButtonElement>("button[data-box]", (b) => { if (owner) placeInBox(s, owner, spec, b.dataset.box as OffMapBox); });
   bindAttack(root, s, redraw);
+  bindAir(root, s, redraw);
   bindChoice(root, s, redraw);
   bindMove(root, s, redraw);
   on("#hexcard-close", () => closeLook(s));

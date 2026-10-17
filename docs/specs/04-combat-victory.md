@@ -2,6 +2,8 @@
 
 Status: **draft for review. Nothing is built until you say "let's go".** Depends on specs 01 to 03.
 
+> **Update 2026-10-17:** the victory, surrender, conquest and Russian winter parts of this spec are written out, rule by rule and ticket by ticket, in [spec 14](14-victory-surrender-winter.md), using the PC Reference Manual's own numbers: the Russian Winter is 28.0, the Russian surrender 11.8 and 18.41, conquest of Major Powers 18.1 to 18.3 and of minors 16.0 (18.0 is the section on Major Powers). The "Ref 18.0" below is the board-game web numbering. Spec 14 supersedes the Victory and Russian Winter parts here.
+
 ## Goal
 
 Armies, air forces and fleets can fight, and the game can end with a result. The combat tables and resolvers already exist and are tested (offensive and attrition results, terrain multipliers, naval and air modifiers); this feature connects them to actions a player can take at the right steps, and adds everything around them: which units fight, who takes losses, retreats, supply effects, strategic warfare, the Russian Winter and the victory conditions.
