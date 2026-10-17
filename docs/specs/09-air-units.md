@@ -706,7 +706,6 @@ Ref 3.0 (counters), 4.51, 4.7 (cities as bases), 5.0 (stacking), 9.1 (boundary o
 - **Result.** All 24 passed on the first run, so no style change was needed: the rows and chips of 09-13 and 09-14 reuse the 56 px rows and the 44 px card buttons of specs 07 and 10. Mutation checks on the browser test (each failed): a row of the planes list made 30 px tall, a unit id added to a plane chip, the Cancel button of the cards made 30 px. (A first mutation with `max-height` did not fail because `min-height` wins in CSS; it was redone with `min-height`.) This covers finding 5 of the review of ticket 09-14: the air card at 320 and 390 px.
 - **Self-play air checks** (the title of ticket 09-16 in part G): not built. The computer still takes no air action (ticket 09-12), so a check for "committed air eliminated unused" or "stack over capacity" would have nothing to see; it comes with 09-12.
 - **Not here.** Reading the air cards with a screen reader and the keyboard in a browser (the order and the live line are tested as strings in `tests/air-pick-ui.test.ts` and `tests/air-move-ui.test.ts`); the French words.
-
 ## As built (ticket 09-6: air combat resolver)
 
 `src/engine/air-combat.ts` and `src/engine/air-losses.ts` (pure, no state, no dice inside) and `tests/air-combat.test.ts`, `tests/air-losses.test.ts`. Nothing is wired in yet: no action, no state, no change to any existing module or to self-play.
