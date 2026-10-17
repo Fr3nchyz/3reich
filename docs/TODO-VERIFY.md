@@ -77,6 +77,7 @@ Columns: ID, where in `src/` (file and line), the named constant or branch, what
 | C5 | `src/ai/declare.ts:56-57` (TODO at :52) | `STAGING_ENABLED`, `STAGING_LEAD_TURNS` | Units with no route to an objective wait at the border of a neutral country the computer plans to attack, starting two Game Turns before the date. | Listed: "`STAGING_LEAD_TURNS` = 2 Game Turns ... switch `STAGING_ENABLED`" (line 176). |
 | C6 | `src/ai/build.ts:19` (TODO at :17) | `BUILD_PRIORITY` | The order in which the computer builds unit types. | Listed: "the build priority list (`BUILD_PRIORITY`)" (line 176). |
 | C7 | `src/ai/move.ts:31-35` (TODO at :17) | `MOVE_MIN_PROGRESS`, `MOVE_MAX_UNITS_PER_TURN`, `MOVE_MAX_ENEMY_RATIO`, `MOVE_KEEP_CAPITAL_GARRISON`, `MOVE_NO_RETURN_TURNS` | How far a move must make progress, how many units move per turn, how many enemy factors a unit may stand beside, the capital garrison, and the no-return rule. | Listed: all five named in line 176. |
+| C7b | `src/ai/lines.ts`, `src/ai/doomed.ts` | `MOVE_PREFER_SUPPLY`, `LOSSES_CUT_OFF_FIRST`, `ATTACK_DOOMED_IGNORE_EXCHANGE` | While the supply effects are on: the computer prefers moves that keep a stack supplied, gives up units out of supply first in an Exchange, and lets units that will be eliminated for supply attack without the Exchange limit. Policy, not rules; measured in spec 05. | Listed: the computer policy bullet. |
 
 ### Supply
 
@@ -84,6 +85,7 @@ Columns: ID, where in `src/` (file and line), the named constant or branch, what
 |---|---|---|---|---|
 | S1 | `src/engine/supply.ts:23` | Supply sources and tracing | Which sources count (capitals only as land sources, minor capitals only if they fight on that side, captured capitals supply their captor), which sources are not built yet, the numbering (Ref 19.x vs 10.0), French and British limits, any maximum line length, and whether a unit's own hex must be friendly. | Listed: the supply bullet (line 160), which names each item. |
 | S2 | `src/engine/supply.ts:116` (`seaSupplyLine`; TODO at :113) | Sea supply (19.31) | Designation of fleets, naval factors as capacity, port pairs, transfer points (Gibraltar, Kiel, Istanbul) and interception. Currently a stub that supplies nothing by sea. | Listed: "sea supply (19.31) is a stub" (line 160). |
+| S3 | `src/engine/supply-effects.ts` (`SUPPLY_EFFECTS_ENABLED`, off) | Supply effects | Whether a unit unsupplied at the end of its Player Turn is eliminated (19.4) or only one also unsupplied at its start (11.74, built); supply read once at the start of the Player Turn (19.1 says after naval movement). With only capitals as main sources, Germany's units die within a turn once Berlin falls: does the original give another source? | Listed: the "Supply effects" bullet. |
 
 ### Fleets and naval warfare (spec 12, draft; not in `src/` yet, so not counted in the summary above)
 

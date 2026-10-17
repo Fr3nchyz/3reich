@@ -160,7 +160,7 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
     const at7h: GameState = { ...s, position: { part: "player-turn", turn: 1, step: "7h" } };
     const pending: GameState = { ...at7h, combat: { ...combatOf(at7h), turn: turnKey(at7h), pending: { chooser: "axis", target: "M35", candidates: ["g2", "g1"], values: { g1: 3, g2: 3 }, required: 2, attackers: ["g1", "g2"] } } };
     const listed = legalActions(ON, pending).filter((a) => a.type === "ALLOCATE_LOSSES");
-    expect(listed.map((a) => (a as Extract<Action, { type: "ALLOCATE_LOSSES" }>).units)).toEqual([["g2"], ["g1"]]);
+    expect(listed.map((a) => a.units)).toEqual([["g2"], ["g1"]]);
     expect(chooseAction(ON, pending, { seed: 1 })!.action).toEqual(listed[1]);
     expect(chooseAction(OFF, pending, { seed: 1 })!.action).toEqual(listed[0]);
   });
