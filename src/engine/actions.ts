@@ -6,6 +6,7 @@ import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
+import { applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
@@ -28,6 +29,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
@@ -74,6 +76,11 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return applyMoveOn(ctx, state, action);
     case "DECLARE_WAR":
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
+    case "DESIGNATE_SEA_SUPPLY": {
+      const at = waitingStep(state);
+      if (at !== "6e" && at !== "9f") return { ok: false, error: `Fleets are named to carry supply in step ${describeStep("6e")} or ${describeStep("9f")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
+      return applySeaSupply(ctx, state, action);
+    }
     case "MOVE":
       return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));
     case "PLACE_AIRBASE":

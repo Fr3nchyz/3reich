@@ -37,6 +37,8 @@ export type Action =
   | { type: "SPLIT_AIR"; side: Side; unit: string; parts: number[] }
   /** Step 6f (or 7b): air units of one nationality in one hex are combined into one counter (Ref 20.6). */
   | { type: "COMBINE_AIR"; side: Side; units: string[] }
+  /** Step 6e or 9f: fleets of one port carry supply to a port or island for units cut off from their sources (Ref 19.31); `from` is where the fleets stand. */
+  | { type: "DESIGNATE_SEA_SUPPLY"; side: Side; fleets: string[]; to: HexId; units: string[] }
   /** Step 7b: air units are committed to ground support of a hex that will be attacked (Ref 20.41). */
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support"; units: string[]; target: HexId }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
@@ -59,6 +61,10 @@ export type GameEvent =
   | { type: "AIR_RESHAPED"; at: HexId; before: { id: string; strength: number }[]; after: { id: string; strength: number }[] }
   /** Step 6f: air units changed base (a straight move of counters; no control changes). */
   | { type: "AIR_STAGED"; units: string[]; from: HexId; to: HexId }
+  /** Step 6e or 9f: fleets were named to carry supply from their port to a place for these units (Ref 19.31); the fleets have used their Game Turn. */
+  | { type: "FLEET_DESIGNATED_FOR_SUPPLY"; fleets: string[]; from: HexId; to: HexId; units: string[] }
+  /** A Player Turn ended and a sea supply named in it no longer holds (a fleet lost, the port cut off, the place taken, a unit gone); `reason` is the rule it now breaks. */
+  | { type: "SEA_SUPPLY_LAPSED"; fleets: string[]; from: HexId; to: HexId; units: string[]; reason: string }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */

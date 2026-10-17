@@ -150,9 +150,9 @@ export function describeStep(id: string): string {
  * Every other step is passed automatically and the passing is recorded (STEPS_PASSED), so a
  * rule landing means adding its step here and giving it actions. "10b" is where a player ends
  * the turn today. "II.B" decides the Initiative (Ref 11.1); it never waits. Steps "1" (declarations
- * of war), "3" (Front Options, Ref 11.21), "6f" (ground movement), "7b" (air committed to ground support: waits only while `AIR_MISSIONS_ENABLED` and there is air to commit), "7h" (ground combat), "8b" (construction) and "9a" (BRP grants) wait only while the
+ * of war), "3" (Front Options, Ref 11.21), "6f" (ground movement), "7b" (air committed to ground support: waits only while `AIR_MISSIONS_ENABLED` and there is air to commit), "7h" (ground combat), "8b" (construction), "9a" (BRP grants) and "6e" and "9f" (sea supply: they wait only while supply effects are on and a legal designation would save a cut-off unit) wait only while the
  * side to move has something it could do there (spec 01: a step with nothing to do is passed).
  * The Year Start Sequence ("YSS") runs by itself when the game reaches it (yearstart.ts) and never
  * waits; the Russian-Winter roll ("II.A") is not built yet.
  */
-export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6f", "7b", "7h", "8b", "9a", LAST_STEP]);
+export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6e", "6f", "7b", "7h", "8b", "9a", "9f", LAST_STEP]);

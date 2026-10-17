@@ -79,6 +79,8 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "UNITS_MOVED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
+    case "FLEET_DESIGNATED_FOR_SUPPLY":
+    case "SEA_SUPPLY_LAPSED": return sideOfUnits(e.fleets, before) ?? actor;
     case "GROUND_SUPPORT_LOST": return e.units[0] ? sideOfOwner(e.units[0].owner) : actor;
     case "AIR_RESHAPED": return sideOfUnits(e.before.map((b) => b.id), before) ?? actor;
     case "STEPS_PASSED": return actor;
