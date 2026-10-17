@@ -43,14 +43,21 @@ export interface NonDefenderLine {
   reason: string;
 }
 
+/** One plane committed to the hex: "3-4 German air" from "Poznan (M33)". */
+export interface AirPlane {
+  name: string;
+  from: string;
+  strength: number;
+}
+
 /** The air committed to ground support at the hex (spec 09): what counts in the attack, and what is committed but left out by the cap. */
 export interface AirSupportLine {
-  /** "3-4 German air from Poznan (M33)", one per unit that counts. */
-  counted: string[];
+  /** One per unit that counts. */
+  counted: AirPlane[];
   /** The air factors that count (they are inside `attackFactors`). */
   factors: number;
   /** Committed units the cap of three times the ground factors leaves out. */
-  leftOut: string[];
+  leftOut: AirPlane[];
 }
 
 export interface PreviewNumbers {
@@ -195,7 +202,8 @@ function describeNumbers(ctx: GameContext, state: GameState, attackers: Unit[], 
   const defenseTotal = n.defenseFactors * n.multiplier;
   const rounded = n.attackFactors < defenseTotal ? " A weaker attack is rounded against the attacker." : n.attackFactors >= 5 * defenseTotal ? " More than 5-1 counts as 5-1." : "";
   const committed = committedAt(state, target);
-  const air: AirSupportLine | null = committed.length === 0 ? null : { counted: n.air.map((u) => `${unitName(u)} from ${placeName(ctx.map, u.at)}`), factors: n.airFactors, leftOut: committed.filter((u) => !n.air.includes(u)).map((u) => unitName(u)) };
+  const plane = (u: Unit): AirPlane => ({ name: unitName(u), from: placeName(ctx.map, u.at), strength: u.strength });
+  const air: AirSupportLine | null = committed.length === 0 ? null : { counted: n.air.map(plane), factors: n.airFactors, leftOut: committed.filter((u) => !n.air.includes(u)).map(plane) };
   const mine = air && air.factors > 0 ? `${n.attackFactors} (${n.attackFactors - air.factors} on the ground and ${air.factors} in the air)` : `${n.attackFactors}`;
   const odds = n.column === null ? `${mine} against ${defenseTotal}: weaker than 1-4, so the attackers are eliminated with no roll.` : `${mine} against ${defenseTotal}, column ${n.column}.`;
   return { attackFactors: n.attackFactors, air, defenseFactors: n.defenseFactors, multiplier: n.multiplier, basis: n.basis, multiplierReason: MULTIPLIER_REASONS[n.basis], defenseTotal, column: n.column, oddsText: odds + rounded };

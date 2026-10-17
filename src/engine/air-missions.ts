@@ -43,7 +43,7 @@ export const airInRangeOf = (ctx: GameContext, state: GameState, target: HexId):
   freeAir(ctx, state).filter((u) => missionHexes(ctx, state, u.owner, u.at).includes(target));
 
 /** The most air factors that may be committed at the hex: three times every ground factor that could attack it (the exact cap is applied at step 7h, R8 option a). */
-const commitCap = (ground: readonly Unit[]): number => GS_CAP_MULTIPLE * ground.reduce((n, u) => n + u.strength, 0);
+export const commitCap = (ground: readonly Unit[]): number => GS_CAP_MULTIPLE * ground.reduce((n, u) => n + u.strength, 0);
 
 /** Whether step 7b has anything to wait for: some designation is possible (a free air unit within reach of a hex that can be attacked, and room under the cap). */
 export const hasAirWork = (ctx: GameContext, state: GameState): boolean => designations(ctx, state).length > 0;

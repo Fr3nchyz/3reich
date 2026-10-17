@@ -1,3 +1,4 @@
+import { airAnnouncement } from "./airCardView";
 import { announcement } from "./attackText";
 import { draftPreview } from "./attackView";
 import { moveAnnouncement } from "./moveView";
@@ -9,6 +10,6 @@ import type { Session } from "./session";
  */
 export function announceAttack(live: HTMLElement, s: Session): void {
   const p = draftPreview(s);
-  const text = p ? `${p.targetName}. ${announcement(p)}` : moveAnnouncement(s);
+  const text = p ? `${p.targetName}. ${announcement(p)}` : airAnnouncement(s) || moveAnnouncement(s);
   if (live.textContent !== text) live.textContent = text;
 }

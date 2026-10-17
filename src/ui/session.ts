@@ -10,6 +10,7 @@ import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from ".
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
 import { actorSide, eventSide, logLine } from "./logSide";
+import type { AirDraft } from "./airTap";
 import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
 import type { MoveChoice } from "./moveDraft";
@@ -74,6 +75,8 @@ export interface Session {
   attack?: AttackDraft | null;
   /** The last battle of the player's own attack, for the result card (spec 07, State 3). Screen state, never saved. */
   battle?: BattleResult | null;
+  /** The ground-support card being put together at step 7b (spec 09, part D2): the hex and the planes chosen. Screen state, never saved. */
+  airDraft?: AirDraft | null;
   /** The units picked for the losses of an Exchange or an advance after a battle (spec 07, State 4). Screen state, never saved. */
   choice?: ChoiceDraft | null;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */

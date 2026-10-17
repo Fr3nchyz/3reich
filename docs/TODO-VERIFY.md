@@ -128,6 +128,12 @@ Added 2026-10-16 from `docs/specs/12-fleets-naval.md` (rows N1 to N34; the spec'
 | N33 | spec 12 R5 | Supply fleet and Strategic Redeployment | Whether a fleet that carried supply may be redeployed: Ref 21.3 excepts only escort jobs from the bar, Ref 11.72 says a fleet that gave sea supply cannot be redeployed. Nothing is built; recommended when SR exists: the stricter reading (cannot). | Listed ("Fleets and naval warfare open items"). |
 | N34 | spec 12 R8 | `ELIMINATE_ONLY_IF_CUT_OFF_AT_START` (`src/engine/supply-effects.ts`) | Which list the end-of-turn elimination reads once supply is re-read at 6e: the list taken when 6e was left replaces the at-start list, so only units cut off then and still cut off at the end are eliminated (Ref 19.4 says any unit unsupplied at the end, Ref 11.74 says unsupplied at the start and the end; already open as the supply-effects item in RULES.md, now with a spec-12 id). | Listed ("Supply effects"). |
 
+### Air units (spec 09)
+
+| ID | Where | Name | What is assumed | In RULES.md open questions? |
+|---|---|---|---|---|
+| A1 | `src/engine/air-missions.ts` (`designateProblem`, `airInRangeOf`) | Nationality of ground support | Any air unit of the side to move may fly ground support to any hex the side can attack, whatever the nations of the planes and of the attackers. The rule text (Ref 20.41) has not been checked for a nationality match. | Listed ("Ground support and nationality"). |
+
 ### Map data and scenario rules
 
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
