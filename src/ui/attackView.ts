@@ -1,5 +1,5 @@
 import type { Action } from "../engine/actions";
-import { attackPreview, defaultAttackers, type AttackerChip, type AttackPreview, type ResultRow } from "./attackPreview";
+import { attackPreview, defaultAttackers, type AirPlane, type AttackerChip, type AttackPreview, type ResultRow } from "./attackPreview";
 import { attackTargets } from "./attackDraft";
 import { defendersLine, nonDefendersLine, rowLines, toBeatLine } from "./attackText";
 import { airWarningHtml } from "./airView";
@@ -48,13 +48,18 @@ function rowHtml(r: ResultRow): string {
   return `<li><strong class="res-roll">${e(r.rollText)}</strong><span class="res-text">${headed(r.text)}${counter}</span></li>`;
 }
 
-/** "Air support" under the chips: the planes committed to this hex, what counts, what the cap leaves out. */
+/** One plane committed to the hex, drawn like a chip that cannot be pressed: it was committed at step 7b and cannot be taken out. */
+function planeHtml(a: AirPlane, counts: boolean): string {
+  return `<li class="air-plane${counts ? "" : " left-out"}"><span class="chip-mark">${counts ? "Counts in this attack" : "Not counted: over the limit"}</span><span class="chip-name">${e(a.name)}</span><small>from ${e(a.from)}</small></li>`;
+}
+
+/** "Air support" under the chips: the planes committed to this hex, those that count and those the cap leaves out. */
 function airHtml(p: AttackPreview): string {
   const air = p.numbers?.air;
   if (!air) return "";
-  const counted = air.counted.length > 0 ? `<ul class="air-counted">${air.counted.map((c) => `<li>${e(c)}</li>`).join("")}</ul>` : "";
-  const left = air.leftOut.length > 0 ? `<p class="muted">Not counted (the air in an attack is at most three times the ground factors): ${e(air.leftOut.join(", "))}. It stays committed and is not lost.</p>` : "";
-  return `<h3>Air support</h3><p class="air-line">${air.factors > 0 ? `${air.factors} air factor${air.factors === 1 ? "" : "s"} count in this attack. They were committed at step 7b and cannot be taken back; they win or are lost with the attackers.` : "No committed air counts in this attack."}</p>${counted}${left}`;
+  const planes = [...air.counted.map((a) => planeHtml(a, true)), ...air.leftOut.map((a) => planeHtml(a, false))].join("");
+  const left = air.leftOut.length > 0 ? `<p class="muted">The air in an attack counts up to three times the ground factors. The planes not counted stay committed and are not lost.</p>` : "";
+  return `<h3 id="attack-air">Air support <small>(committed at step 7b)</small></h3><p class="air-line">${air.factors > 0 ? `${air.factors} air factor${air.factors === 1 ? "" : "s"} count in this attack. They cannot be taken back; they win or are lost with the attackers.` : "No committed air counts in this attack."}</p><ul class="chips attack-chips air-counted" aria-labelledby="attack-air">${planes}</ul>${left}`;
 }
 
 /** The numbers and the six results, or the sentence for a hex with no ground defender. */

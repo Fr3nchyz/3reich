@@ -30,6 +30,7 @@ import { watchMenu } from "./ui/watchMenu";
 import { revealCard } from "./ui/hexCardView";
 import { revealFresh, revealStep } from "./ui/reveal";
 import { revealMove, revealMoveStep } from "./ui/moveView";
+import { revealAir } from "./ui/airCardView";
 import { bindMoveEscape } from "./ui/moveBind";
 import { atStep6f } from "./ui/moveTap";
 import { attacking } from "./ui/attackTap";
@@ -139,6 +140,7 @@ function render(): void {
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
   revealFresh(shell.status, session, unseenChoice(session));
   revealMove(shell.status, session);
+  revealAir(shell.status, session);
   announceAttack(shell.live, session);
   const now = attacking(session) && shell.status.querySelector(".attacks") !== null;
   if (now && !wasAttacking) revealStep(shell.status);
