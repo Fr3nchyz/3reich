@@ -26,7 +26,10 @@ export interface SeaSupplyDesignation {
   units: string[];
 }
 
-/** The fleet record. Two lifetimes: `gameTurn` and `used` carry over inside a Game Turn (both Player Turns share it); the lists restart each Player Turn. */
+/**
+ * The fleet record. Two lifetimes: `gameTurn` and `used` carry over inside a Game Turn (both Player Turns share it); the lists restart each Player Turn.
+ * TODO(verify) (N7): the manual says one function in a "full Game Turn", so `used` is kept per Game Turn; the PC program may check per Player Turn.
+ */
 export interface NavalState {
   /** "year-season": the Game Turn the `used` record belongs to. */
   gameTurn: string;
@@ -47,7 +50,7 @@ export interface NavalState {
  * so 9, 6, 2 and 1 exist. TODO(verify): whether 3, 4, 5, 7 or 8 exist is not stated (N1); check against the counter sheet and the
  * Operations Manual dialog. Used by the loss break-down of ticket 12-9.
  */
-export const FLEET_COUNTER_SIZES: readonly number[] = [1, 2, 6, 9];
+export const FLEET_COUNTER_SIZES: readonly number[] = Object.freeze([1, 2, 6, 9]);
 
 const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((e) => typeof e === "string");
 
@@ -56,7 +59,7 @@ const freshTurn = (state: GameState, used: Record<string, NavalUse>): NavalState
 
 /**
  * The record for the Player Turn now being played: the stored one, or a new one. A stored record from an earlier Player Turn of the
- * same Game Turn keeps its `used` and loses its lists; one from another Game Turn, or one that is malformed, starts empty.
+ * same Game Turn keeps its `used` and loses its lists (TODO(verify) (N7): a use is shared by both Player Turns); one from another Game Turn, or one that is malformed, starts empty.
  */
 export function navalOf(state: GameState): NavalState {
   const rec = state.naval;

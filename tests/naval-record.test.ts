@@ -147,6 +147,7 @@ describe("partial fleet counter sizes (R1, N1)", () => {
     expect([...FLEET_COUNTER_SIZES]).toEqual([1, 2, 6, 9]);
     expect(12).toBe([9, 2, 1].reduce((a, b) => a + b, 0));
     for (const n of [9, 2, 1]) expect(FLEET_COUNTER_SIZES).toContain(n);
+    expect(Object.isFrozen(FLEET_COUNTER_SIZES)).toBe(true);
   });
 });
 

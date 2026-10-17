@@ -40,10 +40,14 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 
 ### Strategic Redeployment (step 9e)
 
+**Superseded by [spec 16](16-attrition-exploitation-redeployment.md) (R18 to R25), written from the PC Reference Manual 11.72: the bullets below were drafted before the PC text was read and are wrong in three places. The manual limits the number of units each nation may redeploy per Player Turn (U.S.A. 10, Germany 9, Britain 7, U.S.S.R. 6, Italy 5, France 5); there is no distance limit and no BRP cost for moving a unit; the only front restriction is for fleets and Sea Escort chains. Read spec 16, not these bullets.**
+
 - Units may be redeployed by rail or sea within the printed limits of Ref 11.73 to 11.76: distance or BRP cost, front limits, no redeployment into or through enemy ZOC, and supply required at the end.
 - The cost in BRPs comes from spec 02.
 
 ### Fortresses and the Maginot and West Wall rules
+
+Built in `fortress.ts`; what is still missing (Sevastopol's two conditions, the news of a change, the map outline) is spec 16, R26 to R32.
 
 - Fortress status changes during play (lost when first occupied by the enemy; Maginot Line, West Wall and Sevastopol conditions, Ref 4.8). The current status is part of the game state and shown on the map.
 
@@ -68,7 +72,7 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 3. Supply is tested on hand-built positions: a cut line, a supply fleet, a capital as source, and a sea path; the same state always gives the same answer.
 4. Unsupplied units are eliminated or flagged exactly at the printed steps and not before.
 5. Control changes are covered for ordinary entry, conquest, and the Fall 1939 Poland case.
-6. Strategic Redeployment limits are tested, including the front restriction and enemy-ZOC refusal.
+6. Strategic Redeployment limits are tested (superseded: spec 16 R18 to R20 and its section F3 give the tests; the front restriction named here is not in the PC manual for land, and the refusal is for a unit on, or next to, an enemy unit, not an enemy-ZOC rule).
 7. Fortress status changes are tested for each kind (permanent, standard, Maginot, West Wall, Sevastopol).
 8. Mutation checks: removing the ZOC stop, the overstack check, or a supply source each makes a test fail.
 

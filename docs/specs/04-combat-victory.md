@@ -17,8 +17,8 @@ Armies, air forces and fleets can fight, and the game can end with a result. The
 - The die is rolled from the game's seeded generator, the result is shown with the column and roll, counterattacks chain as the rules say, and the log records every round.
 - **Exchange**: the side with fewer factors loses everything; the larger side removes at least as many factors, and the player chooses which units go (the program picks the smallest legal set for the computer).
 - **Retreats and advances after combat** follow the rules (PC README rule 18.33: retreat into any eligible hex; there is no preference order).
-- **Attrition combat** (7a, 7p): attrition losses and hexes vacated come from the Attrition table; the defender designates hexes one at a time (PC README rule 18.34), and occupation after attrition may not be a capital, capital-port or objective.
-- **Exploitation** (7j to 7o): armor may exploit after a won battle; airborne drops in exploitation only happen if armor exploits (PC README rule 31.1).
+- **Attrition combat** (7a, 7p): attrition losses and hexes vacated come from the Attrition table; the defender designates hexes one at a time (PC README rule 18.34), and occupation after attrition may not be a capital, capital-port or objective. **Superseded by [spec 16](16-attrition-exploitation-redeployment.md) (R1 to R9), which also corrects the wording: the attacker, not the defender, chooses the hexes, one at a time; the defender chooses the lost units and the retreats.**
+- **Exploitation** (7j to 7o): armor may exploit after a won battle; airborne drops in exploitation only happen if armor exploits (PC README rule 31.1). **Superseded by [spec 16](16-attrition-exploitation-redeployment.md) (R10 to R17) for the Breakthrough, the movement at 7j and the combat at 7o; the drops stay spec 09's.**
 
 ### Air operations (7b to 7e, 7g, 7i, 7m, 7n)
 
