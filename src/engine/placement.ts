@@ -2,6 +2,7 @@ import { airCapacity } from "./air-bases";
 import { cacheOf, isBox, resolveArea, resolveAreas, territoryOf, union, type Place, type Resolved } from "./areas";
 import type { GameContext } from "./context";
 import { setupOf } from "./game";
+import { portCapacity } from "./naval-ports";
 import { AIR_FACTOR_STACKING_LIMIT, NAVAL_FACTOR_STACKING_LIMIT, STACKING_LIMIT, STACKING_LIMIT_LONDON_BRITISH } from "./tables";
 import { AIR_BASE_FEATURES, NAVAL_BASE_FEATURES } from "./terrain";
 import type { ForceOwner, GameState, Unit, UnitType } from "./types";
@@ -108,7 +109,10 @@ export function stackingProblem(ctx: GameContext, state: GameState, owner: Force
   }
   if (spec.type === "fleet") {
     const naval = here.filter((u) => u.type === "fleet").reduce((n, u) => n + u.strength, 0);
-    if (naval + spec.strength > NAVAL_FACTOR_STACKING_LIMIT) return `${place} would hold ${naval + spec.strength} naval factors (limit ${NAVAL_FACTOR_STACKING_LIMIT}).`;
+    // Ref 21.1, 5.0: the port's own capacity (36; 9 at Malta, Suda Bay and Famagusta). A hex that is no port keeps the old flat limit: whether a fleet may be there at all is suitsBase's question.
+    const capacity = portCapacity(ctx, place);
+    const limit = capacity > 0 ? capacity : NAVAL_FACTOR_STACKING_LIMIT;
+    if (naval + spec.strength > limit) return `${place} would hold ${naval + spec.strength} naval factors (limit ${limit}).`;
   }
   // Ref 26.0: before 1942 British and French units may not stack together.
   if (state.year < 1942 && (owner === "britain" || owner === "france")) {

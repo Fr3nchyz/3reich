@@ -21,11 +21,14 @@ const fnv = (text: string): number => {
 // Hashes of 2026-10-16 (ticket 09-14): step 7b now waits for a side with air in range of an attackable hex, so the computer's list gains one END_STEP at 7b
 // for each such turn. Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (1260916810, 3779823303,
 // 2114108264, 947755197), so nothing else in the computer's play changed.
+// Hash of 1942 seed 1 of 2026-10-17 (ticket 12-4): port capacity is now enforced (Malta holds 9 naval factors, not 36), so the automatic setup puts one British fleet at
+// Alexandria (LL29) instead of Malta (GG19). Checked then: of the 414 recorded actions exactly one differs, the SETUP_PLACE at index 39 (GG19 to LL29); the other 413,
+// every move, attack and build of the play, are identical. The 1939 hashes (and the Campaign) are unchanged.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2972029949));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3518474011));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(119964332));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
     expect(hashOf("1939", 5, 4)).toBe(1280678831);
     expect(hashOf("1939", 2, 4)).toBe(4061975126);

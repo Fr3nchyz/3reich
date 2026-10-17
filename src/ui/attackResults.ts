@@ -46,6 +46,8 @@ export interface ResultInput {
   multiplier: number;
   /** Names of the enemy counters that also go when the defenders are eliminated (see `lonersAt`). */
   alsoDestroyed: readonly string[];
+  /** Names of the enemy fleets that move to a friendly port instead when the defenders are eliminated (spec 12 R9). Default none. */
+  alsoMoved?: readonly string[];
   /** Whether the hex is left empty when the defenders go, so the survivors may advance. */
   emptyAfterWin: boolean;
 }
@@ -105,6 +107,9 @@ const TITLES: Readonly<Record<CrtResult, string>> = {
   CA3: "Counterattack 3",
 };
 
+/** The sentence about enemy fleets that leave the port with no roll when the defenders go: they move to the nearest friendly port with room, or are lost if there is none. */
+const movedWords = (i: ResultInput): string => (i.alsoMoved && i.alsoMoved.length > 0 ? ` These enemy fleets move to a friendly port (or are lost if none has room): ${i.alsoMoved.join(", ")}.` : "");
+
 /**
  * What an Exchange leaves behind in the hex: when the defenders can all go, the enemy air units and fleets alone in the hex are destroyed
  * too (`lonersAt`, as after a D), and when the attackers also keep survivors they may advance into the empty hex.
@@ -114,7 +119,7 @@ function exchangeAftermath(c: ExchangeCost, i: ResultInput): string {
   if (!canEmpty) return "";
   const loners = i.alsoDestroyed.length > 0 ? ` ${c.defendersLoseAll ? "These enemy counters in the hex go too, with no roll" : "If their losses leave the hex empty, these enemy counters go too, with no roll"}: ${i.alsoDestroyed.join(", ")}.` : "";
   const advance = c.defendersLoseAll && !c.attackersLoseAll && i.emptyAfterWin ? " The hex is left empty and your survivors may advance." : "";
-  return `${loners}${advance}`;
+  return `${loners}${movedWords(i)}${advance}`;
 }
 
 /** One row per distinct result of the column, with its cost in plain words. */
@@ -126,7 +131,7 @@ export function resultRows(i: ResultInput): ResultRow[] {
     if (result === "A") return { ...base, text: `Your attackers are eliminated: you lose all ${units(i.attackers.length)} (${fx(att)}). They lose nothing.` };
     if (result === "D") {
       const also = i.alsoDestroyed.length > 0 ? ` These enemy counters in the hex go too, with no roll: ${i.alsoDestroyed.join(", ")}.` : "";
-      const adv = i.emptyAfterWin ? " The hex is left empty and your survivors may advance." : "";
+      const adv = movedWords(i) + (i.emptyAfterWin ? " The hex is left empty and your survivors may advance." : "");
       return { ...base, text: `The defenders are eliminated: they lose all ${units(i.defenders.length)} (${fx(def)}). You lose nothing.${also}${adv}` };
     }
     if (result === "Ex") {

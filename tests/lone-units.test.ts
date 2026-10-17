@@ -45,13 +45,14 @@ const seedFor = (units: Unit[], ids: string[], pick: (s: GameState, events: Retu
 describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(verify))", () => {
   it("is on", () => expect(ALONE_NONGROUND_DESTROYED).toBe(true));
 
-  it("an attack on a hex with only air units, an airbase or a fleet is listed and destroys them without a roll", () => {
+  it("an attack on a hex with only air units, an airbase or a fleet is listed; the air and the airbase are destroyed without a roll and the fleet leaves (here M35 is no port, so it is lost)", () => {
     const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 3, "M35"), unit("b1", "poland", "airbase", 1, "M35"), unit("f1", "poland", "fleet", 2, "M35")]);
     expect(legalActions(CTX, s)).toContainEqual({ type: "ATTACK", side: "axis", units: ["g1"], target: "M35" });
     const r = ok(attack(s, ["g1"], "M35"));
     expect(r.state.rngState).toBe(s.rngState); // no die rolled
     expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).toMatchObject({ attackers: ["g1"], defenseFactors: 0, rounds: [], outcome: "defender-eliminated" });
-    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED")).toHaveLength(3);
+    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED")).toHaveLength(2);
+    expect(r.events.filter((e) => e.type === "FLEET_DISPLACED")).toEqual([{ type: "FLEET_DISPLACED", unitId: "f1", owner: "poland", from: "M35", to: null }]);
     expect(stacks(r.state, "M35")).toEqual([]);
     expect(combatOf(r.state)).toMatchObject({ attacked: ["g1"], targets: ["M35"], advances: [{ to: "M35", units: ["g1"] }] });
     expect(legalActions(CTX, r.state)).toContainEqual({ type: "ADVANCE", side: "axis", units: ["g1"], to: "M35" });

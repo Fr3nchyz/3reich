@@ -36,3 +36,11 @@ export const ONE_HEX_ISLANDS: readonly HexId[] = ["B29", "GG19"];
  * feeds nine counters. Spec 12 R6, R7. The capacity is the sum over all the designations that use the fleet. TODO(verify): N8, N9 (charged when named), N35 (several fleets in one designation).
  */
 export const SEA_SUPPLY_UNITS_PER_FACTOR = 1;
+
+/**
+ * What happens to a fleet that is left alone in a port when the last ground defender is gone (the roll-free sweep of `ALONE_NONGROUND_DESTROYED`):
+ * true, it is displaced to the nearest friendly port with room on its Front, or eliminated if there is none (Ref 21.1, spec 12 R9, decision D1 of
+ * spec 09); false, it is destroyed with no roll as before. Air units and airbases keep their own rule until spec 09 ticket 09-5. TODO(verify): the
+ * rule is the product owner's decision of 2026-10-15; the manual's text (Ref 21.1, 12.4) and the PC game are not yet checked (N15 to N18, N36, N37).
+ */
+export const FLEETS_DISPLACED_ON_CAPTURE = true;

@@ -65,6 +65,8 @@ export type GameEvent =
   | { type: "FLEET_DESIGNATED_FOR_SUPPLY"; fleets: string[]; from: HexId; to: HexId; units: string[] }
   /** A Player Turn ended and a sea supply named in it no longer holds (a fleet lost, the port cut off, the place taken, a unit gone); `reason` is the rule it now breaks. */
   | { type: "SEA_SUPPLY_LAPSED"; fleets: string[]; from: HexId; to: HexId; units: string[]; reason: string }
+  /** A fleet left alone in a port that was taken moved to the nearest friendly port with room (`to`), or was eliminated because there was none (`to` null) (spec 12 R9). */
+  | { type: "FLEET_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */

@@ -100,7 +100,7 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
     case "ATTACK":
       return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":
-      return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(state, action));
+      return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
     case "ADVANCE":
       return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
     case "SELECT_FRONT_OPTION":

@@ -158,14 +158,16 @@ describe("after a win", () => {
       const s = at7h(units, seed);
       const p = attackPreview(CTX, s, "M35", ["g1"]);
       const without = { ...s, units: Object.fromEntries(Object.entries(s.units).filter(([id]) => id !== "p1")) };
-      expect(p.alsoDestroyed).toHaveLength(lonersAt(without, [s.units.g1!], "M35").length);
-      expect(p.alsoDestroyed).toHaveLength(2);
+      expect(p.alsoDestroyed.length + p.alsoMoved.length).toBe(lonersAt(without, [s.units.g1!], "M35").length);
+      expect(p.alsoDestroyed).toHaveLength(1); // the air unit
+      expect(p.alsoMoved).toEqual(["2 Polish fleet"]); // the fleet is driven out, not destroyed
       const r = applyAction(CTX, s, attackOf(["g1"], "M35"));
       if (!r.ok) throw new Error(r.error);
       const swept = r.events.find((e) => e.type === "UNITS_SWEPT");
       if (resolvedOf(r.events).outcome === "defender-eliminated") {
         wins++;
-        expect(swept && swept.type === "UNITS_SWEPT" ? swept.units.map((u) => u.id).sort() : []).toEqual(["a1", "f1"]);
+        expect(swept && swept.type === "UNITS_SWEPT" ? swept.units.map((u) => u.id).sort() : []).toEqual(["a1"]);
+        expect(r.events.filter((e) => e.type === "FLEET_DISPLACED").map((e) => (e.type === "FLEET_DISPLACED" ? e.unitId : ""))).toEqual(["f1"]);
       }
     }
     expect(wins).toBeGreaterThan(0);
