@@ -10,9 +10,9 @@ import { airMoveNow, cancelAirMove, chooseBase, joinPlanes, openPlacement, place
 import { hexCard } from "../src/ui/hexCard";
 import { nextText } from "../src/ui/nextBar";
 import { mapSyncProbe } from "./air-move-helpers";
-import { takeBack } from "../src/ui/moveUndo";
+import { takeBack, takeBackReason } from "../src/ui/moveUndo";
 import type { Session } from "../src/ui/session";
-import { normaliseMode, tapHex } from "../src/ui/sessionActions";
+import { normaliseMode, takeAction, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import { atMovement } from "./helpers-move-session";
 import { at6f, inf } from "./helpers-move";
@@ -99,7 +99,7 @@ describe("the planes card", () => {
     expect(s.state.units.a2!.at).toBe("K33");
     expect(airOf(s.state).staged).toEqual(["a1", "a2"]);
     expect(s.airMove).toBeNull();
-    expect(s.log.join("\n")).toMatch(/3-4 German air, 2-4 German air change|3-4 German air.*changed base from Rostock \(J32\) to .*\(K33\)/);
+    expect(s.log.join("\n")).toMatch(/3-4 German air, 2-4 German air changed base from Rostock \(J32\) to .*\(K33\)\./);
     expect(s.toast).toMatch(/changed base from Rostock \(J32\) to .*\(K33\)\./);
   });
 
@@ -294,6 +294,24 @@ describe("split and join", () => {
     const s = session([air("a1", "J32", 3), { ...air("a2", "J32", 2), movement: 6 }]);
     chooseBase(s, "J32");
     expect(airMoveNow(s)!.join).toBeNull();
+  });
+
+  it("the card's sentence about taking back agrees with what Take back does: it undoes a change of base until Done with the step", () => {
+    const s = session([air("a1", "J32", 3)]);
+    chooseBase(s, "J32");
+    const sentence = "“Take back last move” undoes a change of base, until you press Done with the step.";
+    expect(words(page(s))).toContain(sentence);
+    expect(page(s)).not.toContain("cannot be taken back");
+    stageTo(s, "K33");
+    expect(takeBackReason(s)).toBeNull(); // the button would work, as the sentence says
+    expect(takeBack(s)).toBe(true);
+    expect(s.state.units.a1!.at).toBe("J32");
+    chooseBase(s, "J32");
+    stageTo(s, "K33");
+    takeAction(s, { type: "END_STEP", side: "axis", step: "6f" }); // Done with the step ends the chance
+    expect(takeBackReason(s)).not.toBeNull();
+    expect(takeBack(s)).toBe(false);
+    expect(s.state.units.a1!.at).toBe("K33");
   });
 
   it("a change of base, a split and a join are all taken back by 'Take back last move'", () => {

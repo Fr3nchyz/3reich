@@ -59,10 +59,10 @@ test("step 6f: a row of the planes list opens the card, a base row changes the b
 
   await press(baseRows(page).first());
   await expect(card(page)).toHaveCount(0);
-  await expect(page.locator(".log li").filter({ hasText: "change base from" })).toHaveCount(1);
+  await expect(page.locator(".log li").filter({ hasText: "changed base from" })).toHaveCount(1);
   await press(page.locator("#move-undo"));
   await expect(page.locator(".toast")).toContainText("Took back:");
-  await expect(page.locator(".log li").filter({ hasText: "change base from" })).toHaveCount(0);
+  await expect(page.locator(".log li").filter({ hasText: "changed base from" })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

@@ -155,7 +155,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "UNITS_MOVED":
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_STAGED":
-      return `${stackSummary(unitsWithIds(before, e.units))} change base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+      return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ground support to ${placeName(ctx.map, e.target)}.`;
     case "GROUND_SUPPORT_LOST":

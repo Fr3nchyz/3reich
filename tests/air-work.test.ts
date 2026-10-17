@@ -27,7 +27,7 @@ describe("step 6f waits for air work (spec 09 C5)", () => {
   });
 
   it("an airbase left to place keeps the step open with no plane and no ground unit", () => {
-    const s = board([inf("g1", "germany", "L31", 3, 3, "infantry")].slice(0, 0));
+    const s = board([]);
     expect(powersWithReserve(s)).toContain("germany");
     expect(hasAirMoveWork(CTX, s)).toBe(true);
     expect(stepAfter(s)).toBe("6f");
@@ -56,6 +56,14 @@ describe("step 6f waits for air work (spec 09 C5)", () => {
     expect(hasAirMoveWork(CTX, full)).toBe(false);
   });
 
+  it("the room of a base is the plane's factors exactly: room for 3 counts, room for 2 does not", () => {
+    const alone = board([air("a1", "J32")], SPENT); // a 3-factor plane
+    const others = airBasesOf(CTX, alone, "axis").filter((h) => h !== "J32");
+    const fill = (spare: number) => board([air("a1", "J32"), ...others.map((h, i) => inf(`f${i}`, "germany", h, i === 0 ? 5 - spare : 5, 4, "air"))], SPENT);
+    expect(hasAirMoveWork(CTX, fill(3))).toBe(true);
+    expect(hasAirMoveWork(CTX, fill(2))).toBe(false);
+  });
+
   it("a plane of the other side that could change base does not count for the side to move", () => {
     const probe = board([], SPENT);
     const mine = (h: string) => board([air("b1", h, "britain")], SPENT);
@@ -64,6 +72,13 @@ describe("step 6f waits for air work (spec 09 C5)", () => {
     const brit = mine(base!);
     expect(hasAirMoveWork(CTX, { ...brit, activeSide: "allies" })).toBe(true); // the plane itself can change base
     expect(hasAirMoveWork(CTX, brit)).toBe(false); // but it is not the Axis side's work
+  });
+
+  it("a plane of the other side that the engine would refuse to stage does not make the step wait (a British airbase counter held by the Axis at the start of its turn)", () => {
+    // The airbase is British and now held by Britain, but Germany held the hex when the Axis turn began, so `stageProblem` alone would let the Axis "stage" a British plane to it.
+    const s0 = board([air("b1", "L32", "britain"), { id: "x1", owner: "britain", type: "airbase", strength: 0, at: "L33" }], SPENT);
+    const s: GameState = { ...s0, control: { ...s0.control, L33: "britain" }, air: { ...airOf(s0), controlAtStart: { ...s0.control, L33: "germany" } } };
+    expect(hasAirMoveWork(CTX, s)).toBe(false);
   });
 
   it("a base the side did not hold when its turn began does not count (the engine's own stage test decides)", () => {
