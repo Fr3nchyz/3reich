@@ -30,7 +30,7 @@ What each one marks (land hexes on our map):
 | `BRIT42.CON` | Britain (with Gibraltar, Malta, Cyprus), Egypt, Iraq, Lebanon-Syria, Palestine, Transjordan and Libya from Tobruk east (8 hexes) |
 | `USSR42.CON` | The Soviet side of the 1942 start line (389 hexes) |
 | `VICHY42.CON` | Vichy France at the start of 1942: 17 hexes of southern France, Corsica, Morocco, Algeria, Tunisia |
-| `VICHY.CON` | The same 18 European hexes (Vichy France when France falls) |
+| `VICHY.CON` | The same European hexes (Vichy France when France falls): 19 marked, 17 in mainland France and 2 in Corsica (X20, and W21, which our map still calls sea), so 18 are land on our map |
 | `GERM44.CON` | As `GERM42.CON` with Albania, Italy north of the line (with Rhodes) and 37 Soviet hexes |
 | `BRIT44.CON` | Britain's 1942 lands plus all of Libya, French North Africa, Corsica, Sicily, Sardinia and Italy south of the line |
 | `USSR44.CON` | The Soviet side of the 1944 start line (443 hexes) |

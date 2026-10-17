@@ -60,7 +60,7 @@ The PC game adjusts BRP bases and growth, and adds counters to the Force Pools, 
 ## Open questions (also add to docs/RULES.md)
 
 - The exact BRP growth and loss arithmetic (what is a nation's "base", how conquest changes it, rounding): the manual text must be read line by line before this is built; the game's own data files may settle the numbers.
-- What happens when a Major Power is conquered or surrenders (France, Italy, the USSR): BRP transfer rules and Vichy France.
+- What happens when a Major Power is conquered or surrenders (France, Italy, the USSR): BRP transfer rules and Vichy France. (Now written in [spec 14](14-victory-surrender-winter.md): conquest of Major Powers and minors, the half-BRPs, Moscow and Leningrad, Vichy creation.)
 - Whether BRP spending in one Player Turn is a single pool across all uses or tracked per use.
 - Eastern Europe's 25 BRPs after Fall 1939 (Ref 29.0): who receives them and when.
 - Which of the strategic-warfare rules belong here and which in the combat spec (proposal: factors and BRP effects here, the naval and air missions there).

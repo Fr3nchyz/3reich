@@ -57,7 +57,7 @@ Units can be moved on the map, only where the rules allow, and the game knows wh
 
 - Exact terrain movement costs and whether any terrain is impassable for armor (read the Terrain chart; verify against the game's own tables, see ticket T03).
 - How the original treats Sicily, Sardinia and other islands for ground movement (hexsides marked "coastline only"); ticket T04 compares our map with the game's.
-- What counts as a supply source for each nation in each scenario, and for conquered minors.
+- What counts as a supply source for each nation in each scenario, and for conquered minors. (The passing of control at a conquest, including the supply-line exception for trapped units, is in [spec 14](14-victory-surrender-winter.md), tickets 14-6 and 14-23.)
 - Whether supply is traced by the engine automatically for display, or only when a rule needs it (proposal: always available, computed on demand and cached per state).
 - The 1944 and 1942 start lines (ticket T01) decide which units start in or out of supply.
 

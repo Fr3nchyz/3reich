@@ -111,14 +111,14 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 
 | Rule | Roadmap item | Guess |
 |---|---|---|
-| **Victory, surrender, Russian winter: spec written** ([14](specs/14-victory-surrender-winter.md), draft for review, 24 tickets; sizes below are the spec's, not guesses) | 6.7 | 17 Beta tickets (6 S, 8 M, 3 L), 7 Release 1 tickets (1 S, 6 M); not in the 47 counted above |
+| **Victory, surrender, Russian winter: spec written** ([14](specs/14-victory-surrender-winter.md), draft for review, 24 tickets; sizes below are the spec's, not guesses; who owns what between specs 14 and 15 is in part H of spec 14) | 6.7 | 17 Beta tickets (6 S, 8 M, 3 L), 7 Release 1 tickets (1 S, 6 M); not in the 47 counted above |
 | 14-1 to 14-4 The game ends and says who won: objective count, results for all four scenarios, result at the last turn or on a decisive conquest, score line and end card | | S, M, M, M (Beta) |
-| 14-5 to 14-7 Countries fall: a Major Power by its capital, Poland and other minors, France with Vichy France | | L, M, L (Beta) |
+| 14-5 to 14-7 Countries fall: a Major Power by its capital (14-5), the conquest mechanics for every other country, Poland first, which spec 15 reuses (14-6), France with Vichy France (14-7; spec 14 owns Vichy) | | L, M, L (Beta) |
 | 14-11 to 14-13 The Russian winter: roll and choice at II.A, no doubling and no Axis Offensive in the East, the screens | | M, M, S (Beta) |
-| 14-14 to 14-16 Russia: Moscow and Leningrad BRPs, the surrender offer, its screens | | S, L, M (Beta) |
+| 14-14 to 14-16 Russia: Moscow and Leningrad BRPs (spec 14 owns them), the surrender offer, its screens | | S, L, M (Beta) |
 | 14-18 Free Siberian Transfer | | M (Beta if the owner says yes to Q3) |
 | 14-19, 14-20, 14-24 Computer answers, self-play gate, docs | | S, S, S (Beta) |
-| 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, trapped enemy units | | M, M, M, M, M, S, M (Release 1) |
+| 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
 | Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest | 4.3 rest | L |
 | Attrition | 6.2 | M |
 | Exploitation | 6.3 | M |
