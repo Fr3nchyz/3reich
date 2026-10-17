@@ -89,6 +89,7 @@ for (const size of SIZES) {
   const [w, h] = size;
 
   test(`${w}x${h}: step 6f, the planes list and card and the airbases: every button 44 px, reachable, in words`, async ({ page, hasTouch }) => {
+    test.setTimeout(60_000); // about 16 s on a quiet machine; a slow shared runner needs room
     const errors = await load(page, size, TO_6F, "6f");
     const press = (loc: Locator) => (hasTouch ? loc.tap() : loc.click());
     const moves = page.locator(".air-moves");
@@ -112,20 +113,18 @@ for (const size of SIZES) {
     await press(card.locator("#plane-range"));
     await expect(card.locator("#plane-range")).toHaveAttribute("aria-pressed", "true");
     const refused = card.locator("details", { hasText: "Bases they cannot use" });
-    if (await refused.count()) {
-      await press(refused.locator("summary"));
-      expect(await tooSmall(card), "card with the fold-out open").toEqual([]);
-      await expectWords(page, card, "the refused bases");
-    }
+    expect(await refused.count(), "the fold-out of refused bases is on the card").toBe(1);
+    await press(refused.locator("summary"));
+    expect(await tooSmall(card), "card with the fold-out open").toEqual([]);
+    await expectWords(page, card, "the refused bases");
 
     // Split and join, if the engine offers them for this base.
     const split = card.locator("details", { hasText: "Split the" });
-    if (await split.count()) {
-      await reachableAfterScroll(page, split.locator("summary"));
-      await press(split.locator("summary"));
-      expect(await tooSmall(card), "card with the splits open").toEqual([]);
-      await expectAllReachable(page, card, "the splits");
-    }
+    expect(await split.count(), "the fold-out of splits is on the card").toBe(1);
+    await reachableAfterScroll(page, split.locator("summary"));
+    await press(split.locator("summary"));
+    expect(await tooSmall(card), "card with the splits open").toEqual([]);
+    await expectAllReachable(page, card, "the splits");
 
     await press(card.locator("#plane-cancel"));
     await expect(card).toHaveCount(0);
@@ -146,6 +145,7 @@ for (const size of SIZES) {
   });
 
   test(`${w}x${h}: step 7b, the air-support card: every button 44 px, the chips and the Commit button reachable, in words`, async ({ page, hasTouch }) => {
+    test.setTimeout(60_000); // about 16 s on a quiet machine; a slow shared runner needs room
     const errors = await load(page, size, TO_7B, "7b");
     const press = (loc: Locator) => (hasTouch ? loc.tap() : loc.click());
     const list = page.locator(".air-support");
