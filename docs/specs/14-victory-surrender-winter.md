@@ -1,0 +1,765 @@
+# 14. Victory, surrender, conquest and the Russian winter
+
+Status: **draft for review, 2026-10-17. Part of the Beta milestone (docs/PLAN.md): a full 1939 game against the computer needs most of it. Seven tickets are marked R1 and wait for Release 1. Nothing is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 01 (turn steps), spec 02 (economy), spec 03 (control and supply), spec 04 (ground combat; this spec takes over its victory, surrender and winter sections), specs 09 and 12 (the shared capture hook) and spec 13 (zones of control). Written from the PC Reference Manual, the Operations Manual, the PC README errata, the game's victory-conditions file and the text messages inside the game program (docs/GAME_DATA.md). The minor-country spec (forces of an attacked minor, Minor-Ally activation, BRPs) is separate; part H draws the line between the two.
+
+## Decisions needed
+
+Five questions, each answerable with yes or no. My recommendation comes first; if you have no view, the recommendation stands (as for DF-1 to DF-3 in spec 12).
+
+| # | Question (yes or no) | Recommended | What changes if you say no |
+|---|---|---|---|
+| Q1 | When one move decides the game before the last turn, should the game **stop at once** and show the result? This happens only in the 1944 scenario and the Campaign (the Allies take Germany, or the Axis takes three Allied powers). In 1939 and 1942 the game always runs to the last turn. | Yes | The game would go on, with nothing left to win, until the last turn. A "Keep playing" button costs one more ticket. |
+| Q2 | Show a running score under the turn line ("Objectives: Axis 17, Allies 21, nobody 4") with a button for the full list of the 42 objectives? The DOS game has the list in a menu. | Yes | Frank sees the score only at the end and learns it was close only when it is over. |
+| Q3 | Build the **Free Siberian Transfer** in Beta? It gives the Allies ten free Russian ground units over the winter of 1941 and the year 1942, and raises the Allied target by one objective. A 1939 game runs to Fall 1942, so it falls inside Beta. | Yes | The Allies miss ten free units in 1941 and 1942 (a weaker Allied side than the real game) and the victory tables use their plain numbers. Ticket 14-18 moves to Release 1. |
+| Q4 | Leave three rules that are rarely felt to Release 1: the limits on French attacks while Paris is held by the enemy, Vichy waking up or going back to sleep, and the Axis having to keep 45 factors in Russia after a Russian surrender? | Yes | Tickets 14-9, 14-10 and 14-17 move into Beta (3 more medium tickets). |
+| Q5 | When the computer plays the Axis and Russia offers to surrender, should it **accept**? (Accepting gives Germany half of Russia's yearly income; refusing lets the war go on until the last Russian unit is gone.) | Yes | The computer refuses; you could still accept when you play the Axis yourself. |
+
+Questions for Frank, who knows the DOS game, are in part J. They do not block anything.
+
+## Summary (read this first)
+
+- **Today** a game cannot be won or lost. It runs to the last Game Turn of the scenario and prints "Game over". No objective is counted. When a capital falls nothing happens: Poland keeps its army after Warsaw is taken, France fights on after Paris is lost. The Russian-winter roll (card step II.A) and the Russian-surrender step (10a) are passed with no rule behind them. The Free Siberian Transfer (step 8a) does not exist. The only thing in place is the data: the 42 objectives are on the map, the scenarios have their end dates, and a country can be marked "out" of the game.
+- **What this spec adds, in the order Frank would feel it:**
+  1. **The Russian winter** (Beta). In the first winter of the German-Russian war the Germans lose their defensive bonus inside Russia and cannot take an Offensive Option in the East. Russia may sometimes postpone it one year. The game rolls four dice and asks.
+  2. **Countries fall** (Beta). Poland falls when Warsaw is taken. France falls when Paris stays in German hands through the Allied turn, and Vichy France appears. Germany, Britain and Italy fall when their capital stays in enemy hands through their own Combat Phase. Units go, land changes hands, income moves.
+  3. **Russia can surrender** (Beta). When Russia is weak and the Axis strong inside Russia, the Axis is offered a surrender. Taking it ends the war in the East and gives Germany half of Russia's income.
+  4. **The game ends and says who won** (Beta). A running objective score, a result card with the DOS game's verdict names (Allied Decisive, Allied Tactical, Allied Marginal, Stalemate, Axis Marginal, Axis Tactical, Axis Decisive), and the same result in self-play and watch mode.
+  5. **Free Siberian Transfer** (Beta if you say yes to Q3).
+- **Out of scope:** the forces of an attacked minor, Minor-Ally activation and the BRPs a conquered minor pays (the minor-country spec); strategic warfare and the Murmansk and U.S. boxes; strategic redeployment; attrition; exploitation; the Suez Canal damage clock. Part H lists each with the room left for it.
+- **Size:** 24 tickets: 17 for Beta (6 small, 8 medium, 3 large) and 7 for Release 1 (1 small, 6 medium). At the pace measured in docs/PLAN.md (about one medium ticket per 1 to 2 hours when nothing blocks) Beta's part is roughly 25 to 40 hours, plus or minus half. The smallest useful stop is after ticket 14-4: the game ends and says who won.
+- **Rules check:** 29 `TODO(verify)` rows (V1 to V29) are in docs/TODO-VERIFY.md and docs/RULES.md. The ones that change what Frank sees most: whether the game stops at once when a conquest decides it (V3), what counts as "factors on the map" for the Russian surrender (V17), what the winter does to Axis stacks that mix Finns and Germans (V23), how the four-dice test is shown (V24), and three messages inside the program that no manual explains (V25).
+- **The reading of the manual changed in one place.** Spec 04 and docs/RULES.md say "Ref 18.0" for the Russian Winter and surrender. In the PC Reference Manual the winter is **28.0**, the Russian surrender is **11.8** and **18.41**, and 18.0 is the section on Major Powers. The board-game web text numbers them differently again. This spec uses the PC numbers throughout.
+
+## Words used here
+
+| Word | Meaning |
+|---|---|
+| **Objective** | One of the 42 red-printed cities that decide the score (14 per Front). Capitals are Objectives only when the map prints them red (Berlin, Paris, London, Rome, Moscow, Warsaw and others); Brussels, Copenhagen and Helsinki are capitals and not Objectives. |
+| **Hold** | A side holds an Objective when the hex is controlled by a nation that fights on its side, with the exceptions in rule R1. |
+| **Capital lost** | An enemy ground unit has taken the capital hex, but the owner has not yet had its Combat Phase to take it back. |
+| **Conquered** | A Major Power whose capital stayed lost through its own Combat Phase, or a minor country whose capital was taken, or the U.S.S.R. after the events of rule R7. The nation is out of the game for good. |
+| **Surrender** | Russia's one-time offer (rule R7), and Italy's (rule R6). A surrender is treated as a conquest for most purposes. |
+| **Level** | The size of a win: Decisive, Tactical or Marginal (the DOS game's words). |
+| **First winter** | The Game Turn in which the Russian Winter rule is in force (rule R10). |
+| **Occupation Force** | The 45 Axis factors the Axis must keep in Russia after the war there is over (rule R7). |
+| **Phasing side** | The side whose Player Turn it is. |
+| **Pass Option** | The manual's third Front Option. The engine calls it "defensive". |
+
+## Goal
+
+Frank should be able to play a 1939 game to its end and be told, in plain words, who won and why.
+
+1. **A game ends and says so.** At the last turn, or when a conquest decides it, a card shows the verdict and the score, and tells Frank what the winner needed.
+2. **A country that falls, falls.** The player is told when it is going to happen (a capital taken, one turn to take it back) and when it has happened, and what it did to units, land and income.
+3. **The Russian winter is a surprise Frank is not surprised by.** The game rolls the dice, shows them, asks when it must, and says each turn that the winter is on and what it does.
+4. **Russia can give up.** The Axis player is asked, with the facts on the card; the Allied player is warned in time to avoid it.
+
+Done means each of these works for both sides, the computer never stalls at a new prompt, and every number on a card is the number the rules used.
+
+## What exists today (facts from the repo, 2026-10-17)
+
+| Fact | Where | Consequence |
+|---|---|---|
+| `Phase` has `"game-over"`. The Game Turn after the scenario's `end` sets it and emits `GAME_OVER` (year and season). `legalActions` is then empty, the computer returns nothing, the status line says "Game over" and the log "The scenario ends after ...". No result. | `turn.ts` `endGameTurn`, `types.ts`, `actions.ts`, `ui/statusView.ts`, `ui/session.ts` | The end exists; the verdict does not. |
+| The scenario end dates are in the data: 1939 Summer 1942 (12 Game Turns), 1942 Winter 1944 (12), 1944 Spring 1946 (9), Campaign Summer 1945 (24). | `src/data/scenario-*.ts` | Matches Ops 9.0; nothing to change. |
+| The 42 Objectives are on the map as hexes with the feature `objective`, 14 per Front, with the manual's names. Twenty-six hexes are capitals; 12 of them are also Objectives. | `src/data/map.json`, `tests/map-data.test.ts` | Count the feature `objective` only. **Warning:** the computer's `OBJECTIVE_FEATURES` (`src/ai/geo.ts`) and the self-play tally (`scripts/selfplay/stats.ts`) include `capital` and `capital-port` as well, because they are targets; they must not be reused for the score. |
+| Objectives held at the start (counted 2026-10-17 from the scenario data with the rules of R1): 1939 and Campaign: Axis 9, Allies 23, nobody 10 (Oslo, Stockholm, Riga, Antwerp, Budapest, Madrid, Belgrade, Ploesti, Istanbul, Athens). 1942: Axis 25, Allies 14, nobody 3 (Stockholm, Madrid, Istanbul). 1944: Axis 22, Allies 17, nobody 3. | one-off script, not in the repo | These become test fixtures (ticket 14-1). |
+| Control of a hex: `controllerOf` (start territory plus `GameState.control`), `controllingSide`, `sideInWar`. A hex of a country nobody controls has no controller. There is **no way to say "nobody controls this hex any more"** once it had a controller. | `control.ts` | Needed for R4 (ticket 14-5). |
+| Nations: `status` is axis, allied, neutral, vichy or out. "Out" is skipped by the Year Start Sequence and by declarations of war. There is no "conquered". Initiative counts BRPs of every nation not "out". | `types.ts`, `yearstart.ts`, `war.ts`, `game.ts` | A conquered nation needs its own status and zero BRPs. |
+| **Nothing happens when a capital is taken**: the hex changes controller like any other hex. Poland's units stay after Warsaw falls (`docs/FEEDBACK.md`: the air units left in Warsaw were the first symptom). `fortress.ts` says "no surrender rule exists yet". | `attack.ts`, `control.ts`, `fortress.ts` | Tickets 14-5 to 14-7. |
+| Sequence: II.A, 8a, 8c, 6h, 9k and 10a are in `sequence.ts` and are **passed** (not in `IMPLEMENTED_STEPS`). The position `{ part: "russian-winter" }` exists and is passed at once; only Player Turn steps can wait. | `sequence.ts`, `turn.ts` `settle` | Ticket 14-11 lets II.A wait. |
+| Defence multiplier: `defenseBasis` returns 4 (Fortress), 3 (mountains, swamp, river or arrow, beach against invasion) or 2 (anything else). Attack numbers call it in `attackNumbers`. | `terrain.ts`, `attack-rules.ts` | The winter changes only the plain 2, in one place. |
+| Front Options are chosen at step 3 (`legalFrontOptions`), but `frontAllowsAttack` (the Offensive Option gating attacks) still returns true. | `frontoptions.ts`, `attack-rules.ts` | The winter's ban on the Axis Offensive Option is enforced at step 3 now and bites when the Options are wired to attacks (part C9). |
+| Year Start Sequence part B exists. Conquered countries, the half-BRPs of a conquered Major Power and the +15/-15 for Moscow and Leningrad are not built (`yearstart.ts` header, TODO-VERIFY E4). | `yearstart.ts` | Lines added by tickets 14-5 and 14-14. |
+| Free Siberian Transfer, Russian surrender and the winter appear nowhere in `src/` except the sequence data and one `ScenarioRule` comment. | `grep` | All new. |
+| **What the program itself says** (read as text from `3R2.EXE`, facts only, nothing copied): it has a "Victory and Objectives" menu that lists all objectives and who holds them and notes when the Free Siberian Transfer changed the conditions; a Game Over dialog that names the victory; a "has been conquered" message and a "Conquered" status; a question to the Soviet side whether to postpone the winter; a message "Russian Winter rules are in effect this Game Turn"; an Axis question whether to accept the Russian surrender; warnings to the Soviet player, at construction, that Russia will surrender unless it builds a stated number of ground and air factors; messages that the Occupation Force is below 45 or has fewer than 30 ground factors, each at a 15 BRP cost; and a question whether the Allies wish to activate the Free Siberian Transfer. It also has three messages about a "severely hard winter" option, "+50 BRPs to the Soviets" and a Soviet "Five Year Plan" that no manual mentions (V25). | `docs/GAME_DATA.md` method | The PC game does these things; the rules text below says how. |
+
+## Sources, and how they were read
+
+- **Primary:** the PC Reference Manual, sections 2.0 to 2.4 (victory), 6.0 (hex control), 9.2 (BRP totals), 11.63 (Free Siberian Transfer), 11.74 and 11.75 (unsupplied units), 11.8 (possible Russian surrender), 12.4 (Attrition may not take a capital or Objective), 13.0 to 17.0 (declarations, minors, intervention, conquest of minors, Minor-Allies), 18.1 to 18.4 (Major Powers, Italy, France, the U.S.S.R.), 19.2 (capitals as supply sources), 28.0 (the Russian Winter), 29.0 (Poland and Eastern Europe), 32.0 to 35.0 (Gibraltar, Malta, Suez, Vichy France); the Operations Manual 5.2, 5.45h, 5.47a, 5.48k, 5.49a and the Status menu entry "Victory & Objectives"; the PC README (Peele's errata and the rules differences, in particular its rules 21.4, 24.23 and 49.6 and the index correction "Surrender, Russian: 11.8"); the game's victory-conditions file. Read from local copies kept outside the repo. **Everything below is in our own words; no manual text is copied.** The thresholds are numbers (facts), recorded as data.
+- **Cross-check:** the Advanced Third Reich text on RulesPal (docs/RULES.md "Web research") has the same victory tables. Its section numbers differ, which is the source of the old "Ref 18.0" in specs 04 and RULES.md.
+- **The original program:** only its text messages were read for this spec (see the last row above). Its victory logic, the exact comparison it makes in the Russian-surrender test, and the way it rolls the winter dice have **not** been read. Where that matters the rule is marked `TODO(verify)` and ticket 14-24 adds a program check to `scripts/gamedata/` if the owner's game folder is at hand.
+- **Where the sources differ or are silent** the rule is marked `TODO(verify)` here and in part J. Nothing is invented: each number below is in a manual passage cited, or in the victory file, or is a named constant with a `TODO(verify)`.
+
+## The turn, with the places this spec touches
+
+```mermaid
+flowchart LR
+  A["II.A Russian winter<br/>roll and choice"] --> B["1 Declarations<br/>(Russia declares in a winter:<br/>winter starts now)"]
+  B --> C["3 Front Options<br/>(winter: no Axis Offensive<br/>on the Eastern Front)"]
+  C --> D["7h combat<br/>(winter: Axis defence in Russia<br/>not doubled)"]
+  D --> E["end of 7p<br/>conquests settled<br/>Moscow and Leningrad"]
+  E --> F["8a Free Siberian<br/>Transfer"]
+  F --> G["6h and 9k<br/>Occupation Force (R1)"]
+  G --> H["10a Russian surrender<br/>offer to the Axis"]
+  H --> I["end of the Game Turn<br/>last turn reached?<br/>result"]
+```
+
+**A Major Power's fall:**
+
+```mermaid
+stateDiagram-v2
+  [*] --> Free
+  Free --> CapitalLost: enemy ground unit takes the capital
+  CapitalLost --> Free: owner retakes it in its own Combat Phase
+  CapitalLost --> Conquered: the owner's Combat Phase ends and the enemy still holds it
+  Conquered --> [*]
+```
+
+**The U.S.S.R.:**
+
+```mermaid
+stateDiagram-v2
+  [*] --> AtWar
+  AtWar --> AtWar: Moscow or Leningrad lost (15 BRPs, once each)
+  AtWar --> Offer: end of an Allied turn with less than 50 factors and the Axis 3 to 2 stronger inside Russia
+  Offer --> Surrendered: Axis accepts
+  Offer --> Refused: Axis refuses (no second offer)
+  Refused --> Conquered: last Russian factor inside Russia is gone
+  Surrendered --> [*]
+  Conquered --> [*]
+```
+
+## Part A. Rules in scope, rule by rule
+
+Each rule says what the manual says (our words), the options considered where several readings exist, and the recommendation. "Status" is **settled** (the manual text is clear), **TODO(verify)** (needs a check) or **PO** (a decision for the product owner).
+
+### R1. Objectives and who holds them (Ref 2.0, 6.0, 35.0, 18.41)
+
+- There are 42 Objectives, 14 on each Front. A side holds an Objective when it controls the hex. Control follows Ref 6.0 as built (`controllerOf`).
+- **Whose hex it is, case by case** (settled unless marked):
+  - A hex held by a Major Power or an active Minor-Ally counts for the side that nation fights on.
+  - A **neutral Italy** still counts for the Axis and a **neutral U.S.S.R.** for the Allies (Ref 2.0). This is why the 1939 start shows 23 Allied Objectives.
+  - An Objective in a **minor country that was never at war** counts for neither side (Ref 2.0).
+  - **Marseilles and Lyons count for the Axis** while Vichy France controls them (Ref 35.0). Objectives and land held by Free French units count for Britain (or the U.S.A.).
+  - After a **Russian surrender** every Objective Russia holds at that moment counts for the Allies for good, and so does every Objective in Russia the Axis does not yet hold (a Russian marker is placed on it). Rule R7.
+  - Land of an **inactive Minor-Ally** counts for neither side. `TODO(verify)` V2: the manual speaks of "minor countries never at war"; an inactive Minor-Ally is such a country until activated. Recommended: neither.
+- **Recommendation:** one pure function `objectiveStandings(ctx, state)` that returns the three lists (Axis, Allies, nobody). Every screen, the self-play report and the result use it. The count never reads the map's `capital` feature.
+
+### R2. The results (Ref 2.1 to 2.4, 11.63; the game's victory file)
+
+Three kinds of scenario. The numbers are facts, recorded as data (`src/data/victory.ts`).
+
+**Counted by Objectives held at the end of play (1939, 1942):**
+
+| Result | 1939 | 1939 with Free Siberian Transfer | 1942 | 1942 with Free Siberian Transfer |
+|---|---|---|---|---|
+| Allied Decisive | Allies 17 or more | 18 or more | 28 or more | 29 or more |
+| Allied Tactical | 16 | 17 | 27 | 28 |
+| Allied Marginal | 15 | 16 | 26 | 27 |
+| Stalemate | Allies 14 or fewer **and** Axis 24 or fewer | Allies 15 or fewer and Axis 24 or fewer | Allies 25 or fewer and Axis 13 or fewer | Allies 26 or fewer and Axis 13 or fewer |
+| Axis Marginal | Axis 25 | 25 | 14 | 14 |
+| Axis Tactical | 26 | 26 | 15 | 15 |
+| Axis Decisive | 27 or more | 27 or more | 16 or more | 16 or more |
+
+**Counted by when Germany falls (1944)**, measured by the Game Turn in which the conquest completes: in or before Winter 1944 Allied Decisive; Spring 1945 Allied Tactical; Summer 1945 Allied Marginal; Fall 1945 Axis Marginal; Winter 1945 Axis Tactical; Spring 1946 Axis Decisive. There is no Stalemate. If Germany is still standing when the scenario ends (after Spring 1946) the table implies the Axis wins at least as well as Decisive: read as Axis Decisive (`TODO(verify)` V5).
+
+**Campaign:** the Allies win if the Axis is conquered: in or before Summer 1944 Decisive; Fall or Winter 1944 Tactical; Spring or Summer 1945 Marginal. With the Free Siberian Transfer each Allied date is one Game Turn earlier (Decisive in or before Spring 1944; Tactical in Summer or Fall 1944; Marginal in Winter 1944 or Spring 1945). If the Axis is not conquered in time: the Axis wins Decisive by conquering three Allied Major Powers, Tactical by conquering two, Marginal by holding at least 28 Objectives at the end of Winter 1943; otherwise Stalemate.
+
+- **How the first table fits together (settled by arithmetic, `TODO(verify)` only for the corner).** The two halves are consistent only while some Objectives are in nobody's hands: with the three neutral cities (Stockholm, Madrid, Istanbul) out, at most 39 are held and the table covers every case exactly once (Allies 15 and Axis 24 is Allied Marginal; Allies 14 and Axis 25 is Axis Marginal; 14 and 24 is Stalemate). If Spain, Sweden or Turkey is conquered, both sides can reach a level at once. `TODO(verify)` V1. **Recommended:** the higher level wins; equal levels are a Stalemate. This case is rare and cannot be reached in a normal 1939 game.
+- **"Conquered Axis"** needs a reading: the Axis Major Powers are Germany and Italy. If Italy never entered the war, the Allies must still conquer it, which needs a declaration of war (35 BRPs). `TODO(verify)` V6. **Recommended:** both, as the words say; ask Frank (question F7).
+- **The Campaign's three Axis levels** are read as achievements remembered during play: the count of Objectives is taken when Winter 1943 ends and stored; "conquered" Allied powers are counted from the conquest records. They decide only if the Allies have not conquered the Axis in time. `TODO(verify)` V6. With the Free Siberian Transfer a conquest after Spring 1945 is no Allied result, so it falls through to the Axis tests and then Stalemate (V7).
+- **The date of a conquest** is the Game Turn in which it completes (the end of the conquered side's Combat Phase), not the Game Turn the capital was first taken. `TODO(verify)` V4; this is what the words "conquest occurs immediately after" say (Ref 18.1).
+- **When the Free Siberian Transfer applies:** from the first unit taken (rule R11) to the end of the game. The result function reads one flag.
+
+### R3. When the game ends (Ref 2.0, Ops 9.0; Q1)
+
+- **Always:** after the last Player Turn of the last Game Turn (the scenario's `end`). The result is computed then, from the tables of R2.
+- **Early, only in the two scenarios that are decided by conquest:** the moment the deciding conquest completes (the 1944 scenario: Germany; the Campaign: the last Axis Major Power, or the third Allied Major Power for an Axis Decisive). `TODO(verify)` V3: the program has a Game Over dialog but it is not known whether it appears at that moment or at the end of the turn. **Recommended (Q1):** at once, because the result cannot change.
+- Not early in 1939 and 1942: their result is the count at the end of play, which can still change (Ref 2.0 says "at the end of play").
+- Once over, no action is legal, the computer stops, the state keeps the result, and the card of part D shows it.
+
+### R4. A Major Power is conquered by its capital (Ref 2.0, 18.1)
+
+- **When.** Germany, Italy, Britain and France are conquered when an enemy holds the capital at the end of the owner's own next Combat Phase. The owner gets exactly one Combat Phase to take it back. The U.S.A. cannot be conquered (rule R8). The U.S.S.R. follows rule R7.
+- **Only a real attack takes a capital.** Attrition may not occupy a capital (Ref 12.4, already built as `NO_ATTRITION_OCCUPATION`).
+- **A unit that counterattacks the capital** must be supplied from some source other than that capital. Since the captured capital stops supplying its owner (it supplies its captor, `supply.ts`), this comes out of the supply rules and needs no code of its own.
+- **When it happens:** at the end of step 7p of the conquered side's Player Turn, and not before.
+- **What happens, thing by thing:**
+
+| Thing | The rule (our words) | Design |
+|---|---|---|
+| Units | All ground, air and naval units of the conquered Power, and of its active Minor-Allies, leave the game. `TODO(verify)` V10: "leave the game" is read as for good: the Force Pool and the Allowable Builds go too, nothing can be rebuilt. Italian units lent to Germany are removed with Italy; if Germany falls they go back to Italy (lending is not built). | `fall()` deletes the units and the pools and logs one summary event. |
+| Airbases and bridgeheads | Go with the rest. | Same call. |
+| Hexes of the Power itself | They pass to the conqueror at once: the Major Power whose unit holds the capital. Exception: hexes with hostile Major-Power ground units that can still trace supply, and the supply line they use, stay as they are (V12). | `control` entries for every home hex. |
+| Everything the Power or its active Minor-Allies had **conquered or held elsewhere**, and its non-French colonies | Controlled by nobody, and belongs to the first nation that walks in (not during a Pass Option, because nobody controls it). `TODO(verify)` V11: which hexes are "in the Major Power" (its own map country: East Prussia is Germany, Ulster is Britain, Sicily and Sardinia are Italy) and how to record "nobody". | `control[hex] = null` (part C1). |
+| BRPs | In every later Year Start Sequence the conqueror gets half (rounded down) of what the conquered Power began the scenario with, while it still holds the capital. If the capital fell in the second half of a Winter turn the half-BRPs start one Year Start Sequence later, because the conquest completes in Spring. The conquered Power's own total and spending limit become 0. `TODO(verify)` V9: "began the scenario with" is read as the printed total (370 for Germany in 1944), not the Base. | `Conquest` record plus one line in `yearstart.ts`. |
+| Supply | The captured capital is a source for the conqueror's side as today. A conquered Power has no units to supply. | No change; the existing `TODO(verify)` stays. |
+| Grants | A conquered Power gives and receives no grants. | `legalGrants` skips it. |
+| Declarations of war | A conquered Power is not a target and not a declarer. | `declarationTargets` skips status "conquered". |
+| The Initiative | A conquered Power adds 0. | Zero BRPs. |
+
+- **The conqueror** is the owner of the unit that holds the capital hex, found as `controllerOf(capital)`. When several Allied Major Powers are in play, it is the one whose counter stands there. `TODO(verify)` V8: the same reading decides who gets the half-BRPs.
+- **A warning, not a rule:** when a capital is taken the owner is told, in words, that the Power falls at the end of its own Combat Phase unless it takes the capital back (part D).
+
+### R5. France (Ref 18.3, 35.0, 26.0; PC README rule 49.6)
+
+France is conquered by rule R4, at the end of the **Allied** Combat Phase while Paris is German-held. It then gets special treatment (Ref 35.0), all at the moment of the conquest:
+
+1. **Vichy France is created.** The Vichy hexes of European France (the 17 hexes of the `VICHY.CON` map data, plus Corsica) become Vichy-controlled. The rest of European France passes to the conqueror.
+2. **French units in European France are halved.** Half (rounded up) of each type, with air and naval factors each totalled and halved, becomes Vichy; the rest is eliminated for good. The Vichy half goes into the Vichy Force Pool and is set up in Vichy hexes at the start of the next Axis turn. `TODO(verify)` V13. **Recommended:** the engine places the Vichy units itself, in map order inside the Vichy hexes, within the stacking limits (the DOS game's "set up" is a screen the Axis player does; ours is automatic and logged).
+3. **Two die rolls decide the colonies.** One for Lebanon-Syria and one for Tunisia-Algeria-Morocco. Even: that colony and its French units become Vichy. Odd: Free French. (A colony the Axis already holds is not changed.) Units stay where they are. `TODO(verify)` V14.
+4. **French conquests and other French-held hexes become Axis**, except hexes that can trace supply to a Free French colony, which stay Free French unless they are closer to European France or to a Vichy colony. `TODO(verify)` V15: first slice gives them all to the Axis and lists the exception as unbuilt.
+5. **British units in Vichy territory are eliminated** (the PC changed the board game here: README rule 49.6).
+6. **Vichy France is an inactive German Minor-Ally** that never pays BRPs to Germany. The city of Vichy is its capital until Vichy is conquered. The nation France gets status "vichy" and 0 BRPs, exactly as the 1942 scenario has it. Waking Vichy up (step 8c, five BRPs, a die roll) and putting it back to sleep is ticket 14-10 (R1).
+7. **Free French** units work as British; ones destroyed later may be rebuilt in Britain. The Free French pool is created for the colonies' units.
+
+- **While Paris is enemy-held and France is not yet conquered** (Ref 18.3, one Allied turn): French attacks are limited to Paris and the hexes next to it, at odds of 1:2 or better, with supplied units; France may not use an Attrition Option, may use the Offensive Option only on the Western Front, may not declare war, cannot move units out of France and traces supply only from London. Ticket 14-9 (R1). In Beta these limits are not enforced; the fall itself still comes one Allied turn after Paris is lost.
+- All of French hexes' fleets and air in ports that pass to the enemy use the capture call shared with spec 09 (09-5) and spec 12 (12-4): `afterHexTaken`.
+
+### R6. Italy (Ref 18.1, 18.2)
+
+- Italy is conquered by rule R4 (Rome).
+- **Italy can also surrender** (Ref 18.2), when **all four** hold at the end of the Axis Combat Phase: it is Spring 1943 or later and the Allies have a supplied non-airborne unit on mainland Italy (Sicily does not count); no Axis forces are in Africa (all of Egypt included; unactivated Vichy units do not count); the Allies hold every hex of Sicily, or every hex of both Sardinia and Corsica; and the Allies hold the Initiative that Game Turn (they moved first). Ticket 14-8 (R1). **It cannot happen in the 1939 scenario**, which ends in Summer 1942.
+- On a surrender every Italian-held hex passes to Germany, Italian units are removed, Germany gets half of Italy's starting BRPs per Year Start Sequence while it holds Rome, and the surrender counts as a conquest. At the end of that Combat Phase the program rolls a die, adds two, and Germany keeps that many of Italy's naval factors (any mix of Italian partial fleets, up to what existed), placed in German-held ports on the same Front. They keep the Italian naval DRM and can never be rebuilt. `TODO(verify)` V16.
+
+### R7. The U.S.S.R. (Ref 11.8, 18.4, 18.41, 9.2, 2.0; Ops 5.45h, 5.48k, 5.49a)
+
+Russia is not conquered when Moscow falls. Four separate things happen.
+
+**a. Moscow and Leningrad (Ref 18.4, 9.2).**
+- The Axis capture of either city is an **immediate** gain of 15 BRPs for Germany and loss of 15 for Russia, once for each city. If control swings back and forth there is no second gain or loss. Russia gets no turn to retake it first.
+- In **every Year Start Sequence** in which the Axis holds a city, Germany gets another 15 for it and Russia loses 15. `TODO(verify)` V22: it is "the Axis" in the text; Germany is the recipient in this spec. After a Russian surrender these stop.
+
+**b. The offer (Ref 11.8, 18.41; Ops 5.49a), at step 10a.**
+- At the end of any **Allied** Player Turn in which Russia is at war with the Axis, has **less than 50** ground and air factors on the map, and the Axis ground and air factors inside Russia's original boundaries are **at least three halves** of the Russian total, Russia makes a **one-time** offer to surrender. Counting: Russian factors are the strengths of Russian ground and air units standing on map hexes; Axis factors are the strengths of Axis ground and air units standing on hexes of the map country "ussr" (485 land hexes). `TODO(verify)` V17: replacements and airborne count as ground; airbases, fleets and units in boxes do not; Italian and Minor-Ally units count as Axis; "three halves" means the Axis total times 2 is at least the Russian total times 3.
+- **Once only.** Whether the Axis accepts or refuses, no second offer is made (V18).
+
+**c. If the Axis accepts (Ref 18.41).**
+- Every Objective not yet in Axis hands has a Russian marker placed on it and counts for the Allies from then on (rule R1).
+- From the next Year Start Sequence Germany gets half (rounded down) of Russia's starting BRPs each year and no longer gets or loses the 15s for Moscow and Leningrad. `TODO(verify)` V19: who receives it (Germany), and the base ("started the scenario with").
+- **The Axis must keep an Occupation Force** of 45 factors inside Russia, at least 30 of them ground, until the scenario ends. Checked at the end of each Axis Movement Phase (step 6h) and each Axis Player Turn (step 9k). A shortfall costs 15 BRPs and the Axis must hand one Axis-held Russian Objective of its choice back to Russia for good, once per turn, until none is left; until the 45 are restored the Axis may Strategically Redeploy only to fix the shortage. Air and naval units may count and may still fly from their Russian bases. The Axis cannot declare war on Russia again. `TODO(verify)` V21: Ref 18.41 says "within Russia's original borders", Ops 5.45h says "on the Eastern Front" and counts naval factors too. Ticket 14-17 (R1).
+- Russian units: this spec removes them and Russia's pool at once, as for any conquered Power (V19). Russian land stays Russian-controlled and, because Russia then takes no side, the existing rule that closed neutral land keeps Axis units out (`NEUTRAL_LAND_CLOSED`).
+
+**d. If the Axis refuses (Ref 18.41).** It cannot change its mind. Russia stays in the game until its **last combat factor inside its original borders** is eliminated; at that moment Germany starts to get the half-BRPs, and the Occupation Force applies from the refusal on. Until then Moscow and Leningrad keep their 15s. `TODO(verify)` V20: the engine has no "instant"; it checks after every Combat Phase and after the unsupplied-unit eliminations.
+
+- **A convenience the DOS game has and the board game does not:** while the Allied player builds (step 8b) the program warns that Russia will surrender at the end of the turn unless it builds at least N more ground and air factors. We copy it (ticket 14-16); N is worked out with the same test, so the warning is true.
+
+### R8. The U.S.A., and Britain's fall (Ref 18.1)
+
+- **The U.S.A. cannot be conquered.** If London falls the U.S. stays in the game; its units may supply from the U.S. Box (a later supply item).
+- **Gibraltar and Suez (Ref 32.0, 34.0).** Losing Gibraltar costs Britain 25 BRPs at once, once only. If the Axis controls both Suez city and Alexandria, Britain loses 25 BRPs at once, once only; this is separate from the Gibraltar loss. A deficit stops British spending for the year and is taken from the next Year Start Sequence. The program has a message for each. Ticket 14-22 (R1). `TODO(verify)` V27.
+- **Britain** is conquered by rule R4 (London). What happens to Free French, to U.S. entry and to British colonies after that is outside this spec (`TODO(verify)` V29); the generic fall removes British units and passes British land, and the rest stays as it is.
+
+### R9. Minor countries and Minor-Allies (Ref 14.0, 16.0, 17.1, 29.0; PC README 24.23)
+
+- **A minor country falls when a hostile unit stands in its capital.** It gets no turn to retake it. At the end of the **attacker's** Combat Phase its units are removed for good, and **every hex of the country** becomes the conqueror's, except hexes under hostile Major-Power units that can still trace supply (the program picks their route; V12). A Minor-Ally falls the same way, active or not; an inactive Minor-Ally whose capital falls to the Allies can never be activated.
+- **Poland** is the first case in every 1939 game. Its capital is Warsaw. Poland east of the Partition Line becomes part of Eastern Europe at the end of the Axis Fall 1939 turn (Ref 29.0); this spec passes only the hexes that are still Poland. `TODO(verify)` V28.
+- **Colonies and Eastern Europe** are conquered by holding **all their cities**, not a capital. That, the BRPs a conquered minor pays, intervention and activation belong to the minor-country spec (part H). This spec gives it the hook (the `Conquest` record, the control change and the event) and reads the record for the result.
+- Who the conqueror is: the owner of the hostile unit in the capital. When a Minor-Ally's allied Major Power falls, the Minor-Ally's units go with it (rule R4).
+
+### R10. The Russian Winter (Ref 28.0; Ops 5.2)
+
+- **When it starts.** On the first Winter Game Turn after the German-Russian war has begun. Step II.A is checked at the start of **every** Winter Game Turn; the winter starts if Germany and Russia are at war at that moment and it has not been in force yet. A German declaration made during a Winter turn comes after II.A, so the first winter is the **next** one. If **Russia** declares war on Germany during a Winter turn, that turn is the first winter at once, even if the Axis already played its Winter Player Turn, and Russia cannot postpone it.
+- **1942 and 1944:** the first winter is taken as over; the rule never applies (`ScenarioRule` "first winter past").
+- **The postponement.** At the start of the first winter turn the program rolls **four dice** and counts the non-Finnish Axis ground units east of the original Russian border. If there are **fewer** units than the total of the dice, Russia may postpone the whole effect to the next winter, announcing it at the start of the turn after seeing the roll. Otherwise no choice is offered. `TODO(verify)` V24: which units are counted (recommended: every non-Finnish Axis ground-type counter, replacements and airborne included, Minor-Allies' included), and how the DOS game shows the roll (it prints a line with the number rolled).
+- **What the winter does, for that one Game Turn** (the program announces that the winter rules apply for the whole Game Turn):
+  1. **The Axis defence is not doubled.** Every Axis unit (the Finns excepted) that is east of the original Russian border is not doubled when defending. Where the terrain triples (rivers, swamp, mountains, crossing arrows) or quadruples (a Fortress) the bonus stays; only the plain "times two" goes, so those defenders count once. `TODO(verify)` V23: what a hex shared by Finns and others does (recommended: the doubling is lost if any non-Finnish Axis ground unit is in the hex), and whether a Fortress keeps its fourfold.
+  2. **The Axis may not take an Offensive Option on the Eastern Front** in its Player Turn of that Game Turn (Attrition and Defensive are still allowed). When Russia declares in a Winter turn after the Axis has moved, this does nothing.
+- "East of the original Russian border" is read as the hexes of the map country "ussr" (the same 485 hexes as in rule R7). `TODO(verify)` V23.
+- After the first winter (the first or the postponed one) the rule never applies again.
+- **The program also has three messages that the manuals do not explain:** one about a "severely hard winter" option, one giving the Soviets 50 BRPs, one calling it a Five Year Plan (V25). They look like a hidden option. Not built; the question to Frank is F5.
+
+### R11. Free Siberian Transfer (Ref 11.63; Ops 5.47a; the victory file)
+
+- In the Allied construction phase (step 8a) of **Winter 1941** the Allies may take, at no BRP cost, any **four** ground units from the Russian Force Pool; **three** more in Spring 1942, **two** in Summer 1942 and **one** in Fall 1942. Units not taken in a turn are lost. Only non-airborne ground units; in each turn the armor taken cannot outnumber the infantry taken. Each is placed in a Russian-controlled city in Russia that has a supply line to the east edge of the map.
+- If the Allies use it **at all**, the victory tables change (rule R2). The 1944 scenario is exempt; its dates are past anyway. The 1942 scenario starts in Spring 1942, so its first turn gets three, then two, then one.
+- `TODO(verify)` V26: whether it needs Russia to be at war with the Axis; whether using one unit counts as "using" it for the victory change (the program asks a yes-or-no question, so recommended: yes, any unit); the exact reading of the supply condition (the existing east-edge supply source is used).
+- The state keeps one flag, `siberian.used`, and what was taken each turn.
+
+### R12. Where each check happens
+
+| Check | Where | Why there |
+|---|---|---|
+| Winter roll and Allied choice | start of every Winter Game Turn, position II.A | Ops 5.2 |
+| Winter starts by a Russian declaration | when `applyDeclaration` records Russia against Germany in a Winter turn | Ref 28.0 |
+| No Axis Offensive Option in the East | step 3 | Ref 28.0 |
+| No doubling | step 7h, in the attack numbers | Ref 28.0 |
+| Conquests, Moscow and Leningrad, the last Russian factor, early end | leaving step 7p of either side | "end of the Combat Phase" (Ref 16.0, 18.1) |
+| Italy's surrender | leaving 7p of the Axis | Ref 18.2: "end of the Axis Combat Phase" |
+| Free Siberian Transfer | step 8a (Allied turn) | Ops 5.47a |
+| Occupation Force | steps 6h and 9k (Axis turn) | Ref 18.41, Ops 5.45h and 5.48k (R1) |
+| Russian surrender offer | step 10a (Allied turn) | Ops 5.49a |
+| Half-BRPs, the 15s, conquered income | Year Start Sequence part B | Ref 9.2 |
+| Last-turn result | after the second Player Turn of the last Game Turn | Ref 2.0 |
+| Campaign checkpoint (28 Objectives) | end of the Winter 1943 Game Turn | Ref 2.4 |
+
+## Part B. Rules not decided by the text
+
+Listed with the rest in part J. The five that change what Frank sees most: V3 (does the game stop at once), V17 (what counts as factors for the Russian offer), V23 (the winter on mixed stacks, Fortresses, minor allies), V24 (the dice test), V13 (who places the Vichy units).
+
+## Part C. Engine design
+
+### C1. State (additive; an old saved game without any of it reads as "nothing has happened")
+
+```ts
+// GameState gets six optional fields, like `air`, `combat` and `moves`. Their types live in
+// their own modules because types.ts is over the size limit (spec 09 B1, spec 12 B1).
+winter?:    RussianWinter    // winter-record.ts
+conquests?: Conquest[]       // conquest-record.ts
+soviet?:    SovietRecord     // soviet-record.ts
+siberian?:  SiberianRecord   // soviet-record.ts
+victory?:   VictoryRecord    // victory-record.ts
+result?:    GameResult       // victory-record.ts; set once, together with phase "game-over"
+
+type RussianWinter = {
+  /** "ahead": none yet; "postponed": the Allies waited for the next one; "over": it has been (or the scenario assumes it was). */
+  stage: "ahead" | "postponed" | "over";
+  /** The Game Turn ("1941-winter") in which the rule is in force; absent when it is not. */
+  inForce?: string;
+  /** The roll made at II.A, kept for the card: four dice, their total, the Axis units counted, whether Russia may wait. */
+  roll?: { dice: number[]; total: number; axisUnits: number; mayPostpone: boolean };
+  /** True while the Allies have to answer. */
+  asking?: boolean;
+};
+
+type Conquest = {
+  country: PowerId | Combatant | "eastern-europe";
+  by: ForceOwner;            // the conqueror (the owner of the unit in the capital); Germany for a Russian surrender
+  side: Side;
+  how: "capital" | "surrender" | "last-unit" | "italian-surrender";
+  at: GameTurn;              // the Game Turn in which it completed
+  startingBrps?: number;     // for a Major Power: what it began the scenario with
+};
+
+type SovietRecord = {
+  citiesTaken: { moscow?: boolean; leningrad?: boolean };   // the once-only 15s
+  offer: "none" | "asking" | "accepted" | "refused";
+  credited: HexId[];         // Objectives the Allies hold for good after a surrender (and those handed back later)
+  shortfallTurn?: string;    // "year-season" of the last Occupation Force penalty (once a turn)
+};
+
+type SiberianRecord = { used: boolean; taken: Record<string, number> };   // "1941-winter" -> units taken that turn
+type VictoryRecord = { checkpoints: Record<string, number> };             // "1943-winter" -> Axis Objectives then
+type GameResult = {
+  winner: Side | null;                                  // null: Stalemate
+  level: "decisive" | "tactical" | "marginal" | null;   // null with a Stalemate
+  basis: "objectives" | "conquest" | "powers-conquered" | "turn-limit";
+  objectives: { axis: number; allies: number; nobody: number };
+  at: GameTurn;
+  early: boolean;
+  siberian: boolean;                                    // which table was used
+};
+```
+
+- **`Nation.status` gains `"conquered"`.** Three places already test `"out"`: `war.ts` (no declarations on it), `yearstart.ts` (skipped) and `fortress.ts` (`franceFallen`); a small helper `isGone(nation)` replaces them. `sideOfPower` already returns null for any status that is not axis or allied, so a conquered nation fights for nobody. Its `brpTotal`, `spendLimit` and `spent` are set to 0 when it falls; `brpBase` stays (the record keeps `startingBrps`).
+- **`GameState.control` may hold `null`** ("nobody controls this hex"). `controllerOf` must then use `hex in state.control` instead of `??`, or a nobody-hex falls back to its start owner. This is the one change to `control.ts` that other code can feel; its test list is in F3.
+- **The scenario carries its victory rules** (`Scenario.victory`, data in `src/data/victory.ts`): the three kinds of R2, with the Free Siberian Transfer variants, the Campaign checkpoint, and `ScenarioRule` gains `{ kind: "first-winter-past" }` for 1942 and 1944.
+- **Determinism and replay:** actions are plain objects, records are JSON, dice come only from `rngState` (four dice at II.A, two colony dice at the fall of France, one die for Italy's fleet); a saved action list replays to the same state.
+- **Saves (spec 11):** all fields are optional and plain data, so the save format needs no change beyond including them; the result is saved with the game so "Continue" on a finished game shows the card again.
+
+### C2. Pure queries (no state change; each tested alone)
+
+| Function | Returns |
+|---|---|
+| `objectiveStandings(ctx, state)` | `{ axis: string[]; allies: string[]; nobody: string[] }` of Objective hex ids by R1. |
+| `evaluateVictory(ctx, state, moment)` | the `GameResult` that stands now, or null if the game goes on. `moment` is "after-conquest" or "end-of-play". |
+| `victoryTarget(ctx, state)` | the plain-words conditions for the card: what each side needs now, with the Free Siberian Transfer applied; and how far each side is from its next level. |
+| `capitalState(ctx, state, power)` | `"free"`, `"capital-lost"` (enemy holds it) or `"conquered"`. |
+| `fallingNow(ctx, state, side)` | the Powers and minors of `side` or hostile to it that fall at the end of this Combat Phase. |
+| `winterRoll(state)` | the four dice from `rngState` and the count (the one place that touches the RNG for the winter; it returns the next `rngState`). |
+| `winterInForce(state)` | whether the rule is on this Game Turn. |
+| `sovietOffer(ctx, state)` | the two sums and the test of R7b, with the number of factors Russia is short of 50 (for the construction warning). |
+| `occupationForce(ctx, state)` | the Axis factors in Russia, total and ground (R1). |
+| `siberianOptions(ctx, state)` | how many units may be taken now and which pool entries qualify. |
+
+### C3. Actions (every one carries the acting `side`)
+
+| Action | Step | Who | What |
+|---|---|---|---|
+| `CHOOSE_WINTER { side: "allies", postpone }` | II.A | Allies | R10. Legal only while `winter.asking`. |
+| `SURRENDER_ANSWER { side: "axis", accept }` | 10a | Axis (not the active side) | R7b to R7d. Nothing else is legal while the offer waits (as for a pending Exchange). |
+| `SIBERIAN_TRANSFER { side: "allies", unit: { type, strength }, at }` | 8a | Allies | R11. One unit per action, like `BUILD`, free of charge, refused with the reason when the quota, the armor-to-infantry rule or the placement fails. |
+| `END_STEP` | 8a, 10a once nothing is pending | | Existing. |
+
+Conquests, the winter's effects and the game's end are **not** actions: they follow from the others and the sequence (R12). `legalActions` lists the first useful choices; malformed input is refused with a reason, never thrown (the pattern of `applyMove`).
+
+### C4. Events (for the log, the cards and self-play)
+
+`WINTER_ROLLED { dice, total, axisUnits, mayPostpone }`, `WINTER_POSTPONED`, `WINTER_STARTED { turn, postponedFrom? }`, `CAPITAL_LOST { power, capital, by }`, `CAPITAL_RETAKEN { power }`, `COUNTRY_CONQUERED { country, by, how, unitsRemoved, hexesPassed }`, `UNITS_REMOVED_BY_CONQUEST { country, units }` (one event with the list, like `UNITS_SWEPT`), `CONTROL_PASSED { country, to, hexes }` (one event, not 64), `VICHY_CREATED { halved, colonies }`, `ITALY_SURRENDERS`, `RUSSIA_OFFERS_SURRENDER { russian, axis }`, `RUSSIA_SURRENDERED`, `SURRENDER_REFUSED`, `RUSSIA_BRPS_MOVED { city, amount }`, `OBJECTIVES_CREDITED { hexes }`, `SIBERIAN_TRANSFER_USED { unit }`, `GAME_OVER` (now with the `GameResult`). One log line each, in words, no raw ids: "Germany takes Moscow: +15 BRPs for Germany, -15 for Russia."
+
+### C5. Which steps wait, and for whom
+
+| Step | Waits when | Actions | Ticket |
+|---|---|---|---|
+| **II.A** | a Winter Game Turn and `winter.asking` (Russia may postpone) | `CHOOSE_WINTER` | 14-11 |
+| 3 | unchanged | `legalFrontOptions` hides the Axis Offensive Option on the Eastern Front while the winter is in force | 14-12 |
+| **8a** | Allied turn and `siberianOptions` is not empty | `SIBERIAN_TRANSFER` | 14-18 |
+| 6h, 9k | (R1) the Axis owes an Occupation Force and is short | none (a note in the log); the penalty is automatic | 14-17 |
+| **10a** | `soviet.offer === "asking"` | `SURRENDER_ANSWER` | 14-15 |
+
+`IMPLEMENTED_STEPS` gains `8a` and `10a`. II.A is the first position that is not a Player Turn step to wait: `settle` must stop there when the winter is asking, and `legalActions` must answer for it. That is the one structural edit of this spec (part C9).
+
+### C6. Who is asked
+
+Spec 09 C6 and spec 12 C6 export `sideToAct(state)`: the pending chooser, else the non-active side at 7d and 6c, else the active side. This spec adds two more: the **Allies at II.A** and the **Axis at 10a**. The browser's `computerToMove` and the computer's `chooseAction` use the same function, so there is no special case. The first ticket that needs it creates it (B2).
+
+### C7. Modules (proposed names; each under 300 lines)
+
+`objectives.ts` (R1), `victory.ts` and `src/data/victory.ts` (R2, R3), `victory-record.ts`, `conquest.ts` (the generic fall, R4, and the settle hook), `conquest-record.ts`, `conquest-minor.ts` (R9), `conquest-france.ts` (R5), `conquest-italy.ts` (R6, R1), `winter.ts` and `winter-record.ts` (R10), `soviet.ts` and `soviet-record.ts` (R7, R11), `siberian.ts` (R11), `victory-actions.ts` (legal and apply for the three actions, routed from `actions.ts`).
+
+### C8. How a fall works (one function, three callers)
+
+```
+fall(ctx, state, who, conqueror, how)
+   1. remove the units and the pools of `who` (and of its active Minor-Allies, if a Major Power)
+   2. pass the home hexes to `conqueror`; set held-elsewhere hexes to nobody; keep hexes under supplied hostile Major-Power units (V12)
+   3. set status "conquered" (Major Power), zero its BRPs; mark a minor as conquered in `conquests`
+   4. record the Conquest (turn, conqueror, starting BRPs)
+   5. emit COUNTRY_CONQUERED, UNITS_REMOVED_BY_CONQUEST, CONTROL_PASSED
+   6. call afterHexTaken for every hex that passed to an enemy of some unit's owner (fleets and air alone there)
+   7. ask evaluateVictory: if the game is decided, set the result and phase "game-over"
+```
+
+France (R5) and Italy's surrender (R6) call the same function with a small variant before step 1 (France keeps half of its units as Vichy; Italy keeps naval factors for Germany). The settle hook at the end of 7p walks `fallingNow`.
+
+### C9. Shared files touched, each by the smallest edit
+
+`types.ts` (the six fields, the status), `action-types.ts` (actions, events), `actions.ts` (routing, `sideToAct`, `legalActions` for II.A), `sequence.ts` (`IMPLEMENTED_STEPS`), `turn.ts` (enter II.A with the roll; the hook when leaving 7p; the result at `endGameTurn`; `settle` stops at II.A), `war.ts` (the "gone" test; Russia declaring in a Winter turn starts the winter), `control.ts` (nobody), `attack-rules.ts` (`attackNumbers` asks `winterInForce` and the hex), `terrain.ts` (a `winter` flag on `DefenseSituation` and a new `DefenseBasis` "winter-plain"), `frontoptions.ts` (hide the Offensive Option), `yearstart.ts` (the income lines), `grants.ts` (conquered powers), `construction.ts` (placement reuse for 8a), `game.ts` (zero BRPs in the Initiative), `scenario-*.ts` (`victory`, the first-winter rule), `ui/*` (part D), `ai/*` (part E), `scripts/selfplay/*` (the result). `NEUTRAL_LAND_CLOSED` (`movement.ts`) is read, not changed.
+
+## Part D. The screens
+
+Principles from specs 07 and 12: one press, names and not ids, nothing only on hover, every button at least 44 px, iPad first, cards that move focus to their title, text in one module (`endText.ts`) so the later French pass is a translation. **For a French-speaking reader on an English interface:** short sentences, numbers instead of adjectives where possible, no idioms and no jokes, the DOS game's own verdict names kept as they are ("Allied Marginal Victory") with a one-line plain meaning under the title, and BRP spelled out once on each card.
+
+### D1. The running score and the Objectives list (Q2)
+
+The turn line gets a second short line: **Objectives held: Axis 17, Allies 21, nobody 4**, and a "Victory and objectives" button. The button opens a card (the DOS game has a menu of the same name):
+
+```
++------------------------------------------------------+
+| VICTORY AND OBJECTIVES                               |
+| Held now:  Axis 17   Allies 21   Nobody 4            |
+| Free Siberian Transfer: not used                     |
+|                                                      |
+| WESTERN FRONT (14)                                   |
+|  Antwerp ......... nobody    Berlin ........ Axis    |
+|  Birmingham ...... Allies    Bonn .......... Axis    |
+|  ...                                                 |
+| EASTERN FRONT (14)   MEDITERRANEAN FRONT (14)        |
+|  ...                                                 |
+|                                                      |
+| WHAT EACH SIDE NEEDS when Summer 1942 ends           |
+|  Allies: 15 = Marginal, 16 = Tactical, 17 = Decisive |
+|  Axis:   25 = Marginal, 26 = Tactical, 27 = Decisive |
+|  In between: Stalemate.                              |
+|                                         [ Close ]    |
++------------------------------------------------------+
+```
+
+For the two scenarios decided by conquest the last block says, for example, "The Allies win by conquering Germany: Decisive in or before Winter 1944, Tactical in Spring 1945, Marginal in Summer 1945. The Axis wins by holding on: Marginal if Germany falls in Fall 1945, Tactical in Winter 1945, Decisive in Spring 1946 or later." On the map each Objective gets a small mark for who holds it: a square for the Axis, a circle for the Allies, a dashed ring for nobody (shape, not colour alone). Tapping a name in the list centres the map on it.
+
+### D2. The end of the game
+
+```
++------------------------------------------------------+
+| GAME OVER                                            |
+| Allied Marginal Victory                              |
+| (a small win for the Allies)                         |
+| The scenario ended after Summer 1942.                |
+|                                                      |
+| Objectives held:  Axis 24   Allies 15   Nobody 3     |
+| The Allies needed 15 for a Marginal victory.         |
+| They needed 16 for a Tactical victory (1 more).      |
+|                                                      |
+| [ Look at the map ] [ Read the log ] [ New game ]    |
++------------------------------------------------------+
+```
+
+For an early end the second line says what decided it: "Germany was conquered in Fall 1944." For a Stalemate: "Neither side reached its target." The map stays tappable but read-only; the status line says "Game over: Allied Marginal Victory". "New game" is the existing title-screen button.
+
+### D3. A capital is lost; a country falls
+
+When a Major Power's capital is taken, the owner and the other side see a **banner** (it stays until settled): "Paris has been taken. France falls at the end of the Allied Combat Phase unless an Allied unit takes Paris back." When it falls, a **card** (Major Powers) or a **toast** (minors):
+
+```
++------------------------------------------------------+
+| GERMANY HAS BEEN CONQUERED                           |
+| The Allies still held Berlin at the end of the       |
+| German Combat Phase.                                 |
+|  - 143 German units leave the game.                  |
+|  - 64 German hexes now belong to Britain.            |
+|  - Britain will receive 75 BRPs a year while it      |
+|    holds Berlin (half of Germany's 150).             |
+|  - Land Germany had taken belongs to nobody until    |
+|    a unit walks in.                                  |
+|                                         [ OK ]       |
++------------------------------------------------------+
+```
+
+The nation table shows "Conquered" in the status column (the DOS game does) and the Status card lists, for each Major Power, the countries it has conquered. For France the card adds the Vichy lines: "Vichy France now exists. 11 French units became Vichy and 12 were lost. Lebanon-Syria is Vichy French. Tunisia, Algeria and Morocco are Free French."
+
+### D4. The Russian winter (II.A)
+
+```
++------------------------------------------------------+
+| RUSSIAN WINTER                                       |
+| This is the first winter of the war between Germany  |
+| and Russia.                                          |
+| Dice: 4 + 6 + 3 + 5 = 18                             |
+| Axis ground units inside Russia: 12 (not counting    |
+| Finns).                                              |
+| 12 is fewer than 18, so Russia may wait one year.    |
+|                                                      |
+| [ Wait for next winter ]   [ Winter starts now ]     |
++------------------------------------------------------+
+```
+
+If Russia may not wait, one button: "OK, the winter starts now". The Axis human sees the same card with "OK". While it is on, the turn line carries a banner for the whole Game Turn: "Russian winter this turn. In Russia the Axis defence is not doubled. The Axis may not use an Offensive Option in the East." At step 3 the Axis Offensive button on the Eastern Front is greyed with that reason on tap. In the attack card's defender line the odds preview says "Russian winter: Axis defence not doubled" and shows the smaller number.
+
+### D5. Russia offers to surrender (10a)
+
+For an Axis human:
+
+```
++------------------------------------------------------+
+| RUSSIA OFFERS TO SURRENDER                           |
+| Russia has 38 ground and air factors on the map.     |
+| The Axis has 71 inside Russia.                       |
+|                                                      |
+| If you ACCEPT                                        |
+|  - Russia leaves the war. Its units are removed.     |
+|  - Every objective Russia still has counts for the   |
+|    Allies at the end.                                |
+|  - Germany receives 45 BRPs a year from Russia.      |
+|  - You must keep 45 factors in Russia (30 ground)    |
+|    or lose 15 BRPs and an objective each turn.       |
+| If you REFUSE                                        |
+|  - The war goes on until the last Russian unit is    |
+|    gone. You cannot ask again.                       |
+|                                                      |
+|            [ Accept ]        [ Refuse ]              |
++------------------------------------------------------+
+```
+
+For an Allied human: at step 8b a note under the build list: "Russia will surrender at the end of this turn unless it has 12 more ground or air factors on the map. Build, or move units into Russia, to stop it." The note is shown only when the offer would follow (R7b), and the number is the exact shortfall below 50 (or the exact amount that breaks the 3 to 2 test, whichever is smaller). A Soviet Objectives line in the Objectives card says "Credited to the Allies for good" for those held after a surrender.
+
+### D6. The Free Siberian Transfer (8a)
+
+A card listing the Russian pool by type, with a counter "You may take 4 this turn (4 in Winter 1941)", chips to tick, a note "Armor taken may not exceed infantry taken", the cities where they can be placed, and the sentence "Using this raises the Allied targets by one objective." One confirm button and "Do not take any".
+
+### D7. Messages, touch and access
+
+Every refusal names the rule in words ("The Axis may not use an Offensive Option in the East during the Russian winter"). The 44 px targets, `aria-pressed` chips, labelled dialogs with focus on the title, reduced motion and the five layouts of spec 07 apply unchanged. The result card is a dialog, not a toast, so it cannot be missed on a phone. French wording stays out of scope; the French pass changes `endText.ts` only.
+
+## Part E. The computer opponent: minimum viable
+
+The computer plays through `legalActions` only (spec 05). Its policies are the computer's, not rules, and tunable (`TODO(verify)` as policy).
+
+- **It always answers a new prompt**, so a game never stalls: II.A (Allies), 8a (Allies), 10a (Axis). Conquests and the end need no answer. `chooseAction` uses `sideToAct`.
+- **Winter, Allies:** postpone when allowed (`WINTER_POSTPONE_WHEN_ALLOWED = true`). The reason is that the dice test only allows it when few Axis units are inside Russia, so the loss of the Axis bonus would be small now and larger next year. **Axis:** nothing to decide; the Offensive Option in the East is simply not offered during the winter.
+- **Surrender, Axis:** accept (`ACCEPT_SURRENDER = true`, Q5). After accepting it does not take the Occupation Force into account until ticket 14-21 (R1).
+- **Free Siberian Transfer, Allies:** take everything every turn, infantry first, then armor up to the infantry count, placed in the Russian city nearest the front that qualifies (`SIBERIAN_TAKE_ALL = true`). This raises the Allied target by one, which the computer does not weigh.
+- **No victory awareness in Beta.** The computer already marches toward Objective hexes; it does not count the score.
+- **A dependency, not part of this spec:** "Defend Berlin" (docs/PLAN.md section E). Once capitals can be conquered, a computer that leaves its capital alone loses its Power in two turns, and in the 1944 scenario and the Campaign that ends the game. That item moves from "good to have" to "needed for a fair Beta".
+- **Release 1:** the Allied computer builds Russian factors to avoid the surrender when the shortfall is small; the Axis computer keeps its Occupation Force and does not strip Russia after a surrender (ticket 14-21).
+- **Watch mode and self-play:** the result is shown on the last line of the watch panel and in the self-play report (a "Result" column and a "Conquests" list per game). New self-play anomaly checks: a game that ends without a result; a unit of a conquered nation on the map; a hex still controlled by a conquered nation; the winter in force for more or fewer than one Game Turn; a surrender offered twice; an Objective counted twice or counted as capital-only.
+
+## Part F. Tests and verification
+
+### F1. What already exists, what is new
+
+| Item | Status |
+|---|---|
+| The 42 Objectives, their names and Fronts | Checked by `tests/map-data.test.ts`. |
+| The scenario end dates | In the scenario data; one test pins them. |
+| The victory numbers | **New data**, checked by ticket 14-2 against the game's victory file (the numbers are in the file as text; a test compares our table with a table written out again from it). |
+| Everything else in this spec | New. |
+
+### F2. Checking against the original game (ticket 14-24 and phase 9)
+
+- **The program:** read the victory routine (what it compares, when it runs, whether it stops the game), the Russian-surrender test (what counts as factors on the map and inside Russia) and the winter dice with the unit count, the way `scripts/gamedata/exe-checks.ts` reads the others. Add a `victory` module to `scripts/gamedata/` that compares them with `victory.ts` and the constants (exit 1 on a difference). Needs the owner's game folder; if absent the constants stay `TODO(verify)`.
+- **Reference situations to run in the original under DOSBox** (docs/ROADMAP.md phase 9), each becoming a regression test: take Warsaw and look at the Polish units; take Paris and see when France falls and what Vichy gets; Russia at 49 and 50 factors with the Axis at 3 to 2; the winter dice and the postponement question; a Russian declaration in a Winter turn; the end of the 1939 game at 14, 15 and 16 Allied Objectives. Frank plays the DOS game: questions F1 to F9 ask him directly.
+
+### F3. Unit tests (Vitest; each cites its rule and gets a mutation check: break the rule, see a test fail, restore)
+
+| Test | Rule | What it proves |
+|---|---|---|
+| Objective count | R1 | 42 Objectives; the start counts of all four scenarios (9/23/10, 25/14/3, 22/17/3); neutral Italy counts Axis and neutral Russia Allies; a minor never at war counts for nobody; Vichy-held Marseilles and Lyons count Axis; Free French count British; credited Objectives after a surrender; a capital that is not an Objective is not counted. |
+| Result tables | R2 | For every Allied count 0 to 42 and Axis count 0 to 42 with their sum at most 39, exactly one result in each table; the boundaries 14/15, 16/17, 24/25, 26/27 (1939), 17/18 and 25/26/27 with the Free Siberian Transfer, 13/14, 15/16, 25/26, 27/28 (1942); the overlap rule when the sum is above 39; the 1944 table at every Game Turn from Winter 1944 to Spring 1946 and "not conquered"; the Campaign with and without the transfer, the Winter 1943 checkpoint, two and three Allied Powers conquered. |
+| End of play | R3 | The result is set once at the end of the last Game Turn, `legalActions` is empty, the computer stops, replay gives the same result; early end happens only in the two conquest scenarios and only at the conquest. |
+| Capital and fall | R4 | Capital taken: not yet conquered; retaken in the owner's Combat Phase: free; the owner's Combat Phase ends with the enemy still there: conquered, at step 7p of the owner's turn, in that order; Winter timing and the first half-BRPs a Year Start Sequence later; units and pools gone; home hexes pass; held-elsewhere hexes become nobody; a nobody-hex does not revert to its start owner; grants, declarations and the Initiative ignore a conquered nation; Attrition cannot take a capital. |
+| France | R5 | The fall comes after the Allied Combat Phase; half (rounded up) of each type becomes Vichy, air and naval totals halved; the two colony dice, even and odd; British units in Vichy territory eliminated; Marseilles and Lyons count Axis; status "vichy"; the placement is deterministic and within stacking. |
+| Italy | R6 | Each of the four conditions is needed (four tests, each removing one); Spring 1943 boundary; the die plus two and the cap; the surrender counts as a conquest. |
+| Moscow and Leningrad | R7a | +15 and -15 at the first capture, none at the second; the Year Start Sequence lines; stops after a surrender. |
+| Surrender offer | R7b | 49 factors and the 3 to 2 test at exactly 3 to 2 offers; 50 factors or 1.49 to 1 does not; not at an Axis turn; not before the war; offered once whatever the answer; replacements and airborne count; air units count; fleets and airbases do not. |
+| Accept and refuse | R7c, R7d | Accept: units gone, Objectives credited and frozen, Russia closed to the Axis, half-BRPs from the next Year Start Sequence. Refuse: Russia stays, no second offer, conquered when the last factor inside Russia is gone (not when only the outside ones remain). |
+| Occupation Force | R7c | (R1) 45 total and 30 ground; the shortfall costs 15 BRPs and one chosen Objective; once a turn; SR limited. |
+| Winter timing | R10 | No roll in a non-Winter turn; a German declaration in a Winter turn means next winter; a Russian declaration in a Winter turn starts it at once, no postponement; 1942 and 1944 never; after the one winter, never again. |
+| Winter dice | R10 | Four dice from the seeded generator; units equal to the total allows no postponement and units one below allows it; the postponed winter starts at the next Winter with no question. |
+| Winter effects | R10 | Plain defence is 1 for a non-Finnish Axis unit in the "ussr" country and 2 for a Finn; triple and Fortress unchanged; outside Russia unchanged; the Offensive Option in the East is hidden for the Axis in that Game Turn only and other Fronts and options are not. |
+| Free Siberian Transfer | R11 | Quotas 4, 3, 2, 1 by calendar; armor not above infantry; airborne refused; placement in a supplied Russian city; the flag switches the tables; unused units are lost. |
+| Minor fall | R9 | Poland: Warsaw taken, units and pool gone at the end of the attacker's Combat Phase, hexes pass, Polish air alone in Warsaw gone with the country; a Minor-Ally falls with its capital and can no longer be activated; the Free Siberian Transfer and the winter do not touch minors. |
+| Who acts | C6 | At II.A the Allies act, at 10a the Axis acts; the computer chooser follows; a human sees the card. |
+| Determinism | C1 | The same actions replay to the same state, with every new field in it; no `Math.random`, clock or DOM (the engine-purity test). |
+| Malformed input | C3 | Every new action with bad shapes is refused with a reason, never throws. |
+| Old saves | C1 | A state without any new field behaves as "none yet". |
+| Existing tests | | `tests/state.test.ts` (the end now has a result), `tests/warsaw-playtest.test.ts` and `tests/lone-units.test.ts` (Poland now falls with Warsaw), the self-play report tests and the watch-mode tests change, and only those. |
+
+### F4. UI and end-to-end
+
+Pure models first (`endCard.ts`, `objectivesCard.ts`, `winterCard.ts`, `surrenderCard.ts`: no DOM, like `attackPreview.ts`), with tests of the lists, numbers and button text, "no raw ids". Playwright (`tests/e2e/victory.spec.ts`, mouse and touch): a scripted short game ends and the result card shows; the Objectives card lists 42; a conquest card appears for a Major Power; the winter card shows dice and the two buttons; the surrender card shows its two buttons; the Axis Offensive button is greyed in winter. Playwright is run by the build workers, not in writing this spec.
+
+### F5. Mutation checks (change the line, see a test fail)
+
+The threshold numbers; the 3 to 2 ratio; the 50-factor limit; the "fewer than the dice total" comparison; the doubling removed only for the plain case; "the owner's Combat Phase" in the conquest timing; rounding up in the Vichy halving; half rounded down for BRPs; "once" for the 15s; the neutral Italy and neutral Russia counting; the Free Siberian Transfer switch.
+
+## Part G. Build plan
+
+Difficulty: easy, medium, hard. Size: S (under half a day), M (about a day), L (more). One branch and one pull request each, a reviewer from a stronger level than the author (CLAUDE.md), at most 4 workers at once. **B** = Beta, **R1** = Release 1. Beta-critical tickets are the ones marked B.
+
+| # | Ticket | Difficulty | Size | Milestone | Needs | Files |
+|---|---|---|---|---|---|---|
+| **Victory and the end of the game** | | | | | | |
+| 14-1 | **Objective standings (pure).** `objectiveStandings` by R1; the start counts of the four scenarios as fixtures. | easy | S | B | none | `objectives.ts`, tests |
+| 14-2 | **Victory data and the result function (pure).** `src/data/victory.ts`, `Scenario.victory`, `evaluateVictory`, `victoryTarget`; every boundary; the Campaign checkpoint; a test against the victory file. | medium | M | B | 14-1 | `victory.ts`, `victory-record.ts`, `data/victory.ts`, `types.ts`, `scenario-*.ts`, tests |
+| 14-3 | **End the game with a result.** `GameState.result`, the result at the last turn, `GAME_OVER` with it, the early end after a conquest, watch mode and self-play show it. | medium | M | B | 14-2 | `turn.ts`, `action-types.ts`, `actions.ts`, `scripts/selfplay/*`, `ui/watch*.ts`, tests |
+| 14-4 | **Screens for the end:** the score line, the Objectives card, the result card, the Objective marks on the map. | medium | M | B | 14-3 | `ui/objectivesCard.ts`, `ui/endCard.ts`, `ui/endText.ts`, `ui/statusView.ts`, `ui/mapCities.ts`, tests, one Playwright spec |
+| **Conquest** | | | | | | |
+| 14-5 | **A Major Power is conquered by its capital.** `Conquest` record, status "conquered", `fall()`, nobody-control, the settle hook at the end of 7p, half-BRPs in the Year Start Sequence, grants and declarations refused, the capital-lost banner event. The Wars list keeps its history. | hard | L | B | 14-3 | `conquest.ts`, `conquest-record.ts`, `control.ts`, `turn.ts`, `yearstart.ts`, `war.ts`, `grants.ts`, `game.ts`, `types.ts`, tests |
+| 14-6 | **A minor country falls (Poland first).** Capital taken: units and pool gone at the end of the attacker's Combat Phase, hexes pass, Minor-Allies, the `afterHexTaken` call; Warsaw tests updated. | medium | M | B | 14-5 | `conquest-minor.ts`, tests |
+| 14-7 | **France falls; Vichy France is created.** The fall at the end of the Allied Combat Phase, the Vichy zone data for the 1939 scenarios, halving, the two colony dice, Free French, British units eliminated, Vichy as an inactive Minor-Ally. (If this grows past a day, split the colony dice and Free French off.) | hard | L | B | 14-5, spec 09 09-5 or spec 12 12-4 for `afterHexTaken` (or agree who adds it) | `conquest-france.ts`, `data/scenario-1939.ts`, `data/zones.ts`, tests |
+| 14-8 | **Italy surrenders (Ref 18.2).** The four conditions, the German fleet share. | medium | M | R1 | 14-5 | `conquest-italy.ts`, tests |
+| 14-9 | **France under occupation (Ref 18.3).** The limits on French attacks, Options, declarations, supply and moves while Paris is German-held. | hard | M | R1 | 14-7 | `conquest-france.ts`, `attack-rules.ts`, `frontoptions.ts`, `war.ts`, tests |
+| 14-10 | **Vichy activation and deactivation at 8c (Ref 35.1).** Five BRPs, the die and its modifiers. | medium | M | R1 | 14-7 | `vichy.ts`, `sequence.ts`, tests |
+| 14-23 | **Trapped hostile units keep their hexes (Ref 16.0, 18.1).** The supply-line exception to the passing of control. | hard | M | R1 | 14-5, 14-6 | `conquest.ts`, `supply.ts` use, tests |
+| **The Russian winter** | | | | | | |
+| 14-11 | **Winter record, the roll and the Allied choice at II.A.** Dice, the count, `CHOOSE_WINTER`, II.A waits, `sideToAct`, a Russian declaration in a Winter turn, the scenario rule. | hard | M | B | none (creates `sideToAct` if 09-7 or 12-11 has not) | `winter.ts`, `winter-record.ts`, `turn.ts`, `actions.ts`, `war.ts`, `sequence.ts`, scenarios, tests |
+| 14-12 | **Winter effects.** The plain defence not doubled in Russia, the Finns excepted; the Axis Offensive Option in the East hidden; the preview basis "winter". | medium | M | B | 14-11 | `terrain.ts`, `attack-rules.ts`, `frontoptions.ts`, tests |
+| 14-13 | **Winter screens.** The II.A card, the turn-line banner, the greyed button, the preview line. | easy | S | B | 14-11, 14-12 | `ui/winterCard.ts`, `ui/endText.ts`, `ui/attackPreview.ts`, tests |
+| **The U.S.S.R.** | | | | | | |
+| 14-14 | **Moscow and Leningrad.** The once-only 15s and the Year Start Sequence lines. | easy | S | B | 14-5 | `soviet.ts`, `yearstart.ts`, tests |
+| 14-15 | **Russian surrender (10a).** The test, `SURRENDER_ANSWER`, acceptance (units, credit, income, closed land), refusal and the last-factor conquest. | hard | L | B | 14-5, 14-1, `sideToAct` (14-11) | `soviet.ts`, `soviet-record.ts`, `victory-actions.ts`, `sequence.ts`, `turn.ts`, tests |
+| 14-16 | **Surrender screens.** The offer card and the construction warning. | medium | M | B | 14-15 | `ui/surrenderCard.ts`, `ui/buildView.ts`, tests |
+| 14-17 | **Occupation Force (6h and 9k).** 45 factors, 30 ground; the penalty and the conceded Objective; SR limit. | medium | M | R1 | 14-15 | `soviet.ts`, `sequence.ts`, `turn.ts`, tests |
+| 14-18 | **Free Siberian Transfer (8a).** Quotas, rules, placement, the flag, the card. | medium | M | B (Q3) | 14-2 | `siberian.ts`, `victory-actions.ts`, `ui/siberianCard.ts`, tests |
+| **The computer, checks and docs** | | | | | | |
+| 14-19 | **Computer: answers every new prompt.** Winter, surrender, transfer; policies as constants. | easy | S | B | 14-11, 14-15, 14-18 | `src/ai/*.ts`, tests |
+| 14-20 | **Self-play and the gate.** A result and a conquest list per game, the anomaly checks of part E, 30 seeds of each scenario; the owner is shown the numbers. | easy | S | B | all Beta engine tickets | `scripts/selfplay/*`, docs |
+| 14-21 | **Computer, release 1:** avoids a Russian surrender when cheap; keeps the Occupation Force; keeps French units out of the Paris trap. | medium | M | R1 | 14-9, 14-17 | `src/ai/*.ts`, tests |
+| 14-22 | **Vital production areas (Ref 32.0, 34.0).** Britain loses 25 BRPs once for Gibraltar and once for Suez and Alexandria together. | easy | S | R1 | 14-5 | `economy`-side file, tests |
+| 14-24 | **Docs and the program check.** "As built" here, new questions in docs/RULES.md and docs/TODO-VERIFY.md, `scripts/gamedata/` victory check if the folder is at hand; once per milestone. | easy | S | B | all of a milestone | docs, `scripts/gamedata` |
+
+**Totals.** Beta: 17 tickets: 6 small (14-1, 14-13, 14-14, 14-19, 14-20, 14-24), 8 medium (14-2, 14-3, 14-4, 14-6, 14-11, 14-12, 14-16, 14-18), 3 large (14-5, 14-7, 14-15). Release 1: 7 tickets: 6 medium (14-8, 14-9, 14-10, 14-17, 14-21, 14-23) and 1 small (14-22). Altogether 24.
+
+```mermaid
+flowchart LR
+  T1["14-1 objectives"] --> T2["14-2 results"]
+  T2 --> T3["14-3 end with a result"]
+  T3 --> T4["14-4 screens"]
+  T3 --> T5["14-5 Major Power falls"]
+  T5 --> T6["14-6 minor falls"]
+  T5 --> T7["14-7 France, Vichy"]
+  T5 --> T8["14-8 Italy surrenders (R1)"]
+  T7 --> T9["14-9 Paris limits (R1)"]
+  T7 --> T10["14-10 Vichy 8c (R1)"]
+  T5 --> T23["14-23 trapped units (R1)"]
+  T6 --> T23
+  T11["14-11 winter at II.A"] --> T12["14-12 winter effects"]
+  T11 --> T13["14-13 winter screens"]
+  T12 --> T13
+  T5 --> T14["14-14 Moscow, Leningrad"]
+  T5 --> T15["14-15 Russian surrender"]
+  T1 --> T15
+  T11 --> T15
+  T15 --> T16["14-16 surrender screens"]
+  T15 --> T17["14-17 Occupation Force (R1)"]
+  T2 --> T18["14-18 Siberian Transfer"]
+  T11 --> T19["14-19 computer"]
+  T15 --> T19
+  T18 --> T19
+  T19 --> T20["14-20 self-play, gate"]
+  T9 --> T21["14-21 computer R1"]
+  T17 --> T21
+  T5 --> T22["14-22 vital areas (R1)"]
+```
+
+**Parallel runs (at most 4 at once; same-file work runs one after the other):**
+
+- **Wave 1 (3 workers):** 14-1, 14-11, and the data half of 14-2 (the victory table and its test against the victory file). Different files; only 14-2 edits `types.ts` (announce it).
+- **Wave 2 (3):** 14-2 finished, 14-12, 14-3. 14-3 and 14-5 both edit `turn.ts`: one after the other.
+- **Wave 3:** 14-5 alone on the engine side (`turn.ts`, `control.ts`, `types.ts`), with 14-4 and 14-13 beside it (UI only).
+- **Wave 4:** 14-6, 14-14, 14-18 and 14-15 (one engine worker each, different files), then 14-7 and 14-16.
+- **Wave 5:** 14-19, 14-20, 14-24; then the R1 tickets in the order 14-10, 14-9, 14-17, 14-8, 14-23, 14-21, 14-22.
+
+**Stopping points, in the order Frank would notice:**
+
+1. After 14-1 to 14-4: **the game ends and says who won.** (First visible change; the smallest useful stop.)
+2. After 14-11 to 14-13: the Russian winter is on the screen, with dice.
+3. After 14-5 and 14-6: Poland falls with Warsaw, Germany or Britain can fall.
+4. After 14-7: France falls and Vichy appears.
+5. After 14-14 to 14-16: Russia can give up.
+6. After 14-18 and 14-19: **Beta rules complete.** After 14-20 the numbers of 30 self-played games per scenario are shown to the owner.
+
+## Part H. Out of scope, and where the lines are
+
+| Not here | Why | Room left |
+|---|---|---|
+| Forces of a newly attacked minor, the declaration rule of PC README 21.4, intervention, Minor-Ally activation and its BRPs, the BRP a conquered minor or colony pays at the Year Start Sequence, conquest of colonies and Eastern Europe by holding all cities | The minor-country spec (docs/PLAN.md section D). | This spec gives it the `Conquest` record, the control change and the event, and reads the record for the result. When that spec lands, the income lines for minors go beside this spec's lines for Major Powers in `yearstart.ts`. |
+| Strategic warfare and the Murmansk and U.S. boxes | Another spec. | None needed. |
+| Strategic Redeployment, including the SR limit in the Occupation Force rule | SR is not built (roadmap 5.6). | Ticket 14-17 stores the limit as a flag the SR work reads. |
+| Attrition and exploitation | Other specs. | The settle hook at the end of 7p runs after 7p whatever it holds. |
+| The U.S.A. entering the war, British aftermath of London's fall, Free French transfer to the U.S.A. | Rare, and tied to the economy spec. | V29. |
+| Lent Italian units | Lending is not built. | R4 notes the two cases. |
+| The Suez Canal damage clock | Not needed. | Ticket 14-22 reads only the 25-BRP loss. |
+| Partisans, variants, Russo-Allied cooperation | Not in the PC game (README). | None. |
+| Gibraltar's SR rules | Not here. | None. |
+| Percentages of chance and "what if" projections | Same decision as spec 07. | None. |
+| A French interface | Not a priority. | All text in `endText.ts` and the card modules. |
+
+## Part I. Rules references
+
+Ref 2.0 to 2.4 (victory), 6.0 (hex control), 9.2 (BRP totals), 11.8 (possible Russian surrender), 11.63 (Free Siberian Transfer), 11.74 and 11.75 (unsupplied units and airbases), 12.4 (Attrition and capitals), 13.0 to 17.0 (war, minors, conquest of minors, Minor-Allies), 18.1 to 18.4 (Major Powers, Italy, France, the U.S.S.R.), 19.2 (capitals as sources), 26.0 (Anglo-French cooperation), 28.0 (the Russian Winter), 29.0 (Poland and Eastern Europe), 30.1 (lent Italian forces), 32.0 to 35.1 (Gibraltar, Malta, Suez, Vichy); Ops 5.2, 5.45h, 5.47a, 5.48k, 5.49a and the Status menu; PC README (rules 21.4, 24.23, 49.6 and the index correction for the Russian surrender); the victory-conditions file. Existing code and docs: `turn.ts`, `sequence.ts`, `control.ts`, `terrain.ts`, `attack-rules.ts`, `frontoptions.ts`, `yearstart.ts`, `supply-sources.ts`, `fortress.ts`, spec 01 (the sequence), spec 04 (the earlier victory text), spec 09 and spec 12 (`afterHexTaken`, `sideToAct`), spec 11 (saves).
+
+## Part J. Open questions
+
+**For the product owner:** Q1 to Q5 at the top.
+
+**For Frank, who knows the DOS game (also in docs/TODO-VERIFY.md; none blocks the work):**
+
+- **F1.** When the last turn is played, or a country is conquered, what does the game show and say? Does it stop at that moment? In the 1944 game, when Germany falls, does the game end that turn? (V3)
+- **F2.** When Russia offers to surrender, what does the box show: the Russian factors, the German factors, a ratio? Do you remember the box ever coming before the Axis had many units in Russia? (V17, V18)
+- **F3.** When the winter box appears, does it show the dice and the number of German units? Do Italian and Rumanian units in Russia suffer the winter too? (V23, V24)
+- **F4.** After Germany takes Paris, does the game tell the French player that France falls at the end of the Allied turn? When France falls, does the game place the Vichy units or do you? (V13)
+- **F5.** Have you ever seen a message about a "severely hard winter", "+50 BRPs for the Soviets" or a Soviet "Five Year Plan"? We found the words inside the program; no manual explains them. (V25)
+- **F6.** When Warsaw falls, do the Polish units disappear at once? (V28)
+- **F7.** In the Campaign, if Italy never joined the war and Germany is conquered, is the game over? (V6)
+- **F8.** After Russia surrenders, can German units still enter the Russian land that is left? (V19)
+
+**Rules to check against the PC manual or the program (all `TODO(verify)`; also in docs/RULES.md and, as rows V1 to V29, in docs/TODO-VERIFY.md):**
+
+1. R2: both sides reaching a level (V1); the Campaign "Axis" and its tiers (V6, V7); the 1944 case where Germany stands at the end (V5); the date of a conquest (V4).
+2. R1: land of an inactive Minor-Ally (V2).
+3. R3: the early end (V3).
+4. R4: who is the conqueror (V8); the BRP base (V9); permanence of the removal and the pools (V10); which hexes are "in" the Power and the representation of "nobody" (V11); the supply-line exception (V12).
+5. R5: the Vichy halving and placement (V13); the colony dice and which hexes belong to each colony (V14); French conquests and the Free French exception (V15).
+6. R6: Italy's surrender (V16).
+7. R7: what counts as factors (V17); one offer only (V18); the effects of acceptance (V19); refusal and the last factor (V20); the Occupation Force (V21); the 15s (V22).
+8. R10: the scope and effects (V23); the dice and the declaration timing (V24); the unexplained messages (V25).
+9. R11: the Free Siberian Transfer (V26).
+10. R8, R9: the 25-BRP losses (V27); minors, Poland and Eastern Europe (V28); Britain's fall (V29).
+
+**For the builders**
+
+- B1. New types in their own modules, not `types.ts`.
+- B2. `sideToAct` in `actions.ts` or a small `actor.ts`: specs 09 and 12 and this spec all need it; the first ticket to need it creates it.
+- B3. The capture hook `afterHexTaken` is shared with spec 09 (09-5) and spec 12 (12-4); agree who adds it.
+- B4. `controllerOf` with `null` entries: check every caller that reads `state.control` directly (`grep "state.control"`).
+- B5. The Objective count must not reuse `OBJECTIVE_FEATURES` of the computer or the self-play tally (they include capitals).
+- B6. `settle` stopping at II.A: check the watch-mode loop and `computerToMove`, which assume only Player Turn steps wait.
+- B7. The settle hook after 7p must run in every path through `turn.ts`, including a turn with nothing to do at 7h.
+
+## As built
+
+Nothing built yet. Each ticket adds its own section here, as in spec 09 ("As built (ticket 14-N: ...)": files, the rule as built, differences from this text, what is not in the ticket, tests and mutation checks, the `TODO(verify)` items left).
+
+## Done when
+
+1. A 1939 game played to its last turn ends with a result card that names the verdict, shows the Objective counts and says what the winner needed; the same result is in the saved game, the self-play report and the watch panel. With the Free Siberian Transfer used, the tables shown and applied are the changed ones.
+2. The result is right at every boundary of every table, in a test that walks all of them.
+3. Taking a Major Power's capital warns the owner; if the owner's Combat Phase ends with the capital still lost, the Power is conquered: units and pools gone, home hexes passed, other land nobody's, half-BRPs from the next Year Start Sequence, status "Conquered" on the screen. Poland falls with Warsaw. France falls after the Allied Combat Phase and Vichy France exists.
+4. In the first winter of the German-Russian war the game rolls four dice, shows them, asks when Russia may wait, and then, for one Game Turn, Axis defenders in Russia are not doubled (Finns excepted) and the Axis cannot take an Offensive Option in the East. 1942 and 1944 have no such winter.
+5. Moscow and Leningrad move 15 BRPs each, once, and again at each Year Start Sequence while held. Russia's surrender is offered once, at the right moment, answered by the Axis, and its effects are those of rule R7.
+6. The computer answers every new prompt, the 30-seed self-play of each scenario ends every game with a result and no anomaly of part E.
+7. Every constant is named and sourced, and every unclear rule is a `TODO(verify)` listed in docs/RULES.md and docs/TODO-VERIFY.md.
+8. With the new fields absent, every existing test and every fixed-seed self-play recording is unchanged except the ones listed in F3; lint, typecheck, unit tests, build and the Playwright tests (mouse and touch) pass; every new button is at least 44 px.
+9. Mutation checks (F5): changing a threshold, the 3 to 2 ratio, the 50-factor limit, the dice comparison, the "plain only" winter rule, the timing of conquest, the Vichy rounding, the half-BRP rounding or the neutral counting each makes a test fail.
