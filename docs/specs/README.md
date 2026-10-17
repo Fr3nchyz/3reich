@@ -31,5 +31,6 @@ Template:
 | 12 | [Fleets and naval warfare](12-fleets-naval.md) |
 | 13 | [Zones of control as the PC Reference Manual prints them](13-zoc-pc-rules.md) |
 | 14 | [Victory, surrender, conquest and the Russian winter](14-victory-surrender-winter.md) (draft for review; Beta milestone) |
+| 15 | [Minor countries: an attacked minor's army, Intervention, Minor-Allies, BRPs from territory](15-minor-countries.md) (draft for review; Beta milestone) |
 
 Status lives at the top of each file; the build order and sizes are in [../PLAN.md](../PLAN.md).

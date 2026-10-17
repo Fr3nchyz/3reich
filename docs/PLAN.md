@@ -119,13 +119,13 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-18 Free Siberian Transfer | | M (Beta if the owner says yes to Q3) |
 | 14-19, 14-20, 14-24 Computer answers, self-play gate, docs | | S, S, S (Beta) |
 | 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
-| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest | 4.3 rest | L |
+| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
 | Attrition | 6.2 | M |
 | Exploitation | 6.3 | M |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L |
 | Strategic redeployment (step 9e) | 5.6 | M |
 | Fortress changes (Maginot, West Wall, Sevastopol) | 5.7 | S |
-| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor, Persia costing the Axis nothing, a Front Option changed within the step, Minor-Ally BRPs while inactive | audit | S each |
+| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
 
