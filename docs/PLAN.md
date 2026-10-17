@@ -112,13 +112,13 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | Rule | Roadmap item | Guess |
 |---|---|---|
 | Victory, surrender, Russian winter | 6.7 | L |
-| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest | 4.3 rest | L |
+| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 18 Beta tickets, 5 S and 13 M; 5 more for Release 1, 4 M and 1 L) | 4.3 rest | 5 S + 13 M (Beta) |
 | Attrition | 6.2 | M |
 | Exploitation | 6.3 | M |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L |
 | Strategic redeployment (step 9e) | 5.6 | M |
 | Fortress changes (Maginot, West Wall, Sevastopol) | 5.7 | S |
-| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor, Persia costing the Axis nothing, a Front Option changed within the step, Minor-Ally BRPs while inactive | audit | S each |
+| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
 
