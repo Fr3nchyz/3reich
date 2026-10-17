@@ -15,13 +15,15 @@ import { ZOC_UNIT_TYPES } from "./zoc";
  * once, at the start of the Player Turn. Not built: Strategic Redeployment, Exploitation, airbases relocating (Ref 20.1, 11.75), the Libyan cap.
  */
 /**
- * OFF. Two things stand in the way (measured 2026-10-16 with the switch on, computer against itself): (1) the computer does not plan its supply, so its
- * armies run ahead of their lines and sit cut off: over 30 seeds of 1939 the Axis holds 202 objectives instead of 289 and idles 180 Player Turns instead of 65
- * (the Campaign 18 instead of 86); (2) a few legitimate pockets still need sea supply (Ref 19.31, needs fleets): Italian units in Sardinia and German units in
- * Norway in the 1942 and 1944 scenarios. Switch on when the computer keeps its supply lines and fleets exist. The sources of Ref 19.2 are built (supply-sources.ts);
- * not built: the U.S.A. fallback, Greek islands, Tangiers.
+ * OFF, the shipped setting; switching the effects on is this one line (a game's context can override it, `GameContext.supplyEffects`, which
+ * tests and `npm run selfplay -- --supply-effects on` use). The computer plays with its supply rules while they are on (src/ai/lines.ts,
+ * doomed.ts); the numbers with and without those rules, and what still stands in the way (Berlin as Germany's only source, sea supply for
+ * Sardinia and Norway, Ref 19.31, needs fleets), are in spec 05, "As built: the computer and supply". The sources of Ref 19.2 are built
+ * (supply-sources.ts); not built: the U.S.A. fallback, Greek islands, Tangiers.
  */
 export const SUPPLY_EFFECTS_ENABLED = false;
+/** Whether the supply effects apply in this game: the context's own setting (tests, self-play), otherwise `SUPPLY_EFFECTS_ENABLED`. */
+export const supplyEffectsOn = (ctx: GameContext): boolean => ctx.supplyEffects ?? SUPPLY_EFFECTS_ENABLED;
 export const UNSUPPLIED_CANNOT_MOVE = true;
 export const UNSUPPLIED_CANNOT_ADVANCE = true;
 export const ELIMINATE_ONLY_IF_CUT_OFF_AT_START = true;
@@ -31,7 +33,7 @@ const cutOff = (ctx: GameContext, state: GameState): string[] =>
   unsuppliedUnits(ctx, state, state.activeSide).filter((id) => state.units[id] && ZOC_UNIT_TYPES.includes(state.units[id].type));
 
 /** A Player Turn begins: remember which of the side's ground units are cut off. */
-export function recordUnsupplied(ctx: GameContext, state: GameState, enabled: boolean = SUPPLY_EFFECTS_ENABLED): GameState {
+export function recordUnsupplied(ctx: GameContext, state: GameState, enabled: boolean = supplyEffectsOn(ctx)): GameState {
   if (!enabled) return state;
   const ids = cutOff(ctx, state);
   if (ids.length === 0 && state.unsuppliedAtStart === undefined) return state;

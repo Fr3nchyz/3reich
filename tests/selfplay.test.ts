@@ -7,8 +7,9 @@ import { controllerOf, sideInWar } from "../src/engine/control";
 import { sideOfOwner } from "../src/engine/setup";
 import { chooseAction } from "../src/ai";
 import { newGame } from "../src/engine/game";
+import { SUPPLY_EFFECTS_ENABLED } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
-import { MAX_SEED, parseArgs, recording } from "../scripts/selfplay/args";
+import { MAX_SEED, parseArgs, recording, recordingContext } from "../scripts/selfplay/args";
 import { prepareOut } from "../scripts/selfplay/out";
 import { comparison, gameReport } from "../scripts/selfplay/report";
 import { auditState, runGame } from "../scripts/selfplay/runner";
@@ -29,10 +30,30 @@ describe("self-play runner: a short game per scenario", () => {
       expect(r.actions.length).toBeGreaterThan(r.setupActions);
       // The recorded list goes through JSON and back, as a file would, then replays from the new game.
       const saved = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
-      const again = replay(r.ctx, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+      const again = replay(recordingContext(saved), newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
       expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
     }, 60_000);
   }
+
+  it("a recording made with the supply effects on says so, and replays in a context with them on to the identical final state", () => {
+    const r = runGame({ scenario: "1942", seed: 3, turns: 2, verify: false, supplyEffects: true });
+    const saved = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
+    expect(saved.supplyEffects).toBe(true);
+    expect(recordingContext(saved).supplyEffects).toBe(true);
+    const again = replay(recordingContext(saved), newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+    expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
+    // The setting matters: in a context with the effects off the same actions end elsewhere (the cut-off units are not eliminated).
+    const off = replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
+    expect(JSON.stringify(off.state)).not.toBe(JSON.stringify(r.final));
+  }, 60_000);
+
+  it("a recording with the effects off (or an older one) has no such field and replays with them off", () => {
+    const r = runGame({ scenario: "1939", seed: 3, turns: 1, verify: false, supplyEffects: false });
+    const old = JSON.parse(JSON.stringify(recording(r))) as ReturnType<typeof recording>;
+    expect("supplyEffects" in old).toBe(false); // written only when on: the keys are those of older recordings
+    expect(recordingContext(old).supplyEffects).toBe(false);
+    expect(JSON.stringify(replay(recordingContext(old), newGame(SCENARIOS[old.scenario], old.seed), old.actions).state)).toBe(JSON.stringify(r.final));
+  }, 60_000);
 
   it("is deterministic per seed and differs between seeds", () => {
     const a = runGame({ scenario: "1939", seed: 5, turns: 2 });
@@ -212,6 +233,20 @@ describe("self-play command line", () => {
     expect(parseArgs(["--scenario", "all"]).scenarios).toEqual([...SCENARIO_KEYS]);
     expect(parseArgs(["--no-verify"]).verify).toBe(false);
   });
+
+  it("--supply-effects on|off sets the supply effects for the run; absent, the shipped setting applies (and the report names it)", () => {
+    expect(parseArgs(["--supply-effects", "on"]).supplyEffects).toBe(true);
+    expect(parseArgs(["--supply-effects", "off"]).supplyEffects).toBe(false);
+    expect(parseArgs([]).supplyEffects).toBeUndefined();
+    for (const bad of [[], ["yes"], ["--no-verify"]]) expect(() => parseArgs(["--supply-effects", ...bad]), bad.join()).toThrow(/--supply-effects is on or off/);
+    const r = runGame({ scenario: "1942", seed: 1, turns: 1, verify: false, supplyEffects: true });
+    expect(r.ctx.supplyEffects).toBe(true);
+    expect(r.options.supplyEffects).toBe(true);
+    expect(gameReport(r)).toContain("--supply-effects on");
+    expect(r.turns[0]!.lostUnsupplied.axis).toBeGreaterThan(0); // Sardinia and Norway: sea supply is not built
+    expect(comparison([r])).toContain("Unsupplied lost ax / al");
+    expect(runGame({ scenario: "1939", seed: 1, turns: 1, verify: false }).ctx.supplyEffects).toBe(SUPPLY_EFFECTS_ENABLED);
+  }, 60_000);
 
   it("refuses what it does not understand", () => {
     for (const bad of [["--scenario", "1941"], ["--turns", "0"], ["--turns", "x"], ["--seed", "-1"], ["--games", "0"], ["--bogus"], ["--out"]]) expect(() => parseArgs(bad), bad.join(" ")).toThrow(/usage/);

@@ -1,6 +1,6 @@
 /**
  * Headless computer-against-computer games (docs/SELFPLAY.md):
- *   npm run selfplay -- --scenario <1939|campaign|1942|1944|all> --turns <N|end> --seed <n> [--games k] [--out dir] [--no-verify]
+ *   npm run selfplay -- --scenario <1939|campaign|1942|1944|all> --turns <N|end> --seed <n> [--games k] [--out dir] [--no-verify] [--supply-effects on|off]
  * Writes <scenario>-seed<n>.json (the recorded actions, replayable with the engine's replay()) and .md per game
  * to the output folder (default selfplay-out/, git-ignored), prints the one-page comparison, and exits 1 on any anomaly,
  * 2 for a bad command line, 3 if the run itself crashed.
@@ -31,7 +31,7 @@ function main(): void {
   for (const scenario of args.scenarios) {
     for (let k = 0; k < args.games; k++) {
       const seed = args.seed + k;
-      const r = runGame({ scenario, seed, turns: args.turns, verify: args.verify });
+      const r = runGame({ scenario, seed, turns: args.turns, verify: args.verify, ...(args.supplyEffects === undefined ? {} : { supplyEffects: args.supplyEffects }) });
       const base = join(dir, `${scenario}-seed${seed}`);
       writeFileSync(`${base}.json`, JSON.stringify(recording(r)));
       writeFileSync(`${base}.md`, gameReport(r));

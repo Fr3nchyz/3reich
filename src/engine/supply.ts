@@ -1,6 +1,7 @@
 import { controllerOf, controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import type { MapHex } from "./map";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
 import { fortressSupplies, specialNets } from "./supply-sources";
@@ -102,10 +103,22 @@ const wellFormed = (state: GameState): boolean =>
 /** Every hex the side controls that is a supply source under the policy, in hex-id order. */
 export function supplySources(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): HexId[] {
   if (!isSide(side) || !wellFormed(state)) return [];
-  return Object.values(ctx.map.hexes)
-    .filter((h) => h.land && h.features.some((f) => policy.sourceFeatures.includes(f)) && capitalCounts(state, side, h.country) && controllingSide(ctx, state, h.id) === side)
+  return sourceCandidates(ctx, policy.sourceFeatures)
+    .filter((h) => capitalCounts(state, side, h.country) && controllingSide(ctx, state, h.id) === side)
     .map((h) => h.id)
     .sort(byHex);
+}
+
+const candidates = new WeakMap<GameContext, Map<string, MapHex[]>>();
+
+/** The land hexes with one of the source features, whoever holds them: fixed by the map, so found once per context and feature list. */
+function sourceCandidates(ctx: GameContext, features: readonly HexFeature[]): MapHex[] {
+  let byFeatures = candidates.get(ctx);
+  if (!byFeatures) candidates.set(ctx, (byFeatures = new Map<string, MapHex[]>()));
+  const key = features.join(",");
+  let hit = byFeatures.get(key);
+  if (!hit) byFeatures.set(key, (hit = Object.values(ctx.map.hexes).filter((h) => h.land && h.features.some((f) => features.includes(f)))));
+  return hit;
 }
 
 /**
@@ -127,16 +140,30 @@ function enemyGroundHexes(state: GameState, side: Side): Set<HexId> {
   return out;
 }
 
+/** What a line search needs that does not depend on the source set: the side's enemy ZOC, and which hexes a line may enter (land the side controls with no enemy ground unit), found once per hex. */
+interface Obstacles {
+  zoc: Set<HexId>;
+  open: (h: HexId) => boolean;
+}
+
+const crossings = new WeakMap<GameContext, Map<HexId, readonly HexId[]>>();
+
+/** The neighbours a ground unit could cross into from this hex, in `adjacentHexes` order: fixed by the map, so worked out once per hex. */
+function crossable(ctx: GameContext, here: HexId): readonly HexId[] {
+  let byHex = crossings.get(ctx);
+  if (!byHex) crossings.set(ctx, (byHex = new Map<HexId, readonly HexId[]>()));
+  let hit = byHex.get(here);
+  if (!hit) byHex.set(here, (hit = adjacentHexes(ctx, here).filter((n) => canCross(ctx, here, n))));
+  return hit;
+}
+
 /**
  * For one source set: the next hex towards a source from every hex a line reaches (a source maps to null). A
  * breadth-first search outward from the sources over land hexes the side controls without an enemy ground unit,
  * across hexsides ground units cross (`canCross`). An enemy-ZOC hex is reached but not passed through, unless it
  * is itself a source (19.3). Fixed neighbour order makes the nearest source and the path deterministic.
  */
-function reach(ctx: GameContext, state: GameState, side: Side, sources: readonly HexId[], policy: SupplyPolicy): Map<HexId, HexId | null> {
-  const zoc = enemyZocFor(ctx, state, side, policy.zoc);
-  const blocked = enemyGroundHexes(state, side);
-  const open = (h: HexId) => !!ctx.map.hexes[h]?.land && controllingSide(ctx, state, h) === side && !blocked.has(h);
+function reach(ctx: GameContext, state: GameState, side: Side, sources: readonly HexId[], policy: SupplyPolicy, { zoc, open }: Obstacles): Map<HexId, HexId | null> {
   const isSource = new Set(sources);
   const next = new Map<HexId, HexId | null>();
   let frontier = sources.filter(open);
@@ -146,8 +173,8 @@ function reach(ctx: GameContext, state: GameState, side: Side, sources: readonly
     for (const here of frontier) {
       if (zoc.has(here) && !isSource.has(here)) continue;
       const fromSource = zoc.has(here) ? zocSources(ctx, state, side, here) : [];
-      for (const n of adjacentHexes(ctx, here)) {
-        if (next.has(n) || !open(n) || !canCross(ctx, here, n)) continue;
+      for (const n of crossable(ctx, here)) {
+        if (next.has(n) || !open(n)) continue;
         // Ref 19.3: a unit next to a source is not supplied when both stand in the ZOC of the same enemy unit.
         if (fromSource.length > 0 && zoc.has(n) && zocSources(ctx, state, side, n).some((id) => fromSource.includes(id))) continue;
         next.set(n, here);
@@ -165,27 +192,67 @@ const checkedUnits = (ctx: GameContext, state: GameState, side: Side): Unit[] =>
     .filter((u) => SUPPLY_CHECKED_TYPES.includes(u.type) && !!ctx.map.hexes[u.at] && sideInWar(state, u.owner) === side)
     .sort((a, b) => byId(a.id, b.id));
 
-/** Which of a side's units are in supply and along which path (deterministic: same state, same answer). */
-export function supplyStatus(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SupplyStatus {
+/** One source set and how far its lines reach: `next` maps every hex a line reaches to the next hex towards a source (null on a source). */
+export interface SupplyReach {
+  /** "main": a group's capitals and the other sources of supplySources (19.2); "net": a special net of supply-sources.ts, tried after a Fortress. */
+  kind: "main" | "net";
+  sources: ReadonlySet<HexId>;
+  /** Searched when first read. */
+  readonly next: ReadonlyMap<HexId, HexId | null>;
+  /** Whether this set supplies a counter of this owner. */
+  serves: (owner: ForceOwner) => boolean;
+}
+
+/**
+ * Where a side's land lines reach, before any unit is looked at: the main source set of each group (19.2, by `groupOfOwner`) and then each special
+ * net of supply-sources.ts, in the order `supplyStatus` tries them, with the side's enemy ZOC. A counter standing on a hex is supplied by land when the
+ * first set that serves it reaches that hex (or a Fortress supplies it). Exported so a caller that asks the question for many hexes builds it once.
+ */
+export interface SupplyNetwork {
+  side: Side;
+  sources: HexId[];
+  zoc: ReadonlySet<HexId>;
+  reaches: SupplyReach[];
+}
+
+export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SupplyNetwork {
   const sources = supplySources(ctx, state, side, policy);
-  const status: SupplyStatus = { side, sources, supplied: [], unsupplied: [] };
-  if (!isSide(side) || !wellFormed(state)) return status;
-  const reached = new Map<SupplyGroup, Map<HexId, HexId | null>>();
+  const network: SupplyNetwork = { side, sources, zoc: new Set(), reaches: [] };
+  if (!isSide(side) || !wellFormed(state)) return network;
+  const blocked = enemyGroundHexes(state, side);
+  const opened = new Map<HexId, boolean>();
+  const open = (h: HexId): boolean => opened.get(h) ?? opened.set(h, !!ctx.map.hexes[h]?.land && controllingSide(ctx, state, h) === side && !blocked.has(h)).get(h)!;
+  const obstacles: Obstacles = { zoc: enemyZocFor(ctx, state, side, policy.zoc), open };
+  // Each set's search runs the first time its `next` is read: most units are supplied by their main set, so the special nets are often never searched.
+  const lazyReach = (kind: SupplyReach["kind"], from: readonly HexId[], serves: SupplyReach["serves"]): SupplyReach => {
+    let next: Map<HexId, HexId | null> | undefined;
+    return { kind, sources: new Set(from), serves, get next() { return (next ??= reach(ctx, state, side, from, policy, obstacles)); } };
+  };
+  network.zoc = obstacles.zoc;
   for (const g of ["axis", "western", "soviet"] as const) {
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
-    if (mine.length) reached.set(g, reach(ctx, state, side, mine, policy));
+    if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => groupOfOwner(side, o, policy) === g));
   }
-  const nets = specialNets(ctx, state, side).map((net) => ({ net, next: reach(ctx, state, side, net.sources, policy) }));
-  const lineIn = (u: Unit, next: Map<HexId, HexId | null> | undefined): SupplyLine | null => {
-    if (!next?.has(u.at)) return null;
+  for (const net of specialNets(ctx, state, side)) network.reaches.push(lazyReach("net", net.sources, (o) => net.serves({ owner: o })));
+  return network;
+}
+
+/** Which of a side's units are in supply and along which path (deterministic: same state, same answer). */
+export function supplyStatus(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SupplyStatus {
+  const network = supplyNetwork(ctx, state, side, policy);
+  const status: SupplyStatus = { side, sources: network.sources, supplied: [], unsupplied: [] };
+  if (!isSide(side) || !wellFormed(state)) return status;
+  const lineIn = (u: Unit, next: ReadonlyMap<HexId, HexId | null>): SupplyLine | null => {
+    if (!next.has(u.at)) return null;
     const path = [u.at];
     for (let h = next.get(u.at) ?? null; h !== null; h = next.get(h) ?? null) path.push(h);
     return { unitId: u.id, source: path[path.length - 1]!, path, via: "land" };
   };
   for (const u of checkedUnits(ctx, state, side)) {
-    let line = lineIn(u, reached.get(groupOfOwner(side, u.owner, policy)));
+    const main = network.reaches.find((r) => r.kind === "main" && r.serves(u.owner));
+    let line = main ? lineIn(u, main.next) : null;
     if (!line && fortressSupplies(ctx, state, side, u)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" };
-    for (const { net, next } of nets) if (!line && net.serves(u)) line = lineIn(u, next);
+    for (const r of network.reaches) if (!line && r.kind === "net" && r.serves(u.owner)) line = lineIn(u, r.next);
     line ??= seaSupplyLine(ctx, state, side, u);
     if (line) status.supplied.push(line);
     else status.unsupplied.push(u.id);

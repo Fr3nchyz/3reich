@@ -5,6 +5,7 @@ import { autoSetup } from "../../src/engine/autosetup";
 import type { GameContext } from "../../src/engine/context";
 import { newGame, turnIndex } from "../../src/engine/game";
 import { overstacks } from "../../src/engine/stacking";
+import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
 import type { GameState, Scenario } from "../../src/engine/types";
 import { MAP } from "../../src/data/map";
 import { SCENARIOS } from "./scenarios";
@@ -50,9 +51,9 @@ export interface Hooks {
 export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   const choose = hooks.choose ?? chooseAction;
   const memory = createMemory();
-  const opt = { verify: true, stepLimit: STEP_LIMIT, turnLimit: TURN_LIMIT, ...options };
+  const opt = { verify: true, stepLimit: STEP_LIMIT, turnLimit: TURN_LIMIT, ...options, supplyEffects: options.supplyEffects ?? SUPPLY_EFFECTS_ENABLED };
   const started = performance.now();
-  const ctx: GameContext = { map: MAP, scenario: hooks.scenario ?? SCENARIOS[opt.scenario] };
+  const ctx: GameContext = { map: MAP, scenario: hooks.scenario ?? SCENARIOS[opt.scenario], supplyEffects: opt.supplyEffects };
   if (!Number.isInteger(opt.seed) || opt.seed < 0 || opt.seed > 0xffffffff) throw new RangeError(`Invalid seed ${opt.seed}: a whole number from 0 to 4294967295.`);
   const initial = newGame(ctx.scenario, opt.seed);
   const anomalies: Anomaly[] = [];

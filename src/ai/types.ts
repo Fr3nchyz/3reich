@@ -15,6 +15,8 @@ export interface AiConfig {
    * terminates, but units may change their minds between turns.
    */
   memory?: AiMemory;
+  /** The computer's supply rules (src/ai/lines.ts), which act only while the supply effects are on. Absent or true: used; false: the computer plays as if supply did not matter (to measure the rules against). */
+  supplyRules?: boolean;
 }
 
 /** One thing the computer chose, with a short reason for the log. */
