@@ -4,6 +4,7 @@ import { territoryOf, type Place } from "./areas";
 import { spend, spendable } from "./brps";
 import type { GameContext } from "./context";
 import { hex, hexId, neighbors, ROW_COUNT } from "./hex";
+import { markUsed } from "./naval-record";
 import { baseSuits, stackingProblem, type UnitSpec } from "./placement";
 import { turnIndex } from "./game";
 import { BUILD_COST_PER_FACTOR } from "./tables";
@@ -94,6 +95,6 @@ export function applyBuild(ctx: GameContext, state: GameState, action: BuildActi
   const allowableBuilds = pool.allowableBuilds.map((e) => (e === entry ? { ...e, count: e.count - 1 } : e)).filter((e) => e.count > 0);
   const events: GameEvent[] = [paid.event, { type: "UNIT_BUILT", unitId: id, owner: action.owner, unitType: type, strength, at: action.at, cost }];
   const built: GameState = { ...paid.state, nextUnitId: paid.state.nextUnitId + 1, units: { ...paid.state.units, [id]: unit }, pools: { ...paid.state.pools, [action.owner]: { ...pool, allowableBuilds } } };
-  // Ref 20.3: an air unit built in a Game Turn flies no mission in it.
-  return { ok: true, state: type === "air" ? markFlown(built, [id], "new") : built, events };
+  // Ref 20.3, 21.3: an air unit or a fleet built in a Game Turn flies no mission, does nothing, in it.
+  return { ok: true, state: type === "air" ? markFlown(built, [id], "new") : type === "fleet" ? markUsed(built, [id], "new") : built, events };
 }
