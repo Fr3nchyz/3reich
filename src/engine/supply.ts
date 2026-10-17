@@ -4,6 +4,7 @@ import type { HexId } from "./hex";
 import type { MapHex } from "./map";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
+import { seaReaches } from "./naval-supply";
 import { fortressSupplies, specialNets } from "./supply-sources";
 import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSources, type ZocPolicy } from "./zoc";
 
@@ -30,7 +31,9 @@ import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSo
  * - which minor capitals count ("if it has its own armed forces"): here a minor that fights on the side now.
  * - a maximum length: none found (`maxLength: null`); the unit's own hex must be friendly-controlled here.
  * - sea supply (19.31: a designated fleet, one ground unit or airbase per naval factor, ports, Gibraltar, Kiel and
- *   Istanbul as transfer points) needs fleet designation at 6e / 9f and a port-to-port rule: a documented stub.
+ *   Istanbul as transfer points): built as pure queries in naval-supply.ts (spec 12, ticket 12-2): a designation recorded in `GameState.naval`
+ *   that passes `seaSupplyProblem` adds a source set here, `kind: "sea"`, tried last. Nothing records a designation yet (ticket 12-3), so with
+ *   no designation every answer is what it was. Chains through Gibraltar, Kiel and Istanbul (two fleets) are ticket 12-8.
  * - replacement counters, bridgeheads and units in the off-map boxes (always supplied, U.S. Box) are not checked.
  * - ZOC (Ref 7.0, 19.3, spec 13): only armor exerts ZOC into adjacent hexes, friendly units do not cancel it, and supply cannot pass
  *   a hex next to enemy armor. A unit next to a source is supplied unless both stand in the ZOC of the same enemy armor unit.
@@ -60,6 +63,8 @@ export interface SupplyLine {
   source: HexId;
   path: HexId[];
   via: "land" | "sea";
+  /** For `via: "sea"`: the fleets that carry the supply, their port, and the receiving place the path ends at (source is that place). */
+  sea?: { fleets: string[]; from: HexId; to: HexId };
 }
 
 export interface SupplyStatus {
@@ -72,7 +77,7 @@ export interface SupplyStatus {
   unsupplied: string[];
 }
 
-const byId = (a: string, b: string): number => {
+export const byId = (a: string, b: string): number => {
   const na = Number(a.replace(/\D/g, ""));
   const nb = Number(b.replace(/\D/g, ""));
   return na !== nb ? na - nb : a < b ? -1 : a > b ? 1 : 0;
@@ -119,15 +124,6 @@ function sourceCandidates(ctx: GameContext, features: readonly HexFeature[]): Ma
   let hit = byFeatures.get(key);
   if (!hit) byFeatures.set(key, (hit = Object.values(ctx.map.hexes).filter((h) => h.land && h.features.some((f) => features.includes(f)))));
   return hit;
-}
-
-/**
- * Sea supply (19.31). STUB: no unit is supplied by sea until fleet designation exists.
- * TODO(verify, Ref 19.31): the designation at 6e / 9f, naval factors as capacity (one unit or airbase each), the port
- * pairs a fleet may join, transfer points (Gibraltar, Kiel, Istanbul), interception.
- */
-export function seaSupplyLine(_ctx: GameContext, _state: GameState, _side: Side, _unit: Unit): SupplyLine | null {
-  return null;
 }
 
 /** The hexes of enemy ground units: a line cannot enter them. */
@@ -194,13 +190,20 @@ const checkedUnits = (ctx: GameContext, state: GameState, side: Side): Unit[] =>
 
 /** One source set and how far its lines reach: `next` maps every hex a line reaches to the next hex towards a source (null on a source). */
 export interface SupplyReach {
-  /** "main": a group's capitals and the other sources of supplySources (19.2); "net": a special net of supply-sources.ts, tried after a Fortress. */
-  kind: "main" | "net";
+  /**
+   * "main": a group's capitals and the other sources of supplySources (19.2); "net": a special net of supply-sources.ts, tried after a Fortress;
+   * "sea": the receiving place of a valid sea supply designation (19.31, naval-supply.ts), tried last, serving only the units it names.
+   */
+  kind: "main" | "net" | "sea";
   sources: ReadonlySet<HexId>;
   /** Searched when first read. */
   readonly next: ReadonlyMap<HexId, HexId | null>;
-  /** Whether this set supplies a counter of this owner. */
+  /** Whether this set supplies a counter of this owner (never true for a "sea" set, which serves named units: see `units`). */
   serves: (owner: ForceOwner) => boolean;
+  /** "sea" only: the ids of the units the designation names. */
+  units?: ReadonlySet<string>;
+  /** "sea" only: the fleets and their port, for `SupplyLine.sea`. */
+  sea?: { fleets: string[]; from: HexId };
 }
 
 /**
@@ -215,9 +218,17 @@ export interface SupplyNetwork {
   reaches: SupplyReach[];
 }
 
-export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SupplyNetwork {
+/** What `supplyNetwork` returns: the network, and the two things sea supply (naval-supply.ts) needs from the search that built it. */
+export interface SeaNetwork extends SupplyNetwork {
+  /** The land search of this network (same obstacles, same policy) from other sources, for the receiving place of a sea designation. */
+  reachFrom: (sources: readonly HexId[]) => ReadonlyMap<HexId, HexId | null>;
+  /** The source set a counter of this owner is supplied from. */
+  groupOf: (owner: ForceOwner) => SupplyGroup;
+}
+
+export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): SeaNetwork {
   const sources = supplySources(ctx, state, side, policy);
-  const network: SupplyNetwork = { side, sources, zoc: new Set(), reaches: [] };
+  const network: SeaNetwork = { side, sources, zoc: new Set(), reaches: [], reachFrom: () => new Map(), groupOf: (o) => groupOfOwner(side, o, policy) };
   if (!isSide(side) || !wellFormed(state)) return network;
   const blocked = enemyGroundHexes(state, side);
   const opened = new Map<HexId, boolean>();
@@ -229,11 +240,14 @@ export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, po
     return { kind, sources: new Set(from), serves, get next() { return (next ??= reach(ctx, state, side, from, policy, obstacles)); } };
   };
   network.zoc = obstacles.zoc;
+  const searched = new Map<string, ReadonlyMap<HexId, HexId | null>>();
+  network.reachFrom = (from) => searched.get(from.join(",")) ?? searched.set(from.join(","), reach(ctx, state, side, from, policy, obstacles)).get(from.join(","))!;
   for (const g of ["axis", "western", "soviet"] as const) {
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
     if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => groupOfOwner(side, o, policy) === g));
   }
   for (const net of specialNets(ctx, state, side)) network.reaches.push(lazyReach("net", net.sources, (o) => net.serves({ owner: o })));
+  network.reaches.push(...seaReaches(ctx, state, network));
   return network;
 }
 
@@ -248,12 +262,16 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
     for (let h = next.get(u.at) ?? null; h !== null; h = next.get(h) ?? null) path.push(h);
     return { unitId: u.id, source: path[path.length - 1]!, path, via: "land" };
   };
+  const seaLineIn = (u: Unit, r: SupplyReach): SupplyLine | null => {
+    const land = r.units?.has(u.id) && r.sea ? lineIn(u, r.next) : null;
+    return land ? { ...land, via: "sea", sea: { fleets: [...r.sea!.fleets], from: r.sea!.from, to: land.source } } : null;
+  };
   for (const u of checkedUnits(ctx, state, side)) {
     const main = network.reaches.find((r) => r.kind === "main" && r.serves(u.owner));
     let line = main ? lineIn(u, main.next) : null;
     if (!line && fortressSupplies(ctx, state, side, u)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" };
     for (const r of network.reaches) if (!line && r.kind === "net" && r.serves(u.owner)) line = lineIn(u, r.next);
-    line ??= seaSupplyLine(ctx, state, side, u);
+    for (const r of network.reaches) if (!line && r.kind === "sea") line = seaLineIn(u, r);
     if (line) status.supplied.push(line);
     else status.unsupplied.push(u.id);
   }
