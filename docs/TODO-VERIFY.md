@@ -164,6 +164,12 @@ Added 2026-10-17 from `docs/specs/14-victory-surrender-winter.md` (rows V1 to V2
 | V28 | spec 14 R9 | Minor conquest details | The conqueror of a minor is the owner of the unit in its capital; only the hexes still Poland pass when Warsaw falls (the east of Poland is Eastern Europe after Fall 1939); colonies and Eastern Europe fall by holding all cities (minor-country spec). | Listed ("Victory, surrender, conquest and the Russian winter open items"). |
 | V29 | spec 14 R8 | Britain's fall | Free French, the U.S. entry and British colonies after London falls are not specified here; the generic fall removes British units and passes British land. | Listed ("Victory, surrender, conquest and the Russian winter open items"). |
 
+### Air units (spec 09)
+
+| ID | Where | Name | What is assumed | In RULES.md open questions? |
+|---|---|---|---|---|
+| A1 | `src/engine/air-missions.ts` (`designateProblem`, `airInRangeOf`) | Nationality of ground support | Any air unit of the side to move may fly ground support to any hex the side can attack, whatever the nations of the planes and of the attackers. The rule text (Ref 20.41) has not been checked for a nationality match. | Listed ("Ground support and nationality"). |
+
 ### Map data and scenario rules
 
 | ID | Where | Name | What is assumed | In RULES.md open questions? |

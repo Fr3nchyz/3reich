@@ -1,4 +1,3 @@
-import type { Action } from "../engine/actions";
 import { airOf } from "../engine/air-record";
 import { committedAt } from "../engine/air-support";
 import { combatOf } from "../engine/combat-record";
@@ -8,21 +7,14 @@ import { escape } from "./mapGeometry";
 import type { Session } from "./session";
 
 /**
- * The words around air support (spec 09 part D2): the note at step 7b that explains the buttons, and the warning at step 7h about a hex that air
- * is committed to and that has not been attacked yet. No rule here: the buttons are the engine's `DESIGNATE_AIR` actions, and the hexes come from
- * the air record.
+ * The words around air support (spec 09 part D2) that are not the air card (airCardView.ts): whether it is step 7b, and the warning at step 7h about
+ * a hex that air is committed to and that has not been attacked yet. No rule here: the hexes come from the air record.
  */
 
 /** Whether it is step 7b of a game the player plays (not watched) and the player's turn: the step that waits for the air buttons. */
 export function atStep7b(s: Session): boolean {
   const p = s.state.position;
   return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7b" && !s.watch && !computerToMove(s);
-}
-
-/** The note above the air-support buttons of step 7b; empty when the engine lists none. */
-export function airPromptHtml(actions: readonly Action[]): string {
-  if (!actions.some((a) => a.type === "DESIGNATE_AIR")) return "";
-  return `<p class="note air-note">Air support (step 7b): each button commits planes that can reach that hex. Their factors are added to your attack on it, up to three times the ground factors, and a plane flies one mission each turn. A hex you commit planes to must be attacked this turn or the planes are lost, and a commitment cannot be taken back. Press "Done with step 7b" to commit nothing.</p>`;
 }
 
 /** The hexes air is committed to and not attacked yet (an Exchange still waiting for its losses counts as attacked), in id order. */

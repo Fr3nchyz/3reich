@@ -4,7 +4,7 @@ import { applyAction, legalActions, type GameEvent } from "../src/engine/actions
 import { airOf } from "../src/engine/air-record";
 import type { GameState, Unit } from "../src/engine/types";
 import { attackPreview } from "../src/ui/attackPreview";
-import { airPromptHtml, airWarningHtml, committedHexes } from "../src/ui/airView";
+import { airWarningHtml, committedHexes } from "../src/ui/airView";
 import { openAttack } from "../src/ui/attackTap";
 import { attackHtml } from "../src/ui/attackView";
 import type { Session } from "../src/ui/session";
@@ -29,29 +29,28 @@ const session = (step: "7b" | "7h"): Session => {
 };
 
 describe("step 7b on the screen", () => {
-  it("shows the note, one button per hex with the planes and their factors, and the button that moves on", () => {
+  it("shows the note and one row per hex with the planes in range, the whole-hex button in the fold-out, and the button that moves on", () => {
     const s = session("7b");
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
-    expect(html).toContain("Air support (step 7b)");
-    expect(html).toMatch(/Air support for Poznan \(M33\): .*German air.*\(5 air factors\)/);
+    expect(html).toContain("Air support you can add (1)");
+    expect(html).toContain("A hex you commit planes to must be attacked this turn");
+    expect(html).toMatch(/Poznan \(M33\)<\/span><span class="row-defence">2 planes in range \(5 air factors\); at most 18 air factors here/);
+    expect(html).toMatch(/All air support as a list \(1 choice\)/);
+    expect(html).toMatch(/Air support for Poznan \(M33\): .*German air.*\(5 air factors\)/); // the old one-press button, kept in the fold-out
     expect(html).toContain("Done with step 7b");
-    expect(html).not.toMatch(/\bu\d+\b|\ba\d\b/); // no raw id in any button or sentence
+    expect(html.replace(/<[^>]*>/g, " ")).not.toMatch(/\bu\d+\b|\ba\d\b/); // no raw id in any button or sentence
   });
 
-  it("step 7b has its Next bar: the sentence says what to do, and the air buttons and Done are inside it", () => {
+  it("step 7b has its Next bar: the sentence says what to do, and Done is inside it", () => {
     const s = session("7b");
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
     const bar = /<div class="actions controls nextbar"[^>]*>(.*?)<\/div>/s.exec(html)![1]!;
-    expect(bar).toContain("Next: commit planes to a hex you will attack, or finish step 7b.");
-    expect(bar).toContain("Air support for Poznan (M33)");
+    expect(bar).toContain("Next: choose planes for a hex you will attack, or finish step 7b.");
+    expect(bar).not.toContain("Air support for");
     expect(bar).toContain("Done with step 7b");
     takeAction(s, legalActions(s.ctx, s.state).find((a) => a.type === "DESIGNATE_AIR")!);
     const after = statusHtml(s, null, legalActions(s.ctx, s.state));
     expect(after).toContain("Next: finish step 7b.");
-  });
-
-  it("the note is empty when the engine lists no designation", () => {
-    expect(airPromptHtml([])).toBe("");
   });
 
   it("pressing the button commits the planes, logs it in words and leaves the hex to be attacked", () => {
@@ -90,10 +89,10 @@ describe("step 7h with air committed", () => {
     expect(p.numbers!.oddsText).toMatch(/^11 \(6 on the ground and 5 in the air\) against 4/);
     expect(p.button.text).toMatch(/with 2 units and 5 air \(11 factors\)/);
     const html = attackHtml(s, legalActions(s.ctx, s.state));
-    expect(html).not.toContain("Air support</h3>"); // the card is not open yet
+    expect(html).not.toContain("attack-air"); // the card is not open yet
     expect(openAttack(s, "M33")).toBe(true);
     const open = attackHtml(s, legalActions(s.ctx, s.state));
-    expect(open).toContain("Air support</h3>");
+    expect(open).toContain('id="attack-air">Air support');
     expect(open).toContain("5 air factors count in this attack");
   });
 

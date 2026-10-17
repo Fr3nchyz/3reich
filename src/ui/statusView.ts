@@ -18,7 +18,7 @@ import { hexCardHtml } from "./hexCardView";
 import { attackHtml } from "./attackView";
 import { leadsStatus, nextBarHtml } from "./nextBar";
 import { moveHtml } from "./moveView";
-import { airPromptHtml } from "./airView";
+import { airHtml } from "./airCardView";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
@@ -75,7 +75,7 @@ export function buttonLabels(actions: Action[], ctx: GameContext, state: GameSta
  * old buttons in fold-outs for a keyboard.
  */
 /** The folds of the combat buttons: their inner row is not `.actions`, so the buttons that move the game on stay the last `.actions` buttons in the page (the browser tests click that one). */
-const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE"];
+const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE", "DESIGNATE_AIR"];
 
 function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string } {
   const shown = buttonLabels(actions, ctx, state);
@@ -85,9 +85,9 @@ function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: 
     const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE");
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR");
   return {
-    folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
+    folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DESIGNATE_AIR", "All air support as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
     rest: rest.map(button).join(""),
   };
 }
@@ -109,7 +109,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
-      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${moveHtml(s, actions)}` : ""}
+      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       ${lead ? "" : toast}
@@ -117,7 +117,6 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
       ${nationTable(s)}
       ${frontPrompt(s, actions)}
-      ${airPromptHtml(actions)}
       ${buildPanel(s, actions)}
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
