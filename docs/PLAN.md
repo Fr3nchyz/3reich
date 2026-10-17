@@ -57,7 +57,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | Ticket | What it gives you | Size | Status |
 |---|---|---|---|
 | **Release I: supply by sea, and a fleet in a captured port** | | | |
-| 12-0 Port facts and sea distance | port sizes, fronts, shortest sea route | M | Next |
+| 12-0 Port facts and sea distance | port sizes, fronts, shortest sea route | M | Done |
 | 12-1 Naval record | what each fleet did this turn | S | Next |
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Waits for 12-0, 12-1 |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Waits for 12-2 |
