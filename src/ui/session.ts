@@ -85,6 +85,14 @@ export interface Session {
   airDraft?: AirDraft | null;
   /** The units picked for the losses of an Exchange or an advance after a battle (spec 07, State 4). Screen state, never saved. */
   choice?: ChoiceDraft | null;
+  /** Whether the "Victory and objectives" card is open (spec 14, part D1), and whether it has just opened (its heading then takes the focus). Screen state, never saved. */
+  objectivesOpen?: boolean;
+  objectivesFresh?: boolean;
+  /** An Objective hex the card asked the map to centre on; the map takes it once. Screen state, never saved. */
+  mapFocus?: string | null;
+  /** The result card (spec 14, part D2): set when "Look at the map" or "Read the log" put it away; `endFresh` when it has just opened. Screen state, never saved. */
+  endDismissed?: boolean;
+  endFresh?: boolean;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */

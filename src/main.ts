@@ -1,6 +1,7 @@
 import "./style.css";
 import "./attack.css";
 import "./move.css";
+import "./end.css";
 import { MAP } from "./data/map";
 import { SCENARIO_1939 } from "./data/scenario-1939";
 import { SCENARIO_1942 } from "./data/scenario-1942";
@@ -39,6 +40,7 @@ import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
+import { bindEnd, revealEnd, syncObjectives } from "./ui/endBind";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
 
@@ -134,11 +136,14 @@ function render(): void {
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
   syncMap(view, session, setup, actions);
+  syncObjectives(view, session);
   overlay.refresh(session);
   shell.mapToast.textContent = session.toast;
   bindStatus(shell.status, session, setup, actions, render);
   drawBar(shell.watchBar, session);
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
+  bindEnd(shell.status, session, render, { newGame: () => shell.newGame.click() });
+  revealEnd(shell.status, session);
   revealFresh(shell.status, session, unseenChoice(session));
   revealMove(shell.status, session);
   revealAir(shell.status, session);

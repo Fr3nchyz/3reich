@@ -1,5 +1,7 @@
-import type { MapHex } from "../engine/map";
-import { FORTRESS_INSET, escape, fmt, hexCorners, points, type Point } from "./mapGeometry";
+import { hex } from "../engine/hex";
+import type { MapData, MapHex } from "../engine/map";
+import type { ObjectiveStandings } from "../engine/objectives";
+import { FORTRESS_INSET, escape, fmt, hexCenter, hexCorners, points, type Point } from "./mapGeometry";
 
 /** City, capital, port and fortress symbols, and the place name under them. */
 
@@ -48,4 +50,27 @@ export function citySymbol(h: MapHex, cx: number, cy: number): string {
   if (h.fortress) out += fortressOutline(cx, cy);
   if (h.name) out += `<text x="${fmt(cx)}" y="${fmt(cy + NAME_OFFSET)}" class="city${objective ? " objective" : ""}">${escape(h.name)}</text>`;
   return out;
+}
+
+/** Where the holder mark of an Objective sits: up and to the right of the city symbol, clear of its name below. */
+const MARK_DX = 5.4;
+const MARK_DY = -4.6;
+const MARK_RADIUS = 1.9;
+
+/**
+ * The mark of who holds each Objective (spec 14, D1; Ref 2.0): a square for the Axis, a circle for the Allies, a dashed ring for nobody, so the shape
+ * says it and colour is only a help. Drawn in <g class="objective-marks"> above the cities; stroke widths and colours are in end.css.
+ */
+export function objectiveMarksMarkup(map: MapData, standings: ObjectiveStandings | null): string {
+  if (!standings) return "";
+  const mark = (id: string, shape: "axis" | "allies" | "nobody"): string => {
+    if (!map.hexes[id]) return "";
+    const [cx, cy] = hexCenter(hex(id));
+    const x = cx + MARK_DX;
+    const y = cy + MARK_DY;
+    const label = `data-objective="${id}" data-holder="${shape}"`;
+    if (shape === "axis") return `<rect class="obj-mark axis" ${label} x="${fmt(x - MARK_RADIUS)}" y="${fmt(y - MARK_RADIUS)}" width="${fmt(MARK_RADIUS * 2)}" height="${fmt(MARK_RADIUS * 2)}"/>`;
+    return `<circle class="obj-mark ${shape}" ${label} cx="${fmt(x)}" cy="${fmt(y)}" r="${fmt(shape === "nobody" ? MARK_RADIUS + 0.3 : MARK_RADIUS)}"/>`;
+  };
+  return standings.axis.map((id) => mark(id, "axis")).join("") + standings.allies.map((id) => mark(id, "allies")).join("") + standings.nobody.map((id) => mark(id, "nobody")).join("");
 }

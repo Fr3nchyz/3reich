@@ -9,6 +9,8 @@ import type { AttackMarksInput } from "./attackMarks";
 import type { UnitMarks } from "./moveMarks";
 import { attackMarksMarkup } from "./mapMarks";
 import { unitMarksMarkup } from "./mapUnitMarks";
+import type { ObjectiveStandings } from "../engine/objectives";
+import { objectiveMarksMarkup } from "./mapCities";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
@@ -41,6 +43,8 @@ export interface MapView {
   /** Mark the hexes of an attack (spec 07): dashed targets, one thick chosen target, solid gold attacker hexes. Pure data; the marks never take taps. */
   setAttackMarks(marks: AttackMarksInput): void;
   clearAttackMarks(): void;
+  /** Mark who holds each Objective (spec 14, D1): a square for the Axis, a circle for the Allies, a dashed ring for nobody; null clears the marks. */
+  setObjectiveMarks(standings: ObjectiveStandings | null): void;
   /** Zoom and pan to fit these hexes; with none, show the whole map. */
   focus(ids: Iterable<string>): void;
   /** Zoom by `factor` (above 1 shows more) about the middle of the map; returns the zoom level after (1 = the whole map just fits). */
@@ -67,6 +71,8 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const overlayLayer = svg.querySelector<SVGGElement>("g.overlay")!;
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
   const marksLayer = svg.querySelector<SVGGElement>("g.attack-marks")!;
+  const objectiveLayer = svg.querySelector<SVGGElement>("g.objective-marks")!;
+  let objectivesDrawn = "";
   /** Redrawn only when the marks change, so a repeated call costs no DOM work. */
   let marksDrawn = "";
   const drawMarks = (marks: AttackMarksInput | null): void => {
@@ -95,6 +101,10 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     setAttackMarks: drawMarks,
     clearAttackMarks: () => drawMarks(null),
+    setObjectiveMarks: (standings) => {
+      const markup = objectiveMarksMarkup(map, standings);
+      if (markup !== objectivesDrawn) { objectivesDrawn = markup; objectiveLayer.innerHTML = markup; }
+    },
     focus: (ids) => viewport.focus(centresOf(ids)),
     zoomBy: (factor) => { viewport.zoomMiddle(factor); return viewport.level(); },
     focusOutlined: () => {

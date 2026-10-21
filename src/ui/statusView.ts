@@ -20,12 +20,14 @@ import { leadsStatus, nextBarHtml } from "./nextBar";
 import { moveHtml } from "./moveView";
 import { airHtml } from "./airCardView";
 import { airMoveHtml } from "./airMoveView";
+import { endHtml, statusText } from "./endCard";
+import { scoreHtml } from "./objectivesCard";
 
 /** The status area under the map: HTML text for each part, from the session. */
 
 function turnLine(s: Session): string {
   const { state } = s;
-  if (state.phase === "game-over") return "Game over";
+  if (state.phase === "game-over") return statusText(state);
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
@@ -110,6 +112,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${scoreHtml(s)}
       ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
@@ -122,5 +125,6 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
       ${logHtml(s.log, s.logSides)}
+      ${endHtml(s)}
     </main>`;
 }
