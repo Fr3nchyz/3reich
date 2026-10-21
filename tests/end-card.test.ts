@@ -49,6 +49,7 @@ describe("the card of a game ended on Objectives (D2)", () => {
   it("is not there while the game goes on, or for a game over saved without a result", () => {
     expect(endCard(ctx, state)).toBeNull();
     expect(endCard(ctx, { ...state, phase: "game-over" })).toBeNull();
+    expect(endCard(ctx, { ...state, phase: "player-turn", result: base }), "a result without the end of the game is not shown").toBeNull();
   });
 });
 

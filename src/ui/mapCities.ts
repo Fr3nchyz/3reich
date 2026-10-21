@@ -70,7 +70,7 @@ export function objectiveMarksMarkup(map: MapData, standings: ObjectiveStandings
     const y = cy + MARK_DY;
     const label = `data-objective="${id}" data-holder="${shape}"`;
     if (shape === "axis") return `<rect class="obj-mark axis" ${label} x="${fmt(x - MARK_RADIUS)}" y="${fmt(y - MARK_RADIUS)}" width="${fmt(MARK_RADIUS * 2)}" height="${fmt(MARK_RADIUS * 2)}"/>`;
-    return `<circle class="obj-mark ${shape}" ${label} cx="${fmt(x)}" cy="${fmt(y)}" r="${fmt(shape === "nobody" ? MARK_RADIUS + 0.3 : MARK_RADIUS)}"/>`;
+    return `<circle class="obj-mark ${shape}" ${label} cx="${fmt(x)}" cy="${fmt(y)}" r="${fmt(MARK_RADIUS)}"/>`;
   };
   return standings.axis.map((id) => mark(id, "axis")).join("") + standings.allies.map((id) => mark(id, "allies")).join("") + standings.nobody.map((id) => mark(id, "nobody")).join("");
 }
