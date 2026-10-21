@@ -3,6 +3,7 @@ on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   # The full browser suite also runs once a night and on demand (Actions tab, "Run workflow"), so a break the per-pull-request rule missed is caught within a day.
   schedule:
     - cron: "17 3 * * *"
@@ -14,10 +15,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
-  # Decides whether the browser tests are needed. They are slow, so a pull request runs them only when it touches something a screen depends on
-  # (src/ui, the stylesheets, the page, the browser tests or their config, the dependencies); engine-only, docs-only and data-only pull requests skip them.
-  # A push to main skips them too (the pull request already decided); the nightly run and the manual run always do them. Lint, typecheck, unit tests
-  # and the build run for every change (some unit tests read the docs).
+  # Decides whether the browser tests are needed. They are slow, so they run nightly, on demand ("Run workflow"), and on a pull request only for a
+  # change that touches everything: the dependencies, the build or test config, the page shell or this workflow, or when the pull request carries the
+  # label "run-e2e". Ordinary feature, engine, screen, data and docs pull requests skip them; the nightly run catches what they miss. A push to main skips
+  # them too. Lint, typecheck, unit tests and the build run for every change (some unit tests read the docs).
   scope:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -31,12 +32,13 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           BASE: ${{ github.base_ref }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
         run: |
           if [ "$EVENT" = "schedule" ] || [ "$EVENT" = "workflow_dispatch" ]; then echo "e2e=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           if [ "$EVENT" != "pull_request" ]; then echo "e2e=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           changed=$(git diff --name-only "origin/$BASE...HEAD")
           echo "$changed"
-          if echo "$changed" | grep -qE '^(src/ui/|src/[^/]*\.css|src/main\.ts|index\.html|public/|tests/e2e/|playwright\.config\.ts|vite\.config\.ts|package(-lock)?\.json|\.github/workflows/)'; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
+          if echo "$LABELS" | grep -q '"run-e2e"' || echo "$changed" | grep -qE '^(package(-lock)?\.json|vite\.config\.ts|playwright\.config\.ts|index\.html|\.github/workflows/)'; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 20
