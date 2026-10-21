@@ -8,10 +8,9 @@ import { evaluateVictory } from "../src/engine/victory";
 import { verdictName } from "../src/engine/victory-record";
 import type { Conquest } from "../src/engine/conquest-record";
 import { newGame } from "../src/engine/game";
-import { objectiveStandings } from "../src/engine/objectives";
 import type { GameState, GameTurn, Scenario } from "../src/engine/types";
 import { ctxFor } from "./helpers";
-import { withSplit } from "./helpers-victory";
+import { withCounts } from "./helpers-victory";
 
 /**
  * The victory numbers against the game's own victory list (Ref 2.1 to 2.4; spec 14 F1, ticket 14-2). The oracle below is the list written out a
@@ -57,7 +56,7 @@ const ROWS_1942_SIBERIAN: Row[] = [
   ["Axis Decisive Victory", (_a, x) => x >= 16],
 ];
 
-describe("the 1939 and 1942 tables, every split of the Objectives somebody can hold (Ref 2.1, 2.2, 11.63)", () => {
+describe("the 1939 and 1942 tables, every Allied and Axis count with a sum of at most 39 (Ref 2.1, 2.2, 11.63)", () => {
   const cases: [string, Scenario, boolean, Row[]][] = [
     ["1939", SCENARIO_1939, false, ROWS_1939],
     ["1939 with the Free Siberian Transfer", SCENARIO_1939, true, ROWS_1939_SIBERIAN],
@@ -65,18 +64,20 @@ describe("the 1939 and 1942 tables, every split of the Objectives somebody can h
     ["1942 with the Free Siberian Transfer", SCENARIO_1942, true, ROWS_1942_SIBERIAN],
   ];
   for (const [name, scenario, siberian, rows] of cases) {
-    it(`${name}: exactly one row of the list matches, and the result is that row`, () => {
+    it(`${name}: for every Allied count 0 to 42 and Axis count 0 to 42 with a sum of at most 39, exactly one row of the list matches, and the result is that row`, () => {
       const ctx = ctxFor(scenario);
-      const total = objectiveStandings(ctx, newGame(scenario, 1));
-      const held = total.axis.length + total.allies.length;
-      for (let a = 0; a <= held; a++) {
-        const state = withSplit(scenario, a, siberian);
-        const r = evaluateVictory(ctx, state, "end-of-play");
-        expect([r.objectives.allies, r.objectives.axis]).toEqual([a, held - a]);
-        const matching = rows.filter(([, m]) => m(a, held - a)).map(([v]) => v);
-        expect(matching, `Allies ${a}, Axis ${held - a}`).toHaveLength(1);
-        expect(verdictName(r), `Allies ${a}, Axis ${held - a}`).toBe(matching[0]);
+      let cells = 0;
+      for (let a = 0; a <= 42; a++) {
+        for (let x = 0; a + x <= 39; x++) {
+          const r = evaluateVictory(ctx, withCounts(scenario, a, x, siberian), "end-of-play");
+          expect([r.objectives.allies, r.objectives.axis, r.objectives.nobody], `Allies ${a}, Axis ${x}`).toEqual([a, x, 42 - a - x]);
+          const matching = rows.filter(([, m]) => m(a, x)).map(([v]) => v);
+          expect(matching, `Allies ${a}, Axis ${x}`).toHaveLength(1);
+          expect(verdictName(r), `Allies ${a}, Axis ${x}`).toBe(matching[0]);
+          cells++;
+        }
       }
+      expect(cells).toBe(820);
     });
   }
 

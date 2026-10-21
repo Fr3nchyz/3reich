@@ -12,12 +12,6 @@ import type { ConquestWindow, GameResult, LevelNeeds, ObjectiveCount, ObjectiveT
  */
 
 /**
- * TODO(verify) V1: when both sides reach a level at once (only possible if Spain, Sweden or Turkey is conquered, so that 40 or more
- * Objectives are held), the higher level wins and equal levels are a Stalemate. The tables are exact while at most 39 are held.
- */
-export const RESULT_BOTH_QUALIFY = "higher-level-wins-equal-is-stalemate";
-
-/**
  * TODO(verify) V5: Germany still standing when the 1944 scenario ends is read as an Axis Decisive win (the table has no
  * Stalemate and its last line is "Spring 1946", the scenario's last Game Turn).
  */
@@ -65,7 +59,8 @@ function byObjectives(table: ObjectiveTable, c: ObjectiveCount): Pick<GameResult
   const allies = levelReached(c.allies, table.allies);
   const axis = levelReached(c.axis, table.axis);
   if (allies !== null && axis !== null) {
-    // RESULT_BOTH_QUALIFY (V1)
+    // TODO(verify) V1: both sides reach a level at once (only possible if Spain, Sweden or Turkey is conquered, so that 40 or more Objectives are held):
+    // the higher level wins and equal levels are a Stalemate. The tables are exact while at most 39 are held.
     if (RANK[allies] === RANK[axis]) return { winner: null, level: null };
     return RANK[allies] > RANK[axis] ? { winner: "allies", level: allies } : { winner: "axis", level: axis };
   }

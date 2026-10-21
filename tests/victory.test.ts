@@ -6,7 +6,7 @@ import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import type { Conquest } from "../src/engine/conquest-record";
 import { newGame } from "../src/engine/game";
 import type { GameState, GameTurn, Scenario } from "../src/engine/types";
-import { END_EARLY_ON_CONQUEST, evaluateVictory, objectiveCount, recordCheckpoint, victoryTarget } from "../src/engine/victory";
+import { evaluateVictory, objectiveCount, recordCheckpoint, victoryTarget } from "../src/engine/victory";
 import { verdictName } from "../src/engine/victory-record";
 import { ctxFor } from "./helpers";
 import { allHeld, withSplit } from "./helpers-victory";
@@ -75,7 +75,6 @@ describe("1944: Germany still standing at the end (TODO(verify) V5)", () => {
     const r = evaluateVictory(ctx, s, "after-conquest")!;
     expect([r.winner, r.level, r.basis, r.early]).toEqual(["allies", "tactical", "conquest", true]);
   });
-  it("the early end is the named switch (V3, owner's Q1: on)", () => expect(END_EARLY_ON_CONQUEST).toBe(true));
   it("the conquest of Italy or of an Allied Power decides nothing in 1944", () => {
     const s = game(SCENARIO_1944, at(1945, "spring"), { conquests: [conquest("italy", at(1945, "spring")), conquest("britain", at(1945, "spring"))] });
     expect(evaluateVictory(ctx, s, "after-conquest")).toBeNull();
