@@ -39,7 +39,7 @@ describe("which hexes are Fortresses (Ref 4.8)", () => {
 
   it("the Maginot Line goes on the fall of France", () => {
     const base = board([]);
-    for (const status of ["vichy", "out"] as const) {
+    for (const status of ["vichy", "out", "conquered"] as const) { // "conquered": spec 14 R4 (ticket 14-5)
       const s = refreshFortresses(CTX, { ...base, nations: { ...base.nations, france: { ...base.nations.france, status } } });
       expect([s.fortresses.P24, s.fortresses.P25, s.fortresses.Q24], status).toEqual([false, false, false]);
       expect(s.fortresses.D44).toBe(true); // other Fortresses are untouched

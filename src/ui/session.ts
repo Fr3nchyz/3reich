@@ -20,7 +20,8 @@ import { trackBattle, type BattleResult } from "./resultModel";
 import { plural } from "./attackText";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
-import { victoryLine } from "./victoryLine";
+import { gameOverLine } from "./victoryLine";
+import { conquestLine } from "./conquestText";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -188,8 +189,14 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `${nameOf(e.to)} takes control of ${e.hex}.`;
     case "OVERSTACK_ELIMINATED":
       return `${nameOf(e.owner)} loses a unit at ${e.at} to overstacking.`;
+    case "CAPITAL_LOST":
+    case "CAPITAL_RETAKEN":
+    case "COUNTRY_CONQUERED":
+    case "UNITS_REMOVED_BY_CONQUEST":
+    case "CONTROL_PASSED":
+      return conquestLine(ctx, e);
     case "GAME_OVER":
-      return `The scenario ends after ${cap(e.season)} ${e.year}. ${victoryLine(e.result)}`;
+      return gameOverLine(e.season, e.year, e.result);
   }
 }
 

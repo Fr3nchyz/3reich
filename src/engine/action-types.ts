@@ -1,6 +1,7 @@
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
+import type { Conquest } from "./conquest-record";
 import type { GameResult } from "./victory-record";
 import type { Combatant, ForceOwner, FrontOption, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
@@ -93,7 +94,17 @@ export type GameEvent =
   /** Step 6f: units moved along a path (the hexes entered, in order). */
   | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
-  /** The scenario is over after this Game Turn; `result` is who won (spec 14 R3). */
+  /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
+  | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }
+  /** The Power took its capital back (or its side did), so it does not fall. */
+  | { type: "CAPITAL_RETAKEN"; power: PowerId; capital: HexId }
+  /** A country was conquered (spec 14 R4, C8): `unitsRemoved` left the game, `hexesPassed` hexes went to `by`. */
+  | { type: "COUNTRY_CONQUERED"; country: Conquest["country"]; by: ForceOwner; how: Conquest["how"]; unitsRemoved: number; hexesPassed: number }
+  /** The units that left the game with a conquered country, in one event (like UNITS_SWEPT, but with no UNIT_ELIMINATED for each). */
+  | { type: "UNITS_REMOVED_BY_CONQUEST"; country: Conquest["country"]; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
+  /** Hexes of a conquered country changed control in one go: to the conqueror, or (`to` null) to nobody until a ground unit enters. */
+  | { type: "CONTROL_PASSED"; country: Conquest["country"]; to: ForceOwner | null; hexes: HexId[] }
+  /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 
 export type ActionResult =

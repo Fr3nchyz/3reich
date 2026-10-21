@@ -15,7 +15,7 @@ export interface AirState {
   /** Air units that have staged (changed base) this Player Turn (Ref 20.2, `ONE_STAGE_PER_TURN`). */
   staged: string[];
   /** A copy of `GameState.control` taken when the Player Turn began: staging may use only a base the side held then (Ref 20.2). */
-  controlAtStart: Record<HexId, ForceOwner>;
+  controlAtStart: Record<HexId, ForceOwner | null>;
   /** Hex to be attacked -> the air units committed to Ground Support there, in the order they were designated (Ref 20.41, `air-missions.ts`). */
   groundSupport: Record<HexId, string[]>;
 }
