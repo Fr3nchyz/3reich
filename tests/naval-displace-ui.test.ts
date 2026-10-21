@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Action } from "../src/engine/actions";
 import type { GameState, Unit } from "../src/engine/types";
 import { attackPreview } from "../src/ui/attackPreview";
+import { nonDefendersLine, rowLines } from "../src/ui/attackText";
+import { resultRows } from "../src/ui/attackResults";
 import { resultCardHtml } from "../src/ui/resultView";
 import { run, type Session } from "../src/ui/session";
 import { eventSide } from "../src/ui/logSide";
@@ -26,7 +28,7 @@ describe("the attack card on a port with a fleet in it", () => {
   it("says the fleet is driven out, not destroyed, and the air alone is destroyed", () => {
     const s = at7h(UNITS());
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
-    expect(p.sweep?.text).toBe("No roll. This counter is destroyed: 3-4 German air. This fleet must leave and moves to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
+    expect(p.sweep?.text).toBe("No roll. This counter is destroyed: 3-4 German air. This fleet must leave and move to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
     expect(p.button.text).toBe("Destroy 3-4 German air in Wilhelmshaven (K28) and drive 9 German fleet out");
   });
 
@@ -34,7 +36,7 @@ describe("the attack card on a port with a fleet in it", () => {
     const s = at7h(UNITS().slice(0, 2));
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
     expect(p.button.text).toBe("Drive 9 German fleet out of Wilhelmshaven (K28)");
-    expect(p.sweep?.text).toBe("No roll. This fleet must leave and moves to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
+    expect(p.sweep?.text).toBe("No roll. This fleet must leave and move to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
     expect(p.sweep?.text).not.toMatch(/destroyed/);
   });
 
@@ -43,8 +45,31 @@ describe("the attack card on a port with a fleet in it", () => {
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
     expect(p.alsoDestroyed).toEqual([]);
     expect(p.alsoMoved).toEqual(["9 German fleet"]);
-    expect(p.results.some((r) => /These enemy fleets move to a friendly port \(or are lost if none has room\): 9 German fleet\./.test(r.text))).toBe(true);
+    expect(p.results.some((r) => /This enemy fleet moves to a friendly port \(or is lost if none has room\): 9 German fleet\./.test(r.text))).toBe(true);
     expect(p.results.every((r) => !/go too, with no roll: 9 German fleet/.test(r.text))).toBe(true);
+  });
+});
+
+describe("the row of the list of attacks, and the lines of the card", () => {
+  it("a hex with only a fleet reads as driven out, a mix reads as both, and air alone reads as before", () => {
+    const row = (units: Unit[]) => {
+      const s = at7h(units);
+      return rowLines(attackPreview(s.ctx, s.state, "K28", ["b1"])).defence;
+    };
+    expect(row(UNITS().slice(0, 2))).toBe("9 German fleet: no ground defender, driven out to a friendly port with no roll");
+    expect(row(UNITS())).toBe("3-4 German air: no ground defender, destroyed with no roll; 9 German fleet: driven out to a friendly port");
+    expect(row([UNITS()[0]!, UNITS()[2]!])).toBe("3-4 German air: no ground defender, destroyed with no roll");
+  });
+
+  it("the fleet is not listed again as a counter that does not defend", () => {
+    const s = at7h(UNITS());
+    expect(nonDefendersLine(attackPreview(s.ctx, s.state, "K28", ["b1"]))).toBeNull();
+  });
+
+  it("the sentence about fleets that go is singular for one and plural for two", () => {
+    const rows = (names: string[]) => resultRows({ column: "1-1", attackers: [], defenders: [], multiplier: 2, alsoDestroyed: [], alsoMoved: names, emptyAfterWin: false }).map((r) => r.text).join(" ");
+    expect(rows(["9 German fleet"])).toContain("This enemy fleet moves to a friendly port (or is lost if none has room): 9 German fleet.");
+    expect(rows(["9 German fleet", "6 German fleet"])).toContain("These enemy fleets move to a friendly port (or are lost if none has room): 9 German fleet, 6 German fleet.");
   });
 });
 
@@ -56,6 +81,7 @@ describe("the result card and the log", () => {
     expect(s.log.some((l) => l === "9 German fleet moved from Wilhelmshaven (K28) to Kiel (J30): Wilhelmshaven (K28) was taken.")).toBe(true);
     const card = text(resultCardHtml(s));
     expect(card).toContain("Fleets driven out: 9 German fleet moved to Kiel (J30).");
+    expect(resultCardHtml(s)).toContain("<p>No roll.</p>"); // no trailing space
     expect(card).not.toContain("Nothing was left to destroy");
     expect(card).not.toContain("Destroyed");
   });

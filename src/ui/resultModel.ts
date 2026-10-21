@@ -25,7 +25,7 @@ export interface BattleResult {
   /** Eliminated units of the attacking side, and of the defending side (without the swept ones). */
   lostAttackers: Unit[];
   lostDefenders: Unit[];
-  /** Air units, fleets and the like destroyed alone in the hex after the battle. */
+  /** Air units and the like destroyed alone in the hex after the battle (fleets are in `displaced`). */
   swept: Unit[];
   /** Fleets left alone in the hex that moved to a friendly port (`to`) or were eliminated for lack of one (`to` null), spec 12 R9. */
   displaced: { unit: Unit; to: string | null }[];

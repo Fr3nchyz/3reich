@@ -34,10 +34,17 @@ export function nonDefendersLine(p: AttackPreview): string | null {
   return `${grouped(by.map((n) => n.name))} ${reasons.length === 1 ? reasons[0]!.replace(/^is /, "are ").replace(/^does /, "do ") : "do not take part"}.`;
 }
 
+/** The defence of a hex with no ground defender, for a row: what is destroyed and what is driven out, both with no roll. */
+function sweepRow(sweep: { destroyed: readonly string[]; moved: readonly string[] }): string {
+  const gone = sweep.destroyed.length > 0 ? `${grouped(sweep.destroyed)}: no ground defender, destroyed with no roll` : "";
+  const out = sweep.moved.length > 0 ? `${grouped(sweep.moved)}: ${gone ? "driven out to a friendly port" : "no ground defender, driven out to a friendly port with no roll"}` : "";
+  return [gone, out].filter(Boolean).join("; ");
+}
+
 /** The second line of a row in "Attacks you can make": who defends and how many factors you can bring. */
 export function rowLines(p: AttackPreview): { defence: string; yours: string } {
   const mine = total(p.attackers.filter((c) => c.state !== "greyed"));
-  const defence = p.sweep ? `${grouped(p.sweep.destroyed)}: no ground defender, destroyed with no roll` : `${defendersLine(p)}${p.numbers ? `, ${p.numbers.multiplierReason.split(":")[0]} x${p.numbers.multiplier}` : ""}`;
+  const defence = p.sweep ? sweepRow(p.sweep) : `${defendersLine(p)}${p.numbers ? `, ${p.numbers.multiplierReason.split(":")[0]} x${p.numbers.multiplier}` : ""}`;
   return { defence, yours: `you can bring ${plural(mine, "factor")}` };
 }
 

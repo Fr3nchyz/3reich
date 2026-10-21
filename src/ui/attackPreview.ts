@@ -81,8 +81,10 @@ export interface PreviewNumbers {
 }
 
 export interface Sweep {
-  /** The counters destroyed with no roll. */
+  /** The counters destroyed with no roll (air units and the like; not fleets, which are driven out: `moved`). */
   destroyed: string[];
+  /** The fleets driven out to a friendly port with no roll (spec 12 R9), or lost if no port has room. */
+  moved: string[];
   text: string;
 }
 
@@ -249,7 +251,7 @@ const factorsWord = (n: number): string => `${n} factor${n === 1 ? "" : "s"}`;
 /** What a roll-free attack does, in words: some counters are destroyed, enemy fleets are driven out to a friendly port. */
 function sweepText(destroyed: readonly string[], moving: readonly string[]): string {
   const gone = destroyed.length === 0 ? "" : ` ${destroyed.length === 1 ? "This counter is" : `These ${destroyed.length} counters are`} destroyed: ${destroyed.join(", ")}.`;
-  const out = moving.length === 0 ? "" : ` ${moving.length === 1 ? "This fleet" : "These fleets"} must leave and move${moving.length === 1 ? "s" : ""} to the nearest friendly port with room, or ${moving.length === 1 ? "is" : "are"} lost if there is none: ${moving.join(", ")}.`;
+  const out = moving.length === 0 ? "" : ` ${moving.length === 1 ? "This fleet" : "These fleets"} must leave and move to the nearest friendly port with room, or ${moving.length === 1 ? "is" : "are"} lost if there is none: ${moving.join(", ")}.`;
   return `No roll.${gone}${out}`;
 }
 
@@ -298,7 +300,7 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
   const fleetsMove = (us: readonly Unit[]) => us.filter((u) => FLEETS_DISPLACED_ON_CAPTURE && u.type === "fleet");
   const moving = fleetsMove(loners);
   const swept = loners.filter((u) => !moving.includes(u)).map((u) => unitName(u, true));
-  const sweep: Sweep | null = loners.length > 0 ? { destroyed: [...swept, ...moving.map((u) => unitName(u, true))], text: sweepText(swept, moving.map((u) => unitName(u, true))) } : null;
+  const sweep: Sweep | null = loners.length > 0 ? { destroyed: swept, moved: moving.map((u) => unitName(u, true)), text: sweepText(swept, moving.map((u) => unitName(u, true))) } : null;
 
   const numbers = chosen.length > 0 && defenders.length > 0 ? describeNumbers(ctx, state, chosen, defenders, target) : null;
   const without = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => !defenders.some((d) => d.id === id))) };

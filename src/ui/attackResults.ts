@@ -108,11 +108,14 @@ const TITLES: Readonly<Record<CrtResult, string>> = {
 };
 
 /** The sentence about enemy fleets that leave the port with no roll when the defenders go: they move to the nearest friendly port with room, or are lost if there is none. */
-const movedWords = (i: ResultInput): string => (i.alsoMoved && i.alsoMoved.length > 0 ? ` These enemy fleets move to a friendly port (or are lost if none has room): ${i.alsoMoved.join(", ")}.` : "");
+const movedWords = (i: ResultInput): string => {
+  const n = i.alsoMoved?.length ?? 0;
+  return n === 0 ? "" : ` ${n === 1 ? "This enemy fleet moves" : "These enemy fleets move"} to a friendly port (or ${n === 1 ? "is" : "are"} lost if none has room): ${i.alsoMoved!.join(", ")}.`;
+};
 
 /**
- * What an Exchange leaves behind in the hex: when the defenders can all go, the enemy air units and fleets alone in the hex are destroyed
- * too (`lonersAt`, as after a D), and when the attackers also keep survivors they may advance into the empty hex.
+ * What an Exchange leaves behind in the hex: when the defenders can all go, the enemy air units alone in the hex are destroyed
+ * too and the fleets driven out to a friendly port (`lonersAt`, as after a D), and when the attackers also keep survivors they may advance into the empty hex.
  */
 function exchangeAftermath(c: ExchangeCost, i: ResultInput): string {
   const canEmpty = c.defendersLoseAll || (c.chooser === "defenders" && minimalSets(Object.keys(c.values), c.values, c.required).some((set) => set.length === i.defenders.length));

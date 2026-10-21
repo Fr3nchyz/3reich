@@ -52,8 +52,9 @@ function eliminate(state: GameState, ids: readonly string[]): { state: GameState
 const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState => ({ ...state, combat: { ...combatOf(state), ...patch } });
 
 /**
- * The battle is over: air units and the like left alone in the hex are destroyed (ALONE_NONGROUND_DESTROYED), and the survivors of the
- * attack may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). `by` are the attackers as they stood before the battle.
+ * The battle is over: air units and the like left alone in the hex are destroyed (ALONE_NONGROUND_DESTROYED) and fleets are displaced to a
+ * friendly port (`afterHexTaken`), and the survivors of the attack
+ * may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). `by` are the attackers as they stood before the battle.
  */
 function finishBattle(ctx: GameContext, state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): { state: GameState; events: GameEvent[] } {
   const loners = lonersAt(state, by, target);

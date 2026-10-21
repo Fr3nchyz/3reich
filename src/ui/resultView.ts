@@ -18,7 +18,7 @@ export function resultCardHtml(s: Session): string {
   const place = placeName(s.ctx.map, b.target);
   const rec = combatOf(s.state);
   const lines: string[] = [];
-  if (b.sweep) lines.push(`No roll. ${b.swept.length > 0 ? `Destroyed: ${stackSummary(b.swept, true)}.` : b.displaced.length > 0 ? "" : "Nothing was left to destroy."}`);
+  if (b.sweep) lines.push(b.swept.length > 0 ? `No roll. Destroyed: ${stackSummary(b.swept, true)}.` : b.displaced.length > 0 ? "No roll." : "No roll. Nothing was left to destroy.");
   else {
     lines.push(`Column ${b.rounds[0]?.column ?? "none"}: ${b.attackFactors} against ${b.defenseFactors * b.multiplier}.`);
     for (const r of b.rounds) lines.push(roundWords(r));

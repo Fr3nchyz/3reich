@@ -131,7 +131,7 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
   const defenders = defendersAt(state, units, action.target);
   if (defenders.length === 0) {
-    // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll and destroys them.
+    // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll; air and the like are destroyed, fleets are driven out to a friendly port (capture.ts).
     const loners = lonersAt(state, units, action.target);
     if (loners.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
     const swept = applySweep(ctx, { ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
