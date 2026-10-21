@@ -23,6 +23,12 @@ export const RESULT_BOTH_QUALIFY = "higher-level-wins-equal-is-stalemate";
  */
 export const GERMANY_STANDING_AT_END: Pick<GameResult, "winner" | "level"> = { winner: "axis", level: "decisive" };
 
+/**
+ * TODO(verify) V3: the game stops the moment the deciding conquest completes (1944: Germany; Campaign: the last Axis Major Power, or the third
+ * Allied one), not at the end of the turn or the scenario. The program has a Game Over dialog; when it shows is not known. Owner's decision Q1: yes.
+ */
+export const END_EARLY_ON_CONQUEST = true;
+
 /** When the result is asked for: right after a conquest completes, or when the last Game Turn is over. */
 export type VictoryMoment = "after-conquest" | "end-of-play";
 
@@ -107,7 +113,7 @@ function byConquest(rules: Exclude<VictoryRules, { kind: "objectives" }>, state:
  * - "end-of-play": the last Game Turn is over; the answer is never null.
  * - "after-conquest": a conquest has just completed; only the scenarios decided by conquest can end early
  *   (1944: Germany falls; Campaign: the Allies conquer the Axis, or the Axis conquers three Allied Major Powers).
- *   TODO(verify) V3: that the game stops at that moment (the program has a Game Over dialog; when it shows is not known).
+ *   The early end is the switch END_EARLY_ON_CONQUEST (V3).
  */
 export function evaluateVictory(ctx: GameContext, state: GameState, moment: "end-of-play"): GameResult;
 export function evaluateVictory(ctx: GameContext, state: GameState, moment: VictoryMoment): GameResult | null;
@@ -116,6 +122,7 @@ export function evaluateVictory(ctx: GameContext, state: GameState, moment: Vict
   const siberian = siberianInForce(state);
   const objectives = objectiveCount(ctx, state);
   const last = moment === "end-of-play";
+  if (!last && !END_EARLY_ON_CONQUEST) return null;
   const base = { objectives, at: turnOf(state), siberian };
   if (rules.kind === "objectives") {
     if (!last) return null;
