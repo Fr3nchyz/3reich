@@ -163,7 +163,8 @@ export interface VictoryTarget {
   axis?: Extract<VictoryRules, { kind: "campaign" }>["axis"];
 }
 
-function nextLevel(count: number, needs: LevelNeeds): NextLevel | null {
+/** The next level a count has not reached in a table of needs, with how many more it takes; null at Decisive. */
+export function nextLevel(count: number, needs: LevelNeeds): NextLevel | null {
   const level = LEVELS.find((l) => needs[l] > count);
   return level === undefined ? null : { level, needs: needs[level], more: needs[level] - count };
 }

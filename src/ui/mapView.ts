@@ -10,7 +10,7 @@ import type { UnitMarks } from "./moveMarks";
 import { attackMarksMarkup } from "./mapMarks";
 import { unitMarksMarkup } from "./mapUnitMarks";
 import type { ObjectiveStandings } from "../engine/objectives";
-import { objectiveMarksMarkup } from "./mapCities";
+import { markRadius, objectiveMarksMarkup } from "./mapCities";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
@@ -73,6 +73,19 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const marksLayer = svg.querySelector<SVGGElement>("g.attack-marks")!;
   const objectiveLayer = svg.querySelector<SVGGElement>("g.objective-marks")!;
   let objectivesDrawn = "";
+  let objectiveStandings: ObjectiveStandings | null = null;
+  /** Screen pixels per map unit as drawn now (0 while the map has no size). */
+  const pxPerUnit = (): number => {
+    const r = svg.getBoundingClientRect();
+    const box = svg.viewBox.baseVal;
+    return r.width > 0 && r.height > 0 && box.width > 0 && box.height > 0 ? Math.min(r.width / box.width, r.height / box.height) : 0;
+  };
+  /** The holder marks, at a size that can be read at this zoom; drawn again only when what is drawn would change (a pan changes nothing). */
+  const drawObjectives = (): void => {
+    const markup = objectiveMarksMarkup(map, objectiveStandings, markRadius(pxPerUnit()));
+    if (markup !== objectivesDrawn) { objectivesDrawn = markup; objectiveLayer.innerHTML = markup; }
+  };
+  if (typeof MutationObserver !== "undefined") new MutationObserver(drawObjectives).observe(svg, { attributes: true, attributeFilter: ["viewBox"] });
   /** Redrawn only when the marks change, so a repeated call costs no DOM work. */
   let marksDrawn = "";
   const drawMarks = (marks: AttackMarksInput | null): void => {
@@ -101,10 +114,7 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
     setOverlay: (cells) => { overlayLayer.innerHTML = overlayMarkup(map, cells); },
     setAttackMarks: drawMarks,
     clearAttackMarks: () => drawMarks(null),
-    setObjectiveMarks: (standings) => {
-      const markup = objectiveMarksMarkup(map, standings);
-      if (markup !== objectivesDrawn) { objectivesDrawn = markup; objectiveLayer.innerHTML = markup; }
-    },
+    setObjectiveMarks: (standings) => { objectiveStandings = standings; drawObjectives(); },
     focus: (ids) => viewport.focus(centresOf(ids)),
     zoomBy: (factor) => { viewport.zoomMiddle(factor); return viewport.level(); },
     focusOutlined: () => {

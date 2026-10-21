@@ -5,7 +5,7 @@ import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { newGame } from "../src/engine/game";
 import { objectiveStandings } from "../src/engine/objectives";
-import { objectiveMarksMarkup } from "../src/ui/mapCities";
+import { markRadius, MARK_MIN_SCREEN_RADIUS, MARK_RADIUS, objectiveMarksMarkup } from "../src/ui/mapCities";
 import { objectivesCard, scoreHtml } from "../src/ui/objectivesCard";
 import { newSession } from "../src/ui/session";
 import { statusHtml } from "../src/ui/statusView";
@@ -34,6 +34,7 @@ describe("the Objectives card model", () => {
   });
   it("says whether the Free Siberian Transfer is in use, and what each side needs", () => {
     expect(card.siberian).toBe("Free Siberian Transfer: not used.");
+    expect(objectivesCard(ctxFor(SCENARIO_1944), newGame(SCENARIO_1944, 1)).siberian, "1944 is exempt (R11)").toBe("The Free Siberian Transfer does not apply in this scenario.");
     expect(card.needs[0]).toBe("Allies: 15 = Marginal, 16 = Tactical, 17 = Decisive");
     const used = objectivesCard(ctxFor(), { ...newGame(SCENARIO_1939, 1), siberian: { used: true, taken: {} } });
     expect(used.siberian).toMatch(/in use/);
@@ -56,7 +57,7 @@ describe("the score line and the card in the status area", () => {
     expect(html).toContain('aria-expanded="false"');
     expect(html).not.toContain('id="obj-card"');
   });
-  it("opens the card: a labelled section, a close button, one button per Objective, each at least a button of its own", () => {
+  it("opens the card: a labelled section, a close button, one button per Objective and no raw ids (the browser test measures the 44 px)", () => {
     const s = { ...newSession(SCENARIO_1942, "axis", 1), objectivesOpen: true };
     const html = statusHtml({ ...s, state: { ...s.state, phase: "player-turn" } }, null, []);
     expect(html).toContain('aria-labelledby="obj-title"');
@@ -94,5 +95,19 @@ describe("the marks on the map (D1: a square for the Axis, a circle for the Alli
     const moved = objectiveMarksMarkup(MAP, objectiveStandings(ctxFor(SCENARIO_1939), withCounts(SCENARIO_1939, 20, 22)));
     expect(moved.match(/data-holder="allies"/g)).toHaveLength(20);
     expect(moved.match(/data-holder="nobody"/g)).toBeNull();
+  });
+
+  it("keeps a size that can be read: the base radius where the map is drawn large, more where it is drawn small (a minimum of 7 screen pixels across)", () => {
+    expect(markRadius(0)).toBe(MARK_RADIUS);
+    expect(markRadius(100)).toBe(MARK_RADIUS);
+    expect(markRadius(1) * 1).toBeCloseTo(MARK_MIN_SCREEN_RADIUS, 5);
+    expect(markRadius(0.68) * 0.68).toBeCloseTo(MARK_MIN_SCREEN_RADIUS, 5);
+    expect(markRadius(0.68) * 0.68 * 2).toBeGreaterThanOrEqual(6);
+  });
+  it("draws the marks at the radius it is given, still inside their hex", () => {
+    const big = objectiveMarksMarkup(MAP, standings, 5);
+    expect(big).toContain('width="10.0" height="10.0"');
+    expect(big).toContain('r="5.0"');
+    expect(big).not.toBe(svg);
   });
 });

@@ -11,7 +11,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const ENDED = JSON.parse(readFileSync("tests/e2e/fixtures/ended-1939.json", "utf8")) as { scenario: string; seed: number; end: unknown; actions: unknown[] };
 type Size = readonly [number, number];
-const SIZES: readonly Size[] = [[1024, 768], [768, 1024], [1180, 820], [1400, 1000], [390, 844], [844, 390], [568, 320]];
+const SIZES: readonly Size[] = [[320, 640], [1024, 768], [768, 1024], [1180, 820], [1400, 1000], [390, 844], [844, 390], [568, 320]];
 
 async function startPlay(page: Page, size?: Size): Promise<string[]> {
   const errors: string[] = [];
@@ -86,6 +86,21 @@ test("a tap on a name in the card centres the map on that Objective", async ({ p
   await page.locator("button.obj-row", { hasText: "London" }).click();
   await expect.poll(() => viewBox(page)).not.toBe(after);
 });
+
+for (const size of [[390, 844], [1180, 820]] as const) {
+  test(`${size[0]}x${size[1]}: at the opening zoom the three marks are each at least 6 px across, so square, circle and dashed ring can be told apart`, async ({ page }) => {
+    await startPlay(page, size);
+    for (const holder of ["axis", "allies", "nobody"]) {
+      const box = (await page.locator(`svg.map .obj-mark[data-holder="${holder}"]`).first().boundingBox())!;
+      expect(box.width, `${holder} mark width`).toBeGreaterThanOrEqual(6);
+      expect(box.height, `${holder} mark height`).toBeGreaterThanOrEqual(6);
+    }
+    // Zoomed in, they grow with the map instead of staying at the minimum.
+    const before = (await page.locator('svg.map .obj-mark[data-holder="axis"]').first().boundingBox())!.width;
+    for (let i = 0; i < 3; i++) await page.locator('button[data-zoom="in"]').click();
+    await expect.poll(async () => (await page.locator('svg.map .obj-mark[data-holder="axis"]').first().boundingBox())!.width).toBeGreaterThan(before);
+  });
+}
 
 test("the map marks every Objective by its holder with a shape: square, circle, dashed ring", async ({ page }) => {
   await startPlay(page);

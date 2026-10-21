@@ -36,14 +36,14 @@ describe("the card of a game ended on Objectives (D2)", () => {
     });
   });
   it("a Stalemate says that neither side reached its target and what each missed", () => {
-    const c = endCard(ctx, { ...state, phase: "game-over", result: { ...base, winner: null, level: null, objectives: { axis: 20, allies: 14, nobody: 8 } } })!;
+    const c = endCard(ctx, { ...withCounts(SCENARIO_1939, 14, 20), phase: "game-over", result: { ...base, winner: null, level: null, objectives: { axis: 20, allies: 14, nobody: 8 } } })!;
     expect(c.title).toBe("Stalemate");
     expect(c.reasons).toEqual(["Neither side reached its target."]);
     expect(c.needs).toEqual(["The Allies needed 15 for a Marginal victory (1 more).", "The Axis needed 25 for a Marginal victory (5 more)."]);
   });
   it("with the Free Siberian Transfer the Allied numbers are one higher and the card says so", () => {
-    const c = endCard(ctx, { ...state, phase: "game-over", result: { ...base, level: "tactical", objectives: { axis: 16, allies: 17, nobody: 9 }, siberian: true } })!;
-    expect(c.needs[0]).toBe("The Allies needed 17 for a Tactical victory.");
+    const c = endCard(ctx, { ...withCounts(SCENARIO_1939, 17, 16, true), phase: "game-over", result: { ...base, level: "tactical", objectives: { axis: 16, allies: 17, nobody: 9 }, siberian: true } })!;
+    expect(c.needs).toEqual(["The Allies needed 17 for a Tactical victory.", "They needed 18 for a Decisive victory (1 more)."]);
     expect(c.siberian).toMatch(/Free Siberian Transfer/);
   });
   it("is not there while the game goes on, or for a game over saved without a result", () => {
@@ -63,7 +63,7 @@ describe("the card of a game ended by a conquest or by the Campaign's other test
   it("1944, Germany standing at the end: Axis Decisive, with the reason", () => {
     const c = endCard(ctxFor(SCENARIO_1944), { ...newGame(SCENARIO_1944, 1), phase: "game-over", result: { ...base, winner: "axis", level: "decisive", basis: "turn-limit", at: { year: 1946, season: "spring" } } })!;
     expect(c.title).toBe("Axis Decisive Victory");
-    expect(c.reasons).toEqual(["The scenario ended after Spring 1946.", "Germany was still standing when the scenario ended after Spring 1946."]);
+    expect(c.reasons).toEqual(["Germany was still standing when the scenario ended after Spring 1946."]);
   });
   it("the Campaign, Axis Marginal: the checkpoint count is named", () => {
     const state = { ...newGame(SCENARIO_CAMPAIGN, 1), phase: "game-over" as const, victory: { checkpoints: { "1943-winter": 29 } }, result: { ...base, winner: "axis" as const, level: "marginal" as const, at: { year: 1945, season: "summer" as const } } };

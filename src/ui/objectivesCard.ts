@@ -3,8 +3,7 @@ import type { HexId } from "../engine/hex";
 import { objectiveStandings } from "../engine/objectives";
 import type { GameState } from "../engine/types";
 import { objectiveCount, victoryTarget } from "../engine/victory";
-import { END_TEXT, MARK_KEY, needsText, scoreLine, OBJECTIVES_BUTTON, SHOW_RESULT_BUTTON } from "./endText";
-import { cap } from "./format";
+import { END_TEXT, frontTitle, MARK_KEY, needsText, OBJECTIVES_BUTTON, rowLabel, scoreLine, SHOW_RESULT_BUTTON, type Holder } from "./endText";
 import { escape } from "./mapGeometry";
 import type { Session } from "./session";
 
@@ -12,8 +11,6 @@ import type { Session } from "./session";
  * The "Victory and objectives" card (spec 14, part D1; Ref 2.0): the running score, the 42 Objectives by Front with who holds each, and what each
  * side needs. The model has no DOM; the HTML is built from it. A row is a button: tapping it centres the map on the Objective.
  */
-
-export type Holder = "Axis" | "Allies" | "nobody";
 
 export interface ObjectiveRow {
   hex: HexId;
@@ -36,17 +33,17 @@ export function objectivesCard(ctx: GameContext, state: GameState): ObjectivesCa
   const holderOf = (hex: HexId): Holder => (standings.axis.includes(hex) ? "Axis" : standings.allies.includes(hex) ? "Allies" : "nobody");
   const all = [...standings.axis, ...standings.allies, ...standings.nobody];
   const target = victoryTarget(ctx, state);
-  const needs = needsText(ctx.scenario.victory, target.siberian, ctx.scenario.end);
+  const needs = needsText(target, ctx.scenario.end);
   return {
     score: scoreLine(target.counts),
-    siberian: target.siberian ? END_TEXT.siberianIn : END_TEXT.siberianNot,
+    siberian: target.siberian ? END_TEXT.siberianIn : target.kind === "germany-falls" ? END_TEXT.siberianExempt : END_TEXT.siberianNot,
     fronts: FRONTS.map((front) => {
       const rows = all
         .filter((hex) => ctx.map.hexes[hex]?.front === front)
         .map((hex) => ({ hex, name: ctx.map.hexes[hex]?.name ?? hex, holder: holderOf(hex) }))
         .sort((a, b) => a.name.localeCompare(b.name))
         ;
-      return { title: `${cap(front)} Front (${rows.length})`, rows };
+      return { title: frontTitle(front, rows.length), rows };
     }),
     needsTitle: needs.title,
     needs: needs.lines,
@@ -69,9 +66,9 @@ export function scoreHtml(s: Session): string {
 }
 
 function cardHtml(c: ObjectivesCard): string {
-  const row = (r: ObjectiveRow) => `<li><button type="button" class="obj-row" data-objhex="${r.hex}" aria-label="${escape(`${r.name}: ${r.holder}. Show on the map.`)}"><span class="obj-name">${escape(r.name)}</span><span class="obj-holder holder-${r.holder.toLowerCase()}"><span aria-hidden="true">${SHAPE[r.holder]}</span> ${r.holder}</span></button></li>`;
+  const row = (r: ObjectiveRow) => `<li><button type="button" class="obj-row" data-objhex="${r.hex}" aria-label="${escape(rowLabel(r.name, r.holder))}"><span class="obj-name">${escape(r.name)}</span><span class="obj-holder holder-${r.holder.toLowerCase()}"><span aria-hidden="true">${SHAPE[r.holder]}</span> ${r.holder}</span></button></li>`;
   return `<section class="objcard" id="obj-card" aria-labelledby="obj-title">
-      <div class="objcard-head"><h2 id="obj-title" tabindex="-1">Victory and objectives</h2><button id="obj-close" type="button" aria-label="Close the Victory and objectives card">${END_TEXT.close}</button></div>
+      <div class="objcard-head"><h2 id="obj-title" tabindex="-1">${END_TEXT.objectivesTitle}</h2><button id="obj-close" type="button" aria-label="${END_TEXT.closeObjectives}">${END_TEXT.close}</button></div>
       <p class="objcard-held">${escape(c.score)}</p>
       <p class="objcard-siberian">${escape(c.siberian)}</p>
       <p class="objcard-key">${escape(MARK_KEY)}</p>

@@ -1,10 +1,12 @@
-import type { ConquestWindow, GameResult, LevelNeeds, ObjectiveCount, VictoryLevel, VictoryRules } from "../engine/victory-record";
+import type { ConquestWindow, GameResult, ObjectiveCount, VictoryLevel, VictoryRules } from "../engine/victory-record";
+import type { VictoryTarget } from "../engine/victory";
 import type { GameTurn, Side } from "../engine/types";
 import { cap } from "./format";
 
 /**
  * Every word of the victory screens (spec 14, part D), in one module so that the French pass changes this file only. Plain sentences, numbers
  * instead of adjectives where possible, no idioms. The DOS game's verdict names are kept as they are ("Allied Marginal Victory", engine/victory-record.ts).
+ * The one place for words: the cards and their buttons take every sentence and label from here.
  * TODO(verify) V30: the one-line plain meanings under the verdict ("a small win for the Allies") are ours, not the DOS game's; the words are a guess.
  */
 
@@ -14,6 +16,7 @@ const sideThe = (s: Side): string => (s === "axis" ? "the Axis" : "the Allies");
 const sideThe1 = (s: Side): string => cap(sideThe(s));
 const NUMBER_WORDS: Record<number, string> = { 2: "two", 3: "three" };
 const more = (n: number): string => `${n} more`;
+type CampaignAxis = NonNullable<VictoryTarget["axis"]>;
 
 /** "Objectives held: Axis 17, Allies 21, nobody 4": the line under the turn line. */
 export const scoreLine = (c: ObjectiveCount): string => `Objectives held: Axis ${c.axis}, Allies ${c.allies}, nobody ${c.nobody}`;
@@ -42,17 +45,27 @@ export const END_TEXT = {
   siberianUsed: "The tables for the Free Siberian Transfer were used: the Allied targets are one higher.",
   siberianNot: "Free Siberian Transfer: not used.",
   siberianIn: "Free Siberian Transfer: in use. The Allied targets are one objective higher.",
+  siberianExempt: "The Free Siberian Transfer does not apply in this scenario.",
+  objectivesTitle: "Victory and objectives",
+  closeObjectives: "Close the Victory and objectives card",
 } as const;
+
+/** Who holds an Objective, in words. */
+export type Holder = "Axis" | "Allies" | "nobody";
+/** The title of a block of the Objectives card: "Western Front (14)". */
+export const frontTitle = (front: string, n: number): string => `${cap(front)} Front (${n})`;
+/** What a screen reader says for a row of the Objectives card. */
+export const rowLabel = (name: string, holder: Holder): string => `${name}: ${holder}. Show on the map.`;
 
 export const scenarioEnded = (t: GameTurn): string => `The scenario ended after ${turnName(t)}.`;
 
-/** What decided a result that came from a conquest or from holding on (the basis is not "objectives"). */
-export function decidedBy(kind: VictoryRules["kind"], r: GameResult, checkpoint: number | undefined, tacticalPowers = 2, decisivePowers = 3): string {
+/** What decided a result that came from a conquest or from holding on (the basis is not "objectives"). `axis` is the Campaign's data (powers to conquer), when the scenario has it. */
+export function decidedBy(kind: VictoryRules["kind"], r: GameResult, checkpoint: number | undefined, axis?: Pick<CampaignAxis, "tacticalPowers" | "decisivePowers">): string {
   switch (r.basis) {
     case "conquest":
       return `${kind === "germany-falls" ? "Germany" : "The Axis"} was conquered in ${turnName(r.at)}.`;
     case "powers-conquered": {
-      const n = r.level === "decisive" ? decisivePowers : tacticalPowers;
+      const n = axis ? (r.level === "decisive" ? axis.decisivePowers : axis.tacticalPowers) : 0;
       return `The Axis conquered ${NUMBER_WORDS[n] ?? n} Allied Major Powers.`;
     }
     case "turn-limit":
@@ -67,22 +80,20 @@ const needLine = (side: Side, level: VictoryLevel, needs: number, extra: string)
 /**
  * The lines under the counts on the result card for the scenarios counted by Objectives: what the winner needed, and what the next level
  * needed ("The Allies needed 15 for a Marginal victory. They needed 16 for a Tactical victory (1 more)."); for a Stalemate, what each side missed.
+ * The numbers are the engine's (`victoryTarget`: the table in force and each side's next level); nothing is worked out here.
  */
-export function needLines(r: Pick<GameResult, "winner" | "level">, counts: ObjectiveCount, table: { allies: LevelNeeds; axis: LevelNeeds }): string[] {
-  const nextOf = (side: Side): [VictoryLevel, number] | null => {
-    const needs = table[side];
-    const level = (["marginal", "tactical", "decisive"] as const).find((l) => needs[l] > counts[side]);
-    return level ? [level, needs[level]] : null;
-  };
+export function needLines(r: Pick<GameResult, "winner" | "level">, target: VictoryTarget): string[] {
+  const { table, next } = target;
+  if (!table || !next) return [];
   if (r.winner === null || r.level === null) {
-    return (["allies", "axis"] as const).map((side) => {
-      const next = nextOf(side);
-      return next ? needLine(side, next[0], next[1], ` (${more(next[1] - counts[side])})`) : "";
-    }).filter(Boolean);
+    return (["allies", "axis"] as const).flatMap((side) => {
+      const n = next[side];
+      return n ? [needLine(side, n.level, n.needs, ` (${more(n.more)})`)] : [];
+    });
   }
   const lines = [needLine(r.winner, r.level, table[r.winner][r.level], "")];
-  const next = nextOf(r.winner);
-  if (next) lines.push(`They needed ${next[1]} for a ${levelName(next[0])} victory (${more(next[1] - counts[r.winner])}).`);
+  const n = next[r.winner];
+  if (n) lines.push(`They needed ${n.needs} for a ${levelName(n.level)} victory (${more(n.more)}).`);
   return lines;
 }
 
@@ -97,29 +108,28 @@ export function windowText(w: ConquestWindow): string {
 
 const windowsFor = (windows: readonly ConquestWindow[], winner: Side): string => windows.filter((w) => w.winner === winner).map((w) => `${levelName(w.level)} ${windowText(w)}`).join(", ");
 
-/** The last block of the Objectives card: what each side needs, as lines of text. */
-export function needsText(rules: VictoryRules, siberian: boolean, end: GameTurn): { title: string; lines: string[] } {
-  if (rules.kind === "objectives") {
-    const t = siberian ? rules.siberian : rules.plain;
-    const row = (side: Side) => `${cap(side)}: ${(["marginal", "tactical", "decisive"] as const).map((l) => `${t[side][l]} = ${levelName(l)}`).join(", ")}`;
+/** The last block of the Objectives card: what each side needs, as lines of text, from the engine's `victoryTarget` (the tables and windows in force). */
+export function needsText(target: VictoryTarget, end: GameTurn): { title: string; lines: string[] } {
+  const { table, windows, axis: a } = target;
+  if (table) {
+    const row = (side: Side) => `${cap(side)}: ${(["marginal", "tactical", "decisive"] as const).map((l) => `${table[side][l]} = ${levelName(l)}`).join(", ")}`;
     return { title: `What each side needs when ${turnName(end)} ends`, lines: [row("allies"), row("axis"), "In between: Stalemate."] };
   }
-  if (rules.kind === "germany-falls") {
-    const axis = rules.windows.filter((w) => w.winner === "axis");
-    const last = axis[axis.length - 1];
-    const axisText = axis.map((w, i) => `${levelName(w.level)} ${i === 0 ? "if Germany falls " : ""}${windowText(w)}${w === last ? " or later" : ""}`).join(", ");
+  if (target.kind === "germany-falls" && windows) {
+    const held = windows.filter((w) => w.winner === "axis");
+    const last = held[held.length - 1];
+    const axisText = held.map((w, i) => `${levelName(w.level)} ${i === 0 ? "if Germany falls " : ""}${windowText(w)}${w === last ? " or later" : ""}`).join(", ");
     return {
       title: "What each side needs",
-      lines: [`The Allies win by conquering Germany: ${windowsFor(rules.windows, "allies")}.`, `The Axis wins by holding on: ${axisText}.`, "There is no Stalemate."],
+      lines: [`The Allies win by conquering Germany: ${windowsFor(windows, "allies")}.`, `The Axis wins by holding on: ${axisText}.`, "There is no Stalemate."],
     };
   }
-  const windows = siberian ? rules.siberian : rules.plain;
-  const a = rules.axis;
+  if (!windows || !a) return { title: "What each side needs", lines: [] };
   return {
     title: "What each side needs",
     lines: [
       `The Allies win by conquering Germany and Italy: ${windowsFor(windows, "allies")}.`,
-      `If they do not, the Axis wins: Decisive by conquering ${NUMBER_WORDS[a.decisivePowers]} Allied Major Powers, Tactical by conquering ${NUMBER_WORDS[a.tacticalPowers]}, Marginal by holding ${a.marginal.objectives} Objectives when ${turnName(a.marginal.at)} ends.`,
+      `If they do not, the Axis wins: Decisive by conquering ${NUMBER_WORDS[a.decisivePowers]} Allied Major Powers, Tactical by conquering ${NUMBER_WORDS[a.tacticalPowers]}, Marginal by holding ${a.marginal.objectives} or more Objectives when ${turnName(a.marginal.at)} ends.`,
       "Otherwise: Stalemate.",
     ],
   };
