@@ -61,7 +61,8 @@ describe("the side of an action and of an event", () => {
     expect(eventSide({ type: "BRPS_CHANGED", nation: "france", delta: 5, total: 9, reason: "production" }, "axis"), "a treasury line is its nation's").toBe("allies");
     expect(eventSide({ type: "INITIATIVE_DETERMINED", year: 1939, season: "summer", firstSide: "axis", axis: 1, allies: 1 }, "axis")).toBeNull();
     expect(eventSide({ type: "SETUP_COMPLETE" }, "axis")).toBeNull();
-    expect(eventSide({ type: "GAME_OVER", year: 1939, season: "summer" }, "axis")).toBeNull();
+    const result = { winner: null, level: null, basis: "objectives", objectives: { axis: 9, allies: 23, nobody: 10 }, at: { year: 1939, season: "summer" }, early: false, siberian: false } as const;
+    expect(eventSide({ type: "GAME_OVER", year: 1939, season: "summer", result }, "axis")).toBeNull();
   });
 
   it("a line takes the side it concerns, not the side whose action set it off", () => {

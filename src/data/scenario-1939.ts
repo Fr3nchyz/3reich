@@ -1,6 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, replacement } from "./counters";
 import { POLAND_EAST_OF_PARTITION_LINE } from "./zones";
+import { VICTORY_1939 } from "./victory";
 
 /**
  * 1939 scenario. Source: Ops 9.0 "1939 SCENARIO" (pp. 20-21), the in-game status screen
@@ -48,6 +49,7 @@ export const SCENARIO_1939: Scenario = {
   startingYss: "none",
   startingStrategicWarfare: {},
 
+  victory: VICTORY_1939,
   rules: [
     // "The U.S.A. automatically spends 35 BRPs for a DoW vs. Germany in the Allied Spring '42 turn."
     { kind: "automatic-declaration", by: "usa", on: "germany", turn: { year: 1942, season: "spring" }, side: "allies", brpCost: 35 },
@@ -164,6 +166,6 @@ export const SCENARIO_1939: Scenario = {
     "Germany may not set up in Bessarabia in Fall 1939 (Ref 29.0).",
     "The red Polish Partition Line runs north-south through Poland at the start of this scenario. German units east of it are eliminated if still there at the end of the Axis Fall 1939 turn. At that point Eastern Europe is created: the Baltic States, Poland east of the line, and Bessarabia, worth 25 BRPs. The line is drawn by the program and is not on the printed map card; its hexes come from the original game's files (Ref 29.0).",
     "Before 1942, British and French units may not stack together, and British units may not stop in the Maginot Line, Paris, Marseilles or Vichy until France falls (Ref 26.0).",
-    "There is no Year Start Sequence in 1939. Victory conditions are in Ref 2.0-2.1 and are not encoded yet.",
+    "There is no Year Start Sequence in 1939. Victory conditions are in Ref 2.0-2.1 and are encoded in data/victory.ts.",
   ],
 };

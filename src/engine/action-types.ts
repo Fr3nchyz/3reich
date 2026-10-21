@@ -1,6 +1,7 @@
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
+import type { GameResult } from "./victory-record";
 import type { Combatant, ForceOwner, FrontOption, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
@@ -92,7 +93,8 @@ export type GameEvent =
   /** Step 6f: units moved along a path (the hexes entered, in order). */
   | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
-  | { type: "GAME_OVER"; year: number; season: Season };
+  /** The scenario is over after this Game Turn; `result` is who won (spec 14 R3). */
+  | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 
 export type ActionResult =
   | { ok: true; state: GameState; events: GameEvent[] }

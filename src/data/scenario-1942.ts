@@ -2,6 +2,7 @@ import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, from, inf, nation, nationSetup, replacement } from "./counters";
 import { fromOriginal, ISLANDS, REGIONS } from "./zones";
+import { VICTORY_1942 } from "./victory";
 
 /**
  * 1942 scenario. Source: Ops 9.0 "1942 SCENARIO" (pp. 22-24), with Ref 17.3 for the Minor-Allies'
@@ -81,6 +82,7 @@ export const SCENARIO_1942: Scenario = {
   startingYss: "sw-construction-only",
   startingStrategicWarfare: { germany: { submarines: 6, asw: 0, sac: 0 } },
 
+  victory: VICTORY_1942,
   rules: [],
 
   forces: {
@@ -194,6 +196,6 @@ export const SCENARIO_1942: Scenario = {
     "Vichy France is an inactive German Minor-Ally. Its European hexes are chosen by the program (Ref 35.0) and are not on the printed map; they come from the original game's VICHY42.CON. Vichy may build only to replace losses that occur while it is active.",
     "At least six Soviet ground factors must set up in and/or adjacent to Leningrad and Moscow. The page does not say whether the six are counted across both cities together; this encodes them as a single total.",
     "Germany may place units in the Murmansk Convoy Box (fleets and air units only), and its fleets must start in Baltic Sea, North Sea or Atlantic ports (Ops 4.12).",
-    "Germany's 290 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1942 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.2 and are not encoded yet.",
+    "Germany's 290 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1942 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.2 and are encoded in data/victory.ts.",
   ],
 };
