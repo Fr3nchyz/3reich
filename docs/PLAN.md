@@ -16,6 +16,34 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 
 **Fleets so far (updated 2026-10-21).** Tickets 12-0 to 12-4 are built: port facts and sea routes, the naval record, the rules of sea supply, the designation action at steps 6e and 9f, and now a fleet in a captured port moves to the nearest friendly port with room (and Malta, Suda Bay and Famagusta hold 9). Supply penalties are still off, so only the last is visible in play: a fleet is no longer destroyed when its port is taken, and the automatic setups of 1942 and 1944 no longer put 18 and 36 naval factors in Malta. Next: 12-5, 12-6, 12-8, then the gate 12-7. Save and load stays blocked until the playtest. **Is it playable?** Yes: the guide `docs/PLAYTEST-FR.md` describes what to try.
 
+## The road to Beta, in plain words (2026-10-21)
+
+**What exists.** The foundations: the map, the units, the turn sequence, money, moving, attacking, air support in attacks, and a computer opponent. You can play a ground war on the iPad. **What is missing is everything that makes a game end and feel complete.**
+
+**What is left for Beta: about 80 tickets** (25 small, 46 medium, 9 large), in six groups. Roughly one medium ticket per one to two hours of work, so this is weeks of work, not days. The honest size of the job is the number that counts, not the percentage.
+
+| Group | What the player gets | Tickets |
+|---|---|---|
+| 1. The game can end (spec 14) | a result at the end ("Axis wins on objectives"), countries that fall when their capital is taken, the Russian winter, Russia's surrender | 17 |
+| 2. Minor countries (spec 15) | Poland, Norway, the Low Countries and the Balkans exist as countries that can be attacked, join a side, and give or cost money | 17 |
+| 3. Ground rules still missing (spec 16) | attrition, exploitation (breakthrough), redeploying units by rail, fortress changes, the Offensive Option | 24 |
+| 4. Fleets Release I (spec 12) | supply by sea, so units on islands and cut-off coasts are not abandoned (see below) | 4 left (12-5, 12-6, 12-7, 12-8) |
+| 5. Save and load (spec 11) | close the page and come back; waits for your playtest | 13 |
+| 6. The computer | defends Berlin, stops stalling, makes the choices it skips today | 3 |
+| plus 09-5 (planes in a captured hex) and the air docs | | 2 |
+
+**What 12-5, 12-6 and 12-8 are.** In the real game a unit cut off from supply is penalised. Our game already has that rule built but **switched off**, because the computer does not yet know how to keep its units fed. A fleet in a port can feed units on an island or a cut-off coast by sea (Sardinia, Norway, Finland). Tickets 12-0 to 12-4 built the plumbing. The rest:
+- **12-5, the computer uses it** (small): the computer names which fleet feeds which units. Without it the computer never uses sea supply.
+- **12-6, the screens** (medium): a card that says which units are cut off, marks on the map, the capacity of a port on its card. Without it a human sees plain generic buttons.
+- **12-8, supply chains** (small): supply passing through Gibraltar, Kiel and Istanbul.
+- **12-7, the gate** (small): play 30 games per scenario with the penalties on; if the computer is not hurt by more than about 10 percent of its objectives, switch them on.
+
+**None of these four is visible to Frank until the switch is turned on, and the switch also needs the computer to defend Berlin.** They are rule fidelity, not game feel.
+
+**Recommended order (changed from before).** Do group 1 first, starting with the end-of-game result (14-1 to 14-4: four tickets), because a game that can end is the biggest step toward something Frank can really play. Then groups 3 and 2 (the rules that change how a ground war plays), then the computer fixes, then the rest of fleets and the supply switch, then save and load once you have played.
+
+**How the cost comes down.** Small tickets go to the cheap model (`grunt`) with the automatic gates as the check; a review round is spent only on medium and large engine changes; the browser tests run nightly, not on every change (see the CI file).
+
 ## Two milestones
 
 **Beta** (the next goal): the 1939 scenario against the computer, start to finish, on the iPad, with saves. It has the ground war, air support in attacks, supply by sea (fleets Release I) with supply penalties switched on, the rules in section D (victory and surrender, minor countries, attrition, and so on), save and load, and a computer that defends its capital and does not stall. No naval combat and no air missions beyond ground support.
