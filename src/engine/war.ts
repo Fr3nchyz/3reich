@@ -1,6 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { charge, spend, spendable } from "./brps";
-import { combatantName } from "./nations";
+import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
 import { BRP_COSTS, MINOR_COUNTRY_FORCES } from "./tables";
 import type { Combatant, GameState, Nation, PowerId, Side } from "./types";
@@ -46,7 +46,7 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
   const noNeutrals = ctx.scenario.rules.some((r) => r.kind === "no-war-on-neutrals");
   const targets: Combatant[] = [];
   for (const other of Object.values(state.nations)) {
-    if (other.id === by || atWar(state, by, other.id) || other.status === "out" || other.status === "vichy") continue;
+    if (other.id === by || atWar(state, by, other.id) || isGone(other) || other.status === "vichy") continue;
     if (ALIGNMENT[other.id] === side) continue;
     if (sideOfPower(other) === null && noNeutrals) continue;
     targets.push(other.id);

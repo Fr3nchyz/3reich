@@ -1,6 +1,7 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
+import { settleConquests } from "./conquest";
 import { refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
@@ -94,7 +95,10 @@ export function advance(ctx: GameContext, state: GameState): Transition {
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
-        return { state: { ...read, position: { ...pos, step } }, events: lost.events };
+        // Leaving 7p: the end of the side's Combat Phase. A Major Power of this side whose capital is still held by the enemy is conquered (spec 14 R4, C8).
+        // This is in `advance`, so it runs however the turn got here, with or without anything to do at 7h; a conquest that decides the game ends it here.
+        const fell = pos.step === "7p" ? settleConquests(ctx, read) : { state: read, events: [] };
+        return { state: { ...fell.state, position: { ...pos, step } }, events: [...lost.events, ...fell.events] };
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
       const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over

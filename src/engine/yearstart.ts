@@ -1,5 +1,7 @@
 import type { GameEvent } from "./action-types";
+import { conquestIncome } from "./conquest-income";
 import type { GameContext } from "./context";
+import { isGone } from "./nations";
 import type { GameState, Nation, PowerId } from "./types";
 
 /**
@@ -12,11 +14,13 @@ import type { GameState, Nation, PowerId } from "./types";
  *   initial total = new Base + the BRPs of the nation's active Minor-Allies
  *   spending limit = half the initial total, fractions rounded down, fixed for the year (Ref 10.0)
  *
+ * Added by spec 14 (ticket 14-5; R4): half, rounded down, of the BRPs a conquered Major Power began the scenario with, for its conqueror, while the
+ * conqueror holds the capital (conquest-income.ts). A conquered Power is skipped and keeps 0.
+ *
  * Not built (TODO(verify), spec 02): A (strategic warfare is resolved, the only thing that can lower
- * a Base), C (strategic-warfare factors are constructed), the BRPs of conquered countries and
- * colonies, of attacked minors the nation intervened in, half of a conquered Major Power's starting
- * BRPs, Germany's +15 and the U.S.S.R.'s -15 for each of Moscow and Leningrad held: no conquest or
- * city control is tracked yet.
+ * a Base), C (strategic-warfare factors are constructed), the BRPs of conquered minor countries and
+ * colonies, of attacked minors the nation intervened in, Germany's +15 and the U.S.S.R.'s -15 for each
+ * of Moscow and Leningrad held (ticket 14-14): no city control is tracked yet.
  */
 
 /**
@@ -55,24 +59,25 @@ export function minorAllyBrps(ctx: GameContext, state: GameState, id: PowerId): 
  * grants count as unused. TODO(verify). With KEEP_UNUSED_BRPS false the unused BRPs are then dropped
  * (the destructive default, also TODO(verify)): only the grown Base carries into the new year.
  */
-function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number } {
+function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number; conquered: number } {
   const unused = n.brpTotal;
   const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
   const brpBase = n.brpBase + growth;
-  const brpTotal = brpBase + minorAllyBrps(ctx, state, n.id) + (KEEP_UNUSED_BRPS ? unused : 0);
-  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth };
+  const conquered = conquestIncome(ctx, state, n.id);
+  const brpTotal = brpBase + minorAllyBrps(ctx, state, n.id) + conquered + (KEEP_UNUSED_BRPS ? unused : 0);
+  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth, conquered };
 }
 
-/** Runs the Year Start Sequence for the year `state` has just entered; a nation that is out of the scenario is left alone. */
+/** Runs the Year Start Sequence for the year `state` has just entered; a nation that is out of the scenario or conquered is left alone. */
 export function runYearStartSequence(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
   const nations = { ...state.nations };
   const events: GameEvent[] = [];
   for (const old of Object.values(state.nations)) {
-    if (old.status === "out") continue;
-    const { nation, growth } = recalculated(ctx, state, old);
+    if (isGone(old)) continue;
+    const { nation, growth, conquered } = recalculated(ctx, state, old);
     nations[old.id] = nation;
     if (nation.brpTotal === old.brpTotal && growth === 0) continue;
-    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${nation.brpTotal - nation.brpBase} from Minor-Allies`;
+    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${nation.brpTotal - nation.brpBase} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}`;
     events.push({ type: "BRPS_CHANGED", nation: old.id, delta: nation.brpTotal - old.brpTotal, total: nation.brpTotal, reason });
   }
   return { state: { ...state, nations }, events };

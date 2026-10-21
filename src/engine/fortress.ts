@@ -1,5 +1,6 @@
 import { controllerOf, controllingSide, startingControl } from "./control";
 import type { GameContext } from "./context";
+import { isGone } from "./nations";
 import { sideOfOwner } from "./setup";
 import type { GameState } from "./types";
 
@@ -21,7 +22,7 @@ import type { GameState } from "./types";
 /** The Fortress statuses of the position after the refresh described above; the same object when nothing changes. */
 export function refreshFortresses(ctx: GameContext, state: GameState): GameState {
   const next: Record<string, boolean> = { ...state.fortresses };
-  const franceFallen = state.nations.france?.status === "vichy" || state.nations.france?.status === "out";
+  const franceFallen = state.nations.france?.status === "vichy" || (state.nations.france !== undefined && isGone(state.nations.france));
   const startYear = ctx.scenario.start.year;
   const initial = startingControl(ctx);
   for (const hex of Object.values(ctx.map.hexes)) {

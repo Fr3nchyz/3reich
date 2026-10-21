@@ -21,9 +21,10 @@ export type Side = "axis" | "allies";
 
 /**
  * A major power's alignment. Italy, the USSR and the USA can start neutral. France is
- * "vichy" in the 1942 scenario; Italy and France are "out" of the 1944 scenario.
+ * "vichy" in the 1942 scenario; Italy and France are "out" of the 1944 scenario. "conquered" is a Major Power whose capital
+ * stayed lost through its own Combat Phase (spec 14 R4): out of the game for good, with no units, no pool and no BRPs.
  */
-export type NationStatus = "axis" | "allied" | "neutral" | "vichy" | "out";
+export type NationStatus = "axis" | "allied" | "neutral" | "vichy" | "out" | "conquered";
 
 /** Counter types shown on the PC game's Unit Types screen. */
 export type UnitType =
@@ -326,8 +327,10 @@ export interface GameState {
   /**
    * Hexes whose controller differs from the scenario's "controlled at start" territory (Ref 7.0;
    * see control.ts). Empty at the start: read control through `controllerOf`, not this record.
+   * `null` is "nobody controls this hex" (spec 14 R4: land a conquered Major Power held outside its own country); it is not the same as
+   * having no entry, which means the start territory still decides. The first ground unit to enter takes it.
    */
-  control: Record<HexId, ForceOwner>;
+  control: Record<HexId, ForceOwner | null>;
   /** Deterministic RNG state; advanced on every roll. */
   rngState: number;
 }

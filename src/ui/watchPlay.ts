@@ -8,7 +8,7 @@ import {
   actionsPerSlice, afterAction, createWatchInfo, markStuck, overOf, shouldRun, SLICE_MS, stuckMessage, type Speed, type WatchInfo,
 } from "./watchController";
 import { recordOf, type GameRecord } from "./watchRecord";
-import { victoryLine } from "./victoryLine";
+import { gameOverLine } from "./victoryLine";
 
 /** A watched game (spec 06) in the browser: two computers, one session. No DOM here; every action goes through the engine like the single-player computer's. */
 
@@ -68,7 +68,7 @@ export const stuckText = (s: Session): string => (s.watch?.stuck ? stuckMessage(
 /** What the game stopped on, for the End of game panel, or null while it is playable. */
 export const endText = (s: Session): string | null => {
   const over = s.watch ? overOf(s.watch, s.state) : null;
-  return over === "game-over" ? `The scenario ends after ${cap(s.state.season)} ${s.state.year}.${s.state.result ? ` ${victoryLine(s.state.result)}` : ""}` : over === "turn-limit" ? `Stopped after the chosen number of Game Turns, at ${cap(s.state.season)} ${s.state.year}.` : null;
+  return over === "game-over" ? (s.state.result ? gameOverLine(s.state.season, s.state.year, s.state.result) : `The scenario ends after ${cap(s.state.season)} ${s.state.year}.`) : over === "turn-limit" ? `Stopped after the chosen number of Game Turns, at ${cap(s.state.season)} ${s.state.year}.` : null;
 };
 
 /** The game so far as a self-play recording (docs/SELFPLAY.md). */

@@ -1,4 +1,4 @@
-import { areEnemies, controllerOf, sideInWar } from "./control";
+import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import { type HexId } from "./hex";
 import { stackingProblem } from "./placement";
@@ -105,7 +105,7 @@ export function entryProblem(ctx: GameContext, state: GameState, owners: readonl
  * One test for ground movement and for air flight (spec 09 R4: "the same test, so one rule decides both").
  */
 export function neutralLandProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
-  if (!NEUTRAL_LAND_CLOSED) return null;
+  if (!NEUTRAL_LAND_CLOSED || isNobodys(state, hex)) return null; // land nobody controls (a conquered Power's, spec 14 R4) is open to all, TODO(verify) V34
   const control = controllerOf(ctx, state, hex);
   const country = ctx.map.hexes[hex]?.country;
   for (const o of owners) {

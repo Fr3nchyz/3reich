@@ -1,5 +1,6 @@
 import type { GameEvent } from "./action-types";
 import { isBox, territoryOf } from "./areas";
+import { powerOfCapital } from "./capital";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { MINOR_COUNTRY_FORCES } from "./tables";
@@ -19,6 +20,11 @@ import { atWar, sideOfPower } from "./war";
  * TODO(verify, Ref 16.0): whether conquering a minor country hands over the whole country at once
  * (capital, all objectives) rather than hex by hex, and whether other uncontrolled land (the Baltic
  * States, which no scenario hands to anyone in 1939) changes hands the same way.
+ *
+ * Nobody's land (spec 14 R4, TODO(verify) V11): when a Major Power is conquered, the land it held outside its own country is recorded as
+ * `control[hex] = null`. That differs from having no entry (the start territory decides): the hex stays nobody's until a ground unit
+ * enters it, and the first one to do so takes it, at war or not (`controlAfterEntry`). TODO(verify) V34: such a hex is open to every
+ * ground unit, even inside a minor country (movement.ts reads `isNobodys`).
  */
 
 /** Counters whose entry into a hex can change its control. TODO(verify): replacements cannot move; air and fleets never take hexes. */
@@ -42,12 +48,21 @@ export function startingControl(ctx: GameContext): ReadonlyMap<HexId, ForceOwner
 
 /** Who controls a hex now, or null for land nobody controls (and for sea). */
 export function controllerOf(ctx: GameContext, state: GameState, hex: HexId): ForceOwner | null {
-  return state.control[hex] ?? startingControl(ctx).get(hex) ?? null;
+  const held = state.control[hex]; // null is an entry too: nobody controls the hex, whatever the start territory says
+  return held !== undefined ? held : startingControl(ctx).get(hex) ?? null;
 }
 
-/** Every controlled hex and its controller. */
+/** Whether the record says nobody controls this hex (a conquered Power's land outside its own country, spec 14 R4). */
+export const isNobodys = (state: GameState, hex: HexId): boolean => state.control[hex] === null;
+
+/** Every controlled hex and its controller (a hex nobody controls is left out). */
 export function controlMap(ctx: GameContext, state: GameState): Map<HexId, ForceOwner> {
-  return new Map([...startingControl(ctx), ...Object.entries(state.control)]);
+  const out = new Map(startingControl(ctx));
+  for (const [hex, owner] of Object.entries(state.control)) {
+    if (owner === null) out.delete(hex);
+    else out.set(hex, owner);
+  }
+  return out;
 }
 
 const ALLIED_FOR_GOOD: readonly ForceOwner[] = ["poland", "free-france"];
@@ -89,6 +104,7 @@ export function controlAfterEntry(ctx: GameContext, state: GameState, unit: Pick
   if (!h?.land || !CONTROL_CHANGING_TYPES.includes(unit.type)) return null;
   const now = controllerOf(ctx, state, hex);
   if (now !== null) return areEnemies(state, unit.owner, now) ? unit.owner : null;
+  if (isNobodys(state, hex)) return unit.owner; // spec 14 R4: nobody controls it, so the first ground unit to enter takes it
   return isMinorCountry(h.country) && atWar(state, unit.owner, h.country) ? unit.owner : null;
 }
 
@@ -98,11 +114,11 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
   let fortresses = state.fortresses;
   const events: GameEvent[] = [];
   for (const hex of hexes) {
-    const now = control[hex] ?? startingControl(ctx).get(hex) ?? null;
+    const now = controllerOf(ctx, { ...state, control }, hex);
     const to = controlAfterEntry(ctx, { ...state, control }, unit, hex);
     if (to === null) continue;
     control = { ...control, [hex]: to };
-    events.push({ type: "HEX_CONTROL_CHANGED", hex, from: now, to, unitId: unit.id });
+    events.push({ type: "HEX_CONTROL_CHANGED", hex, from: now, to, unitId: unit.id }, ...capitalEvents(ctx, state, hex, now, to));
     // Ref 4.8: a Fortress (other than Malta, Gibraltar and Sevastopol, which fortress.ts decides) loses the status for good when an enemy occupies it.
     const kind = ctx.map.hexes[hex]?.fortress;
     const owner = startingControl(ctx).get(hex);
@@ -111,4 +127,21 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
     }
   }
   return { state: events.length ? { ...state, control, fortresses } : state, events };
+}
+
+/**
+ * The warning that goes with a capital changing hands (spec 14 R4, D3): a Major Power's capital taken by the other side (CAPITAL_LOST: the Power falls at
+ * the end of its own Combat Phase unless it takes the capital back) or taken back (CAPITAL_RETAKEN). Sides are read with `sideInWar`, so a hex that
+ * passes between two owners of one side, or to or from nobody, says nothing.
+ */
+function capitalEvents(ctx: GameContext, state: GameState, hex: HexId, from: ForceOwner | null, to: ForceOwner): GameEvent[] {
+  const power = powerOfCapital(ctx, hex);
+  const nation = power ? state.nations[power] : undefined;
+  const side = nation ? sideOfPower(nation) : null;
+  if (!power || side === null) return [];
+  const before = from === null ? null : sideInWar(state, from);
+  const after = sideInWar(state, to);
+  if (after !== null && after !== side && before !== after) return [{ type: "CAPITAL_LOST", power, capital: hex, by: to }];
+  if (after === side && before !== null && before !== side) return [{ type: "CAPITAL_RETAKEN", power, capital: hex }];
+  return [];
 }
