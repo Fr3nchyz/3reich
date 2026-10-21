@@ -162,6 +162,11 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":
       return `The supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} no longer holds: ${e.reason}`;
+    case "FLEET_DISPLACED": {
+      const fleet = before.units[e.unitId];
+      const name = fleet ? unitName(fleet) : `${OWNER_NAMES[e.owner]} fleet`;
+      return e.to === null ? `${name} at ${placeName(ctx.map, e.from)} was eliminated: ${placeName(ctx.map, e.from)} was taken and no friendly port on its Front has room.` : `${name} moved from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}: ${placeName(ctx.map, e.from)} was taken.`;
+    }
     case "GROUND_SUPPORT_LOST":
       return `${plural(e.units.reduce((n, u) => n + u.strength, 0), "air factor")} committed to ${placeName(ctx.map, e.hex)} were lost: the hex was not attacked.`;
     case "AIR_RESHAPED": {

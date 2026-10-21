@@ -3,6 +3,7 @@ import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import { combatOf } from "../engine/combat-record";
 import { committedAt } from "../engine/air-support";
 import type { GameContext } from "../engine/context";
+import { FLEETS_DISPLACED_ON_CAPTURE } from "../engine/naval-rules";
 import { OWNER_NAMES } from "../engine/nations";
 import type { DefenseBasis } from "../engine/terrain";
 import type { GameState, Unit } from "../engine/types";
@@ -80,8 +81,10 @@ export interface PreviewNumbers {
 }
 
 export interface Sweep {
-  /** The counters destroyed with no roll. */
+  /** The counters destroyed with no roll (air units and the like; not fleets, which are driven out: `moved`). */
   destroyed: string[];
+  /** The fleets driven out to a friendly port with no roll (spec 12 R9), or lost if no port has room. */
+  moved: string[];
   text: string;
 }
 
@@ -111,6 +114,8 @@ export interface AttackPreview {
   results: ResultRow[];
   /** Enemy counters that go too if the defenders are eliminated (computed with `lonersAt` on the position without them). */
   alsoDestroyed: string[];
+  /** Enemy fleets that move to a friendly port instead if the defenders are eliminated (spec 12 R9). */
+  alsoMoved: string[];
   /** Said when a unit added to or taken from the attack changes the defender's multiple. */
   riverWarnings: string[];
   sweep: Sweep | null;
@@ -243,9 +248,20 @@ function riverWarnings(ctx: GameContext, state: GameState, cands: Candidate[], c
 
 const factorsWord = (n: number): string => `${n} factor${n === 1 ? "" : "s"}`;
 
-function buttonFor(place: string, chosen: Unit[], numbers: PreviewNumbers | null, sweep: Sweep | null, loners: Unit[], problems: string[]): AttackButton {
+/** What a roll-free attack does, in words: some counters are destroyed, enemy fleets are driven out to a friendly port. */
+function sweepText(destroyed: readonly string[], moving: readonly string[]): string {
+  const gone = destroyed.length === 0 ? "" : ` ${destroyed.length === 1 ? "This counter is" : `These ${destroyed.length} counters are`} destroyed: ${destroyed.join(", ")}.`;
+  const out = moving.length === 0 ? "" : ` ${moving.length === 1 ? "This fleet" : "These fleets"} must leave and move to the nearest friendly port with room, or ${moving.length === 1 ? "is" : "are"} lost if there is none: ${moving.join(", ")}.`;
+  return `No roll.${gone}${out}`;
+}
+
+function buttonFor(place: string, chosen: Unit[], numbers: PreviewNumbers | null, sweep: Sweep | null, loners: Unit[], moving: Unit[], problems: string[]): AttackButton {
   if (problems.length > 0) return { text: chosen.length === 0 && problems.length === 1 && problems[0] === NONE_CHOSEN ? "Choose at least one unit to attack with" : problems[0]!, risky: false, disabled: true };
-  if (sweep) return { text: `Destroy ${stackSummary(loners)} in ${place}`, risky: false, disabled: false };
+  if (sweep) {
+    const rest = loners.filter((u) => !moving.includes(u));
+    const text = rest.length === 0 ? `Drive ${stackSummary(moving)} out of ${place}` : moving.length === 0 ? `Destroy ${stackSummary(rest)} in ${place}` : `Destroy ${stackSummary(rest)} in ${place} and drive ${stackSummary(moving)} out`;
+    return { text, risky: false, disabled: false };
+  }
   const airNote = numbers!.air && numbers!.air.factors > 0 ? ` and ${numbers!.air.factors} air` : "";
   const by = `with ${chosen.length === 1 ? "1 unit" : `${chosen.length} units`}${airNote} (${factorsWord(numbers!.attackFactors)})`;
   // With no roll the loss is certain, which is not a gamble: the amber warning stays, the word "risky" does not.
@@ -281,16 +297,20 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
   const nonDefenders = here
     .filter((u) => !defenders.includes(u) && !loners.includes(u))
     .map((u): NonDefenderLine => ({ id: u.id, name: unitName(u, true), reason: isGroundCombatUnit(u) ? "is not at war with your attackers" : "does not defend" }));
-  const swept = loners.map((u) => unitName(u, true));
-  const sweep: Sweep | null = loners.length > 0 ? { destroyed: swept, text: `No roll. ${loners.length === 1 ? "This counter is" : `These ${loners.length} counters are`} destroyed: ${swept.join(", ")}.` } : null;
+  const fleetsMove = (us: readonly Unit[]) => us.filter((u) => FLEETS_DISPLACED_ON_CAPTURE && u.type === "fleet");
+  const moving = fleetsMove(loners);
+  const swept = loners.filter((u) => !moving.includes(u)).map((u) => unitName(u, true));
+  const sweep: Sweep | null = loners.length > 0 ? { destroyed: swept, moved: moving.map((u) => unitName(u, true)), text: sweepText(swept, moving.map((u) => unitName(u, true))) } : null;
 
   const numbers = chosen.length > 0 && defenders.length > 0 ? describeNumbers(ctx, state, chosen, defenders, target) : null;
   const without = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => !defenders.some((d) => d.id === id))) };
-  const alsoDestroyed = defenders.length > 0 && chosen.length > 0 ? lonersAt(without, chosen, target).map((u) => unitName(u, true)) : [];
+  const after = defenders.length > 0 && chosen.length > 0 ? lonersAt(without, chosen, target) : [];
+  const alsoDestroyed = after.filter((u) => !fleetsMove(after).includes(u)).map((u) => unitName(u, true));
+  const alsoMoved = fleetsMove(after).map((u) => unitName(u, true));
   const emptyAfterWin = ADVANCE_AFTER_COMBAT && here.every((u) => defenders.includes(u) || lonersAt(without, chosen, target).includes(u));
   // The air that counts fights and can be lost with the attackers (attack-losses.ts), so the rows are worked out with it among them.
   const airUnits = numbers && numbers.air && numbers.air.factors > 0 ? attackNumbers(ctx, state, chosen, defenders, target).air : [];
-  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: [...chosen, ...airUnits], defenders, multiplier: numbers.multiplier, alsoDestroyed, emptyAfterWin }) : [];
+  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: [...chosen, ...airUnits], defenders, multiplier: numbers.multiplier, alsoDestroyed, alsoMoved, emptyAfterWin }) : [];
 
   const keys = new Map<string, number>();
   const nth = cands.map((c) => `${unitName(c.unit)}|${c.unit.at}`);
@@ -313,11 +333,12 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
     numbers,
     results,
     alsoDestroyed,
+    alsoMoved,
     riverWarnings: riverWarnings(ctx, state, cands, chosen, defenders, target),
     sweep,
     modifiers: [],
     problems,
-    button: buttonFor(place, chosen, numbers, sweep, loners, problems),
+    button: buttonFor(place, chosen, numbers, sweep, loners, moving, problems),
     oneTry: ONE_ATTACK_PER_HEX ? "One try: this hex cannot be attacked again this turn." : null,
   };
 }

@@ -103,7 +103,7 @@ describe("Choose your losses: the model", () => {
     expect(listed).toHaveLength(100); // C(12, 6) = 924 minimal sets; only the first 100 in walk order are listed
     const past = ["s6", "s7", "s8", "s9", "s10", "s11"]; // a valid set, but not among the first 100
     expect(legalSets(listed).some((ids) => ids.join() === past.join())).toBe(false);
-    expect(applyAllocation(state, { type: "ALLOCATE_LOSSES", side: "axis", units: past }).ok, "the engine accepts it").toBe(true);
+    expect(applyAllocation(CTX, state, { type: "ALLOCATE_LOSSES", side: "axis", units: past }).ok, "the engine accepts it").toBe(true);
     const m = lossModel(CTX, state, "axis", listed, past)!;
     expect(m.legal, "and so does the card").toBe(true);
     expect(m.total).toBe("Chosen 6 of at least 6 factors. That is enough.");

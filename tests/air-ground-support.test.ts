@@ -224,7 +224,7 @@ describe("the numbers and the battle", () => {
   it("an Exchange the attackers win: the air is a candidate to lose, at its full factors, and the ground units are not the only choice", () => {
     const s = at7h(okOf(applyAction(CTX, at7b([inf("u1", "germany", "M32", 4, 3), inf("p1", "poland", "M33", 3, 3), air("a1", "J32", 3), air("a2", "J32", 2)]), commit(["a1", "a2"]))).state);
     const battle = { outcome: { kind: "exchange" as const, multipliedDefense: true }, side: "axis" as const, target: "M33", attackers: [s.units.u1!], air: [s.units.a1!, s.units.a2!], defenders: [s.units.p1!], multiplier: 1 };
-    const r = applyOutcome({ ...s, combat: { ...combatOf(s), attacked: ["u1"], targets: ["M33"] } }, battle);
+    const r = applyOutcome(CTX, { ...s, combat: { ...combatOf(s), attacked: ["u1"], targets: ["M33"] } }, battle);
     const pending = combatOf(r.state).pending!;
     expect(pending.chooser).toBe("axis");
     expect(pending.required).toBe(3); // the Poles' 3 factors

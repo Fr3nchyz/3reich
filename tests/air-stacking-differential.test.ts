@@ -7,6 +7,7 @@ import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { isBox } from "../src/engine/areas";
 import type { GameContext } from "../src/engine/context";
 import { GROUND_FOR_STACKING, stackingProblem, type UnitSpec } from "../src/engine/placement";
+import { portCapacity } from "../src/engine/naval-ports";
 import { AIR_FACTOR_STACKING_LIMIT, NAVAL_FACTOR_STACKING_LIMIT, STACKING_LIMIT, STACKING_LIMIT_LONDON_BRITISH } from "../src/engine/tables";
 import type { ForceOwner, GameState } from "../src/engine/types";
 import { positionsAt6f, type Position } from "./helpers-positions";
@@ -30,7 +31,9 @@ function stackingProblemBefore(ctx: GameContext, state: GameState, owner: ForceO
   }
   if (spec.type === "fleet") {
     const naval = here.filter((u) => u.type === "fleet").reduce((n, u) => n + u.strength, 0);
-    if (naval + spec.strength > NAVAL_FACTOR_STACKING_LIMIT) return `${place} would hold ${naval + spec.strength} naval factors (limit ${NAVAL_FACTOR_STACKING_LIMIT}).`;
+    // Changed in ticket 12-4 (the port's own capacity: 9 at Malta, Suda Bay and Famagusta); this test is about air, so the earlier self follows it.
+    const limit = portCapacity(ctx, place) > 0 ? portCapacity(ctx, place) : NAVAL_FACTOR_STACKING_LIMIT;
+    if (naval + spec.strength > limit) return `${place} would hold ${naval + spec.strength} naval factors (limit ${limit}).`;
   }
   if (state.year < 1942 && (owner === "britain" || owner === "france")) {
     const other = owner === "britain" ? "france" : "britain";

@@ -131,10 +131,10 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
   const defenders = defendersAt(state, units, action.target);
   if (defenders.length === 0) {
-    // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll and destroys them.
+    // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll; air and the like are destroyed, fleets are driven out to a friendly port (capture.ts).
     const loners = lonersAt(state, units, action.target);
     if (loners.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
-    const swept = applySweep({ ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
+    const swept = applySweep(ctx, { ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
     const factors = units.reduce((n, u) => n + u.strength, 0);
     return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated", sweep: true }, ...swept.events] };
   }
@@ -142,7 +142,7 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   const numbers = attackNumbers(ctx, state, units, defenders, action.target);
   const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier }, state.rngState);
   const marked: GameState = { ...state, rngState: res.rngState, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } };
-  const applied = applyOutcome(marked, { outcome: res.outcome, side: state.activeSide, target: action.target, attackers: units, air: numbers.air, defenders, multiplier: numbers.multiplier });
+  const applied = applyOutcome(ctx, marked, { outcome: res.outcome, side: state.activeSide, target: action.target, attackers: units, air: numbers.air, defenders, multiplier: numbers.multiplier });
   const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}) };
   return { ok: true, state: applied.state, events: [event, ...applied.events] };
 }

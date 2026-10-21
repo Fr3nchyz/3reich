@@ -25,8 +25,10 @@ export interface BattleResult {
   /** Eliminated units of the attacking side, and of the defending side (without the swept ones). */
   lostAttackers: Unit[];
   lostDefenders: Unit[];
-  /** Air units, fleets and the like destroyed alone in the hex after the battle. */
+  /** Air units and the like destroyed alone in the hex after the battle (fleets are in `displaced`). */
   swept: Unit[];
+  /** Fleets left alone in the hex that moved to a friendly port (`to`) or were eliminated for lack of one (`to` null), spec 12 R9. */
+  displaced: { unit: Unit; to: string | null }[];
   /** Survivors who advanced into the emptied hex (spec 07, State 4). */
   advanced: Unit[];
   /** Just made: the card's heading takes the keyboard focus on the next draw, once. */
@@ -43,12 +45,14 @@ export function trackBattle(prev: BattleResult | null, events: readonly GameEven
   let battle: BattleResult | null = prev;
   if (started) {
     battle = started.side === mySide
-      ? { turn: turnKey(before), side: started.side, target: started.target, attackFactors: started.attackFactors, defenseFactors: started.defenseFactors, multiplier: started.multiplier, rounds: started.rounds, outcome: started.outcome, sweep: started.sweep === true, lostAttackers: [], lostDefenders: [], swept: [], advanced: [], fresh: true }
+      ? { turn: turnKey(before), side: started.side, target: started.target, attackFactors: started.attackFactors, defenseFactors: started.defenseFactors, multiplier: started.multiplier, rounds: started.rounds, outcome: started.outcome, sweep: started.sweep === true, lostAttackers: [], lostDefenders: [], swept: [], displaced: [], advanced: [], fresh: true }
       : null;
   }
   if (!battle) return null;
   const moved = events.flatMap((e) => (e.type === "UNITS_ADVANCED" && e.to === battle!.target ? unitsWithIds(before, e.units) : []));
   if (moved.length > 0) battle = { ...battle, advanced: [...battle.advanced, ...moved] };
+  const displaced = events.flatMap((e) => (e.type === "FLEET_DISPLACED" && before.units[e.unitId] ? [{ unit: before.units[e.unitId]!, to: e.to }] : []));
+  if (displaced.length > 0) battle = { ...battle, displaced: [...battle.displaced, ...displaced] };
   const sweptIds = new Set(events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
   const gone = events.flatMap((e) => (e.type === "UNIT_ELIMINATED" && before.units[e.unitId] ? [before.units[e.unitId]!] : []));
   if (gone.length === 0) return battle;
