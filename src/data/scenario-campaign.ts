@@ -2,6 +2,7 @@ import { setupOf } from "../engine/game";
 import type { ForceEntry, ForceOwner, NationSetup, Scenario } from "../engine/types";
 import { air, airborne, armor, fleet, from, inf, replacement } from "./counters";
 import { SCENARIO_1939 } from "./scenario-1939";
+import { VICTORY_CAMPAIGN } from "./victory";
 
 const base = (owner: ForceOwner): NationSetup => setupOf(SCENARIO_1939, owner);
 
@@ -58,6 +59,7 @@ export const SCENARIO_CAMPAIGN: Scenario = {
     },
   },
 
+  victory: VICTORY_CAMPAIGN,
   rules: [
     // "The U.S.A. automatically spends 35 BRPs for a DoW vs. Germany in the Allied Spring '42 turn."
     // The Campaign page does not repeat the 1939 page's Summer '42 Seaborne Invasion ban.
@@ -71,6 +73,6 @@ export const SCENARIO_CAMPAIGN: Scenario = {
 
   notes: [
     ...SCENARIO_1939.notes.filter((n) => !n.startsWith("There is no Year Start Sequence")),
-    "There is no Year Start Sequence in 1939; there is one before each later year. Victory conditions are in Ref 2.0 and 2.4 and are not encoded yet.",
+    "There is no Year Start Sequence in 1939; there is one before each later year. Victory conditions are in Ref 2.0 and 2.4 and are encoded in data/victory.ts.",
   ],
 };

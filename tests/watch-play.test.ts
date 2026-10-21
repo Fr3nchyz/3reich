@@ -95,6 +95,15 @@ describe("the end of a game and the saved record", () => {
     expect(statusLine(s)).toMatch(/ended/);
   }, 60_000);
 
+  it("at the end of the scenario the End of game text and the log give the result (Ref 2.0; spec 14 ticket 14-3)", () => {
+    const s = newWatchSession({ ...SCENARIO_1942, end: SCENARIO_1942.start }, 3, "turbo", null);
+    for (let i = 0; i < 2000 && shouldRun(w(s), s.state); i++) watchSlice(s);
+    expect(overOf(w(s), s.state)).toBe("game-over");
+    expect(s.state.result).toBeDefined();
+    expect(endText(s)).toBe("The scenario ends after Spring 1942. Axis Decisive Victory. Objectives held: Axis 25, Allies 14, nobody 3.");
+    expect(s.log.some((l) => l.includes("Axis Decisive Victory. Objectives held: Axis 25"))).toBe(true);
+  }, 60_000);
+
   it("is a self-play recording: the engine's replay() reproduces the game from the scenario and seed", () => {
     const s = fresh(1, "turbo");
     for (let i = 0; i < 1000 && shouldRun(w(s), s.state); i++) watchSlice(s);

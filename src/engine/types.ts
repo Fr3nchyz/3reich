@@ -4,6 +4,9 @@ import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
+import type { Conquest } from "./conquest-record";
+import type { SiberianRecord } from "./soviet-record";
+import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -312,6 +315,14 @@ export interface GameState {
   naval?: NavalState;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
+  /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
+  conquests?: Conquest[];
+  /** The Free Siberian Transfer so far (spec 14 R11); `used` switches the victory tables. Absent: not used. */
+  siberian?: SiberianRecord;
+  /** What the victory rules remember during play (spec 14): the Campaign's Winter 1943 Objective count. Absent: nothing yet. */
+  victory?: VictoryRecord;
+  /** Who won, set once, together with the phase "game-over" (spec 14 R3). Absent while the game is on, and in a game over saved before this existed. */
+  result?: GameResult;
   /**
    * Hexes whose controller differs from the scenario's "controlled at start" territory (Ref 7.0;
    * see control.ts). Empty at the start: read control through `controllerOf`, not this record.
@@ -345,6 +356,8 @@ export interface Scenario {
   /** Strategic Warfare factors already built when the scenario starts. */
   startingStrategicWarfare: Partial<Record<PowerId, StrategicWarfare>>;
   rules: ScenarioRule[];
+  /** How the scenario is won (Ref 2.1 to 2.4; data in src/data/victory.ts). */
+  victory: VictoryRules;
   /** Rules from the manual that are not applied by machine yet, in our own words. */
   notes: string[];
 }

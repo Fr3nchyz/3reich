@@ -70,6 +70,12 @@ describe("self-play runner: a short game per scenario", () => {
     expect(r.anomalies).toEqual([]);
     expect(r.turns).toHaveLength(1);
     expect(r.turns[0]!.partial).toBe(false);
+    // Spec 14 ticket 14-3: the report and the comparison show the result (Germany stands: Axis Decisive, Ref 2.3, TODO(verify) V5).
+    expect(r.final.result).toMatchObject({ winner: "axis", level: "decisive" });
+    expect(gameReport(r)).toContain("- Result: Axis Decisive Victory (Objectives: Axis 22, Allies 17, nobody 3)");
+    expect(comparison([r])).toContain("| Axis Decisive Victory |");
+    expect(comparison([runGame({ scenario: "1939", seed: 1, turns: 1 })])).toContain("| - |");
+    expect(gameReport(runGame({ scenario: "1939", seed: 1, turns: 1 }))).toContain("- Result: none");
   }, 60_000);
 });
 

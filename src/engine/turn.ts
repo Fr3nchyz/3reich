@@ -16,6 +16,7 @@ import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
 import { hasMoveWork } from "./move-action";
 import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
+import { recordCheckpoint, evaluateVictory } from "./victory";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 
@@ -97,7 +98,7 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
       const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
-      const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ended.state);
+      const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ctx, ended.state);
       return { state: next.state, events: [...lapsed, ...ended.events, ...next.events] };
     }
   }
@@ -109,10 +110,12 @@ function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
   return { state: began.state, events: [{ type: "PLAYER_TURN_STARTED", year: state.year, season: state.season, side }, ...began.events] };
 }
 
-/** Both Player Turns are done: the scenario ends, or the next Game Turn begins at its first part. */
-function endGameTurn(state: GameState): Transition {
+/** Both Player Turns are done: the Campaign's checkpoint is read, then the scenario ends with its result (Ref 2.0), or the next Game Turn begins at its first part. */
+function endGameTurn(ctx: GameContext, from: GameState): Transition {
+  const state = recordCheckpoint(ctx, from);
   if (turnIndex(state) >= turnIndex(state.lastTurn)) {
-    return { state: { ...state, phase: "game-over" }, events: [{ type: "GAME_OVER", year: state.year, season: state.season }] };
+    const result = evaluateVictory(ctx, state, "end-of-play");
+    return { state: { ...state, phase: "game-over", result }, events: [{ type: "GAME_OVER", year: state.year, season: state.season, result }] };
   }
   const turn = nextTurn(state);
   const position: TurnPosition = turn.season === "spring" ? { part: "year-start" } : { part: "russian-winter" };

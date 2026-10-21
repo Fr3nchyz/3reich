@@ -2,6 +2,7 @@ import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, ofNation, replacement } from "./counters";
 import { FRANCE_MAINLAND, fromOriginal, ISLANDS, REGIONS } from "./zones";
+import { VICTORY_1944 } from "./victory";
 
 /**
  * 1944 scenario. Source: Ops 9.0 "1944 SCENARIO" (pp. 24-26), with Ref 17.3 for the Minor-Allies'
@@ -73,6 +74,7 @@ export const SCENARIO_1944: Scenario = {
     britain: { submarines: 0, asw: 2, sac: 2 },
   },
 
+  victory: VICTORY_1944,
   rules: [
     // "Neither side may declare war on any country that is neutral at the start of the scenario."
     { kind: "no-war-on-neutrals" },
@@ -151,6 +153,6 @@ export const SCENARIO_1944: Scenario = {
     "The printed 'Controlled at start' list for Britain leaves out Egypt; it is encoded as British (see the 1942 scenario), and the original game's BRIT44.CON marks all of Egypt as British.",
     "Britain's Free French (2-3 infantry x2) set up on the Mediterranean Front. Free French units function as British in all respects (Ref 35.0).",
     "The light-blue 6-factor fleet in Germany's pool is the Italian fleet, which must start in a German-controlled Mediterranean port.",
-    "Germany's 370 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1944 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.3 and are not encoded yet.",
+    "Germany's 370 BRPs include 45 for Finland, Rumania, Hungary and Bulgaria. Only SW Construction is allowed in the 1944 Year Start Sequence. Victory conditions are in Ref 2.0 and 2.3 and are encoded in data/victory.ts.",
   ],
 };
