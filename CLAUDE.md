@@ -6,6 +6,7 @@ Read `README.md` first: it holds the working rules (cite sources, never invent a
 
 - Break any task I give you into tickets and track them with `git bug` (`scripts/claude/session-start.sh` installs it).
 - Label each ticket with its difficulty (`easy`, `medium`, `hard`) and the model best suited to it (haiku, sonnet, opus). Run tickets as subagents or dynamic workflows.
+- Hand mechanical work (searching the code, renames, tests that copy an existing pattern, summarising logs) to the `grunt` agent (`.claude/agents/grunt.md`, haiku). It stops and reports back when a task needs a design decision, instead of guessing.
 - **Budget: at most 4 subagents running at once.** Adversarial reviewers count against it. Independent tickets run in parallel only if they touch different files.
 - Every change gets an adversarial review by the next-strongest model than the one that wrote it, before it is merged.
 - A mistake in process becomes code: a hook, gate, test or lint rule, or a proposed edit to this file. Do not just apologise.
