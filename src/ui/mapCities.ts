@@ -1,5 +1,7 @@
-import type { MapHex } from "../engine/map";
-import { FORTRESS_INSET, escape, fmt, hexCorners, points, type Point } from "./mapGeometry";
+import { hex } from "../engine/hex";
+import type { MapData, MapHex } from "../engine/map";
+import type { ObjectiveStandings } from "../engine/objectives";
+import { FORTRESS_INSET, escape, fmt, hexCenter, hexCorners, points, type Point } from "./mapGeometry";
 
 /** City, capital, port and fortress symbols, and the place name under them. */
 
@@ -48,4 +50,36 @@ export function citySymbol(h: MapHex, cx: number, cy: number): string {
   if (h.fortress) out += fortressOutline(cx, cy);
   if (h.name) out += `<text x="${fmt(cx)}" y="${fmt(cy + NAME_OFFSET)}" class="city${objective ? " objective" : ""}">${escape(h.name)}</text>`;
   return out;
+}
+
+/** The holder mark at the whole-map zoom's smallest: its radius in map units, and the radius it must keep on the screen, in CSS pixels, so the three shapes can be told apart. */
+export const MARK_RADIUS = 1.9;
+export const MARK_MIN_SCREEN_RADIUS = 3.5;
+/** Half the width of a hex (a hex has corners at 10 map units): a mark is kept inside it. */
+const HEX_HALF_WIDTH = 8.4;
+
+/** The radius, in map units, of a holder mark where one map unit is drawn `pxPerUnit` screen pixels wide: the base size, or more when that would be too small to see (0 or less: not measured, the base size). */
+export function markRadius(pxPerUnit: number): number {
+  return pxPerUnit > 0 ? Math.max(MARK_RADIUS, MARK_MIN_SCREEN_RADIUS / pxPerUnit) : MARK_RADIUS;
+}
+
+/**
+ * The mark of who holds each Objective (spec 14, D1; Ref 2.0): a square for the Axis, a circle for the Allies, a dashed ring for nobody, so the shape
+ * says it and colour is only a help. Drawn in <g class="objective-marks"> above the cities; stroke widths and colours are in end.css. `radius` is in map
+ * units (markRadius): the view redraws the marks when the zoom changes, so they never fall below a size that can be read. The mark sits up and to the
+ * right of the city symbol, clear of its name below, and is pulled toward the centre as it grows so that it stays inside its hex.
+ */
+export function objectiveMarksMarkup(map: MapData, standings: ObjectiveStandings | null, radius = MARK_RADIUS): string {
+  if (!standings) return "";
+  const dx = Math.min(5.4, Math.max(3.2, HEX_HALF_WIDTH - radius));
+  const mark = (id: string, shape: "axis" | "allies" | "nobody"): string => {
+    if (!map.hexes[id]) return "";
+    const [cx, cy] = hexCenter(hex(id));
+    const x = cx + dx;
+    const y = cy - dx * 0.85;
+    const label = `data-objective="${id}" data-holder="${shape}"`;
+    if (shape === "axis") return `<rect class="obj-mark axis" ${label} x="${fmt(x - radius)}" y="${fmt(y - radius)}" width="${fmt(radius * 2)}" height="${fmt(radius * 2)}"/>`;
+    return `<circle class="obj-mark ${shape}" ${label} cx="${fmt(x)}" cy="${fmt(y)}" r="${fmt(radius)}"/>`;
+  };
+  return standings.axis.map((id) => mark(id, "axis")).join("") + standings.allies.map((id) => mark(id, "allies")).join("") + standings.nobody.map((id) => mark(id, "nobody")).join("");
 }

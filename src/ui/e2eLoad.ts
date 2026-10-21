@@ -1,5 +1,5 @@
 import type { Action } from "../engine/actions";
-import type { Scenario, Side } from "../engine/types";
+import type { GameTurn, Scenario, Side } from "../engine/types";
 import { newSession, run, type Session } from "./session";
 
 /**
@@ -14,6 +14,8 @@ export interface E2eLoad {
   side: Side;
   seed: number;
   actions: Action[];
+  /** A shorter game: the scenario ends after this Game Turn instead of its own last one (so a browser test can reach the end of a game; spec 14, ticket 14-4). */
+  end?: GameTurn;
 }
 
 /** A session of `scenario` for the player on `side` after these actions, from a new game with this seed. */
@@ -31,6 +33,7 @@ export function installE2eLoad(target: EventTarget, search: string, scenarios: r
     const d = (e as CustomEvent<E2eLoad>).detail;
     const scenario = scenarios.find((x) => x.id === d.scenario);
     if (!scenario) throw new Error(`Unknown scenario ${d.scenario}`);
-    start(scenario, sessionFromRecord(scenario, d.side, d.seed, d.actions));
+    const played = d.end ? { ...scenario, end: d.end } : scenario;
+    start(played, sessionFromRecord(played, d.side, d.seed, d.actions));
   });
 }

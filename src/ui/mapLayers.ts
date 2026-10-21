@@ -119,6 +119,7 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="blocked">${sides.blocked}</g>
       <g class="arrows">${sides.arrows}</g>
       <g class="cities">${hexLayers.cities}</g>
+      <g class="objective-marks" aria-hidden="true"></g>
       <g class="highlights"></g>
       <g class="attack-marks" aria-hidden="true"></g>
       <g class="units"></g>

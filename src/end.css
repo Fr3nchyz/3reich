@@ -1,0 +1,38 @@
+/* The victory screens (spec 14, part D): the score line, the "Victory and objectives" card, the result card, and the holder marks on the map. */
+.score { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; padding: .35rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-radius: 4px; }
+.score-line { margin: 0; font-weight: 600; font-size: .95rem; flex: 1 1 14rem; }
+.score button { min-height: 44px; min-width: 44px; }
+.objcard { padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid var(--gold); border-radius: 4px; }
+.objcard-head { display: flex; align-items: center; justify-content: space-between; gap: .75rem; }
+.objcard h2 { margin: 0; font-size: 1.1rem; }
+.objcard h3 { margin: .6rem 0 .25rem; font-size: .95rem; }
+.objcard h2:focus, .endcard h2:focus { outline: none; }
+.objcard-head button { min-width: 44px; min-height: 44px; flex: none; }
+.objcard p { margin: .15rem 0; }
+.objcard-held { font-weight: 700; }
+.objcard-siberian, .objcard-key { color: var(--ink-soft); font-size: .9rem; }
+.objcard-fronts { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: .25rem 1rem; }
+.objcard-front ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .2rem; }
+.obj-row { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .25rem .6rem; text-align: left; font-weight: 500; }
+.obj-name { font-weight: 600; }
+.obj-holder { white-space: nowrap; font-size: .9rem; }
+.holder-axis { color: var(--side-axis); }
+.holder-allies { color: var(--side-allies); }
+.holder-nobody { color: var(--ink-soft); }
+.end-overlay { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; overflow-y: auto; background: rgba(20, 15, 13, .72); }
+.endcard { width: min(32rem, 100%); max-height: 100%; overflow-y: auto; margin: auto; padding: 1rem 1.25rem 1.1rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-top: 8px solid var(--accent); border-radius: 6px; box-shadow: 0 8px 28px rgba(0, 0, 0, .5); }
+.endcard p { margin: .25rem 0; }
+.end-label { font-size: .85rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); }
+.endcard h2 { margin: 0; font-size: 1.6rem; line-height: 1.2; }
+.end-meaning { color: var(--ink-soft); }
+.end-counts { margin-top: .75rem !important; font-weight: 700; }
+.end-siberian { color: var(--ink-soft); font-size: .9rem; }
+.end-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; }
+.end-buttons button { flex: 1 1 8rem; min-height: 48px; }
+#end-new { background: var(--accent); color: var(--accent-fg); border-color: #4d0f13; }
+/* Holder marks on the map: the shape says who holds the Objective, the colour only helps. Widths are screen pixels at any zoom. */
+.obj-mark { stroke: #fff; stroke-width: 1px; vector-effect: non-scaling-stroke; pointer-events: none; }
+.obj-mark.axis { fill: var(--side-axis); }
+.obj-mark.allies { fill: var(--side-allies); }
+.obj-mark.nobody { fill: rgba(255, 255, 255, .75); stroke: #1d1d1d; stroke-width: 1.4px; stroke-dasharray: 2 1.5; }
+@media (max-height: 480px) { .endcard { padding: .6rem .9rem .7rem; } .endcard h2 { font-size: 1.3rem; } .end-buttons { margin-top: .5rem; } }

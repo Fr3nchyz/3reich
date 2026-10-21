@@ -1,4 +1,5 @@
 import { writeFileSync } from "node:fs";
+import { runGame } from "./selfplay/runner";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { legalActions } from "../src/engine/actions";
 import { computerAct } from "../src/ui/computerPlay";
@@ -25,3 +26,11 @@ for (let i = 0; i < 400 && !at7h(); i++) if (!computerAct(s).ok) throw new Error
 if (!at7h()) throw new Error("did not reach 7h");
 console.log("attacks on offer:", legalActions(s.ctx, s.state).filter((a) => a.type === "ATTACK").length, "actions:", s.record.length);
 writeFileSync("tests/e2e/fixtures/axis-at-7h.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: SEED, actions: s.record }));
+
+// tests/e2e/fixtures/ended-1939.json: the 1939 scenario cut to its first Game Turn (Fall 1939), played to the end by the computer on both sides, so a browser
+// test can show the result card (spec 14, ticket 14-4). The test loads it with `end` set to the same Game Turn.
+const cut = { ...SCENARIO_1939, end: SCENARIO_1939.start };
+const ended = runGame({ scenario: "1939", seed: SEED, turns: "end" }, { scenario: cut });
+if (ended.final.phase !== "game-over" || !ended.final.result) throw new Error("the short game did not end with a result");
+console.log("ended game:", ended.actions.length, "actions,", ended.final.result.winner, ended.final.result.level, JSON.stringify(ended.final.result.objectives));
+writeFileSync("tests/e2e/fixtures/ended-1939.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: SEED, end: SCENARIO_1939.start, actions: ended.actions }));

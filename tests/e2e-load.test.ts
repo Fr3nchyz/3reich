@@ -32,3 +32,14 @@ describe("the recorded game for the browser tests (test-only hook)", () => {
     expect(got).toEqual(["test"]);
   });
 });
+
+describe("the finished game for the browser tests (ticket 14-4)", () => {
+  const ended = JSON.parse(readFileSync("tests/e2e/fixtures/ended-1939.json", "utf8")) as { scenario: string; seed: number; end: { year: number; season: "spring" | "summer" | "fall" | "winter" }; actions: Action[] };
+  it("replays to the end of the scenario cut to its first Game Turn, with a result (made by scripts/make-e2e-fixture.ts)", () => {
+    const got: { end: unknown; phase: string; verdict: string | undefined }[] = [];
+    const target = new EventTarget();
+    installE2eLoad(target, "?e2e", [SCENARIO_1939], (scenario, s) => got.push({ end: scenario.end, phase: s.state.phase, verdict: s.state.result && `${s.state.result.winner}-${s.state.result.level}` }));
+    target.dispatchEvent(new CustomEvent("e2e-load", { detail: { scenario: "1939", side: "axis", seed: ended.seed, actions: ended.actions, end: ended.end } satisfies E2eLoad }));
+    expect(got).toEqual([{ end: SCENARIO_1939.start, phase: "game-over", verdict: "allies-decisive" }]);
+  });
+});
