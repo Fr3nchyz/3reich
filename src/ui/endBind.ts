@@ -56,6 +56,17 @@ export function revealEnd(root: HTMLElement, s: Session): void {
   }
 }
 
+/** The winter question (spec 14, D4): when its card first appears the heading takes the keyboard focus, once, and the card is scrolled into view; the game waits for the answer. The card that only tells (OK) takes nothing. */
+export function revealWinter(root: HTMLElement, s: Session): void {
+  const card = root.querySelector<HTMLElement>("#winter-card[data-kind='ask']");
+  const key = `${s.state.year}-${s.state.season}`;
+  if (!card) { if (s.winterFocused === key) s.winterFocused = undefined; return; }
+  if (s.winterFocused === key) return;
+  s.winterFocused = key;
+  root.querySelector<HTMLElement>("#winter-title")?.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest" });
+}
+
 /** The map follows the card: the Objective marks (a square, a circle or a dashed ring by holder) and, once, the centring a tap on a name asked for. Nothing during setup. */
 export function syncObjectives(view: MapView, s: Session): void {
   view.setObjectiveMarks(s.state.phase === "setup" ? null : objectiveStandings(s.ctx, s.state));

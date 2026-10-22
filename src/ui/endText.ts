@@ -134,3 +134,46 @@ export function needsText(target: VictoryTarget, end: GameTurn): { title: string
     ],
   };
 }
+
+/**
+ * The words of the Russian winter screens (spec 14, part D4; ticket 14-13): the card at II.A, the banner on the turn line, the greyed Offensive button and the
+ * line in the attack card. The log lines are `winterText.ts`. Kept here with the other words of the victory screens, so that the French pass changes this file only.
+ */
+export const WINTER_TEXT = {
+  title: "Russian winter",
+  first: "This is the first winter of the war between Germany and Russia.",
+  /** What the winter does, for the one Game Turn it is on (Ref 28.0, R10). */
+  effects: "In Russia the Axis defence is not doubled. The Axis may not use an Offensive Option in the East.",
+  banner: "Russian winter this turn.",
+  wait: "Wait for next winter",
+  start: "Winter starts now",
+  ok: "OK, the winter starts now",
+  /** The reason in the attack card, before the colon is the short name used in the list of attacks ("Russian winter x1"). */
+  previewReason: "Russian winter: Axis defence not doubled",
+  /** The greyed Offensive button of step 3 and the reason shown when it is tapped. */
+  greyedOption: "Eastern Front: Offensive Option",
+  greyedReason: "Russian winter: the Axis may not take the Offensive Option on the Eastern Front this Game Turn. Attrition and Defensive are still allowed.",
+  declared: "The Soviet Union declared war on Germany in a Winter turn, so the Russian winter starts now. Russia cannot put it off.",
+  askLine: "the Allies say whether it waits",
+  askLineComputer: "the computer, playing the Allies, decides whether it waits",
+} as const;
+
+const unitsWord = (n: number): string => `${n} ground unit${n === 1 ? "" : "s"}`;
+
+/** "Dice: 4 + 6 + 3 + 5 = 18". */
+export const diceLine = (dice: readonly number[], total: number): string => `Dice: ${dice.join(" + ")} = ${total}`;
+
+/** "Axis ground units inside Russia: 12 (not counting Finns)." */
+export const axisUnitsLine = (n: number): string => `Axis ${unitsWord(n)} inside Russia: ${n} (not counting Finns).`;
+
+/** The test, in words: "12 is fewer than 18, so Russia may wait one year." After the Allies chose not to wait: "... so Russia could wait one year; it chose to start the winter now." */
+export function testLine(units: number, total: number, may: boolean, startedAnyway: boolean): string {
+  if (!may) return `${units} is not fewer than ${total}, so Russia may not wait.`;
+  return startedAnyway ? `${units} is fewer than ${total}, so Russia could wait one year; it chose to start the winter now.` : `${units} is fewer than ${total}, so Russia may wait one year.`;
+}
+
+/** The banner under the turn line for the whole Game Turn the winter is on. */
+export const winterBanner = (): string => `${WINTER_TEXT.banner} ${WINTER_TEXT.effects}`;
+
+/** The line of a winter that Russia put off and that now starts. */
+export const postponedStartLine = (from: GameTurn): string => `The Russian winter that Russia put off from ${turnName(from)} starts now.`;

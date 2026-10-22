@@ -40,7 +40,7 @@ import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
-import { bindEnd, revealEnd, syncObjectives } from "./ui/endBind";
+import { bindEnd, revealEnd, revealWinter, syncObjectives } from "./ui/endBind";
 
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
 
@@ -144,6 +144,7 @@ function render(): void {
   bindPanel(shell.status, session, { stop: stopWatching, takeOver: takeOverAs });
   bindEnd(shell.status, session, render, { newGame: () => shell.newGame.click() });
   revealEnd(shell.status, session);
+  revealWinter(shell.status, session);
   revealFresh(shell.status, session, unseenChoice(session));
   revealMove(shell.status, session);
   revealAir(shell.status, session);

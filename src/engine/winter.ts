@@ -6,24 +6,20 @@ import { isGone } from "./nations";
 import { rollD6 } from "./rng";
 import type { GameState } from "./types";
 import { atWar } from "./war";
-import { isWinterTurn, startWinter, winterAsking, winterStage, type RussianWinter, type WinterRoll } from "./winter-record";
+import { isWinterTurn, RUSSIA_COUNTRY, startWinter, winterAsking, winterStage, WINTER_EXEMPT_OWNER, type RussianWinter, type WinterRoll } from "./winter-record";
+
+export { RUSSIA_COUNTRY, WINTER_EXEMPT_OWNER };
 
 /**
  * The Russian Winter at step II.A (spec 14 R10; Ref 28.0, Ops 5.2). At the start of every Winter Game Turn the game looks at the first winter of the
  * German-Russian war: if Germany and the U.S.S.R. are at war and the winter has not been yet, four dice are rolled and the non-Finnish Axis ground units east
  * of the original Russian border are counted. With fewer units than the total of the dice the Allies may postpone the winter one year (`CHOOSE_WINTER`, the
  * only place the game waits at II.A); otherwise the winter starts at once. A postponed winter starts at the next Winter Game Turn with no roll and no
- * question. What the winter does to the fighting is ticket 14-12; the screens are 14-13.
+ * question. What the winter does to the fighting is `winter-effects.ts` (ticket 14-12); the screens are ticket 14-13.
  */
 
 /** Dice rolled for the postponement test (Ref 28.0: four). */
 export const WINTER_DICE = 4;
-
-/** The map country east of which the Axis suffers the winter: the original Russian border (V23, the same 485 hexes as the surrender rule). */
-export const RUSSIA_COUNTRY = "ussr";
-
-/** The owner whose units the winter does not touch (Ref 28.0: the Finns). */
-export const WINTER_EXEMPT_OWNER = "finland";
 
 /** The four dice and the state of the generator after them. The one place the winter touches the dice. */
 export function winterRoll(rngState: number): { dice: number[]; total: number; rngState: number } {

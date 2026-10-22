@@ -5,6 +5,7 @@ import type { Front } from "./map";
 import { BRP_COSTS } from "./tables";
 import type { FrontChoice, FrontOption, GameState, PowerId } from "./types";
 import { isMajorPower, sideOfPower } from "./war";
+import { winterBansOffensive } from "./winter-effects";
 
 /**
  * Front Options (Ref 11.21, step 3 of a Player Turn, spec 02). In step 3 the side to move chooses an
@@ -27,6 +28,9 @@ export const FRONT_OPTIONS: readonly FrontOption[] = ["offensive", "attrition", 
 export const DEFAULT_FRONT_OPTION: FrontOption = "defensive";
 
 type Select = Extract<Action, { type: "SELECT_FRONT_OPTION" }>;
+
+/** Why the Axis cannot take the Offensive Option on the Eastern Front in the winter (Ref 28.0, spec 14 R10); the screens say the same. */
+export const WINTER_BAN_TEXT = "The Russian winter is on: the Axis may not take the Offensive Option on the Eastern Front this Game Turn.";
 
 /** The Option the side to move has on a Front this Player Turn (Ref 11.21). */
 export const frontOptionOf = (state: GameState, front: Front): FrontOption => state.frontOptions[front]?.option ?? DEFAULT_FRONT_OPTION;
@@ -57,6 +61,7 @@ export function legalFrontOptions(ctx: GameContext, state: GameState): Action[] 
   for (const front of FRONTS) {
     if (state.frontOptions[front]) continue;
     for (const option of FRONT_OPTIONS) {
+      if (winterBansOffensive(state, state.activeSide, front, option)) continue; // Ref 28.0: not offered while the Russian winter is on
       const cost = optionCost(ctx, state, front, option);
       if (cost === 0) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option });
       else for (const payer of payersFor(state, cost)) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option, payer });
@@ -71,6 +76,7 @@ export function applyFrontOption(ctx: GameContext, state: GameState, action: Sel
   if (!FRONTS.includes(front)) return { ok: false, error: `${String(front)} is not a Front.` };
   if (!FRONT_OPTIONS.includes(option)) return { ok: false, error: `${String(option)} is not a Front Option.` };
   if (state.frontOptions[front]) return { ok: false, error: `The ${front} Front already has the ${state.frontOptions[front].option} Option this turn.` };
+  if (winterBansOffensive(state, state.activeSide, front, option)) return { ok: false, error: WINTER_BAN_TEXT };
   const cost = optionCost(ctx, state, front, option);
   let next = state;
   const events: Extract<ActionResult, { ok: true }>["events"] = [];
