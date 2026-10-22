@@ -16,6 +16,9 @@ import { runGame } from "../scripts/selfplay/runner";
 // Spec 14 ticket 14-12 (R10; Ref 28.0): what the Russian winter does to the fighting. The plain doubling of an Axis defender east of the original Russian border
 // is lost (the Finns excepted; the triples and the Fortress stay); the Axis may not take the Offensive Option on the Eastern Front. Only in the Game Turn it is in force.
 
+/** Finland is in the war on the Axis side (an active Minor-Ally), so that its units are Axis units that the winter would touch but for the exemption. */
+const FINLAND: MinorAlly[] = [{ owner: "finland", of: "germany", active: true }];
+
 const numbersAt = (s: GameState, attackers: Unit[], target: string) => attackNumbers(CTX, s, attackers, defendersAt(s, attackers, target), target);
 
 describe("terrain.ts: the basis \"winter\" takes away only the plain doubling", () => {
@@ -59,8 +62,8 @@ describe("winterDefence: which defences lose the doubling (Ref 28.0, V23)", () =
     expect(defend([ger("r", PLAIN.at, "rumania")], PLAIN.at, { minorAllies: ally })).toBe(true);
   });
   it("the Finns keep the doubling when they are alone in the hex, and lose it when a non-Finnish Axis unit stands with them (V23)", () => {
-    expect(defend([ger("f", PLAIN.at, "finland")])).toBe(false);
-    expect(defend([ger("f", PLAIN.at, "finland"), ger("g", PLAIN.at)])).toBe(true);
+    expect(defend([ger("f", PLAIN.at, "finland")], PLAIN.at, { minorAllies: FINLAND })).toBe(false);
+    expect(defend([ger("f", PLAIN.at, "finland"), ger("g", PLAIN.at)], PLAIN.at, { minorAllies: FINLAND })).toBe(true);
   });
   it("Allied defenders never lose it, in Russia or elsewhere", () => {
     const s = allied7h([rus("r", PLAIN.at), ger("g", PLAIN.from)], { activeSide: "axis" });
@@ -97,9 +100,9 @@ describe("attackNumbers under the winter (the one function behind the preview an
     expect(numbersAt(s, [s.units.r!], OUTSIDE.at)).toMatchObject({ multiplier: 2, basis: "plain" });
   });
   it("Finns alone are doubled in Russia; Finns with a German are not", () => {
-    const f = allied7h([ger("f", PLAIN.at, "finland"), rus("r", PLAIN.from)]);
+    const f = allied7h([ger("f", PLAIN.at, "finland"), rus("r", PLAIN.from)], { minorAllies: FINLAND });
     expect(numbersAt(f, [f.units.r!], PLAIN.at)).toMatchObject({ multiplier: 2, basis: "plain" });
-    const mixed = allied7h([ger("f", PLAIN.at, "finland"), ger("g", PLAIN.at), rus("r", PLAIN.from)]);
+    const mixed = allied7h([ger("f", PLAIN.at, "finland"), ger("g", PLAIN.at), rus("r", PLAIN.from)], { minorAllies: FINLAND });
     expect(numbersAt(mixed, [mixed.units.r!], PLAIN.at)).toMatchObject({ multiplier: 1, basis: "winter", defenseFactors: 6 });
   });
   it("Russian defenders keep their doubling in Russia in the winter (the Axis attacking)", () => {
