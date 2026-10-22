@@ -74,7 +74,7 @@ export function revealSurrender(root: HTMLElement, s: Session): void {
   if (s.surrenderFocused) return;
   s.surrenderFocused = true;
   root.querySelector<HTMLElement>("#surrender-title")?.focus({ preventScroll: true });
-  card.scrollIntoView({ block: "nearest" });
+  card.scrollIntoView({ block: "start" });
 }
 
 /** The map follows the card: the Objective marks (a square, a circle or a dashed ring by holder) and, once, the centring a tap on a name asked for. Nothing during setup. */

@@ -44,8 +44,8 @@ function numbers(s: Session, o: BuildPick): string {
 
 export function buildPanel(s: Session, actions: readonly Action[]): string {
   const options = buildOptions(actions);
-  const warning = surrenderWarningHtml(s); // the note of spec 14 D5, under the build list; with nothing to build it stands alone
-  if (options.length === 0) return warning;
+  if (options.length === 0) return ""; // step 8b waits only while something can be built, so the note below always has its panel
+  const warning = surrenderWarningHtml(s); // the note of spec 14 D5, under the build list
   const chosen = options.find((o) => s.build && buildKey(o) === buildKey(s.build));
   const chip = (o: BuildOption) =>
     `<button data-build="${buildKey(o)}" aria-pressed="${o === chosen}">${counterIcon(o.type)} ${numbers(s, o)}<br><small>${POWER_NAMES[o.owner]} &middot; ${o.cost} BRPs</small></button>`;

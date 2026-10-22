@@ -48,14 +48,15 @@
 .actions button.greyed:hover { background: #ddd6c3; }
 
 /* Russia's offer to surrender (spec 14, part D5): the card at step 10a, the construction warning at step 8b, and the note on a credited Objective. */
-.surrendercard { margin: .3rem 0; padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid #8a5a2b; border-radius: 4px; }
+.surrendercard { margin: .3rem 0; padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid #8a5a2b; border-radius: 4px; scroll-margin-top: .5rem; }
 .surrendercard h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
 .surrendercard h2:focus { outline: none; }
 .surrendercard h3 { margin: .6rem 0 .1rem; font-size: 1rem; }
 .surrender-line { margin: .2rem 0; }
 .surrender-list { margin: .1rem 0 0; padding-left: 1.2rem; }
 .surrender-list li { margin: .15rem 0; }
-.surrender-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; }
-.surrender-buttons button { flex: 1 1 10rem; min-height: 48px; }
+/* The two answers stay at the bottom of the screen while the card is longer than the room below the pinned map (a phone), so a decision never needs a long scroll. */
+.surrender-buttons { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .7rem; padding: .5rem 0 .2rem; background: var(--paper); border-top: 1px solid var(--border); }
+.surrender-buttons button { flex: 1 1 8rem; min-height: 48px; }
 .surrender-warning { margin: .5rem 0 0; padding: .35rem .7rem; font-weight: 600; background: #f6ead9; color: #3a2410; border: 1px solid #b98a55; border-left: 6px solid #8a5a2b; border-radius: 4px; }
 .obj-credited { display: block; font-weight: 400; font-size: .8rem; }

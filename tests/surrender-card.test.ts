@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
@@ -6,10 +7,10 @@ import { objectiveStandings } from "../src/engine/objectives";
 import { surrenderAsking } from "../src/engine/soviet-record";
 import { avoidOfferAt, offerSurrender, sovietOffer, SURRENDER_FACTOR_LIMIT, SURRENDER_RATIO, surrenderShortfall } from "../src/engine/soviet-surrender";
 import type { GameState, Side } from "../src/engine/types";
-import { buildPanel } from "../src/ui/buildView";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { SURRENDER_TEXT, surrenderCreditedLine, surrenderIncomeLine, surrenderWarning } from "../src/ui/endText";
 import { objectivesCard } from "../src/ui/objectivesCard";
+import { sessionFromRecord } from "../src/ui/e2eLoad";
 import { createSession, type Session } from "../src/ui/session";
 import { takeAction } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
@@ -98,11 +99,6 @@ describe("the construction warning on the screen", () => {
     expect(page).toContain("unless it has 1 more ground or air factor on the map");
     expect(page.indexOf("<h2>Construction</h2>")).toBeLessThan(page.indexOf("surrender-warning")); // under the build list
     expect(surrenderWarning(12)).toContain("unless it has 12 more ground or air factors on the map");
-  });
-  it("is shown on its own when nothing can be built", () => {
-    const s = sessionAt(at8b(40, 60), "allies");
-    expect(buildPanel(s, [])).toBe(surrenderWarningHtml(s));
-    expect(buildPanel(s, [])).toContain("surrender-warning");
   });
   it("appears only when it should: the Axis human, a watcher, another step, the Axis' turn, no war, an offer made, a test not met", () => {
     const state = at8b(40, 60);
@@ -287,5 +283,26 @@ describe("both sides of a person in the same positions", () => {
     const state = at8b(40, 60);
     const left = applyAction(CTX, state, { type: "END_STEP", side: "allies", step: "8b" });
     expect(left.ok).toBe(true);
+  });
+});
+
+describe("the recorded games for the browser tests (made by scripts/make-e2e-fixture.ts)", () => {
+  type Fixture = { seed: number; actions: Action[]; shortfall?: number };
+  const read = (name: string) => JSON.parse(readFileSync(`tests/e2e/fixtures/${name}.json`, "utf8")) as Fixture;
+  it("surrender-question.json replays to step 10a with the Axis asked, and the card is drawn for a human Axis player", () => {
+    const f = read("surrender-question");
+    const s = sessionFromRecord(SCENARIO_1939, "axis", f.seed, f.actions);
+    expect(surrenderAsking(s.state)).toBe(true);
+    expect(html(s)).toContain("surrendercard");
+  });
+  it("surrender-build.json replays to step 8b of an Allied Player Turn with the warning's number as recorded", () => {
+    const f = read("surrender-build");
+    const s = sessionFromRecord(SCENARIO_1939, "allies", f.seed, f.actions);
+    expect(s.state.position).toMatchObject({ part: "player-turn", step: "8b" });
+    expect(s.state.activeSide).toBe("allies");
+    expect(f.shortfall).toBeGreaterThan(1);
+    expect(surrenderShortfall(s.ctx, s.state)).toBe(f.shortfall);
+    expect(surrenderWarningText(s)).toBe(surrenderWarning(f.shortfall!));
+    expect(legalActions(s.ctx, s.state).some((a) => a.type === "BUILD" && a.owner === "ussr")).toBe(true); // Russia can build, so the chip is there
   });
 });
