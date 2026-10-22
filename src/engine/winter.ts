@@ -60,7 +60,7 @@ export function enterWinter(ctx: GameContext, from: GameState): { state: GameSta
   const state: GameState = { ...from, position: { part: "russian-winter" } };
   const stage = winterStage(ctx, state);
   if (!isWinterTurn(state) || stage === "over" || !germanRussianWar(state)) return { state, events: [] };
-  if (stage === "postponed") return startWinter(state);
+  if (stage === "postponed") return startWinter(state); // TODO(verify) V42: a postponed winter has no new roll and no question
   const rolled = winterRoll(state.rngState);
   const axisUnits = axisUnitsInRussia(ctx, state);
   const roll: WinterRoll = { dice: rolled.dice, total: rolled.total, axisUnits, mayPostpone: axisUnits < rolled.total };

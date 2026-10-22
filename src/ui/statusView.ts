@@ -4,6 +4,7 @@ import { POWER_NAMES, spendingLimit } from "../engine/nations";
 import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
+import { winterAsking } from "../engine/winter-record";
 import { computerSide, computerToMove } from "./computerPlay";
 import type { GameContext } from "../engine/context";
 import type { GameState } from "../engine/types";
@@ -30,7 +31,7 @@ function turnLine(s: Session): string {
   if (state.phase === "game-over") return statusText(state);
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
   // At II.A the Allies are asked about the Russian winter, whoever played last: the line says so instead of naming the side that played (the card and banner are ticket 14-13).
-  if (state.position?.part === "russian-winter") return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): the Allies say whether it waits`;
+  if (winterAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): the Allies say whether it waits`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }

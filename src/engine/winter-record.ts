@@ -20,7 +20,7 @@ export interface WinterRoll {
 }
 
 export interface RussianWinter {
-  /** "ahead": it has not been in force yet; "postponed": the Allies waited, so the next Winter Game Turn has it with no question; "over": it has been (or the scenario takes it as past). */
+  /** "ahead": it has not been in force yet; "postponed": the Allies waited, so the next Winter Game Turn has it with no roll and no question (TODO(verify) V42); "over": it has been (or the scenario takes it as past). */
   stage: "ahead" | "postponed" | "over";
   /** The Game Turn ("1941-winter") in which the rule is in force; absent when it is not in force in any. */
   inForce?: string;

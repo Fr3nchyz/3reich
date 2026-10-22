@@ -2,6 +2,7 @@ import type { Scenario, Side } from "../engine/types";
 import { computerAct } from "./computerPlay";
 import { cap, sideName } from "./format";
 import { describeStep } from "../engine/sequence";
+import { winterAsking } from "../engine/winter-record";
 import { resetLog } from "./logSide";
 import { newSession, placeTheRest, type Session } from "./session";
 import {
@@ -32,6 +33,7 @@ export function whereText(s: Session): string {
   const turn = `${cap(state.season)} ${state.year}`;
   if (state.phase === "setup") return `${turn}, setup`;
   if (state.phase === "game-over") return `${turn}, game over`;
+  if (winterAsking(state)) return `${turn}, step II.A (Russian winter), the Allies are asked`;
   return `${turn}, ${sideName(state.activeSide)} player turn${state.position?.part === "player-turn" ? `, step ${describeStep(state.position.step)}` : ""}`;
 }
 

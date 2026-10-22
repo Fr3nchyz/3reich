@@ -1,4 +1,5 @@
 import { describeStep } from "../engine/sequence";
+import { winterAsking } from "../engine/winter-record";
 import { computerSide } from "./computerPlay";
 import { cap, sideName } from "./format";
 import type { Session } from "./session";
@@ -17,7 +18,7 @@ export function statusLine(s: Session): string {
   const w = s.watch!;
   const parts = [s.ctx.scenario.name, `Game Turn ${cap(state.season)} ${state.year}`];
   if (state.phase === "player-turn") {
-    parts.push(`${sideName(state.activeSide)} to move`);
+    parts.push(`${sideName(winterAsking(state) ? "allies" : state.activeSide)} to move`);
     if (state.position?.part === "player-turn") parts.push(`step ${describeStep(state.position.step)}`);
   }
   parts.push(`action ${w.actions}`);
