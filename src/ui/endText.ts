@@ -158,13 +158,11 @@ export const WINTER_TEXT = {
   askLineComputer: "the computer, playing the Allies, decides whether it waits",
 } as const;
 
-const unitsWord = (n: number): string => `${n} ground unit${n === 1 ? "" : "s"}`;
-
 /** "Dice: 4 + 6 + 3 + 5 = 18". */
 export const diceLine = (dice: readonly number[], total: number): string => `Dice: ${dice.join(" + ")} = ${total}`;
 
 /** "Axis ground units inside Russia: 12 (not counting Finns)." */
-export const axisUnitsLine = (n: number): string => `Axis ${unitsWord(n)} inside Russia: ${n} (not counting Finns).`;
+export const axisUnitsLine = (n: number): string => `Axis ground units inside Russia: ${n} (not counting Finns).`;
 
 /** The test, in words: "12 is fewer than 18, so Russia may wait one year." After the Allies chose not to wait: "... so Russia could wait one year; it chose to start the winter now." */
 export function testLine(units: number, total: number, may: boolean, startedAnyway: boolean): string {
