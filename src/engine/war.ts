@@ -5,6 +5,7 @@ import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
 import { BRP_COSTS, MINOR_COUNTRY_FORCES } from "./tables";
 import type { Combatant, GameState, Nation, PowerId, Side } from "./types";
+import { winterAfterDeclaration } from "./winter-record";
 
 /**
  * Wars and declarations of war (Ref 13.0, spec 02). A declaration is made at step 1 of a Player
@@ -81,7 +82,10 @@ export function applyDeclaration(ctx: GameContext, state: GameState, action: Ext
   if (!paid.ok) return paid;
   const events: GameEvent[] = [paid.event, { type: "WAR_DECLARED", by: action.by, on: action.on, cost }];
   const wars: GameState["wars"] = [...paid.state.wars, [action.by, action.on]];
-  return { ok: true, state: joinsItsSide({ ...paid.state, wars }, action.on), events };
+  const declared = joinsItsSide({ ...paid.state, wars }, action.on);
+  // Ref 28.0: the U.S.S.R. declaring on Germany in a Winter Game Turn makes that turn the first winter at once (spec 14 R10).
+  const winter = winterAfterDeclaration(ctx, declared, action.by, action.on);
+  return { ok: true, state: winter.state, events: [...events, ...winter.events] };
 }
 
 /**

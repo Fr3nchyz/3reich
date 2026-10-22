@@ -3,7 +3,7 @@ import type { CombatRound } from "./combat";
 import type { Front } from "./map";
 import type { Conquest } from "./conquest-record";
 import type { GameResult } from "./victory-record";
-import type { Combatant, ForceOwner, FrontOption, GameState, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
+import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
  * Everything a player (human or computer) can do is an Action. Actions are plain,
@@ -23,6 +23,8 @@ export type Action =
   | { type: "BUILD"; owner: PowerId; unit: { type: UnitType; strength: number }; at: HexId | OffMapBox }
   /** Step 9a: grant BRPs to an allied Major Power. */
   | { type: "GRANT_BRPS"; from: PowerId; to: PowerId; amount: number }
+  /** Step II.A: the Allies decide whether the Russian winter waits for next year (`postpone`) or starts now; legal only when the dice allowed it (spec 14 R10; Ref 28.0). */
+  | { type: "CHOOSE_WINTER"; side: "allies"; postpone: boolean }
   /** Step 7h: ground units attack an adjacent enemy hex (Ref 12.1; each unit attacks one hex, PC README 14.23). */
   | { type: "ATTACK"; side: Side; units: string[]; target: HexId }
   /** Step 7h: the side that must lose factors after an Exchange chooses which of its units go (Ref 12.2). */
@@ -110,6 +112,12 @@ export type GameEvent =
    * `britishEliminated` counts the British units that stood in Vichy territory. The hexes that became Vichy or Free French are in CONTROL_PASSED events of their own.
    */
   | { type: "VICHY_CREATED"; halved: { kept: number; lost: number }; colonies: { colony: "lebanon-syria" | "north-africa"; die: number; becomes: "vichy" | "free-french" }[]; britishEliminated: number }
+  /** Step II.A: four dice were rolled and the Axis ground units east of the Russian border counted (spec 14 R10); `mayPostpone` is `axisUnits < total`. */
+  | { type: "WINTER_ROLLED"; dice: number[]; total: number; axisUnits: number; mayPostpone: boolean }
+  /** The Allies put the Russian winter off to the next Winter Game Turn. */
+  | { type: "WINTER_POSTPONED"; turn: GameTurn }
+  /** The Russian winter is in force from this Game Turn: `postponedFrom` is the turn it was put off from, `early` that the U.S.S.R. declared war on Germany in this Winter turn. */
+  | { type: "WINTER_STARTED"; turn: GameTurn; postponedFrom?: GameTurn; early?: true }
   /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 

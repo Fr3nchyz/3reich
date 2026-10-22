@@ -2,6 +2,8 @@ import type { GameContext } from "./context";
 import { describeStep, FIRST_STEP, LAST_STEP } from "./sequence";
 import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
+import { applyChooseWinter, legalWinterActions } from "./winter";
+import { winterAsking } from "./winter-record";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
@@ -53,6 +55,7 @@ export function moveOnAction(state: GameState): Action[] {
 export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "game-over") return [];
   if (state.phase === "setup") return legalSetupActions(ctx, state);
+  if (winterAsking(state)) return legalWinterActions(state);
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
@@ -74,6 +77,14 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
     case "END_PLAYER_TURN":
     case "END_STEP":
       return applyMoveOn(ctx, state, action);
+    case "CHOOSE_WINTER": {
+      const answered = applyChooseWinter(state, action);
+      if (!answered.ok) return answered;
+      // The question was the only thing the game waited for at II.A: it moves on to II.B and the Player Turns.
+      const left = advance(ctx, answered.state);
+      const settled = settle(ctx, left.state);
+      return { ok: true, state: settled.state, events: [...answered.events, ...left.events, ...settled.events] };
+    }
     case "DECLARE_WAR":
       return atStep(state, FIRST_STEP, "Declarations of war are made", () => applyDeclaration(ctx, state, action));
     case "DESIGNATE_SEA_SUPPLY": {
@@ -117,6 +128,7 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
 /** Runs `apply` only if the game waits at `step`; otherwise refuses, naming the step it is at. */
 function atStep(state: GameState, step: string, what: string, apply: () => ActionResult): ActionResult {
   const at = waitingStep(state);
+  if (winterAsking(state)) return { ok: false, error: `${what} in step ${describeStep(step)}; the game waits at step II.A for the Allies to say whether the Russian winter waits.` };
   if (at === undefined) return { ok: false, error: "No game turn is in progress." };
   if (at !== step) return { ok: false, error: `${what} in step ${describeStep(step)}; the game is at step ${describeStep(at)}.` };
   return apply();
@@ -126,6 +138,7 @@ function atStep(state: GameState, step: string, what: string, apply: () => Actio
 function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action, { type: "END_PLAYER_TURN" | "END_STEP" }>): ActionResult {
   if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
   const step = waitingStep(state);
+  if (winterAsking(state)) return { ok: false, error: "The game waits at step II.A for the Allies to say whether the Russian winter waits." };
   if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {

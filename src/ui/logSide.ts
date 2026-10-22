@@ -76,6 +76,9 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "CAPITAL_RETAKEN": return sideOfOwner(e.power); // the Power it is the capital of
     case "COUNTRY_CONQUERED": return sideOfOwner(e.by) === "axis" ? "allies" : "axis"; // the conquered country's side is the other from its conqueror's
     case "VICHY_CREATED": return "allies"; // France's loss, like the fall it follows
+    case "WINTER_ROLLED":
+    case "WINTER_STARTED": return null; // the dice and the winter itself concern both sides
+    case "WINTER_POSTPONED": return "allies"; // the Allies' choice
     case "UNITS_REMOVED_BY_CONQUEST": // no line of their own
     case "CONTROL_PASSED": return null;
     case "UNITS_SWEPT": {

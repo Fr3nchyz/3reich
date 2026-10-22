@@ -78,6 +78,8 @@ export const SCENARIO_1944: Scenario = {
   rules: [
     // "Neither side may declare war on any country that is neutral at the start of the scenario."
     { kind: "no-war-on-neutrals" },
+    // Ref 28.0: the first Russian winter is long over by Spring 1944 (spec 14 R10).
+    { kind: "first-winter-past" },
   ],
 
   forces: {

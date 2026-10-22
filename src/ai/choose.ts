@@ -8,6 +8,7 @@ import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
 import { chooseGrant } from "./grant";
 import { chooseMove } from "./move";
+import { chooseWinter } from "./winter";
 import type { AiConfig, Decision } from "./types";
 
 /**
@@ -16,6 +17,7 @@ import type { AiConfig, Decision } from "./types";
  * step is always ended once the chooser has nothing more to do, so it never loops.
  */
 export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig): Decision | null {
+  if (state.phase === "player-turn" && state.position?.part === "russian-winter") return chooseWinter(legalActions(ctx, state)); // II.A: the Allies are asked about the Russian winter (ticket 14-11)
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
