@@ -45,7 +45,8 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
   return { positions, hash };
 }
 
+// The 1942 snapshot changed on purpose in ticket 14-18: the computer takes three units in the Free Siberian Transfer in Spring 1942 (see tests/ai-stability.test.ts); with its policy off the hash is the old one.
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
   it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 108, hash: 1416377456 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 111, hash: 3375194012 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 111, hash: 872140485 }), 120_000);
 });
