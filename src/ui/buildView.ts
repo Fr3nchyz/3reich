@@ -4,6 +4,7 @@ import { POWER_NAMES } from "../engine/nations";
 import type { PowerId, UnitType } from "../engine/types";
 import { counterNumber } from "./mapStyle";
 import { counterIcon } from "./mapSymbols";
+import { surrenderWarningHtml } from "./surrenderCard";
 import type { BuildPick, Session } from "./session";
 
 /** The construction panel of step 8b: one chip per counter a nation may build now, and the buttons for places off the map. */
@@ -43,7 +44,8 @@ function numbers(s: Session, o: BuildPick): string {
 
 export function buildPanel(s: Session, actions: readonly Action[]): string {
   const options = buildOptions(actions);
-  if (options.length === 0) return "";
+  const warning = surrenderWarningHtml(s); // the note of spec 14 D5, under the build list; with nothing to build it stands alone
+  if (options.length === 0) return warning;
   const chosen = options.find((o) => s.build && buildKey(o) === buildKey(s.build));
   const chip = (o: BuildOption) =>
     `<button data-build="${buildKey(o)}" aria-pressed="${o === chosen}">${counterIcon(o.type)} ${numbers(s, o)}<br><small>${POWER_NAMES[o.owner]} &middot; ${o.cost} BRPs</small></button>`;
@@ -54,5 +56,5 @@ export function buildPanel(s: Session, actions: readonly Action[]): string {
       ? "This counter is built in the U.S. Box: press the button below."
       : "Tap a yellow hex to build it there. It must be in the nation's home territory and away from enemy ground units.";
   const boxButtons = boxes.map((b) => `<button data-buildbox="${b}">Build in the ${b === "us-box" ? "U.S. Box" : b}</button>`).join("");
-  return `<div class="setup build"><h2>Construction</h2><p>${hint}</p><div class="chips">${options.map(chip).join("")}</div>${boxButtons ? `<div class="actions">${boxButtons}</div>` : ""}</div>`;
+  return `<div class="setup build"><h2>Construction</h2><p>${hint}</p><div class="chips">${options.map(chip).join("")}</div>${boxButtons ? `<div class="actions">${boxButtons}</div>` : ""}${warning}</div>`;
 }

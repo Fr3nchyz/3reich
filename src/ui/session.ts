@@ -99,6 +99,8 @@ export interface Session {
   winterSeen?: string;
   /** The card of the winter question has taken the keyboard focus once for this question. Screen state, never saved. */
   winterFocused?: string;
+  /** The card of Russia's offer to surrender has taken the keyboard focus once for this offer (spec 14, ticket 14-16). Screen state, never saved. */
+  surrenderFocused?: boolean;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */

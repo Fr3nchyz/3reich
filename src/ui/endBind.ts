@@ -67,6 +67,16 @@ export function revealWinter(root: HTMLElement, s: Session): void {
   card.scrollIntoView({ block: "nearest" });
 }
 
+/** Russia's offer (spec 14, D5): when the card first appears its heading takes the keyboard focus, once, and the card is scrolled into view; the game waits for the answer. */
+export function revealSurrender(root: HTMLElement, s: Session): void {
+  const card = root.querySelector<HTMLElement>("#surrender-card");
+  if (!card) { s.surrenderFocused = undefined; return; }
+  if (s.surrenderFocused) return;
+  s.surrenderFocused = true;
+  root.querySelector<HTMLElement>("#surrender-title")?.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest" });
+}
+
 /** The map follows the card: the Objective marks (a square, a circle or a dashed ring by holder) and, once, the centring a tap on a name asked for. Nothing during setup. */
 export function syncObjectives(view: MapView, s: Session): void {
   view.setObjectiveMarks(s.state.phase === "setup" ? null : objectiveStandings(s.ctx, s.state));

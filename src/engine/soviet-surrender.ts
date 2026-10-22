@@ -55,7 +55,14 @@ export interface SovietOffer {
 }
 
 /**
- * The test of R7b: Russia at war with Germany, fewer than 50 Russian factors on the map, and the Axis inside Russia at least 3 to 2 of the Russian total.
+ * The fewest Russian ground and air factors on the map at which the test of R7b is NOT met, for `axis` Axis factors inside Russia: the smaller of the 50 limit and one
+ * more than the Russian total the 3 to 2 ratio allows (`russian * 3 <= axis * 2`). The one formula of the test: `sovietOffer` asks `russian < avoidOfferAt(axis)`, and the
+ * construction warning (ticket 14-16, `surrenderShortfall`) is `avoidOfferAt(axis) - russian`, so the number on the screen is the number the rule uses.
+ */
+export const avoidOfferAt = (axis: number): number => Math.min(SURRENDER_FACTOR_LIMIT, Math.floor((axis * SURRENDER_RATIO.russian) / SURRENDER_RATIO.axis) + 1);
+
+/**
+ * The test of R7b: Russia at war with Germany, fewer than 50 Russian factors on the map, and the Axis inside Russia at least 3 to 2 of the Russian total (`avoidOfferAt`).
  * TODO(verify) V17: what counts as factors. TODO(verify) V51 (at `offered`): "at war with the Axis" is read as at war with Germany (the war the winter rule also looks for, V43),
  * and the test is literal, so 0 Russian factors against 0 Axis factors meets it.
  */
@@ -63,7 +70,26 @@ export function sovietOffer(ctx: GameContext, state: GameState): SovietOffer {
   const russian = russianFactors(ctx, state);
   const axis = axisFactorsInRussia(ctx, state);
   // TODO(verify) V51
-  return { russian, axis, offered: germanRussianWar(state) && russian < SURRENDER_FACTOR_LIMIT && axis * SURRENDER_RATIO.russian >= russian * SURRENDER_RATIO.axis };
+  return { russian, axis, offered: germanRussianWar(state) && russian < avoidOfferAt(axis) };
+}
+
+/** The test as the Allied Player Turn would meet it at 10a: the Allies are the active side, no offer was made yet, step 10a is built and the sums pass; else null. */
+function offerDue(ctx: GameContext, state: GameState): SovietOffer | null {
+  if (state.activeSide !== "allies" || surrenderOffer(state) !== "none" || !(ctx.implementedSteps ?? IMPLEMENTED_STEPS).has("10a")) return null;
+  const test = sovietOffer(ctx, state);
+  return test.offered ? test : null;
+}
+
+/**
+ * The construction warning (spec 14 D5, ticket 14-16): while the Allies build (step 8b), how many more Russian ground and air factors on the map would stop Russia
+ * from offering to surrender at the end of this Allied Player Turn, or null when the offer would not follow now (the war is off, the offer was made, it is the Axis' turn,
+ * or the sums do not meet the test). It is the shortfall of the same test `offerSurrender` makes. TODO(verify) V53: it is a forecast from the position at the time, as
+ * if nothing else changed before 10a, and only Russian factors added to the map can end it (Axis factors inside Russia do not change by building).
+ */
+export function surrenderShortfall(ctx: GameContext, state: GameState): number | null {
+  // TODO(verify) V53
+  const due = offerDue(ctx, state);
+  return due ? avoidOfferAt(due.axis) - due.russian : null;
 }
 
 /**
@@ -72,10 +98,8 @@ export function sovietOffer(ctx: GameContext, state: GameState): SovietOffer {
  * is offered where the step is not built (a context that lists its own implemented steps without 10a), so a record never asks a question nobody can be asked.
  */
 export function offerSurrender(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
-  const none = { state, events: [] as GameEvent[] };
-  if (state.activeSide !== "allies" || surrenderOffer(state) !== "none" || !(ctx.implementedSteps ?? IMPLEMENTED_STEPS).has("10a")) return none;
-  const test = sovietOffer(ctx, state);
-  if (!test.offered) return none;
+  const test = offerDue(ctx, state);
+  if (!test) return { state, events: [] };
   return {
     state: { ...state, soviet: { citiesTaken: {}, ...state.soviet, offer: "asking" } },
     events: [{ type: "RUSSIA_OFFERS_SURRENDER", russian: test.russian, axis: test.axis }],

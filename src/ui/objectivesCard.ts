@@ -3,7 +3,7 @@ import type { HexId } from "../engine/hex";
 import { objectiveStandings } from "../engine/objectives";
 import type { GameState } from "../engine/types";
 import { objectiveCount, victoryTarget } from "../engine/victory";
-import { END_TEXT, frontTitle, MARK_KEY, needsText, OBJECTIVES_BUTTON, rowLabel, scoreLine, SHOW_RESULT_BUTTON, type Holder } from "./endText";
+import { END_TEXT, frontTitle, MARK_KEY, needsText, OBJECTIVES_BUTTON, rowLabel, scoreLine, SHOW_RESULT_BUTTON, SURRENDER_TEXT, type Holder } from "./endText";
 import { escape } from "./mapGeometry";
 import type { Session } from "./session";
 
@@ -16,6 +16,8 @@ export interface ObjectiveRow {
   hex: HexId;
   name: string;
   holder: Holder;
+  /** The Allies hold it for good after Russia's surrender was accepted (spec 14 D5, R7c): whoever has the hex, it counts for them. */
+  credited: boolean;
 }
 
 export interface ObjectivesCard {
@@ -32,6 +34,7 @@ export function objectivesCard(ctx: GameContext, state: GameState): ObjectivesCa
   const standings = objectiveStandings(ctx, state);
   const holderOf = (hex: HexId): Holder => (standings.axis.includes(hex) ? "Axis" : standings.allies.includes(hex) ? "Allies" : "nobody");
   const all = [...standings.axis, ...standings.allies, ...standings.nobody];
+  const credited = new Set(state.soviet?.credited ?? []);
   const target = victoryTarget(ctx, state);
   const needs = needsText(target, ctx.scenario.end);
   return {
@@ -40,7 +43,7 @@ export function objectivesCard(ctx: GameContext, state: GameState): ObjectivesCa
     fronts: FRONTS.map((front) => {
       const rows = all
         .filter((hex) => ctx.map.hexes[hex]?.front === front)
-        .map((hex) => ({ hex, name: ctx.map.hexes[hex]?.name ?? hex, holder: holderOf(hex) }))
+        .map((hex) => ({ hex, name: ctx.map.hexes[hex]?.name ?? hex, holder: holderOf(hex), credited: credited.has(hex) }))
         .sort((a, b) => a.name.localeCompare(b.name))
         ;
       return { title: frontTitle(front, rows.length), rows };
@@ -66,7 +69,7 @@ export function scoreHtml(s: Session): string {
 }
 
 function cardHtml(c: ObjectivesCard): string {
-  const row = (r: ObjectiveRow) => `<li><button type="button" class="obj-row" data-objhex="${r.hex}" aria-label="${escape(rowLabel(r.name, r.holder))}"><span class="obj-name">${escape(r.name)}</span><span class="obj-holder holder-${r.holder.toLowerCase()}"><span aria-hidden="true">${SHAPE[r.holder]}</span> ${r.holder}</span></button></li>`;
+  const row = (r: ObjectiveRow) => `<li><button type="button" class="obj-row" data-objhex="${r.hex}" aria-label="${escape(rowLabel(r.name, r.holder, r.credited))}"><span class="obj-name">${escape(r.name)}${r.credited ? `<small class="obj-credited">${SURRENDER_TEXT.credited}</small>` : ""}</span><span class="obj-holder holder-${r.holder.toLowerCase()}"><span aria-hidden="true">${SHAPE[r.holder]}</span> ${r.holder}</span></button></li>`;
   return `<section class="objcard" id="obj-card" aria-labelledby="obj-title">
       <div class="objcard-head"><h2 id="obj-title" tabindex="-1">${END_TEXT.objectivesTitle}</h2><button id="obj-close" type="button" aria-label="${END_TEXT.closeObjectives}">${END_TEXT.close}</button></div>
       <p class="objcard-held">${escape(c.score)}</p>
