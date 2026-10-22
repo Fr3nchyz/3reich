@@ -117,6 +117,14 @@ describe("what does not count as a capture", () => {
     expect(enter(held, "germany", MOSCOW).events).toEqual([]);
     expect(enter(atWar(), "ussr", MOSCOW).events).toEqual([]);
   });
+  it("the Allies taking a city from the Axis moves nothing, even one never paid for (an Axis-held city at the start, say)", () => {
+    const axisHeld = atWar({ control: { [MOSCOW]: "germany" } });
+    const r = enter(axisHeld, "ussr", MOSCOW);
+    expect(r.state.control[MOSCOW]).toBe("ussr");
+    expect(r.events.some((e) => e.type === "RUSSIA_BRPS_MOVED")).toBe(false);
+    expect(totals(r.state)).toMatchObject({ ger: 100, rus: 60 });
+    expect(r.state.soviet).toBeUndefined();
+  });
   it("another hex of the U.S.S.R. is just a hex", () => {
     const r = enter(atWar(), "germany", "H48");
     expect(r.events.some((e) => e.type === "RUSSIA_BRPS_MOVED")).toBe(false);
