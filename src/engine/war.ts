@@ -106,10 +106,10 @@ export function scheduledDeclarations(ctx: GameContext, state: GameState): { sta
   for (const rule of ctx.scenario.rules) {
     if (rule.kind !== "automatic-declaration" || rule.side !== state.activeSide) continue;
     if (rule.turn.year !== state.year || rule.turn.season !== state.season) continue;
-    // Spec 14 R4: a conquered Power is not a target and not a declarer (`declarationTargets`), so a scheduled declaration on one is not made: nothing is
+    // Spec 14 R4: a conquered Power is not a target and not a declarer (`declarationTargets`), so a scheduled declaration on one (or on a conquered minor) is not made: nothing is
     // charged and no war is recorded (the U.S. would otherwise pay 35 BRPs to declare on a Germany that is gone). TODO(verify) V35: the declarer
     // still joins its side, as if the war existed already; a declarer that is itself gone does nothing.
-    if (isGone(next.nations[rule.by]) || (isMajorPower(rule.on) && isGone(next.nations[rule.on]))) {
+    if (isGone(next.nations[rule.by]) || (isMajorPower(rule.on) && isGone(next.nations[rule.on])) || isConquered(next, rule.on)) { // the same targets `declarationTargets` leaves out
       if (!isGone(next.nations[rule.by])) next = joinsItsSide(next, rule.by);
       continue;
     }

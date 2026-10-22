@@ -88,7 +88,10 @@ export interface CountryFall {
   hexes?: readonly HexId[];
 }
 
-/** The land of a country: the `hexes` given, else the scenario's zone of that name (Eastern Europe), else every land hex of the map country. */
+/**
+ * The land of a country: the `hexes` given, else the scenario's zone of that name (Eastern Europe), else every land hex of the map country.
+ * TODO(verify) V28: for Poland that is every Polish hex until spec 15 creates Eastern Europe; ticket 15-11 must then leave the Partition hexes out of `countryLand("poland")`.
+ */
 export function countryLand(ctx: GameContext, country: FallenCountry, hexes?: readonly HexId[]): Set<HexId> {
   if (hexes) return new Set(hexes);
   const zone = country === "eastern-europe" ? ctx.scenario.zones["eastern-europe"]?.hexes : undefined;

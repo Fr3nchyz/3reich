@@ -8,7 +8,7 @@ import type { ConquestWindow, GameResult, LevelNeeds, ObjectiveCount, ObjectiveT
 /**
  * Who has won (spec 14 R2, R3; Ref 2.0 to 2.4, 11.63). Pure queries over the state: `evaluateVictory` gives the result
  * that stands, `victoryTarget` what each side needs, `recordCheckpoint` remembers the Campaign's Winter 1943 count.
- * The conquests it reads (`GameState.conquests`) are written by the rules of ticket 14-5; without any, nobody has been conquered.
+ * The conquests it reads (`GameState.conquests`) are written by the rules of tickets 14-5 (Major Powers) and 14-6 (every other country); without any, nobody has been conquered.
  */
 
 /**

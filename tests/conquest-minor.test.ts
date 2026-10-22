@@ -264,7 +264,7 @@ describe("the entry point for colonies and Eastern Europe (the contract for spec
     expect(combatantName("lebanon-syria")).toBe("Lebanon-Syria");
     expect(combatantName("norway")).toBe("Norway");
     const line = conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "eastern-europe", by: "germany", how: "all-cities", unitsRemoved: 0, hexesPassed: 1 });
-    expect(line).toBe("Eastern Europe has been conquered by Germany: 0 units leave the game and 1 hex change hands.");
+    expect(line).toBe("Eastern Europe has been conquered by Germany: 0 units leave the game and 1 hex changes hands.");
   });
 });
 
