@@ -5,7 +5,7 @@ import type { MoveRecord } from "./move-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
 import type { Conquest } from "./conquest-record";
-import type { SiberianRecord } from "./soviet-record";
+import type { SiberianRecord, SovietRecord } from "./soviet-record";
 import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
 import type { RussianWinter } from "./winter-record";
 
@@ -325,6 +325,8 @@ export interface GameState {
   winter?: RussianWinter;
   /** The Free Siberian Transfer so far (spec 14 R11); `used` switches the victory tables. Absent: not used. */
   siberian?: SiberianRecord;
+  /** What has happened to the U.S.S.R. (spec 14 R7): the cities the Axis has taken. Absent in an older saved game: none yet. */
+  soviet?: SovietRecord;
   /** What the victory rules remember during play (spec 14): the Campaign's Winter 1943 Objective count. Absent: nothing yet. */
   victory?: VictoryRecord;
   /** Who won, set once, together with the phase "game-over" (spec 14 R3). Absent while the game is on, and in a game over saved before this existed. */

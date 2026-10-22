@@ -196,6 +196,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       return `${nameOf(e.owner)} loses a unit at ${e.at} to overstacking.`;
     case "CAPITAL_LOST":
     case "CAPITAL_RETAKEN":
+    case "RUSSIA_BRPS_MOVED":
     case "COUNTRY_CONQUERED":
     case "VICHY_CREATED":
     case "UNITS_REMOVED_BY_CONQUEST":

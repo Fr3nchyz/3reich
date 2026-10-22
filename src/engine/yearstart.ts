@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import { conquestIncome } from "./conquest-income";
 import type { GameContext } from "./context";
 import { isGone } from "./nations";
+import { citiesNamedHeldByAxis, sovietCityIncome } from "./soviet-income";
 import type { GameState, Nation, PowerId } from "./types";
 
 /**
@@ -17,10 +18,12 @@ import type { GameState, Nation, PowerId } from "./types";
  * Added by spec 14 (ticket 14-5; R4): half, rounded down, of the BRPs a conquered Major Power began the scenario with, for its conqueror, while the
  * conqueror holds the capital (conquest-income.ts). A conquered Power is skipped and keeps 0.
  *
+ * Added by spec 14 (ticket 14-14; R7a): +15 for Germany and -15 for the U.S.S.R. for each of Moscow and Leningrad the Axis holds (soviet-income.ts). The U.S.S.R.'s
+ * total never goes below 0.
+ *
  * Not built (TODO(verify), spec 02): A (strategic warfare is resolved, the only thing that can lower
  * a Base), C (strategic-warfare factors are constructed), the BRPs of conquered minor countries and
- * colonies, of attacked minors the nation intervened in, Germany's +15 and the U.S.S.R.'s -15 for each
- * of Moscow and Leningrad held (ticket 14-14): no city control is tracked yet.
+ * colonies, of attacked minors the nation intervened in.
  */
 
 /**
@@ -59,25 +62,30 @@ export function minorAllyBrps(ctx: GameContext, state: GameState, id: PowerId): 
  * grants count as unused. TODO(verify). With KEEP_UNUSED_BRPS false the unused BRPs are then dropped
  * (the destructive default, also TODO(verify)): only the grown Base carries into the new year.
  */
-function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number; conquered: number } {
+function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number; minors: number; conquered: number; cities: number } {
   const unused = n.brpTotal;
   const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
   const brpBase = n.brpBase + growth;
   const conquered = conquestIncome(ctx, state, n.id);
-  const brpTotal = brpBase + minorAllyBrps(ctx, state, n.id) + conquered + (KEEP_UNUSED_BRPS ? unused : 0);
-  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth, conquered };
+  const minors = minorAllyBrps(ctx, state, n.id);
+  const cities = sovietCityIncome(ctx, state, n.id);
+  // TODO(verify) V46: the 15s of Moscow and Leningrad join the new initial total after the growth of the Base (they do not feed it, nor the next year's growth), so the spending
+  // limit, half the total, moves with them; a total never goes below 0 (it only could for the U.S.S.R.).
+  const brpTotal = Math.max(0, brpBase + minors + conquered + cities + (KEEP_UNUSED_BRPS ? unused : 0));
+  return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth, minors, conquered, cities };
 }
 
 /** Runs the Year Start Sequence for the year `state` has just entered; a nation that is out of the scenario or conquered is left alone. */
 export function runYearStartSequence(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
   const nations = { ...state.nations };
   const events: GameEvent[] = [];
+  const held = citiesNamedHeldByAxis(ctx, state).map((c) => (c === "moscow" ? "Moscow" : "Leningrad")).join(" and ");
   for (const old of Object.values(state.nations)) {
     if (isGone(old)) continue;
-    const { nation, growth, conquered } = recalculated(ctx, state, old);
+    const { nation, growth, minors, conquered, cities } = recalculated(ctx, state, old);
     nations[old.id] = nation;
     if (nation.brpTotal === old.brpTotal && growth === 0) continue;
-    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${nation.brpTotal - nation.brpBase} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}`;
+    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${minors} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}${cities === 0 ? "" : cities > 0 ? `, plus ${cities} for ${held} held by the Axis` : `, less ${-cities} for ${held} held by the Axis`}`;
     events.push({ type: "BRPS_CHANGED", nation: old.id, delta: nation.brpTotal - old.brpTotal, total: nation.brpTotal, reason });
   }
   return { state: { ...state, nations }, events };

@@ -3,6 +3,7 @@ import { isBox, territoryOf } from "./areas";
 import { powerOfCapital } from "./capital";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { sovietCityTaken } from "./soviet";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { ForceOwner, GameState, MinorCountry, PowerId, Side, Unit, UnitType } from "./types";
 import { atWar, sideOfPower } from "./war";
@@ -112,6 +113,7 @@ export function controlAfterEntry(ctx: GameContext, state: GameState, unit: Pick
 export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes: readonly HexId[]): { state: GameState; events: GameEvent[] } {
   let control = state.control;
   let fortresses = state.fortresses;
+  let rest: Pick<GameState, "nations" | "soviet"> = { nations: state.nations, soviet: state.soviet }; // what the first capture of Moscow or Leningrad changes (spec 14 R7a)
   const events: GameEvent[] = [];
   for (const hex of hexes) {
     const now = controllerOf(ctx, { ...state, control }, hex);
@@ -119,6 +121,15 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
     if (to === null) continue;
     control = { ...control, [hex]: to };
     events.push({ type: "HEX_CONTROL_CHANGED", hex, from: now, to, unitId: unit.id }, ...capitalEvents(ctx, state, hex, now, to));
+    // Spec 14 R7a: the Axis taking Moscow or Leningrad from the Allies moves 15 BRPs from the U.S.S.R. to Germany, at once and once for each city (soviet.ts).
+    // TODO(verify) V47: a unit entering the city is the capture, in the Movement Phase as well as after a battle.
+    if (now !== null && sideInWar(state, to) === "axis" && sideInWar(state, now) === "allies") {
+      const moved = sovietCityTaken(ctx, { ...state, ...rest }, hex);
+      if (moved) {
+        rest = { nations: moved.state.nations, soviet: moved.state.soviet };
+        events.push(...moved.events);
+      }
+    }
     // Ref 4.8: a Fortress (other than Malta, Gibraltar and Sevastopol, which fortress.ts decides) loses the status for good when an enemy occupies it.
     const kind = ctx.map.hexes[hex]?.fortress;
     const owner = startingControl(ctx).get(hex);
@@ -126,7 +137,7 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
       fortresses = { ...fortresses, [hex]: false };
     }
   }
-  return { state: events.length ? { ...state, control, fortresses } : state, events };
+  return { state: events.length ? { ...state, control, fortresses, ...rest } : state, events };
 }
 
 /**

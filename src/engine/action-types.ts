@@ -2,6 +2,7 @@ import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
 import type { Conquest } from "./conquest-record";
+import type { SovietCity } from "./soviet-record";
 import type { GameResult } from "./victory-record";
 import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
@@ -98,6 +99,8 @@ export type GameEvent =
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
   /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
   | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }
+  /** The Axis took Moscow or Leningrad for the first time (spec 14 R7a): Germany gains `amount` BRPs and the U.S.S.R. loses `lost` (less than `amount` when it had less). */
+  | { type: "RUSSIA_BRPS_MOVED"; city: SovietCity; amount: number; lost: number }
   /** The Power took its capital back (or its side did), so it does not fall. */
   | { type: "CAPITAL_RETAKEN"; power: PowerId; capital: HexId }
   /** A country was conquered (spec 14 R4, C8): `unitsRemoved` left the game, `hexesPassed` hexes went to `by`. */
