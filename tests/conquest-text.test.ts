@@ -19,7 +19,7 @@ describe("the log lines of a conquest", () => {
   it("the retaking and the fall", () => {
     expect(conquestLine(CTX, { type: "CAPITAL_RETAKEN", power: "germany", capital: "L31" })).toBe("Germany has taken back Berlin (L31).");
     expect(conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "germany", by: "britain", how: "capital", unitsRemoved: 40, hexesPassed: 54 })).toBe("Germany has been conquered by Great Britain: 40 units leave the game and 54 hexes change hands.");
-    expect(conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "italy", by: "britain", how: "capital", unitsRemoved: 1, hexesPassed: 1 })).toContain("1 unit leave the game and 1 hex change hands");
+    expect(conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "italy", by: "britain", how: "capital", unitsRemoved: 1, hexesPassed: 1 })).toContain("1 unit leaves the game and 1 hex changes hands");
   });
   it("the units and the land passed say nothing of their own: the fall's line has the numbers", () => {
     expect(conquestLine(CTX, { type: "UNITS_REMOVED_BY_CONQUEST", country: "germany", units: [] })).toBeNull();
@@ -48,7 +48,7 @@ describe("the session and the nation table", () => {
       control: { L31: "britain" }, year: 1940, season: "spring", firstSide: "axis", activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7p" },
     });
     expect(run(s, { type: "END_STEP", side: "axis", step: "7p" })).toBe(true);
-    const i = s.log.findIndex((l) => l.startsWith("Germany has been conquered by Great Britain: 1 unit leave the game"));
+    const i = s.log.findIndex((l) => l.startsWith("Germany has been conquered by Great Britain: 1 unit leaves the game"));
     expect(i).toBeGreaterThan(-1);
     expect(s.logSides?.get(i)).toBe("axis");
     expect(statusHtml(s, null, [])).toMatch(/<td>Germany<\/td><td>Conquered<\/td><td>0<\/td>/);

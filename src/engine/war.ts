@@ -1,5 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { charge, spend, spendable } from "./brps";
+import { isConquered } from "./conquest-record";
 import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
 import { BRP_COSTS, MINOR_COUNTRY_FORCES } from "./tables";
@@ -56,7 +57,7 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
   for (const minor of Object.keys(MINOR_COUNTRY_FORCES) as (keyof typeof MINOR_COUNTRY_FORCES)[]) {
     // A minor already at war with a Major Power is no neutral to attack (it fights for one side); an
     // active Minor-Ally is handled by the Minor-Ally rules.
-    if (noNeutrals || minorAllies.has(minor) || powers.some((p) => atWar(state, p, minor))) continue;
+    if (noNeutrals || minorAllies.has(minor) || isConquered(state, minor) || powers.some((p) => atWar(state, p, minor))) continue;
     targets.push(minor);
   }
   return targets.filter((t) => costOf(t) <= spendable(me));
@@ -105,6 +106,13 @@ export function scheduledDeclarations(ctx: GameContext, state: GameState): { sta
   for (const rule of ctx.scenario.rules) {
     if (rule.kind !== "automatic-declaration" || rule.side !== state.activeSide) continue;
     if (rule.turn.year !== state.year || rule.turn.season !== state.season) continue;
+    // Spec 14 R4: a conquered Power is not a target and not a declarer (`declarationTargets`), so a scheduled declaration on one (or on a conquered minor) is not made: nothing is
+    // charged and no war is recorded (the U.S. would otherwise pay 35 BRPs to declare on a Germany that is gone). TODO(verify) V35: the declarer
+    // still joins its side, as if the war existed already; a declarer that is itself gone does nothing.
+    if (isGone(next.nations[rule.by]) || (isMajorPower(rule.on) && isGone(next.nations[rule.on])) || isConquered(next, rule.on)) { // the same targets `declarationTargets` leaves out
+      if (!isGone(next.nations[rule.by])) next = joinsItsSide(next, rule.by);
+      continue;
+    }
     // The war may exist already (Germany declared first): the Major Power still joins its side, with nothing to pay.
     if (atWar(next, rule.by, rule.on)) {
       next = joinsItsSide(next, rule.by);

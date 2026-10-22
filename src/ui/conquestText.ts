@@ -16,7 +16,7 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
     case "CAPITAL_RETAKEN":
       return `${POWER_NAMES[e.power]} has taken back ${placeName(ctx.map, e.capital)}.`;
     case "COUNTRY_CONQUERED":
-      return `${nameOf(e.country)} has been conquered by ${nameOf(e.by)}: ${e.unitsRemoved} unit${e.unitsRemoved === 1 ? "" : "s"} leave the game and ${e.hexesPassed} hex${e.hexesPassed === 1 ? "" : "es"} change hands.`;
+      return `${nameOf(e.country)} has been conquered by ${nameOf(e.by)}: ${e.unitsRemoved} unit${e.unitsRemoved === 1 ? " leaves" : "s leave"} the game and ${e.hexesPassed} hex${e.hexesPassed === 1 ? " changes" : "es change"} hands.`;
     case "UNITS_REMOVED_BY_CONQUEST":
     case "CONTROL_PASSED":
       return null;
