@@ -25,15 +25,15 @@ const warWithRussia: NonNullable<Hooks["prepare"]> = (s) => ({
 });
 
 /** Replays a finished run, collecting the events with the index of the action that produced each, and checking that every state has something to do. */
-function replayChecked(r: ReturnType<typeof runGame>, prepare: Hooks["prepare"] = warWithRussia): { events: (GameEvent & { at: number })[]; asked: number } {
+function replayChecked(r: ReturnType<typeof runGame>, prepare: Hooks["prepare"] = warWithRussia): { events: (GameEvent & { index: number })[]; asked: number } {
   let state = r.initial;
-  const events: (GameEvent & { at: number })[] = [];
+  const events: (GameEvent & { index: number })[] = [];
   let asked = 0;
   r.actions.forEach((a, i) => {
     if (i === r.setupActions && prepare) state = prepare(state); // the runner changed the state once the setup was over
     const res = applyAction(r.ctx, state, a);
     if (!res.ok) throw new Error(`action ${i} refused: ${res.error}`);
-    for (const e of res.events) events.push({ ...e, at: i });
+    for (const e of res.events) events.push({ ...e, index: i });
     state = res.state;
     // no state is left with nothing to do (a step nobody can act on) while the game is on
     if (state.phase === "player-turn") {
