@@ -121,14 +121,3 @@ export function siberianCardHtml(s: Session, actions: readonly Action[], endButt
       <div class="siberian-buttons">${endButton}</div>
     </section>`;
 }
-
-/** After the card first appears in a Game Turn its heading takes the keyboard focus, once, and the card is scrolled into view; a card of an earlier Game Turn is forgotten. */
-export function revealSiberian(root: HTMLElement, s: Session): void {
-  const card = root.querySelector<HTMLElement>("#siberian-card");
-  const key = turnKey(s.state);
-  if (!card) { if (s.siberianFocused === key) s.siberianFocused = undefined; return; }
-  if (s.siberianFocused === key) return;
-  s.siberianFocused = key;
-  root.querySelector<HTMLElement>("#siberian-title")?.focus({ preventScroll: true });
-  card.scrollIntoView({ block: "nearest" });
-}

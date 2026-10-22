@@ -8,9 +8,20 @@ import { bindChoice } from "./choiceBind";
 import { bindMove } from "./moveBind";
 import type { Session, SetupView, TapMode } from "./session";
 import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSiberian, pickSpec, placeInBox, setMode, takeAction, takeSiberian, undoLast } from "./sessionActions";
-import { revealSiberian } from "./siberianCard";
+import { turnKey } from "../engine/victory";
 
 /** Click handlers for the buttons statusView draws. Each one changes the session, then calls `redraw`. */
+
+/** After the Free Siberian Transfer card first appears in a Game Turn its heading takes the keyboard focus, once, and the card is scrolled into view; a card of an earlier Game Turn is forgotten (the style of `revealWinter`). */
+function revealSiberian(root: HTMLElement, s: Session): void {
+  const card = root.querySelector<HTMLElement>("#siberian-card");
+  const key = turnKey(s.state);
+  if (!card) { if (s.siberianFocused === key) s.siberianFocused = undefined; return; }
+  if (s.siberianFocused === key) return;
+  s.siberianFocused = key;
+  root.querySelector<HTMLElement>("#siberian-title")?.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest" });
+}
 
 export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | null, actions: Action[], redraw: () => void): void {
   const owner = setup?.owner;

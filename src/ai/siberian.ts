@@ -18,9 +18,9 @@ type Transfer = Extract<Action, { type: "SIBERIAN_TRANSFER" }>;
 
 const keyOf = (a: Transfer): string => `${a.unit.type}:${a.unit.strength}:${a.at}`;
 
-/** The SIBERIAN_TRANSFER on the legal list the policy takes, or undefined: then the caller ends the step. */
-export function chooseSiberian(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig): Decision | undefined {
-  if (!SIBERIAN_TAKE_ALL) return undefined;
+/** The SIBERIAN_TRANSFER on the legal list the policy takes, or undefined: then the caller ends the step. `takeAll` is the policy (a test may turn it off). */
+export function chooseSiberian(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig, takeAll: boolean = SIBERIAN_TAKE_ALL): Decision | undefined {
+  if (!takeAll) return undefined;
   const takes = legal.filter((a): a is Transfer => a.type === "SIBERIAN_TRANSFER");
   if (takes.length === 0) return undefined;
   const enemies = enemyHexes(ctx, state, "ussr");

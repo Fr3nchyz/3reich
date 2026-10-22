@@ -79,9 +79,9 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
   }
 }
 
-/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels, identical actions appear once, and no two read alike. */
+/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels (so does the Free Siberian Transfer: its card), identical actions appear once, and no two read alike. */
 export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
-  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE"), ctx, state, (a) => label(a, ctx, state));
+  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**

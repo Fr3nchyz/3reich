@@ -65,3 +65,21 @@ writeFileSync("tests/e2e/fixtures/winter-started.json", JSON.stringify({ scenari
 const offer = cutAt(4, (st) => surrenderAsking(st));
 console.log("surrender fixture:", offer.length, "actions");
 writeFileSync("tests/e2e/fixtures/surrender-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 4, actions: offer }));
+
+// tests/e2e/fixtures/siberian-card.json (spec 14, ticket 14-18): a whole game of the computer (1942, seed 1, no change to the scenario) cut where the Allied Player Turn of
+// Spring 1942 reaches step 8a with units to take: the game stands at 8a, the Allies may take three. Loaded with the `?e2e` hook for the Allies (the card) and for the
+// Axis (the computer, playing the Allies, takes the units by itself).
+{
+  const r = runGame({ scenario: "1942", seed: 1, turns: "end", verify: false });
+  let state = r.initial;
+  let cut: unknown[] | null = null;
+  for (let i = 0; i < r.actions.length && !cut; i++) {
+    const res = applyAction(r.ctx, state, r.actions[i]!);
+    if (!res.ok) throw new Error(`action ${i} refused: ${res.error}`);
+    state = res.state;
+    if (state.position?.part === "player-turn" && state.position.step === "8a" && state.activeSide === "allies" && legalActions(r.ctx, state).some((a) => a.type === "SIBERIAN_TRANSFER")) cut = r.actions.slice(0, i + 1);
+  }
+  if (!cut) throw new Error("the 1942 game never reached step 8a with units to take");
+  console.log("siberian fixture:", cut.length, "actions");
+  writeFileSync("tests/e2e/fixtures/siberian-card.json", JSON.stringify({ scenario: "1942", seed: 1, actions: cut }));
+}

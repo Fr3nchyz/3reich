@@ -56,7 +56,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
-    "8a": "The Free Siberian Transfer is not taken.",
+    "8a": "Nothing more to take in the Free Siberian Transfer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",
