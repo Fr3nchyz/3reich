@@ -186,11 +186,12 @@ describe("the French units are halved (R5 point 2, V13, V38)", () => {
     expect(halve(air(["u1", "u2"])).keep.map((u) => u.id)).toEqual(["u1"]);
     expect(halve(air(["u1"])).keep.map((u) => u.id)).toEqual(["u1"]);
     expect(halve(["u1", "u2", "u3"].map((id) => french("fleet", 9, id))).keep.map((u) => u.id)).toEqual(["u1", "u2"]);
+    expect(halve(["u1", "u2", "u3"].map((id) => french("air", 1, id))).keep.map((u) => u.id)).toEqual(["u1", "u2"]); // 3 factors: half rounded up is 2
     expect(halve([french("air", 5, "u1"), french("fleet", 9, "u2")]).keep.map((u) => u.id)).toEqual(["u1", "u2"]); // air and fleets are totalled apart
     expect(halve([french("air", 1, "u1"), french("air", 5, "u2"), french("air", 1, "u3")]).keep.map((u) => u.id)).toEqual(["u1", "u2"]); // 7 factors, 4 wanted: 1, then 5
   });
   it("airbases and bridgeheads are lost; nothing is kept from nothing", () => {
-    expect(halve([french("airbase", 0, "u1"), french("bridgehead", 0, "u2")]).keep).toEqual([]);
+    expect(halve([french("airbase", 1, "u1"), french("bridgehead", 1, "u2")]).keep).toEqual([]);
     expect(halve([])).toEqual({ keep: [], lose: [] });
   });
   it("in play: the Vichy half stands in the Vichy hexes as Vichy units with their own numbers, the other half is gone, and the event counts both", () => {
