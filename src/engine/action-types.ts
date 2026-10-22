@@ -104,6 +104,12 @@ export type GameEvent =
   | { type: "UNITS_REMOVED_BY_CONQUEST"; country: Conquest["country"]; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
   /** Hexes of a conquered country changed control in one go: to the conqueror, or (`to` null) to nobody until a ground unit enters. */
   | { type: "CONTROL_PASSED"; country: Conquest["country"]; to: ForceOwner | null; hexes: HexId[] }
+  /**
+   * France fell and Vichy France was created (spec 14 R5, ticket 14-7; Ref 35.0), written after the fall's own events: `halved` counts the French units of European
+   * France that became Vichy (`kept`) and those that were lost with France (`lost`); `colonies` gives the die of each colony, even (Vichy) or odd (Free French);
+   * `britishEliminated` counts the British units that stood in Vichy territory. The hexes that became Vichy or Free French are in CONTROL_PASSED events of their own.
+   */
+  | { type: "VICHY_CREATED"; halved: { kept: number; lost: number }; colonies: { colony: "lebanon-syria" | "north-africa"; die: number; becomes: "vichy" | "free-french" }[]; britishEliminated: number }
   /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 

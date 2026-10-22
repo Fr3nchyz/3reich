@@ -2,8 +2,9 @@ import type { GameEvent } from "./action-types";
 import { capitalOf, CONQUERED_BY_CAPITAL } from "./capital";
 import type { GameContext } from "./context";
 import { controllerOf, controllingSide } from "./control";
+import { franceMark, franceSteps } from "./conquest-france";
 import { conquer, type FallPlan } from "./conquest-stages";
-import type { Conquest } from "./conquest-record";
+import { isConquered, type Conquest } from "./conquest-record";
 import { settleMinorConquests } from "./conquest-minor";
 import { ALIGNMENT, sideOfPower } from "./war";
 import type { ForceOwner, GameState, PowerId, Side } from "./types";
@@ -12,17 +13,17 @@ import type { ForceOwner, GameState, PowerId, Side } from "./types";
  * A Major Power is conquered by its capital (spec 14 R4, C8; Ref 2.0, 18.1). When an enemy ground unit takes the capital the owner is warned
  * (CAPITAL_LOST, control.ts); if the capital is still lost when the owner's own Combat Phase ends (the end of step 7p of its Player Turn) the Power
  * falls: `fall()`. The stages every fall shares are `conquer` (conquest-stages.ts); minor countries, colonies and Eastern Europe (ticket 14-6, spec 15) fall
- * through `fallCountry` (conquest-minor.ts), which uses the same stages; France's Vichy and the colony dice (ticket 14-7) and Italy's surrender (ticket 14-8)
- * add their own steps to `fall()` through its `steps`.
+ * through `fallCountry` (conquest-minor.ts), which uses the same stages; France's Vichy and the colony dice (ticket 14-7, conquest-france.ts) and Italy's
+ * surrender (ticket 14-8) add their own steps to `fall()` through its `steps`.
  */
 
 export type CapitalState = "free" | "capital-lost" | "conquered";
 
-/** Where a Major Power stands: free, its capital lost (the other side holds it), or conquered. A Power outside `CONQUERED_BY_CAPITAL` (France until ticket 14-7), or not in the war, is free. */
+/** Where a Major Power stands: free, its capital lost (the other side holds it), or conquered (France, once fallen, has status "vichy": the Conquest record says it). A Power outside `CONQUERED_BY_CAPITAL`, or not in the war, is free. */
 export function capitalState(ctx: GameContext, state: GameState, power: PowerId): CapitalState {
   const nation = state.nations[power];
   if (!nation) return "free";
-  if (nation.status === "conquered") return "conquered";
+  if (nation.status === "conquered" || isConquered(state, power)) return "conquered";
   const capital = capitalOf(ctx, power);
   const side = sideOfPower(nation);
   if (capital === null || side === null || !CONQUERED_BY_CAPITAL.includes(power)) return "free";
@@ -43,10 +44,12 @@ const withAllies = (state: GameState, who: PowerId): ForceOwner[] => [who, ...st
  * the Power's own particulars. The Power and its active Minor-Allies leave together; the land it holds in its own map country passes to the conqueror (the
  * rest becomes nobody's, V11); its status becomes "conquered" with 0 BRPs and a spending limit of 0 (the Base stays), its Minor-Allies become inactive (V33)
  * and the Conquest records the BRPs it began the scenario with (V9). The Wars list is not touched: it keeps its history.
- * `steps` are the extension points of ticket 14-7 (France's halving before, the colony dice after) and of 14-8; none is used yet.
+ * `steps` are the extension points of `conquer`: France's own (the Vichy half before, the report after, `franceSteps`) are used when none are given; those
+ * of ticket 14-8 (Italy) will be too.
  */
 export function fall(ctx: GameContext, state: GameState, who: PowerId, conqueror: ForceOwner, how: Conquest["how"] = "capital", steps: Pick<FallPlan, "before" | "after"> = {}): { state: GameState; events: GameEvent[] } {
   const nation = state.nations[who];
+  const france = who === "france";
   return conquer(ctx, state, {
     country: who,
     who,
@@ -55,12 +58,16 @@ export function fall(ctx: GameContext, state: GameState, who: PowerId, conqueror
     side: sideOfPower(nation) ?? ALIGNMENT[who],
     how,
     startingBrps: ctx.scenario.nations[who].brpTotal,
-    isHome: (hex, owner) => owner === who && hex.country === who,
-    mark: (s) => ({
-      ...s,
-      nations: { ...s.nations, [who]: { ...nation, status: "conquered", brpTotal: 0, spendLimit: 0, spent: 0 } },
-      minorAllies: s.minorAllies.map((m) => (m.of === who && m.active ? { ...m, active: false } : m)),
-    }),
+    // France: everything it holds passes to the conqueror (R5 point 4, V15); the colonies and the Vichy hexes were given away by the steps
+    isHome: france ? () => true : (hex, owner) => owner === who && hex.country === who,
+    mark: france
+      ? franceMark // R5: France becomes "vichy", not "conquered"; Vichy France is an inactive German Minor-Ally
+      : (s) => ({
+          ...s,
+          nations: { ...s.nations, [who]: { ...nation, status: "conquered", brpTotal: 0, spendLimit: 0, spent: 0 } },
+          minorAllies: s.minorAllies.map((m) => (m.of === who && m.active ? { ...m, active: false } : m)),
+        }),
+    ...(france ? franceSteps() : {}),
     ...steps,
   });
 }

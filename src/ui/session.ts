@@ -192,6 +192,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "CAPITAL_LOST":
     case "CAPITAL_RETAKEN":
     case "COUNTRY_CONQUERED":
+    case "VICHY_CREATED":
     case "UNITS_REMOVED_BY_CONQUEST":
     case "CONTROL_PASSED":
       return conquestLine(ctx, e);

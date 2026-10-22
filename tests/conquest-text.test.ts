@@ -21,6 +21,14 @@ describe("the log lines of a conquest", () => {
     expect(conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "germany", by: "britain", how: "capital", unitsRemoved: 40, hexesPassed: 54 })).toBe("Germany has been conquered by Great Britain: 40 units leave the game and 54 hexes change hands.");
     expect(conquestLine(CTX, { type: "COUNTRY_CONQUERED", country: "italy", by: "britain", how: "capital", unitsRemoved: 1, hexesPassed: 1 })).toContain("1 unit leaves the game and 1 hex changes hands");
   });
+  it("Vichy France: the units that became Vichy and the ones lost, the colonies, and the British lost (ticket 14-7)", () => {
+    const e: GameEvent = { type: "VICHY_CREATED", halved: { kept: 11, lost: 12 }, colonies: [{ colony: "lebanon-syria", die: 4, becomes: "vichy" }, { colony: "north-africa", die: 3, becomes: "free-french" }], britishEliminated: 0 };
+    expect(conquestLine(CTX, e)).toBe("Vichy France now exists. 11 French units became Vichy and 12 were lost. Lebanon-Syria is Vichy French. Tunisia, Algeria and Morocco are Free French.");
+    const one: GameEvent = { type: "VICHY_CREATED", halved: { kept: 1, lost: 1 }, colonies: [{ colony: "lebanon-syria", die: 1, becomes: "free-french" }, { colony: "north-africa", die: 2, becomes: "vichy" }], britishEliminated: 2 };
+    expect(conquestLine(CTX, one)).toBe("Vichy France now exists. 1 French unit became Vichy and 1 was lost. Lebanon-Syria is Free French. Tunisia, Algeria and Morocco are Vichy French. 2 British units in Vichy territory are eliminated.");
+    expect(conquestLine(CTX, { ...one, britishEliminated: 1 })).toContain("1 British unit in Vichy territory is eliminated.");
+    expect(eventSide(e, "axis")).toBe("allies"); // France's loss
+  });
   it("the units and the land passed say nothing of their own: the fall's line has the numbers", () => {
     expect(conquestLine(CTX, { type: "UNITS_REMOVED_BY_CONQUEST", country: "germany", units: [] })).toBeNull();
     expect(conquestLine(CTX, { type: "CONTROL_PASSED", country: "germany", to: null, hexes: ["M35"] })).toBeNull();

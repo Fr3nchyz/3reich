@@ -29,13 +29,19 @@ const fnv = (text: string): number => {
 // engine and comparing every recorded action: the first action to differ comes just after Poland's fall (seed 1: the fall is at action 220, the first difference at 223,
 // a German BUILD placed on land that is now German; seed 5: 215 and 216) and nothing before it differs. Seed 2 and seed 10 give the identical action list (Poland's
 // army was already gone). Games of 1942, 1944 and the Campaign differ only after the first conquest of a minor country (Finland or Poland), never before.
+// Hashes of 2026-10-22 (ticket 14-7): France now falls with Paris and Vichy France appears, so the 1939 seed 5 hash, the 7h list hash of seed 5 and the supply
+// snapshot of 1939 seed 2 (tests/supply-snapshot.test.ts) changed on purpose (the 1939 seed 1 and seed 2 hashes, the 1942 hash and the 1942 snapshot are unchanged).
+// Checked then, by playing whole games of the computer on the old and the new engine and comparing every recorded action: the first action to differ comes just
+// after the fall of France (counting the setup actions: seed 5, the fall is at action 279 and the first difference at 282; seed 2, 403 and 404) and nothing before it differs.
+// The same holds for 1939 seeds 1 to 10 and Campaign seeds 1 to 4 (the two games where Paris is never taken are identical) and for 1942 and 1944 seeds 1 to 4 (identical).
+// The two expectations below that the computer's play after the fall of France could no longer keep are relaxed, each in its test.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3772813808));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(119964332));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(764929019);
+    expect(hashOf("1939", 5, 4)).toBe(2925722605);
     expect(hashOf("1939", 2, 4)).toBe(4061975126);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(3772813808));
@@ -49,8 +55,12 @@ describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenari
       const r = runGame({ scenario: "1939", seed, turns: "end", verify: false });
       expect(r.anomalies).toEqual([]);
       expect(r.ended).toBe("game-over");
-      const stretch = r.turns.filter((t) => ["Fall 1940", "Winter 1940", "Spring 1941", "Summer 1941"].includes(t.label));
-      expect(stretch).toHaveLength(4);
+      // Ticket 14-7: when France has fallen before Fall 1940 (seeds 5 and 13 now) the Axis has no enemy on the Western Front left to move against and the
+      // computer does nothing in Fall 1940 (the march to the border starts in Winter 1940, as in the other seeds); that Game Turn is not asked to be busy.
+      const franceFell = r.final.conquests?.some((c) => c.country === "france" && (c.at.year === 1939 || (c.at.year === 1940 && (c.at.season === "spring" || c.at.season === "summer")))) ?? false;
+      const asked = franceFell ? ["Winter 1940", "Spring 1941", "Summer 1941"] : ["Fall 1940", "Winter 1940", "Spring 1941", "Summer 1941"];
+      const stretch = r.turns.filter((t) => asked.includes(t.label));
+      expect(stretch).toHaveLength(asked.length);
       for (const t of stretch) expect(t.movedBy.axis + t.attacks.axis, t.label).toBeGreaterThan(0);
       expect(idleTurns(stretch).filter((x) => x.endsWith("axis")), "Axis idle Player Turns").toEqual([]);
     });
@@ -60,7 +70,7 @@ describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenari
 describe("1939 seed 5 keeps fighting (the churn regression: units scored progress toward the wrong objective and made 9 combats, not 35)", () => {
   it("makes at least 20 combats and holds at least 6 Axis objectives at the end; the Axis does not churn for three Game Turns", () => {
     const r = runGame({ scenario: "1939", seed: 5, turns: "end", verify: false });
-    expect(r.turns.reduce((n, t) => n + t.combats.total, 0)).toBeGreaterThanOrEqual(20); // 25 under the armor-only ZOC of Ref 7.0 (spec 13); the churn failure this guards made 9
+    expect(r.turns.reduce((n, t) => n + t.combats.total, 0)).toBeGreaterThanOrEqual(15); // 25 under the armor-only ZOC of Ref 7.0 (spec 13), 19 once France falls in Spring 1940 (ticket 14-7: no Western Front after it); the churn failure this guards made 9
     expect(r.turns.at(-1)!.objectives.axis).toBeGreaterThanOrEqual(6); // 7 under the armor-only ZOC of Ref 7.0 (spec 13), 15 before; over 30 seeds the Axis holds 287 objectives against 359
     // The Axis does not churn. The Allies shuffle units for three Game Turns in this seed under the armor-only ZOC (Ref 7.0, spec 13); over 30 seeds of 1939 the runs fell from 5 to 3.
     expect(churnRuns(r.turns).filter((x) => x.startsWith("axis"))).toEqual([]);
@@ -102,7 +112,7 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       if (!r.ok) throw new Error(r.error);
       state = r.state;
     }
-    expect(lists).toBeGreaterThan(20);
-    expect(h).toBe(2524576926);
+    expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
+    expect(h).toBe(1192667303);
   });
 });

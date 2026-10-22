@@ -1,6 +1,6 @@
 import type { Scenario } from "../engine/types";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, replacement } from "./counters";
-import { POLAND_EAST_OF_PARTITION_LINE } from "./zones";
+import { ISLANDS, POLAND_EAST_OF_PARTITION_LINE, VICHY_FRANCE } from "./zones";
 import { VICTORY_1939 } from "./victory";
 
 /**
@@ -43,6 +43,10 @@ export const SCENARIO_1939: Scenario = {
     // Ref 29.0: a red line the program draws through Poland. It is not on the printed map card;
     // the original game's files give its hexes (see zones.ts).
     "poland-east-of-partition-line": POLAND_EAST_OF_PARTITION_LINE,
+    // Ref 35.0: the hexes that become Vichy France when France falls (spec 14 R5). They are not on the printed map card; they come from the original
+    // game's VICHY42.CON, as in the 1942 scenario. Nothing is set up there in 1939.
+    "vichy-france": VICHY_FRANCE,
+    corsica: ISLANDS.corsica,
   },
 
   // "Year Start Sequence: None in 1939."
