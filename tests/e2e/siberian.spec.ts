@@ -68,6 +68,7 @@ test("pick a counter, press a city: the unit is built free, the log says so, the
   await expect(page.locator("#siberian-card")).toContainText("You may take 2 more units this turn (3 in Spring 1942; 1 taken).");
   await expect(page.locator("#siberian-card")).toContainText("The Allied targets are already one objective higher.");
   await expect(page.locator("#siberian-card .siberian-buttons button")).toHaveText(["Done taking units"]);
+  await expect(page.locator("g.units > g")).toHaveCount(units + 1); // the counter stands in Moscow
   expect(await page.locator("main table tbody tr", { hasText: "Soviet Union" }).locator("td").nth(2).innerText(), "free of charge").toBe(brps);
   await expect(page.locator("main .toast")).toBeEmpty();
   // The Objectives card says the Transfer is in use.
