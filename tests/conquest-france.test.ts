@@ -180,6 +180,10 @@ describe("the French units are halved (R5 point 2, V13, V38)", () => {
     expect(halve([...a, ...b, ...c]).keep.map((u) => u.id)).toEqual(["u1", "u2", "u4", "u6"]);
     expect(halve([...a, ...b, ...c]).lose.map((u) => u.id)).toEqual(["u3", "u5"]);
   });
+  it("the lowest unit NUMBERS are kept, as numbers and not as text (u2 before u10 and u11)", () => {
+    const three = ["u10", "u2", "u11"].map((id) => french("infantry", 2, id));
+    expect(halve(three).keep.map((u) => u.id)).toEqual(["u2", "u10"]);
+  });
   it("air and naval counters: the factors of the type are totalled and half, rounded up, is the least Vichy gets (5+5+5 → 2 counters; 5+5 → 1; 5 → 1; 9+9+9 → 2)", () => {
     const air = (ids: string[]) => ids.map((id) => french("air", 5, id));
     expect(halve(air(["u1", "u2", "u3"])).keep.map((u) => u.id)).toEqual(["u1", "u2"]);

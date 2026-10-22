@@ -486,7 +486,7 @@ When a Major Power's capital is taken, the owner and the other side see a **bann
 +------------------------------------------------------+
 ```
 
-The nation table shows "Conquered" in the status column (the DOS game does) and the Status card lists, for each Major Power, the countries it has conquered. For France the card adds the Vichy lines: "Vichy France now exists. 11 French units became Vichy and 12 were lost. Lebanon-Syria is Vichy French. Tunisia, Algeria and Morocco are Free French."
+The nation table shows "Conquered" in the status column (the DOS game does) and the Status card lists, for each Major Power, the countries it has conquered. For France the card adds the Vichy lines: "Vichy France now exists. 11 French units became Vichy and 12 were lost. Lebanon-Syria is Vichy French. Tunisia, Algeria and Morocco are Free French." (As built in 14-7 the log line says "N French units became Vichy" and counts only the units of European France that were set up as Vichy; French units in a colony that the die makes Vichy change owner but are not in that number.)
 
 ### D4. The Russian winter (II.A)
 
