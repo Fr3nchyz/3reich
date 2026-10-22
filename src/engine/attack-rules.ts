@@ -7,6 +7,7 @@ import { countedAir } from "./air-support";
 import { oddsColumn, type OddsColumn } from "./combat";
 import type { ForceOwner, GameState, PowerId, Side, Unit, UnitType } from "./types";
 import { atWar, isMajorPower } from "./war";
+import { winterDefence } from "./winter-effects";
 
 /**
  * Who may attack whom, and the numbers of one ground attack (Ref 12.1, spec 04). Pure helpers
@@ -151,7 +152,7 @@ export function attackNumbers(ctx: GameContext, state: GameState, attackers: rea
     const side = ctx.map.hexsides[hexsideId(hex(a.at), hex(target))];
     return side !== undefined && (side.river === true || side.crossingArrow === true);
   });
-  const { multiplier, basis } = defenseBasis({ terrain: h.land ?? "plain", features: h.features, fortress: state.fortresses[target] === true, behindRiverOrArrow: behind });
+  const { multiplier, basis } = defenseBasis({ terrain: h.land ?? "plain", features: h.features, fortress: state.fortresses[target] === true, behindRiverOrArrow: behind, winter: winterDefence(ctx, state, defenders, target) });
   const ground = attackers.reduce((n, u) => n + u.strength, 0);
   const support = countedAir(state, target, ground);
   const attackFactors = ground + support.factors;

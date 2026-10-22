@@ -3,6 +3,7 @@ import type { MapHex } from "../engine/map";
 import { placementPlaces, type UnitSpec } from "../engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
+import { winterKey } from "../engine/winter-record";
 import { computerToMove } from "./computerPlay";
 import { normaliseAirMove, tapToAirMove } from "./airMoveTap";
 import { normaliseAir, tapToAir } from "./airTap";
@@ -106,6 +107,7 @@ export function takeAction(s: Session, action: Action): void {
   s.moveChosen = null;
   s.airMove = null;
   s.airbase = null;
+  if (action.type === "CHOOSE_WINTER") s.winterSeen = winterKey(s.state); // the player answered: the winter that starts needs no card
   s.undo = null; // any step button that is not a move ends what "Take back last move" can undo (spec 10, 10-6)
   run(s, action);
 }

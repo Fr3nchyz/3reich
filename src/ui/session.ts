@@ -95,6 +95,10 @@ export interface Session {
   /** The result card (spec 14, part D2): set when "Look at the map" or "Read the log" put it away; `endFresh` when it has just opened. Screen state, never saved. */
   endDismissed?: boolean;
   endFresh?: boolean;
+  /** The Russian winter (its key, "1941-winter") whose card the player has answered or dismissed (spec 14, ticket 14-13): the card of a winter that starts with no question shows until "OK". Screen state, never saved. */
+  winterSeen?: string;
+  /** The card of the winter question has taken the keyboard focus once for this question. Screen state, never saved. */
+  winterFocused?: string;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */

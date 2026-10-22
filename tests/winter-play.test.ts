@@ -146,15 +146,16 @@ describe("the browser asks the right side (computerToMove, computerSide)", () =>
     return s;
   };
   for (const activeSide of ["axis", "allies"] as const) {
-    it(`the player is the Allies (last played: ${activeSide}): the computer does not move, the two answers are on the screen as plain buttons`, () => {
+    it(`the player is the Allies (last played: ${activeSide}): the computer does not move, the two answers are the buttons of the winter card`, () => {
       const s = atQuestion("allies", activeSide);
       expect(computerToMove(s)).toBe(false);
       const legal = legalActions(s.ctx, s.state);
-      expect(buttonLabels(legal, s.ctx, s.state).map((b) => b.text)).toEqual(["Let the Russian winter start now", "Put the Russian winter off for a year"]);
+      expect(buttonLabels(legal, s.ctx, s.state).map((b) => b.text)).toEqual(["Winter starts now", "Wait for next winter"]);
       const html = statusHtml(s, null, legal);
       expect(html).not.toContain("Computer is playing");
       expect(html).not.toContain("CHOOSE_WINTER");
       expect(html).toContain("step II.A (Russian winter): the Allies say whether it waits");
+      expect(html.indexOf("Wait for next winter")).toBeGreaterThan(html.indexOf('id="winter-card"'));
       expect(html).not.toContain("player turn");
     });
     it(`the player is the Axis (last played: ${activeSide}): the computer, playing the Allies, answers`, () => {

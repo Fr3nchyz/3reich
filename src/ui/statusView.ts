@@ -5,6 +5,8 @@ import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
 import { winterAsking } from "../engine/winter-record";
+import { WINTER_TEXT } from "./endText";
+import { frontOptionButtons, winterBannerHtml, winterCardHtml } from "./winterCard";
 import { computerSide, computerToMove } from "./computerPlay";
 import type { GameContext } from "../engine/context";
 import type { GameState } from "../engine/types";
@@ -30,8 +32,8 @@ function turnLine(s: Session): string {
   const { state } = s;
   if (state.phase === "game-over") return statusText(state);
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
-  // At II.A the Allies are asked about the Russian winter, whoever played last: the line says so instead of naming the side that played (the card and banner are ticket 14-13).
-  if (winterAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): the Allies say whether it waits`;
+  // At II.A the Allies are asked about the Russian winter, whoever played last: the line says so instead of naming the side that played; when the computer answers for them it says that (also in a watched game).
+  if (winterAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): ${computerToMove(s) ? WINTER_TEXT.askLineComputer : WINTER_TEXT.askLine}`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }
@@ -63,7 +65,7 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
     case "SELECT_FRONT_OPTION":
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "CHOOSE_WINTER":
-      return a.postpone ? "Put the Russian winter off for a year" : "Let the Russian winter start now"; // a plain button until the winter card (ticket 14-13)
+      return a.postpone ? WINTER_TEXT.wait : WINTER_TEXT.start; // the buttons of the winter card (winterCard.ts)
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     default:
@@ -85,18 +87,19 @@ export function buttonLabels(actions: Action[], ctx: GameContext, state: GameSta
 /** The folds of the combat buttons: their inner row is not `.actions`, so the buttons that move the game on stay the last `.actions` buttons in the page (the browser tests click that one). */
 const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE", "DESIGNATE_AIR"];
 
-function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string } {
+function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string; winter: string } {
   const shown = buttonLabels(actions, ctx, state);
   const text = new Map(shown.map((l) => [l.action, l.text]));
   const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
   const fold = (type: Action["type"], title: string) => {
     const group = actions.filter((a) => a.type === type && text.has(a));
-    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${group.map(button).join("")}</div></details>`;
+    return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${type === "SELECT_FRONT_OPTION" ? frontOptionButtons(state, group, button) : group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR");
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR" && a.type !== "CHOOSE_WINTER");
   return {
     folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DESIGNATE_AIR", "All air support as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
     rest: rest.map(button).join(""),
+    winter: actions.filter((a) => a.type === "CHOOSE_WINTER" && a.postpone && text.has(a)).concat(actions.filter((a) => a.type === "CHOOSE_WINTER" && !a.postpone && text.has(a))).map(button).join(""), // waiting first, as the card of spec 14 D4 shows it
   };
 }
 
@@ -110,13 +113,14 @@ function frontPrompt(s: Session, actions: Action[]): string {
 /** The whole status area. `setup` is set while a nation of yours is setting up. */
 export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
   const totals = initiativeTotals(s.state);
-  const { folds, rest } = turnButtons(actions, s.foldOpen, s.ctx, s.state);
+  const { folds, rest, winter } = turnButtons(actions, s.foldOpen, s.ctx, s.state);
   const toast = `<p class="toast" role="status">${s.toast}</p>`;
   // Step 7h: the bar, the message and the cards come first, so the next thing to do is in view; everything else follows.
   const lead = leadsStatus(s);
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}
       ${scoreHtml(s)}
       ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}

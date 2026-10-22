@@ -1,5 +1,6 @@
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
+import { winterKey } from "../engine/winter-record";
 import { bindAir } from "./airBind";
 import { bindAirMove } from "./airMoveBind";
 import { bindAttack } from "./attackBind";
@@ -17,6 +18,8 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
     root.querySelectorAll<T>(selector).forEach((el) => el.addEventListener("click", () => { handler(el); redraw(); }));
 
   on<HTMLButtonElement>("button[data-action]", (b) => takeAction(s, actions[Number(b.dataset.action)]!));
+  on<HTMLButtonElement>("button[data-winterwhy]", (b) => { s.foldOpen = true; s.toast = b.title; }); // the greyed Offensive Option: a tap says why (the winter, ticket 14-13)
+  on("#winter-ok", () => { s.winterSeen = winterKey(s.state); });
   on<HTMLButtonElement>("button[data-mode]", (b) => setMode(s, b.dataset.mode as TapMode));
   on<HTMLButtonElement>("button[data-spec]", (b) => pickSpec(s, b.dataset.spec!));
   on<HTMLButtonElement>("button[data-build]", (b) => pickBuild(s, b.dataset.build!));

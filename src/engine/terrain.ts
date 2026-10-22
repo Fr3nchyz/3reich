@@ -28,14 +28,19 @@ export interface DefenseSituation {
   behindRiverOrArrow?: boolean;
   /** True when the attack includes a Seaborne Invasion. */
   seaborneInvasion?: boolean;
+  /**
+   * True when the Russian winter is on and the defenders are Axis units (not only Finns) east of the original Russian border (`winterDefence`, winter-effects.ts): the
+   * plain doubling is lost, and nothing else (Ref 28.0, spec 14 R10).
+   */
+  winter?: boolean;
 }
 
 /** Why a defence is multiplied the way it is: the single best benefit that applies (they never add up). */
-export type DefenseBasis = "fortress" | "mountains" | "swamp" | "river-or-arrow" | "beach-invasion" | "plain";
+export type DefenseBasis = "fortress" | "mountains" | "swamp" | "river-or-arrow" | "beach-invasion" | "winter" | "plain";
 
 /**
  * Multiplier applied to each defending ground unit, with the reason. Defence is at least doubled in any
- * terrain; tripled in mountains, swamp, behind a river/crossing arrow, or on a beach
+ * terrain (once, not at all for Axis defenders in Russia in the winter: `winter`); tripled in mountains, swamp, behind a river/crossing arrow, or on a beach
  * against Seaborne Invasion; quadrupled in a fortress. Benefits are not cumulative:
  * the single best applies (a unit on a mountain behind a river is only tripled).
  * The multipliers match the game's own terrain effects chart screen (TABLE11.TAB); the
@@ -49,6 +54,8 @@ export function defenseBasis(s: DefenseSituation): { multiplier: number; basis: 
   if (s.terrain === "swamp") return { multiplier: 3, basis: "swamp" };
   if (s.behindRiverOrArrow) return { multiplier: 3, basis: "river-or-arrow" };
   if (s.seaborneInvasion && features.includes("beach")) return { multiplier: 3, basis: "beach-invasion" };
+  // The Russian winter takes away only the plain "times two" (Ref 28.0, TODO(verify) V23: whether a Fortress keeps its fourfold; read as yes, like the triples).
+  if (s.winter) return { multiplier: 1, basis: "winter" };
   return { multiplier: 2, basis: "plain" };
 }
 

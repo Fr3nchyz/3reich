@@ -8,7 +8,7 @@ import type { Unit } from "../engine/types";
  * disagree with the battle (Ref 12.1, 12.2). Nothing here decides a rule.
  */
 
-export const MULTIPLE_WORDS: Readonly<Record<number, string>> = { 2: "doubled", 3: "tripled", 4: "quadrupled" };
+export const MULTIPLE_WORDS: Readonly<Record<number, string>> = { 1: "counted once", 2: "doubled", 3: "tripled", 4: "quadrupled" };
 export const multipleWord = (m: number): string => MULTIPLE_WORDS[m] ?? `times ${m}`;
 
 /** What happens to the defenders' counterattack roll, one line per distinct result of the counterattack column. */

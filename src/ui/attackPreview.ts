@@ -7,6 +7,7 @@ import { FLEETS_DISPLACED_ON_CAPTURE } from "../engine/naval-rules";
 import { OWNER_NAMES } from "../engine/nations";
 import type { DefenseBasis } from "../engine/terrain";
 import type { GameState, Unit } from "../engine/types";
+import { WINTER_TEXT } from "./endText";
 import { multipleWord, resultRows, type ResultRow } from "./attackResults";
 import { nationAdjective, placeName, stackSummary, unitName } from "./names";
 
@@ -132,6 +133,7 @@ const MULTIPLIER_REASONS: Readonly<Record<DefenseBasis, string>> = {
   swamp: "swamp: tripled",
   "river-or-arrow": "behind a river or crossing arrow: tripled (every attacker is across it)",
   "beach-invasion": "beach against a seaborne invasion: tripled",
+  winter: WINTER_TEXT.previewReason,
   plain: "plain country: doubled",
 };
 

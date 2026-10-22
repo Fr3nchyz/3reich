@@ -32,6 +32,12 @@ export interface RussianWinter {
   postponedFrom?: GameTurn;
 }
 
+/** The map country east of which the Axis suffers the winter: the original Russian border (V23, the same 485 hexes as the surrender rule). */
+export const RUSSIA_COUNTRY = "ussr";
+
+/** The owner whose units the winter does not touch (Ref 28.0: the Finns). */
+export const WINTER_EXEMPT_OWNER = "finland";
+
 /** "1941-winter": the Game Turn a winter is in force in. */
 export const winterKey = (t: GameTurn): string => `${t.year}-${t.season}`;
 

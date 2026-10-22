@@ -36,3 +36,13 @@
 .obj-mark.allies { fill: var(--side-allies); }
 .obj-mark.nobody { fill: rgba(255, 255, 255, .75); stroke: #1d1d1d; stroke-width: 1.4px; stroke-dasharray: 2 1.5; }
 @media (max-height: 480px) { .endcard { padding: .6rem .9rem .7rem; } .endcard h2 { font-size: 1.3rem; } .end-buttons { margin-top: .5rem; } }
+/* The Russian winter (spec 14, part D4): the banner under the turn line, the card at II.A, and the greyed Offensive Option of step 3. */
+.winter-banner { margin: .3rem 0; padding: .35rem .9rem; font-weight: 600; font-size: .95rem; background: #e3edf5; color: #14283a; border: 1px solid #5b7a96; border-left: 6px solid #3d6a94; border-radius: 4px; }
+.wintercard { margin: .3rem 0; padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid #3d6a94; border-radius: 4px; }
+.wintercard h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+.wintercard h2:focus { outline: none; }
+.winter-line { margin: .2rem 0; }
+.winter-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+.winter-buttons button { flex: 1 1 10rem; min-height: 48px; }
+.actions button.greyed { background: #ddd6c3; color: #4f473e; border-style: dashed; cursor: default; box-shadow: none; min-height: 44px; }
+.actions button.greyed:hover { background: #ddd6c3; }
