@@ -253,6 +253,15 @@ describe("the Year Start Sequence (R7a)", () => {
     expect(ger && ger.type === "BRPS_CHANGED" && ger.reason).toMatch(/plus 30 for Moscow and Leningrad held by the Axis/);
     expect(rus && rus.type === "BRPS_CHANGED" && rus.reason).toMatch(/less 30 for Moscow and Leningrad held by the Axis/);
   });
+  it("the log names only the cities the Axis holds: Leningrad alone, then Moscow alone", () => {
+    for (const [hex, name] of [[LENINGRAD, "Leningrad"], [MOSCOW, "Moscow"]] as const) {
+      const events = runYearStartSequence(CTX, atWar(held(hex))).events;
+      for (const nation of ["germany", "ussr"] as const) {
+        const line = events.find((e) => e.type === "BRPS_CHANGED" && e.nation === nation);
+        expect(line && line.type === "BRPS_CHANGED" && line.reason, nation).toMatch(new RegExp(`(plus|less) 15 for ${name} held by the Axis`));
+      }
+    }
+  });
   it("the reason no longer counts conquered countries or the cities as Minor-Allies' BRPs", () => {
     const events = runYearStartSequence(ctxFor(SCENARIO_1942), { ...board([], SCENARIO_1942, { year: 1943, season: "spring" }), control: { [MOSCOW]: "germany" }, wars: [["germany", "ussr"]] }).events;
     const ger = events.find((e) => e.type === "BRPS_CHANGED" && e.nation === "germany");
@@ -274,8 +283,9 @@ describe("the Year Start Sequence (R7a)", () => {
 describe("the log words (R7a)", () => {
   it("the first capture says who gains and who loses, in words, with no raw ids", () => {
     const line = conquestLine(CTX, { type: "RUSSIA_BRPS_MOVED", city: "moscow", amount: 15, lost: 15 });
-    expect(line).toBe("The Axis takes Moscow for the first time: +15 BRPs for Germany, -15 for the Soviet Union.");
-    expect(conquestLine(CTX, { type: "RUSSIA_BRPS_MOVED", city: "leningrad", amount: 15, lost: 4 })).toBe("The Axis takes Leningrad for the first time: +15 BRPs for Germany, -4 for the Soviet Union.");
+    expect(line).toBe("The Axis takes Moscow for the first time: +15 BRPs for Germany, -15 BRPs for the Soviet Union.");
+    expect(conquestLine(CTX, { type: "RUSSIA_BRPS_MOVED", city: "leningrad", amount: 15, lost: 4 })).toBe("The Axis takes Leningrad for the first time: +15 BRPs for Germany, -4 BRPs for the Soviet Union.");
+    expect(conquestLine(CTX, { type: "RUSSIA_BRPS_MOVED", city: "moscow", amount: 15, lost: 0 })).toBe("The Axis takes Moscow for the first time: +15 BRPs for Germany, no BRPs lost for the Soviet Union.");
   });
   it("the line is the Axis's (its colour in the activity log), whoever's action set it off", () => {
     expect(eventSide({ type: "RUSSIA_BRPS_MOVED", city: "moscow", amount: 15, lost: 15 }, "allies")).toBe("axis");

@@ -4,7 +4,7 @@ import { applyAction, type GameEvent } from "../src/engine/actions";
 import type { GameContext } from "../src/engine/context";
 import { newGame } from "../src/engine/game";
 import { sideInWar } from "../src/engine/control";
-import { citiesHeldByAxis } from "../src/engine/soviet-income";
+import { citiesNamedHeldByAxis } from "../src/engine/soviet-income";
 import { SUPPLY_EFFECTS_ENABLED } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
 import { runGame } from "../scripts/selfplay/runner";
@@ -57,15 +57,16 @@ describe.each([["1939", 3], ["1942", 1]] as const)("a whole computer game, %s se
       expect(e.amount).toBe(15);
     }
   });
-  it("the Year Start Sequence log names the two cities exactly when the Axis holds one, and not otherwise", () => {
+  it("the Year Start Sequence log names exactly the cities the Axis holds (one or both), and none otherwise", () => {
     const yss = g.steps.filter((s) => s.events.some((e) => e.type === "BRPS_CHANGED" && e.reason.startsWith("Year Start Sequence")));
     expect(yss.length).toBeGreaterThan(0);
     let withCities = 0;
     for (const s of yss) {
-      const held = citiesHeldByAxis(CTX, s.before);
+      const named = citiesNamedHeldByAxis(CTX, s.before).map((c) => (c === "moscow" ? "Moscow" : "Leningrad")).join(" and ");
+      const held = named === "" ? 0 : 1;
       const lines = s.events.filter((e): e is Extract<GameEvent, { type: "BRPS_CHANGED" }> => e.type === "BRPS_CHANGED" && e.reason.startsWith("Year Start Sequence"));
       const germany = lines.find((l) => l.nation === "germany");
-      expect(germany === undefined || /Moscow and Leningrad/.test(germany.reason), `action ${s.index}`).toBe(held > 0);
+      expect(germany === undefined || germany.reason.includes(`for ${named} held by the Axis`), `action ${s.index}`).toBe(held > 0);
       if (held > 0) withCities++;
     }
     expect(withCities).toBeGreaterThan(0);

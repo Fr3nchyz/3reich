@@ -2,7 +2,7 @@ import type { GameEvent } from "./action-types";
 import { conquestIncome } from "./conquest-income";
 import type { GameContext } from "./context";
 import { isGone } from "./nations";
-import { sovietCityIncome } from "./soviet-income";
+import { citiesNamedHeldByAxis, sovietCityIncome } from "./soviet-income";
 import type { GameState, Nation, PowerId } from "./types";
 
 /**
@@ -79,12 +79,13 @@ function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: 
 export function runYearStartSequence(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
   const nations = { ...state.nations };
   const events: GameEvent[] = [];
+  const held = citiesNamedHeldByAxis(ctx, state).map((c) => (c === "moscow" ? "Moscow" : "Leningrad")).join(" and ");
   for (const old of Object.values(state.nations)) {
     if (isGone(old)) continue;
     const { nation, growth, minors, conquered, cities } = recalculated(ctx, state, old);
     nations[old.id] = nation;
     if (nation.brpTotal === old.brpTotal && growth === 0) continue;
-    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${minors} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}${cities === 0 ? "" : cities > 0 ? `, plus ${cities} for Moscow and Leningrad held by the Axis` : `, less ${-cities} for Moscow and Leningrad held by the Axis`}`;
+    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${minors} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}${cities === 0 ? "" : cities > 0 ? `, plus ${cities} for ${held} held by the Axis` : `, less ${-cities} for ${held} held by the Axis`}`;
     events.push({ type: "BRPS_CHANGED", nation: old.id, delta: nation.brpTotal - old.brpTotal, total: nation.brpTotal, reason });
   }
   return { state: { ...state, nations }, events };
