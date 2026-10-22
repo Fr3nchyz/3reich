@@ -26,11 +26,11 @@ const rank = (type: UnitType) => {
 };
 
 /** Where the units a nation is at war with stand (hex coordinates), worked out once per call: asked for every build on offer. */
-const enemyHexes = (ctx: GameContext, state: GameState, owner: Build["owner"]) =>
+export const enemyHexes = (ctx: GameContext, state: GameState, owner: Build["owner"]) =>
   Object.values(state.units).filter((u) => ctx.map.hexes[u.at] && atWar(state, owner, u.nationality ?? u.owner)).map((u) => hex(u.at));
 
 /** How far a place is from the nearest unit of a nation at war with `owner`; far (99) when there is none or the place is off the map. */
-function enemyDistance(ctx: GameContext, enemies: readonly Hex[], place: string): number {
+export function enemyDistance(ctx: GameContext, enemies: readonly Hex[], place: string): number {
   if (!ctx.map.hexes[place]) return 99;
   const here = hex(place);
   let nearest = 99;

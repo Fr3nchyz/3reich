@@ -84,6 +84,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "WINTER_ROLLED":
     case "WINTER_STARTED": return null; // the dice and the winter itself concern both sides
     case "WINTER_POSTPONED": return "allies"; // the Allies' choice
+    case "SIBERIAN_TRANSFER_USED": return "allies"; // the Allies take the unit
     case "UNITS_REMOVED_BY_CONQUEST": // no line of their own
     case "CONTROL_PASSED": return null;
     case "UNITS_SWEPT": {

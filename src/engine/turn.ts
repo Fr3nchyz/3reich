@@ -9,6 +9,7 @@ import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
 import { legalBuilds } from "./construction";
+import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
@@ -165,6 +166,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return hasCombatWork(ctx, state);
     case "3":
       return atWarNow(state);
+    case "8a":
+      return legalSiberian(ctx, state).length > 0;
     case "8b":
       return legalBuilds(ctx, state).length > 0;
     case "10a":

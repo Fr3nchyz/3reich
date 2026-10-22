@@ -7,6 +7,7 @@ import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
 import { chooseGrant } from "./grant";
+import { chooseSiberian } from "./siberian";
 import { chooseMove } from "./move";
 import { chooseSurrender } from "./surrender";
 import { chooseWinter } from "./winter";
@@ -27,6 +28,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
+    : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (ticket 14-18); the minimal policy of ticket 14-18, the full set is 14-19
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6f" ? chooseMove(ctx, state, cfg)
@@ -54,6 +56,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
+    "8a": "The Free Siberian Transfer is not taken.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",

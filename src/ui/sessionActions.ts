@@ -11,6 +11,7 @@ import { normaliseAttack, tapToAttack } from "./attackTap";
 import { normaliseChoice } from "./choiceTap";
 import { normaliseMove, tapToMove } from "./moveTap";
 import { buildKey, parseBuildKey } from "./buildView";
+import { parseSiberianKey } from "./siberianCard";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
 /**
@@ -26,6 +27,8 @@ export function normaliseMode(s: Session): void {
   if (s.mode === "remove" && !Object.values(s.state.units).some((u) => u.owner === owner)) s.mode = "place";
   // A chosen build is dropped once it is no longer on offer (step left, counter used up, BRPs spent).
   if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
+  // A chosen Siberian counter is dropped once the engine no longer offers it (step left, quota used, armor not yet allowed).
+  if (s.siberian && !siberianOffers(s).some((a) => a.unit.type === s.siberian!.type && a.unit.strength === s.siberian!.strength)) s.siberian = null;
   normaliseAttack(s);
   normaliseAir(s);
   normaliseAirMove(s);
@@ -37,6 +40,26 @@ type Build = Extract<Action, { type: "BUILD" }>;
 
 /** The builds on offer now (step 8b). */
 export const builds = (s: Session): Build[] => (s.state.phase === "player-turn" ? legalActions(s.ctx, s.state).filter((a): a is Build => a.type === "BUILD") : []);
+
+type Transfer = Extract<Action, { type: "SIBERIAN_TRANSFER" }>;
+
+/** The units the Allies may take in the Free Siberian Transfer now (step 8a). */
+export const siberianOffers = (s: Session): Transfer[] => (s.state.phase === "player-turn" ? legalActions(s.ctx, s.state).filter((a): a is Transfer => a.type === "SIBERIAN_TRANSFER") : []);
+
+/** A chip of the Free Siberian Transfer card, given as the "type:strength" key on the button. */
+export function pickSiberian(s: Session, key: string): void {
+  s.siberian = parseSiberianKey(key);
+  s.toast = "";
+}
+
+/** A city button of the card, or a tap on a yellow hex: take the chosen counter and put it in that city. */
+export function takeSiberian(s: Session, at: string): void {
+  s.toast = "";
+  if (!s.siberian) return;
+  const { type, strength } = s.siberian;
+  if (siberianOffers(s).some((a) => a.unit.type === type && a.unit.strength === strength && a.at === at)) run(s, { type: "SIBERIAN_TRANSFER", side: "allies", unit: { type, strength }, at });
+  else s.toast = `A ${strength}-factor ${type} cannot be put there. The yellow hexes are the cities it can go in.`;
+}
 
 /** A construction chip, given as the "owner:type:strength" key on the button. */
 export function pickBuild(s: Session, key: string): void {
@@ -68,7 +91,7 @@ export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
   lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
-    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) tapToBuild(s, h);
+    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) { if (s.siberian) takeSiberian(s, h.id); else tapToBuild(s, h); }
     return;
   }
   const owner = currentSetupOwner(s.state);
@@ -104,6 +127,7 @@ export function takeAction(s: Session, action: Action): void {
   s.toast = "";
   s.foldOpen = action.type === "DECLARE_WAR" || action.type === "GRANT_BRPS" || action.type === "SELECT_FRONT_OPTION";
   if (action.type !== "BUILD") s.build = null;
+  if (action.type !== "SIBERIAN_TRANSFER") s.siberian = null;
   s.moveChosen = null;
   s.airMove = null;
   s.airbase = null;

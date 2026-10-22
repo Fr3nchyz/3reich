@@ -185,3 +185,39 @@ export const winterBanner = (): string => `${WINTER_TEXT.banner} ${WINTER_TEXT.e
 
 /** The line of a winter that Russia put off and that now starts. */
 export const postponedStartLine = (from: GameTurn): string => `The Russian winter that Russia put off from ${turnName(from)} starts now.`;
+
+/**
+ * The Free Siberian Transfer on the screen (spec 14 R11, D6; ticket 14-18): the card at step 8a, its buttons and the log line. English throughout, like the neighbouring
+ * cards; every word is here for the French pass.
+ */
+export const SIBERIAN_TEXT = {
+  title: "Free Siberian Transfer",
+  intro: "Take infantry and armor from the Russian pool at no cost and put them in Russian cities. Units you do not take this turn are lost.",
+  armorNote: "Armor taken may not outnumber infantry taken: take infantry first.",
+  raises: "Using this raises the Allied targets by one objective.",
+  raised: "The Allied targets are already one objective higher.",
+  pick: "Pick a counter, then a city (or tap a yellow hex on the map).",
+  noCity: "No Russian city can take that counter now.",
+  allTaken: "You have taken every unit this turn allows.",
+  none: "Do not take any",
+  done: "Done taking units",
+  armorFirst: "infantry first",
+  cities: "Cities",
+} as const;
+
+const unitWord = (n: number): string => `${n} unit${n === 1 ? "" : "s"}`;
+
+/** "You may take 3 more units this turn (4 in Winter 1941; 1 taken)." / "You may take 4 units this turn (Winter 1941)." */
+export function siberianLeftLine(left: number, quota: number, turn: GameTurn): string {
+  const taken = quota - left;
+  return taken === 0 ? `You may take ${unitWord(left)} this turn (${turnName(turn)}).` : `You may take ${left} more ${left === 1 ? "unit" : "units"} this turn (${quota} in ${turnName(turn)}; ${taken} taken).`;
+}
+
+/** "Cities for the 3-3 infantry:" */
+export const siberianCitiesLine = (counter: string): string => `Cities for the ${counter}:`;
+
+/** The log line of one unit taken: "Free Siberian Transfer: a 3-factor infantry appears in Moscow (H47). 2 more may be taken this turn." */
+export function siberianLogLine(strength: number, type: string, place: string, left: number, firstUse: boolean): string {
+  const more = left > 0 ? ` ${left} more may be taken this turn.` : "";
+  return `Free Siberian Transfer: a ${strength}-factor ${type} appears in ${place}.${more}${firstUse ? " The Allied targets are now one objective higher." : ""}`;
+}

@@ -5,7 +5,7 @@ import { advance, settle } from "./turn";
 import { applyChooseWinter, legalWinterActions } from "./winter";
 import { winterAsking } from "./winter-record";
 import { surrenderAsking } from "./soviet-record";
-import { applySurrenderAnswer, legalSurrenderActions } from "./victory-actions";
+import { applySiberian, applySurrenderAnswer, legalSiberian, legalSurrenderActions } from "./victory-actions";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
@@ -41,6 +41,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
+  if (step === "8a") return legalSiberian(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
   if (step === "9a") return legalGrants(state);
   return [];
@@ -131,6 +132,8 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
     case "SELECT_FRONT_OPTION":
       return atStep(state, "3", "Front Options are chosen", () => applyFrontOption(ctx, state, action));
+    case "SIBERIAN_TRANSFER":
+      return atStep(state, "8a", "The Free Siberian Transfer is made", () => applySiberian(ctx, state, action));
     case "BUILD":
       return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
     case "GRANT_BRPS":

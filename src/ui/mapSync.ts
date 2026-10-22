@@ -8,7 +8,7 @@ import { airMoveNow, airYellow } from "./airMoveTap";
 import { fromMarks, moveMarksOf } from "./moveMarks";
 import { moveFurther, moveTargets, selectionNow } from "./moveTap";
 import { shownOnMap } from "./attackSync";
-import { builds } from "./sessionActions";
+import { builds, siberianOffers } from "./sessionActions";
 import { syncAttackMarks } from "./attackSync";
 import type { Action } from "../engine/actions";
 
@@ -20,6 +20,8 @@ function highlightedHexes(s: Session, setup: SetupView | null): string[] {
     // Not setting up: where the stack chosen to move can go (step 6f), or the places a chosen build may go.
     if (s.moveChosen) return moveTargets(s);
     if (s.airMove || s.airbase) return airYellow(s);
+    const taking = s.siberian;
+    if (taking) return siberianOffers(s).filter((a) => a.unit.type === taking.type && a.unit.strength === taking.strength).map((a) => a.at);
     const pick = s.build;
     return pick ? builds(s).filter((a) => a.owner === pick.owner && a.unit.type === pick.type && a.unit.strength === pick.strength && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
   }
