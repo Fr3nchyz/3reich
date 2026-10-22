@@ -32,10 +32,11 @@ interface Opts {
   year?: number;
   season?: "fall" | "summer";
   winter?: GameState["winter"];
+  minorAllies?: MinorAlly[];
 }
 
 /** The second Player Turn of a Fall Game Turn, at its last step: ending it brings the game to II.A of the Winter Game Turn. */
-function endOfFall({ scenario = SCENARIO_1939, war = true, units = [], year = 1941, season = "fall", winter }: Opts = {}): GameState {
+function endOfFall({ scenario = SCENARIO_1939, war = true, units = [], year = 1941, season = "fall", winter, minorAllies }: Opts = {}): GameState {
   const base = board(units, scenario, {});
   const wars = war && !base.wars.some(([a, b]) => [a, b].includes("ussr") && [a, b].includes("germany")) ? [...base.wars, ["germany", "ussr"] as [string, string]] : base.wars;
   return {
@@ -49,6 +50,7 @@ function endOfFall({ scenario = SCENARIO_1939, war = true, units = [], year = 19
     wars: wars as GameState["wars"],
     nations: war ? { ...base.nations, ussr: { ...base.nations.ussr, status: "allied" } } : base.nations,
     ...(winter ? { winter } : {}),
+    ...(minorAllies ? { minorAllies } : {}),
   };
 }
 
@@ -223,7 +225,8 @@ describe("II.A: the dice against the units (Ref 28.0: fewer units than the total
     expect(r.state.winter!.stage).toBe("ahead");
   });
   it("Finns do not count against the Allies' chance", () => {
-    const r = endTurn(endOfFall({ units: [...germans(total - 1), ...germans(5, "finland", "f")] }));
+    // Finland is an active Axis Minor-Ally here, so only the rule that leaves the Finns out keeps its five counters from being counted
+    const r = endTurn(endOfFall({ units: [...germans(total - 1), ...germans(5, "finland", "f")], minorAllies: [{ owner: "finland", of: "germany", active: true }] }));
     expect(winterAsking(r.state)).toBe(true);
   });
 });
@@ -312,6 +315,9 @@ describe("II.A: the Allies answer (CHOOSE_WINTER)", () => {
       expect(r.ok, a.type).toBe(false);
       if (!r.ok) expect(r.error, a.type).not.toBe("");
     }
+    // a step action says where the game waits, not just that it cannot be done
+    const declared = applyAction(CTX, s, { type: "DECLARE_WAR", by: "germany", on: "norway" });
+    expect(declared).toEqual({ ok: false, error: expect.stringContaining("step II.A") });
     // and the state is exactly as it was: a refused action changes nothing
     expect(applyAction(CTX, s, { type: "END_STEP", side: "allies", step: "10b" })).toEqual({ ok: false, error: expect.stringContaining("II.A") });
   });
