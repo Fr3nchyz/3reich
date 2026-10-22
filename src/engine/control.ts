@@ -17,9 +17,9 @@ import { atWar, sideOfPower } from "./war";
  * TODO(verify, Ref 7.0): control changes when a ground unit ENTERS an enemy-controlled hex (here, also
  * when it passes through, because the caller lists every hex entered); whether a unit that only passes
  * through, or that is later overrun, keeps the hex is not settled.
- * TODO(verify, Ref 16.0): whether conquering a minor country hands over the whole country at once
- * (capital, all objectives) rather than hex by hex, and whether other uncontrolled land (the Baltic
- * States, which no scenario hands to anyone in 1939) changes hands the same way.
+ * Conquering a minor country (Ref 16.0, answered 2026-10-17 and built by spec 14 ticket 14-6, conquest-minor.ts): when a hostile unit holds its capital, every hex
+ * of the country passes to the conqueror at once, at the end of the attacker's Combat Phase. The Baltic States are part of Eastern Europe (Ref 29.0), conquered like a
+ * colony by holding all its cities (spec 15 calls `fallCountry`).
  *
  * Nobody's land (spec 14 R4, TODO(verify) V11): when a Major Power is conquered, the land it held outside its own country is recorded as
  * `control[hex] = null`. That differs from having no entry (the start territory decides): the hex stays nobody's until a ground unit

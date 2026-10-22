@@ -24,16 +24,21 @@ const fnv = (text: string): number => {
 // Hash of 1942 seed 1 of 2026-10-17 (ticket 12-4): port capacity is now enforced (Malta holds 9 naval factors, not 36), so the automatic setup puts one British fleet at
 // Alexandria (LL29) instead of Malta (GG19). Checked then: of the 414 recorded actions exactly one differs, the SETUP_PLACE at index 39 (GG19 to LL29); the other 413,
 // every move, attack and build of the play, are identical. The 1939 hashes (and the Campaign) are unchanged.
+// Hashes of 2026-10-22 (ticket 14-6): Poland now falls with Warsaw, so the 1939 hashes of seeds 1 and 5 and the 7h list hash of seed 5 changed on purpose (the
+// 1942 hash, the 1939 seed 2 hash and the other 1939 seeds checked below are unchanged). Checked then, by playing whole games of the computer on the old and the new
+// engine and comparing every recorded action: the first action to differ comes just after Poland's fall (seed 1: the fall is at action 220, the first difference at 223,
+// a German BUILD placed on land that is now German; seed 5: 215 and 216) and nothing before it differs. Seed 2 and seed 10 give the identical action list (Poland's
+// army was already gone). Games of 1942, 1944 and the Campaign differ only after the first conquest of a minor country (Finland or Poland), never before.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2972029949));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3772813808));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(119964332));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1280678831);
+    expect(hashOf("1939", 5, 4)).toBe(764929019);
     expect(hashOf("1939", 2, 4)).toBe(4061975126);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2972029949));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(3772813808));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
@@ -98,6 +103,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(20);
-    expect(h).toBe(3933492014);
+    expect(h).toBe(2524576926);
   });
 });

@@ -41,7 +41,8 @@ export function removePools(state: GameState, owners: readonly ForceOwner[]): Ga
 /**
  * TODO(verify) V12 (Ref 16.0, 18.1): the manual keeps the hexes of hostile Major-Power ground units that can still trace supply, and the supply line they
  * use, out of the land that passes to the conqueror. Ticket 14-23 adds the supply line; until then, only the hexes those units stand on stay as they are.
- * Off, nothing is kept.
+ * Off, nothing is kept. As built the units are those of any owner at war on the other side, not only Major Powers' (a Minor-Ally's unit keeps its hex too), and
+ * the hex keeps whatever control it had (a minor's land nobody held is recorded as nobody's, `passControl`).
  */
 export const TRAPPED_UNITS_KEEP_ONLY_THEIR_HEX = true;
 
@@ -66,6 +67,12 @@ export interface PassRule {
   isHome: (hex: MapHex, owner: ForceOwner) => boolean;
   /** Hexes that stay as they are. */
   keep: ReadonlySet<HexId>;
+  /**
+   * The land of the country itself, for a country whose hexes nobody need hold (a minor country, a colony, Eastern Europe; spec 14 R9, Ref 16.0: "every hex of
+   * the country passes to the conqueror"). Each of these hexes passes whoever holds it now (the fallen country, nobody, or an enemy of the conqueror), except
+   * the kept hexes and the hexes already held by the conqueror's side, which do not change. TODO(verify) V37.
+   */
+  land?: ReadonlySet<HexId>;
 }
 
 /** The land each way: hexes now the conqueror's, and hexes that nobody controls any more. Both in hex-id order. */
@@ -74,15 +81,36 @@ export interface Passed {
   toNobody: HexId[];
 }
 
-/** Applies a PassRule: every hex held by one of `rule.from` goes to the conqueror or to nobody (`control[hex] = null`), except the hexes kept. */
+const byId = (a: HexId, b: HexId): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * Applies a PassRule: every hex held by one of `rule.from` goes to the conqueror or to nobody (`control[hex] = null`), except the hexes kept, and every hex of
+ * `rule.land` goes to the conqueror (see there). A kept hex of the country's land that nobody holds is recorded as nobody's, so that it is not read as the
+ * neutral land of a country that is gone (movement.ts); it is not reported as passed.
+ */
 export function passControl(ctx: GameContext, state: GameState, rule: PassRule): { state: GameState; passed: Passed } {
   const passed: Passed = { toConqueror: [], toNobody: [] };
   const control = { ...state.control };
-  const held = [...controlMap(ctx, state)].filter(([hex, owner]) => rule.from.includes(owner) && !rule.keep.has(hex) && ctx.map.hexes[hex] !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  for (const [hex, owner] of held) {
+  const now = controlMap(ctx, state);
+  const conquerorSide = sideInWar(state, rule.to);
+  const held = [...now].filter(([hex, owner]) => rule.from.includes(owner) && !rule.keep.has(hex) && ctx.map.hexes[hex] !== undefined);
+  const heldIds = new Set(held.map(([hex]) => hex));
+  for (const [hex, owner] of held.sort(([a], [b]) => byId(a, b))) {
     const home = rule.isHome(ctx.map.hexes[hex]!, owner);
     control[hex] = home ? rule.to : null;
     (home ? passed.toConqueror : passed.toNobody).push(hex);
   }
+  for (const hex of [...(rule.land ?? [])].sort(byId)) {
+    if (heldIds.has(hex) || ctx.map.hexes[hex]?.land == null) continue;
+    const owner = now.get(hex);
+    if (rule.keep.has(hex)) {
+      if (owner === undefined && control[hex] === undefined) control[hex] = null;
+      continue;
+    }
+    if (owner === rule.to || (owner !== undefined && conquerorSide !== null && sideInWar(state, owner) === conquerorSide)) continue;
+    control[hex] = rule.to;
+    passed.toConqueror.push(hex);
+  }
+  passed.toConqueror.sort(byId);
   return { state: { ...state, control }, passed };
 }

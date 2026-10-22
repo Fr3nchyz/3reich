@@ -145,7 +145,8 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-1 to 14-3 The game ends and has a result: objective count, results for all four scenarios, the result at the last turn (the early end after a conquest comes with 14-5) | | S, M, M: **Done** (2026-10-21). Watch mode and self-play show the result |
 | 14-4 The score line, the Objectives list, the end card and the holder marks on the map | | M: **Done** (2026-10-21) |
 | 14-5 A Major Power is conquered by its capital: Germany, Italy and Britain fall at the end of their own Combat Phase while an enemy holds the capital; units, land, BRPs, the early end of the game | | L: **Done** (2026-10-21). France comes with 14-7 |
-| 14-6, 14-7 The conquest mechanics for every other country, Poland first, which spec 15 reuses (14-6), France with Vichy France (14-7; spec 14 owns Vichy) | | M, L (Beta) |
+| 14-6 The conquest mechanics for every other country, Poland first, which spec 15 reuses: minor countries and Minor-Allies fall with their capital at the end of the attacker's Combat Phase; `fallCountry` for colonies and Eastern Europe | | M: **Done** (2026-10-22). Poland falls with Warsaw in the 1939 and Campaign games (28 of 28 tried) |
+| 14-7 France with Vichy France (spec 14 owns Vichy) | | L (Beta) |
 | 14-11 to 14-13 The Russian winter: roll and choice at II.A, no doubling and no Axis Offensive in the East, the screens | | M, M, S (Beta) |
 | 14-14 to 14-16 Russia: Moscow and Leningrad BRPs (spec 14 owns them), the surrender offer, its screens | | S, L, M (Beta) |
 | 14-18 Free Siberian Transfer | | M (Beta if the owner says yes to Q3) |

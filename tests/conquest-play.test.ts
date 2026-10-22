@@ -38,3 +38,24 @@ describe("play after a Major Power falls", () => {
     expect(r.final.nations.germany.status).toBe("conquered");
   });
 });
+
+describe("play after a minor country falls (spec 14 ticket 14-6)", () => {
+  it("1939, seed 1: Poland falls with Warsaw in Winter 1939, nothing of it is left on the map, in the pools or in the control record, and the computer plays on to the end without an anomaly", () => {
+    const r = runGame({ scenario: "1939", seed: 1, turns: "end", verify: true });
+    expect(r.anomalies).toEqual([]);
+    expect(r.ended).toBe("game-over");
+    const poland = r.final.conquests!.find((c) => c.country === "poland");
+    expect(poland).toMatchObject({ by: "germany", side: "allies", how: "capital", at: { year: 1939, season: "winter" } });
+    expect(Object.values(r.final.units).filter((u) => u.owner === "poland")).toEqual([]);
+    expect(r.final.pools.poland).toBeUndefined();
+    expect([...controlMap(r.ctx, r.final).values()]).not.toContain("poland");
+    expect(runGame({ scenario: "1939", seed: 1, turns: "end", verify: false }).final).toEqual(r.final); // determinism
+  });
+  it("1942, seed 1: Finland, an Axis Minor-Ally, falls when the Soviets take Helsinki; the game goes on", () => {
+    const r = runGame({ scenario: "1942", seed: 1, turns: "end", verify: false });
+    expect(r.anomalies).toEqual([]);
+    expect(r.final.conquests!.find((c) => c.country === "finland")).toMatchObject({ by: "ussr", side: "axis" });
+    expect(r.final.minorAllies.find((m) => m.owner === "finland")?.active).toBe(false);
+    expect(Object.values(r.final.units).filter((u) => u.owner === "finland")).toEqual([]);
+  });
+});

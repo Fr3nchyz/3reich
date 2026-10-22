@@ -26,8 +26,8 @@ export function conquestRecipient(state: GameState, by: ForceOwner): PowerId {
 export function conquestIncome(ctx: GameContext, state: GameState, id: PowerId): number {
   let total = 0;
   for (const c of state.conquests ?? []) {
-    if (c.startingBrps === undefined || c.country === "eastern-europe" || !isMajorPower(c.country) || conquestRecipient(state, c.by) !== id) continue;
-    const capital = capitalOf(ctx, c.country);
+    if (c.startingBrps === undefined || !(c.country in state.nations) || conquestRecipient(state, c.by) !== id) continue; // only a Major Power has starting BRPs; minors, colonies and Eastern Europe pay through spec 15
+    const capital = capitalOf(ctx, c.country as PowerId);
     // TODO(verify) V31: "while it still holds the capital" is read as: the side of the conqueror controls the capital hex.
     if (capital !== null && controllingSide(ctx, state, capital) === sideOfOwner(c.by)) total += Math.floor(c.startingBrps / 2);
   }
