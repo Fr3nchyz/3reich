@@ -3,6 +3,7 @@ import { runGame } from "./selfplay/runner";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions } from "../src/engine/actions";
 import type { GameState } from "../src/engine/types";
+import { surrenderAsking } from "../src/engine/soviet-record";
 import { winterAsking, winterInForce } from "../src/engine/winter-record";
 import { computerAct } from "../src/ui/computerPlay";
 import { newSession, computerSetup } from "../src/ui/session";
@@ -57,3 +58,10 @@ const started = cutAt(3, (st) => st.phase === "player-turn" && winterInForce(st)
 console.log("winter fixtures:", question.length, "and", started.length, "actions");
 writeFileSync("tests/e2e/fixtures/winter-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 1, actions: question }));
 writeFileSync("tests/e2e/fixtures/winter-started.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 3, actions: started }));
+
+// tests/e2e/fixtures/surrender-question.json (spec 14, ticket 14-15): a whole game of the computer (1939, seed 4, no change to the scenario) cut where Russia offers to
+// surrender (Summer 1942, the end of an Allied Player Turn): the game stands at step 10a and the Axis are asked. Loaded with the `?e2e` hook for the Axis (the two
+// answers are buttons) and for the Allies (the computer, playing the Axis, answers).
+const offer = cutAt(4, (st) => surrenderAsking(st));
+console.log("surrender fixture:", offer.length, "actions");
+writeFileSync("tests/e2e/fixtures/surrender-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 4, actions: offer }));

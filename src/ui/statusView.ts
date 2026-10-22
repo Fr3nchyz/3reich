@@ -5,7 +5,8 @@ import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
 import { winterAsking } from "../engine/winter-record";
-import { WINTER_TEXT } from "./endText";
+import { surrenderAsking } from "../engine/soviet-record";
+import { SURRENDER_TEXT, WINTER_TEXT } from "./endText";
 import { frontOptionButtons, winterBannerHtml, winterCardHtml } from "./winterCard";
 import { computerSide, computerToMove } from "./computerPlay";
 import type { GameContext } from "../engine/context";
@@ -34,6 +35,8 @@ function turnLine(s: Session): string {
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
   // At II.A the Allies are asked about the Russian winter, whoever played last: the line says so instead of naming the side that played; when the computer answers for them it says that (also in a watched game).
   if (winterAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): ${computerToMove(s) ? WINTER_TEXT.askLineComputer : WINTER_TEXT.askLine}`;
+  // At 10a the Axis answer Russia's offer to surrender in the middle of the Allied Player Turn: the line says so.
+  if (surrenderAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step ${describeStep("10a")}: ${computerToMove(s) ? SURRENDER_TEXT.askLineComputer : SURRENDER_TEXT.askLine}`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }
@@ -66,6 +69,8 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "CHOOSE_WINTER":
       return a.postpone ? WINTER_TEXT.wait : WINTER_TEXT.start; // the buttons of the winter card (winterCard.ts)
+    case "SURRENDER_ANSWER":
+      return a.accept ? SURRENDER_TEXT.accept : SURRENDER_TEXT.refuse;
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     default:

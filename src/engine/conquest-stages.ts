@@ -41,6 +41,8 @@ export interface FallPlan {
   isHome: PassRule["isHome"];
   /** The country's own land when it is more than what `owners` hold (a minor country, a colony, Eastern Europe); see `PassRule.land`. */
   land?: ReadonlySet<HexId>;
+  /** True when the land does not change hands at all (a Russian surrender accepted keeps Russian land Russian, spec 14 R7c): stage 2 is skipped. */
+  stays?: boolean;
   /** What the fall does to the records of the nations (status, BRPs, Minor-Allies). */
   mark: (state: GameState) => GameState;
   before?: FallStep;
@@ -109,7 +111,9 @@ export function conquer(ctx: GameContext, state: GameState, plan: FallPlan): { s
   let next: GameState = removePools({ ...gone.state, units }, plan.owners);
   // 2. land
   const conquerorSide = sideOfOwner(plan.conqueror);
-  const passed = passControl(ctx, next, { from: plan.owners, to: plan.conqueror, keep: hostileGroundHexes(next, conquerorSide), isHome: plan.isHome, ...(plan.land ? { land: plan.land } : {}) });
+  const passed = plan.stays
+    ? { state: next, passed: { toConqueror: [], toNobody: [] } }
+    : passControl(ctx, next, { from: plan.owners, to: plan.conqueror, keep: hostileGroundHexes(next, conquerorSide), isHome: plan.isHome, ...(plan.land ? { land: plan.land } : {}) });
   next = passed.state;
   // 3. and 4. status and record
   const record: Conquest = { country: plan.country, by: plan.conqueror, side: plan.side, how: plan.how, at: { year: state.year, season: state.season }, ...(plan.startingBrps !== undefined ? { startingBrps: plan.startingBrps } : {}) };

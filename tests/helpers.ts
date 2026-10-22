@@ -3,6 +3,7 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { GameContext } from "../src/engine/context";
 import { newGame } from "../src/engine/game";
 import { applyAction, type ActionResult } from "../src/engine/actions";
+import { surrenderAsking } from "../src/engine/soviet-record";
 import { beginPlay } from "../src/engine/turn";
 import type { GameState, Scenario } from "../src/engine/types";
 
@@ -26,7 +27,8 @@ export function atStart(scenario: Scenario, seed: number): GameState {
 export function toEndOfTurn(ctx: GameContext, s: GameState): GameState {
   let state = s;
   for (let guard = 0; guard < 60 && state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step !== "10b"; guard++) {
-    const r = applyAction(ctx, state, { type: "END_STEP", side: state.activeSide, step: state.position.step });
+    // An empty board in a scenario with Russia at war (1942, 1944) meets Russia's offer to surrender at 10a (0 Russian factors, 0 Axis: the test is met, spec 14 R7b); the neutral answer is to refuse.
+    const r = surrenderAsking(state) ? applyAction(ctx, state, { type: "SURRENDER_ANSWER", side: "axis", accept: false }) : applyAction(ctx, state, { type: "END_STEP", side: state.activeSide, step: state.position.step });
     if (!r.ok) throw new Error(r.error);
     state = r.state;
   }

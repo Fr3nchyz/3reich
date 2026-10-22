@@ -158,6 +158,16 @@ export const WINTER_TEXT = {
   askLineComputer: "the computer, playing the Allies, decides whether it waits",
 } as const;
 
+/**
+ * Russia's offer to surrender at step 10a (spec 14 R7b, D5). The words of the two answers and of the turn line only: the card of D5 and the construction warning are ticket 14-16.
+ */
+export const SURRENDER_TEXT = {
+  accept: "Accept Russia's surrender",
+  refuse: "Refuse Russia's surrender",
+  askLine: "Russia offers to surrender: the Axis accept or refuse",
+  askLineComputer: "Russia offers to surrender: the computer, playing the Axis, answers",
+} as const;
+
 /** "Dice: 4 + 6 + 3 + 5 = 18". */
 export const diceLine = (dice: readonly number[], total: number): string => `Dice: ${dice.join(" + ")} = ${total}`;
 
