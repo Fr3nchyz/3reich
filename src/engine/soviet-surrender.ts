@@ -56,16 +56,18 @@ export interface SovietOffer {
 
 /**
  * The test of R7b: Russia at war with Germany, fewer than 50 Russian factors on the map, and the Axis inside Russia at least 3 to 2 of the Russian total.
- * TODO(verify) V17: what counts as factors; V18: "at war with the Axis" is read as at war with Germany (the war the winter rule also looks for, V43).
+ * TODO(verify) V17: what counts as factors. TODO(verify) V51 (at `offered`): "at war with the Axis" is read as at war with Germany (the war the winter rule also looks for, V43),
+ * and the test is literal, so 0 Russian factors against 0 Axis factors meets it.
  */
 export function sovietOffer(ctx: GameContext, state: GameState): SovietOffer {
   const russian = russianFactors(ctx, state);
   const axis = axisFactorsInRussia(ctx, state);
+  // TODO(verify) V51
   return { russian, axis, offered: germanRussianWar(state) && russian < SURRENDER_FACTOR_LIMIT && axis * SURRENDER_RATIO.russian >= russian * SURRENDER_RATIO.axis };
 }
 
 /**
- * The game arrives at step 10a. At the end of an Allied Player Turn in which the test of R7b is met, and the offer has not been made, Russia offers: the
+ * The game arrives at step 10a. (TODO(verify) V51: the test is made as the game arrives here, before the unsupplied units are eliminated, which this engine does when the Player Turn ends, after 10b.) At the end of an Allied Player Turn in which the test of R7b is met, and the offer has not been made, Russia offers: the
  * record says "asking" and the game waits at 10a for the Axis (`surrenderAsking`). The offer is made once, whatever the answer (TODO(verify) V18). Nothing
  * is offered where the step is not built (a context that lists its own implemented steps without 10a), so a record never asks a question nobody can be asked.
  */
@@ -105,11 +107,12 @@ export function acceptSurrender(ctx: GameContext, state: GameState): { state: Ga
     how: "surrender",
     startingBrps: ctx.scenario.nations.ussr.brpTotal,
     isHome: () => false,
-    stays: true, // R7c: Russian land stays Russian-controlled, and closed to the Axis (TODO(verify) V19)
+    // TODO(verify) V49: R7c says Russian land stays Russian-controlled and, because Russia then takes no side, closed to the Axis; here the land does not change hands (`stays`) and the U.S.S.R.'s war records go (below).
+    stays: true,
     mark: (s) => ({
       ...s,
       nations: { ...s.nations, ussr: { ...s.nations.ussr, status: "conquered", brpTotal: 0, spendLimit: 0, spent: 0 } },
-      // Russia leaves the war (the card of D5): with the war on record, the Axis could still walk into the land the neutral rule closes to units not at war with its holder (movement.ts).
+      // Russia leaves the war (the card of D5): with the war on record, the Axis could still walk into the land the neutral rule closes to units not at war with its holder (movement.ts). TODO(verify) V49.
       wars: s.wars.filter(([a, b]) => a !== "ussr" && b !== "ussr"),
       soviet: { citiesTaken: {}, ...s.soviet, offer: "accepted", credited },
     }),
@@ -127,11 +130,12 @@ export function refuseSurrender(state: GameState): { state: GameState; events: G
 /**
  * After a refusal, Russia is conquered when its last ground or air factor inside its original borders is gone (R7d). Checked after every Combat Phase and
  * after the unsupplied-unit eliminations (`turn.ts`; the engine has no "instant", TODO(verify) V20). Germany conquers it as it would conquer any Power
- * (`fall`: the Russian units and pool go, Russian land passes to Germany, TODO(verify) V20), and the game ends at once if that decides it. Nothing happens
+ * (`fall`: the Russian units and pool go, Russian land passes to Germany, TODO(verify) V50), and the game ends at once if that decides it. Nothing happens
  * when the offer was not refused, when Russia has left already, or when Germany has (nobody to conquer it).
  */
 export function settleSoviet(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
   if (state.phase !== "player-turn" || surrenderOffer(state) !== "refused" || isGone(state.nations.ussr) || isGone(state.nations.germany)) return { state, events: [] };
   if (russianFactorsInRussia(ctx, state) > 0) return { state, events: [] };
+  // TODO(verify) V50: R7d names no effect but the income; Russia is conquered as any Power is (`fall`): all its units, also those outside Russia, and its pool go, and the Russian land passes to Germany.
   return fall(ctx, state, "ussr", "germany", "last-unit");
 }
