@@ -39,11 +39,16 @@ export function objectiveHexes(ctx: GameContext): HexId[] {
 
 /**
  * The three lists: Objectives the Axis holds, the Allies hold, and nobody holds.
- * Not yet counted (they come with their tickets): the Objectives the Allies keep for good after a Russian surrender (ticket 14-15, R7).
+ * The Objectives credited to the Allies for good by an accepted Russian surrender (R7c, `GameState.soviet.credited`) count for the Allies whoever controls them.
  */
 export function objectiveStandings(ctx: GameContext, state: GameState): ObjectiveStandings {
   const out: ObjectiveStandings = { axis: [], allies: [], nobody: [] };
+  const credited = new Set(state.soviet?.credited);
   for (const hex of objectiveHexes(ctx)) {
+    if (credited.has(hex)) {
+      out.allies.push(hex);
+      continue;
+    }
     const owner = controllerOf(ctx, state, hex);
     const side = owner === null ? null : objectiveSide(state, owner);
     out[side ?? "nobody"].push(hex);

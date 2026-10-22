@@ -4,6 +4,8 @@ import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
 import { applyChooseWinter, legalWinterActions } from "./winter";
 import { winterAsking } from "./winter-record";
+import { surrenderAsking } from "./soviet-record";
+import { applySurrenderAnswer, legalSurrenderActions } from "./victory-actions";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { combatOf } from "./combat-record";
@@ -21,6 +23,9 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
 
 export type { Action, ActionResult, GameEvent } from "./action-types";
+
+/** Why nothing else is legal while Russia's offer to surrender waits (step 10a, spec 14 R7b). */
+const SURRENDER_WAITS = "The game waits at step 10a for the Axis to answer Russia's offer to surrender.";
 
 /** The step a Player Turn is waiting at, or undefined when the state has no position (setup, game over, old saves). */
 function waitingStep(state: GameState): string | undefined {
@@ -56,6 +61,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "game-over") return [];
   if (state.phase === "setup") return legalSetupActions(ctx, state);
   if (winterAsking(state)) return legalWinterActions(state);
+  if (surrenderAsking(state)) return legalSurrenderActions(state); // step 10a: the Axis answers Russia's offer to surrender; nothing else, not even moving on, is legal
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
@@ -67,6 +73,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
 export function applyAction(ctx: GameContext, state: GameState, action: Action): ActionResult {
   if (state.phase === "game-over") return { ok: false, error: "The game is over." };
   if (typeof action !== "object" || action === null) return { ok: false, error: "An action is an object with a type." };
+  if (surrenderAsking(state) && action.type !== "SURRENDER_ANSWER") return { ok: false, error: SURRENDER_WAITS };
   switch (action.type) {
     case "SETUP_PLACE":
     case "SETUP_REMOVE":
@@ -81,6 +88,14 @@ export function applyAction(ctx: GameContext, state: GameState, action: Action):
       const answered = applyChooseWinter(state, action);
       if (!answered.ok) return answered;
       // The question was the only thing the game waited for at II.A: it moves on to II.B and the Player Turns.
+      const left = advance(ctx, answered.state);
+      const settled = settle(ctx, left.state);
+      return { ok: true, state: settled.state, events: [...answered.events, ...left.events, ...settled.events] };
+    }
+    case "SURRENDER_ANSWER": {
+      const answered = applySurrenderAnswer(ctx, state, action);
+      if (!answered.ok || answered.state.phase !== "player-turn") return answered; // refused, or a conquest that decided the game ended it
+      // The offer was the only thing the game waited for at 10a: it moves on to 10b.
       const left = advance(ctx, answered.state);
       const settled = settle(ctx, left.state);
       return { ok: true, state: settled.state, events: [...answered.events, ...left.events, ...settled.events] };
@@ -139,6 +154,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
   const step = waitingStep(state);
   if (winterAsking(state)) return { ok: false, error: "The game waits at step II.A for the Allies to say whether the Russian winter waits." };
+  if (surrenderAsking(state)) return { ok: false, error: SURRENDER_WAITS };
   if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {

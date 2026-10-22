@@ -197,6 +197,10 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "CAPITAL_LOST":
     case "CAPITAL_RETAKEN":
     case "RUSSIA_BRPS_MOVED":
+    case "RUSSIA_OFFERS_SURRENDER":
+    case "RUSSIA_SURRENDERED":
+    case "SURRENDER_REFUSED":
+    case "OBJECTIVES_CREDITED":
     case "COUNTRY_CONQUERED":
     case "VICHY_CREATED":
     case "UNITS_REMOVED_BY_CONQUEST":

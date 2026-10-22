@@ -15,9 +15,18 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
       return `${placeName(ctx.map, e.capital)} has been taken. ${POWER_NAMES[e.power]} falls at the end of its own Combat Phase unless it takes ${placeName(ctx.map, e.capital)} back.`;
     case "RUSSIA_BRPS_MOVED":
       return `The Axis takes ${e.city === "moscow" ? "Moscow" : "Leningrad"} for the first time: ${e.amount > 0 ? `+${e.amount} BRPs` : "no BRPs"} for ${POWER_NAMES.germany}, ${e.lost > 0 ? `-${e.lost} BRPs` : "no BRPs lost"} for the ${POWER_NAMES.ussr}.`;
+    case "RUSSIA_OFFERS_SURRENDER":
+      return `Russia offers to surrender: it has ${e.russian} ground and air factors on the map, and the Axis has ${e.axis} inside Russia. The Axis must accept or refuse.`;
+    case "RUSSIA_SURRENDERED":
+      return "The Axis accept Russia's surrender: Russia leaves the war.";
+    case "SURRENDER_REFUSED":
+      return "The Axis refuse Russia's surrender: the war goes on until the last Russian unit inside Russia is gone, and Russia will not offer again.";
+    case "OBJECTIVES_CREDITED":
+      return `${e.hexes.length} objective${e.hexes.length === 1 ? "" : "s"} now count for the Allies for good: ${e.hexes.map((h) => placeName(ctx.map, h)).join(", ")}.`;
     case "CAPITAL_RETAKEN":
       return `${POWER_NAMES[e.power]} has taken back ${placeName(ctx.map, e.capital)}.`;
     case "COUNTRY_CONQUERED":
+      if (e.how === "surrender") return `${nameOf(e.country)} is out of the game: ${e.unitsRemoved} unit${e.unitsRemoved === 1 ? " leaves" : "s leave"} the game; its land stays as it is and is closed to the Axis.`;
       return `${nameOf(e.country)} has been conquered by ${nameOf(e.by)}: ${e.unitsRemoved} unit${e.unitsRemoved === 1 ? " leaves" : "s leave"} the game and ${e.hexesPassed} hex${e.hexesPassed === 1 ? " changes" : "es change"} hands.`;
     case "VICHY_CREATED": {
       const lost = e.halved.lost;

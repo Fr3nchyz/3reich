@@ -22,6 +22,8 @@ import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 import { enterWinter } from "./winter";
 import { winterAsking } from "./winter-record";
+import { surrenderAsking } from "./soviet-record";
+import { offerSurrender, settleSoviet } from "./soviet-surrender";
 
 /**
  * The Sequence of Play as a machine (Ops 5.0, specs/01-turn-steps.md). The state always has a
@@ -93,6 +95,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       };
     }
     case "player-turn": {
+      // 10a waits only while the Axis is asked about Russia's offer to surrender (SURRENDER_ANSWER); `settle` stops there, so this is reached once they have answered.
+      if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");
       const step = nextStepId(pos.step);
       if (step) {
         // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
@@ -102,15 +106,29 @@ export function advance(ctx: GameContext, state: GameState): Transition {
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
         // Leaving 7p: the end of the side's Combat Phase. A Major Power of this side whose capital is still held by the enemy is conquered (spec 14 R4, C8).
         // This is in `advance`, so it runs however the turn got here, with or without anything to do at 7h; a conquest that decides the game ends it here.
-        const fell = pos.step === "7p" ? settleConquests(ctx, read) : { state: read, events: [] };
-        return { state: { ...fell.state, position: { ...pos, step } }, events: [...lost.events, ...fell.events] };
+        const fell = pos.step === "7p" ? endCombatPhase(ctx, read) : { state: read, events: [] };
+        // Arriving at 10a: at the end of an Allied Player Turn Russia may offer to surrender (spec 14 R7b); the game then waits there for the Axis.
+        const offered = step === "10a" ? offerSurrender(ctx, fell.state) : { state: fell.state, events: [] };
+        return { state: { ...offered.state, position: { ...pos, step } }, events: [...lost.events, ...fell.events, ...offered.events] };
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
-      const ended = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
+      const eliminated = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
+      // After a refusal, the last Russian factor inside Russia may just have gone (spec 14 R7d, V20); a conquest that decides the game ends it here.
+      const russia = settleSoviet(ctx, eliminated.state);
+      const ended = { state: russia.state, events: [...eliminated.events, ...russia.events] };
+      if (ended.state.phase !== "player-turn") return { state: ended.state, events: [...lapsed, ...ended.events] };
       const next = pos.turn === 1 ? secondPlayerTurn(ctx, ended.state) : endGameTurn(ctx, ended.state);
       return { state: next.state, events: [...lapsed, ...ended.events, ...next.events] };
     }
   }
+}
+
+/** Leaving 7p: the Major Powers and minor countries that fall now (spec 14 R4, R9), then, after a refusal, Russia if its last factor inside Russia is gone (R7d). Stops as soon as a fall ends the game. */
+function endCombatPhase(ctx: GameContext, state: GameState): Transition {
+  const fell = settleConquests(ctx, state);
+  if (fell.state.phase !== "player-turn") return fell;
+  const russia = settleSoviet(ctx, fell.state);
+  return { state: russia.state, events: [...fell.events, ...russia.events] };
 }
 
 function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
@@ -150,6 +168,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return atWarNow(state);
     case "8b":
       return legalBuilds(ctx, state).length > 0;
+    case "10a":
+      return surrenderAsking(state);
     case "9a":
       return legalGrants(state).length > 0;
     default:

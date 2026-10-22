@@ -8,6 +8,7 @@ import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
 import { chooseGrant } from "./grant";
 import { chooseMove } from "./move";
+import { chooseSurrender } from "./surrender";
 import { chooseWinter } from "./winter";
 import type { AiConfig, Decision } from "./types";
 
@@ -29,6 +30,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6f" ? chooseMove(ctx, state, cfg)
+    : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);

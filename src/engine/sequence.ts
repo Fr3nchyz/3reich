@@ -153,6 +153,6 @@ export function describeStep(id: string): string {
  * of war), "3" (Front Options, Ref 11.21), "6f" (ground movement), "7b" (air committed to ground support: waits only while `AIR_MISSIONS_ENABLED` and there is air to commit), "7h" (ground combat), "8b" (construction), "9a" (BRP grants) and "6e" and "9f" (sea supply: they wait only while supply effects are on and a legal designation would save a cut-off unit) wait only while the
  * side to move has something it could do there (spec 01: a step with nothing to do is passed).
  * The Year Start Sequence ("YSS") runs by itself when the game reaches it (yearstart.ts) and never
- * waits; the Russian-Winter roll ("II.A") is not built yet.
+ * waits; the Russian-Winter roll ("II.A") waits only while the Allies are asked (CHOOSE_WINTER), and "10a" (the Russian surrender) only while the Axis is asked (SURRENDER_ANSWER).
  */
-export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6e", "6f", "7b", "7h", "8b", "9a", "9f", LAST_STEP]);
+export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "3", "6e", "6f", "7b", "7h", "8b", "9a", "9f", "10a", LAST_STEP]);

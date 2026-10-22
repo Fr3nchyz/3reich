@@ -26,6 +26,8 @@ export type Action =
   | { type: "GRANT_BRPS"; from: PowerId; to: PowerId; amount: number }
   /** Step II.A: the Allies decide whether the Russian winter waits for next year (`postpone`) or starts now; legal only when the dice allowed it (spec 14 R10; Ref 28.0). */
   | { type: "CHOOSE_WINTER"; side: "allies"; postpone: boolean }
+  /** Step 10a: the Axis answers Russia's one-time offer to surrender, accepting it or refusing it (spec 14 R7b to R7d; Ref 11.8, 18.41). Legal only while the offer waits, and only for the Axis. */
+  | { type: "SURRENDER_ANSWER"; side: "axis"; accept: boolean }
   /** Step 7h: ground units attack an adjacent enemy hex (Ref 12.1; each unit attacks one hex, PC README 14.23). */
   | { type: "ATTACK"; side: Side; units: string[]; target: HexId }
   /** Step 7h: the side that must lose factors after an Exchange chooses which of its units go (Ref 12.2). */
@@ -121,6 +123,14 @@ export type GameEvent =
   | { type: "WINTER_POSTPONED"; turn: GameTurn }
   /** The Russian winter is in force from this Game Turn: `postponedFrom` is the turn it was put off from, `early` that the U.S.S.R. declared war on Germany in this Winter turn. */
   | { type: "WINTER_STARTED"; turn: GameTurn; postponedFrom?: GameTurn; early?: true }
+  /** Step 10a: Russia offers to surrender (spec 14 R7b): `russian` ground and air factors on the map against `axis` Axis factors inside Russia. The Axis answers (SURRENDER_ANSWER). */
+  | { type: "RUSSIA_OFFERS_SURRENDER"; russian: number; axis: number }
+  /** The Axis accepted: the U.S.S.R. leaves the war (spec 14 R7c). Its conquest and the credited Objectives are written after it. */
+  | { type: "RUSSIA_SURRENDERED" }
+  /** The Axis refused; the offer is not made again, and Russia is conquered when its last factor inside Russia is gone (spec 14 R7d). */
+  | { type: "SURRENDER_REFUSED" }
+  /** After a surrender these Objectives count for the Allies for good (spec 14 R7c, R1). */
+  | { type: "OBJECTIVES_CREDITED"; hexes: HexId[] }
   /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 
