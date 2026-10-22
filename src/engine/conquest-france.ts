@@ -109,8 +109,9 @@ const emptyPool = (): ForcePools => ({ forcePool: [], allowableBuilds: [] });
 
 /**
  * The nation records after France's fall: France has status "vichy" and no BRPs, exactly as the 1942 scenario has it (Ref 35.0; its Base goes too, so the
- * Year Start Sequence gives it nothing: it is not "gone", the declaration rules skip a "vichy" nation by name); Vichy France is an inactive German
- * Minor-Ally that never pays Germany BRPs; the Vichy and Free French have a Force Pool of their own, empty (TODO(verify) V40: nothing can be built for them yet).
+ * Year Start Sequence gives it nothing: it is not "gone", the declaration rules skip a "vichy" nation by name; TODO(verify) V41); Vichy France is an inactive
+ * German Minor-Ally that never pays Germany BRPs; the Vichy and Free French have a Force Pool of their own, empty (TODO(verify) V40: nothing can be built for
+ * them yet).
  */
 export function franceMark(state: GameState): GameState {
   const france = state.nations.france;
@@ -142,7 +143,7 @@ export function franceSteps(): Pick<FallPlan, "before" | "after"> {
   return {
     before: (ctx, state) => {
       let s = state;
-      // 3. the colony dice, Lebanon-Syria first
+      // 3. the colony dice, Lebanon-Syria first (TODO(verify) V14, V40: always both; only what France holds there changes)
       const control = { ...s.control };
       let rng = s.rngState;
       const owners = new Map<string, ForceOwner>();
@@ -160,7 +161,7 @@ export function franceSteps(): Pick<FallPlan, "before" | "after"> {
           }
         }
       }
-      // 1. the Vichy hexes of European France, whoever holds them
+      // 1. the Vichy hexes of European France, whoever holds them (TODO(verify) V39)
       const zone = vichyHexes(ctx);
       for (const hex of zone) if (control[hex] !== "vichy-france") { control[hex] = "vichy-france"; report.vichy.push(hex); }
       const units = Object.fromEntries(Object.entries(s.units).map(([id, u]) => [id, u.owner === "france" && owners.has(u.at) ? { ...u, owner: owners.get(u.at)! } : u]));

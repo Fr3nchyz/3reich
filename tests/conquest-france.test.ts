@@ -325,7 +325,7 @@ describe("the events and the log", () => {
     const r = falls(paris([inf("france", "M24"), inf("france", SYRIA[0]!), unit("britain", "infantry", 3, "S19", 4)], { rngState: rngFor(false, true) }));
     const t = types(r.events);
     expect(t).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "VICHY_CREATED", "CONTROL_PASSED", "CONTROL_PASSED", "UNIT_ELIMINATED"]);
-    const to = r.events.filter((e) => e.type === "CONTROL_PASSED").map((e) => (e as Extract<GameEvent, { type: "CONTROL_PASSED" }>).to);
+    const to = r.events.filter((e) => e.type === "CONTROL_PASSED").map((e) => e.to);
     expect(to).toEqual(["germany", "vichy-france", "free-france"]);
   });
   it("the plain fall is unchanged for the others: no VICHY_CREATED when Germany falls", () => {

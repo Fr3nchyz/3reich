@@ -58,7 +58,7 @@ export function fall(ctx: GameContext, state: GameState, who: PowerId, conqueror
     side: sideOfPower(nation) ?? ALIGNMENT[who],
     how,
     startingBrps: ctx.scenario.nations[who].brpTotal,
-    // France: everything it holds passes to the conqueror (R5 point 4, V15); the colonies and the Vichy hexes were given away by the steps
+    // France: everything it holds passes to the conqueror, not to nobody (R5 point 4; TODO(verify) V15, V41); the colonies and the Vichy hexes were given away by the steps
     isHome: france ? () => true : (hex, owner) => owner === who && hex.country === who,
     mark: france
       ? franceMark // R5: France becomes "vichy", not "conquered"; Vichy France is an inactive German Minor-Ally
