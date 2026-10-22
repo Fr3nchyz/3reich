@@ -13,6 +13,8 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
   switch (e.type) {
     case "CAPITAL_LOST":
       return `${placeName(ctx.map, e.capital)} has been taken. ${POWER_NAMES[e.power]} falls at the end of its own Combat Phase unless it takes ${placeName(ctx.map, e.capital)} back.`;
+    case "RUSSIA_BRPS_MOVED":
+      return `The Axis takes ${e.city === "moscow" ? "Moscow" : "Leningrad"} for the first time: +${e.amount} BRPs for ${POWER_NAMES.germany}, -${e.lost} for ${POWER_NAMES.ussr}.`;
     case "CAPITAL_RETAKEN":
       return `${POWER_NAMES[e.power]} has taken back ${placeName(ctx.map, e.capital)}.`;
     case "COUNTRY_CONQUERED":
