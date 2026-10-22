@@ -14,7 +14,7 @@ import { sessionFromRecord } from "../src/ui/e2eLoad";
 import { createSession, type Session } from "../src/ui/session";
 import { takeAction } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
-import { surrenderCard, surrenderCardHtml, surrenderWarningHtml, surrenderWarningText } from "../src/ui/surrenderCard";
+import { surrenderCard, surrenderCardHtml, surrenderWarningText } from "../src/ui/surrenderCard";
 import { newWatchSession } from "../src/ui/watchPlay";
 import { CTX, ctxFor } from "./helpers";
 import { answer, asked, at9k, eventsOf, ger, IN, rus, sides } from "./helpers-surrender";
