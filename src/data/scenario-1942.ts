@@ -1,7 +1,7 @@
 import type { Scenario } from "../engine/types";
 import { axisMinorSetups } from "./axis-minors";
 import { air, airborne, armor, fleet, from, inf, nation, nationSetup, replacement } from "./counters";
-import { fromOriginal, ISLANDS, REGIONS } from "./zones";
+import { fromOriginal, ISLANDS, REGIONS, VICHY_FRANCE } from "./zones";
 import { VICTORY_1942 } from "./victory";
 
 /**
@@ -66,11 +66,7 @@ export const SCENARIO_1942: Scenario = {
     // Ref 35.0: Vichy France is the part of European France the program marks as Vichy. VICHY42.CON
     // marks it with Corsica, which is its own zone here. GERM42.CON marks all of mainland France,
     // Vichy included, so German-held France is GERM42's France less Vichy's.
-    "vichy-france": {
-      countries: ["france"],
-      description: "European Vichy France without Corsica (VICHY42.CON)",
-      hexes: fromOriginal("1942/vichy-france", ["france"]),
-    },
+    "vichy-france": VICHY_FRANCE,
     "occupied-france": {
       countries: ["france"],
       description: "European France outside Vichy France, under German control (GERM42.CON less VICHY42.CON)",

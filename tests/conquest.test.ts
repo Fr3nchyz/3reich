@@ -32,9 +32,9 @@ const types = (events: GameEvent[]) => events.map((e) => e.type);
 const leave7p = (state: GameState, ctx = CTX) => advance(ctx, state);
 
 describe("capitals (map facts)", () => {
-  it("the four Powers with a capital on the map: Berlin, London, Rome, Paris; only Germany, Britain and Italy fall by it as built (France is ticket 14-7)", () => {
+  it("the four Powers with a capital on the map: Berlin, London, Rome, Paris; all four fall by it (France since ticket 14-7)", () => {
     expect(["germany", "britain", "italy", "france"].map((p) => capitalOf(CTX, p as "germany"))).toEqual([BERLIN, LONDON, ROME, PARIS]);
-    expect(CONQUERED_BY_CAPITAL).toEqual(["germany", "italy", "britain"]);
+    expect(CONQUERED_BY_CAPITAL).toEqual(["germany", "italy", "britain", "france"]);
   });
   it("the U.S.A. cannot be conquered and the U.S.S.R. is not conquered by Moscow (R8, R7): no capital is listed for them", () => {
     expect(capitalOf(CTX, "usa")).toBeNull();
@@ -113,17 +113,18 @@ describe("when a Power falls (R4: the end of its own Combat Phase, step 7p)", ()
     const from7h = applyAction(CTX, { ...s, units: { b1: s.units.b1! }, position: { part: "player-turn", turn: 1, step: "7g" } }, { type: "END_STEP", side: "axis", step: "7g" });
     expect(from7h.ok && from7h.state.nations.germany.status).toBe("conquered");
   });
-  it("France is not conquered by Paris yet (ticket 14-7 owns its fall, with Vichy): Paris taken says nothing and changes nothing", () => {
+  it("France falls by Paris at the end of the ALLIED Combat Phase (ticket 14-7): Paris taken in the Axis turn changes nothing until then; its own tests are in conquest-france.test.ts", () => {
     const paris = at7p("allies", [counter("g1", "germany", "infantry", 3, PARIS, 3)], { control: { [PARIS]: "germany" } });
-    expect(fallingNow(CTX, paris, "allies")).toEqual([]);
-    expect(capitalState(CTX, paris, "france")).toBe("free");
+    expect(fallingNow(CTX, paris, "allies")).toEqual(["france"]);
+    expect(fallingNow(CTX, paris, "axis")).toEqual([]);
+    expect(capitalState(CTX, paris, "france")).toBe("capital-lost");
+    expect(leave7p({ ...paris, activeSide: "axis" }).state.nations.france.status).toBe("allied"); // the Axis Combat Phase does not conquer France
     const r = leave7p(paris);
-    expect(r.state.nations.france.status).toBe("allied");
-    expect(r.events).toEqual([]);
+    expect(r.state.nations.france.status).toBe("vichy"); // not "conquered": France becomes Vichy (R5)
+    expect(capitalState(CTX, r.state, "france")).toBe("conquered");
+    expect(r.state.conquests).toMatchObject([{ country: "france", by: "germany", how: "capital", startingBrps: 85 }]);
     const walker = counter("g2", "germany", "infantry", 3, "O23", 3);
-    expect(enterHexes(CTX, { ...paris, control: {} }, walker, [PARIS]).events.map((e) => e.type)).toEqual(["HEX_CONTROL_CHANGED"]);
-    // the mechanism itself is the same function: called directly it conquers France like any Power
-    expect(fall(CTX, paris, "france", "germany").state.nations.france.status).toBe("conquered");
+    expect(enterHexes(CTX, { ...paris, control: {} }, walker, [PARIS]).events.map((e) => e.type)).toEqual(["HEX_CONTROL_CHANGED", "CAPITAL_LOST"]);
   });
   it("Britain and Italy fall by London and Rome", () => {
     const london = at7p("allies", [counter("g1", "germany", "infantry", 3, LONDON, 3)], { control: { [LONDON]: "germany" } });

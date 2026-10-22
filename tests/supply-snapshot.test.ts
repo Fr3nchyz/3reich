@@ -14,6 +14,9 @@ import { SCENARIOS, type ScenarioKey } from "../scripts/selfplay/scenarios";
 // units) at every step-6f position along a computer game with the supply effects on, the computer's supply rules switched off so the
 // positions do not depend on them. The values were taken with the search as it stood before supplyNetwork (git: main at 4448ddb) and match it:
 // the faster search gives the same answers. They change only if the search itself or the computer's play without its supply rules changes.
+// 1939 seed 2 (ticket 14-7): France now falls with Paris in this game (the computer without its supply rules takes Paris in Fall 1940, after the 80th
+// of the positions), so the positions after the fall differ: 125 positions and hash 3952921572 before, 108 and 1416377456 now. Checked then: the hash of the
+// first 81 positions is the same on the old and the new engine. The 1942 snapshot is unchanged.
 const fnv = (text: string): number => {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619) >>> 0;
@@ -43,6 +46,6 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
 }
 
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 125, hash: 3952921572 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 108, hash: 1416377456 }), 120_000);
   it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 111, hash: 3375194012 }), 120_000);
 });

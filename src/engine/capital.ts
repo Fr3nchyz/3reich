@@ -14,12 +14,10 @@ const WITH_CAPITAL: readonly PowerId[] = ["germany", "italy", "britain", "france
 
 /**
  * The Major Powers that are conquered when an enemy holds their capital at the end of their own Combat Phase, as built (Ref 18.1). The U.S.A. cannot
- * be conquered (R8); the U.S.S.R. is not conquered when Moscow falls but follows its own rules (R7).
- * France is not in the list yet: its fall at the end of the Allied Combat Phase is ticket 14-7's, with Vichy France, the halving of its units and the
- * colony dice (R5). That ticket adds "france" here; `capitalOf` already knows Paris, and `fall()` is the same function. Until then Paris taken says and
- * does nothing, as before this ticket (so that no recorded game changes: the computer takes Paris in Spring 1940 in the fixed-seed games).
+ * be conquered (R8); the U.S.S.R. is not conquered when Moscow falls but follows its own rules (R7). France falls at the end of the Allied Combat Phase
+ * (R5, ticket 14-7), with Vichy France, the halving of its units and the colony dice (conquest-france.ts).
  */
-export const CONQUERED_BY_CAPITAL: readonly PowerId[] = ["germany", "italy", "britain"];
+export const CONQUERED_BY_CAPITAL: readonly PowerId[] = ["germany", "italy", "britain", "france"];
 
 const capitals = new WeakMap<GameContext, ReadonlyMap<PowerId, HexId>>();
 

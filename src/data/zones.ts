@@ -34,6 +34,16 @@ export const POLAND_EAST_OF_PARTITION_LINE: Zone = {
   hexes: fromOriginal("eastern-europe", ["poland"]),
 };
 
+/**
+ * Ref 35.0: Vichy France, the part of European France the program marks as Vichy (VICHY42.CON), without Corsica (its own zone, `ISLANDS.corsica`).
+ * The 1942 scenario starts with it as Vichy; the 1939 scenario and the Campaign need it for the fall of France (spec 14 R5, ticket 14-7).
+ */
+export const VICHY_FRANCE: Zone = {
+  countries: ["france"],
+  description: "European Vichy France without Corsica (VICHY42.CON)",
+  hexes: fromOriginal("1942/vichy-france", ["france"]),
+};
+
 export const REGIONS = {
   "european-turkey": {
     countries: ["turkey"],

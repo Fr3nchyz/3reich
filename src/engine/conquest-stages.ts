@@ -15,9 +15,10 @@ import type { ForceOwner, GameState, PowerId, Side } from "./types";
  * `fall()` (conquest.ts) builds the plan of a Major Power, `fallCountry` (conquest-minor.ts) that of a minor country, a colony or Eastern Europe, and spec 15
  * calls the second one. The order, and every event, is the same for all of them.
  *
- * Two extension points, `before` and `after`, are for the countries that need more than the stages (ticket 14-7: France halves its units into Vichy France
- * before the stages, and rolls the colony dice after them; Italy's surrender, ticket 14-8, keeps part of its fleet for Germany). Neither is used by a fall
- * that is built, so they change nothing today.
+ * Two extension points, `before` and `after`, are for the countries that need more than the stages. France uses both on every fall (ticket 14-7,
+ * conquest-france.ts): `before` rolls the colony dice, halves its units into Vichy France and hands the colonies and the Vichy hexes over, so that the stages
+ * remove only the rest; `after` writes the report. Italy's surrender (ticket 14-8) will keep part of its fleet for Germany. Every other fall leaves them out and
+ * runs the plain stages.
  */
 
 /** A step a particular fall adds: a pure function of the state, with the events to log. */

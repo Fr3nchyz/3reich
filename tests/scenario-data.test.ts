@@ -5,6 +5,7 @@ import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { newGame, nextTurn, setupOf, turnIndex } from "../src/engine/game";
+import { VICHY_ZONE_IDS } from "../src/engine/conquest-france";
 import { hex, hexId, neighbors } from "../src/engine/hex";
 import { MINOR_COUNTRY_FORCES } from "../src/engine/tables";
 import type { Area, ForceEntry, ForceOwner, GameTurn, Scenario, SetupRequirement } from "../src/engine/types";
@@ -174,6 +175,8 @@ describe.each(ALL)("scenario data: $id", ({ s, maxTurns }) => {
       for (const a of [...f.setup.flatMap(areasOf), ...f.mayAlsoSetUpIn.flatMap((p) => p.areas)]) if (a.kind === "zone") used.add(a.id);
     }
     for (const r of s.rules) if (r.kind === "eliminate-in-zone") used.add(r.zone);
+    // the hexes that become Vichy France (and Corsica) when France falls (spec 14 R5, ticket 14-7): used by that rule, not by a setup
+    if (s.nations.france.status === "allied") for (const z of VICHY_ZONE_IDS) used.add(z);
     expect([...used].sort()).toEqual(Object.keys(s.zones).sort());
     for (const [id, z] of Object.entries(s.zones)) {
       for (const c of z.countries) expect(mapCountries.has(c), `${id}: ${c} is on the map`).toBe(true);
