@@ -20,6 +20,8 @@ import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
 import { recordCheckpoint, evaluateVictory } from "./victory";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
+import { enterWinter } from "./winter";
+import { winterAsking } from "./winter-record";
 
 /**
  * The Sequence of Play as a machine (Ops 5.0, specs/01-turn-steps.md). The state always has a
@@ -71,9 +73,12 @@ export function advance(ctx: GameContext, state: GameState): Transition {
   switch (pos.part) {
     case "year-start": {
       const yss = runYearStartSequence(ctx, state);
-      return { state: { ...yss.state, position: { part: "russian-winter" } }, events: yss.events };
+      const entered = enterWinter(ctx, yss.state);
+      return { state: entered.state, events: [...yss.events, ...entered.events] };
     }
     case "russian-winter":
+      // II.A waits only while the Allies are asked whether the winter waits (CHOOSE_WINTER, spec 14 R10); `settle` stops there, so this is reached once they have answered.
+      if (winterAsking(state)) throw new Error("advance: the Allies have not said whether the Russian winter waits (step II.A).");
       return { state: { ...state, position: { part: "turn-order" } }, events: [] };
     case "turn-order": {
       const firstSide = determineInitiative(state);
@@ -122,8 +127,9 @@ function endGameTurn(ctx: GameContext, from: GameState): Transition {
     return { state: { ...state, phase: "game-over", result }, events: [{ type: "GAME_OVER", year: state.year, season: state.season, result }] };
   }
   const turn = nextTurn(state);
-  const position: TurnPosition = turn.season === "spring" ? { part: "year-start" } : { part: "russian-winter" };
-  return { state: { ...state, ...turn, position }, events: [] };
+  // A Spring turn begins with the Year Start Sequence; any other begins at II.A, where a Winter turn looks at the Russian winter (and may roll and ask).
+  if (turn.season === "spring") return { state: { ...state, ...turn, position: { part: "year-start" } }, events: [] };
+  return enterWinter(ctx, { ...state, ...turn });
 }
 
 /** Whether the side to move has anything to do at a step whose rules are built. */
@@ -169,6 +175,7 @@ export function settle(ctx: GameContext, from: GameState): Transition {
     const id = positionId(state.position);
     const waits = implemented.has(id) && (ctx.implementedSteps !== undefined || hasWork(ctx, state, id));
     if (state.position.part === "player-turn" && waits) break;
+    if (winterAsking(state)) break; // II.A: the game waits for the Allies' answer about the Russian winter (CHOOSE_WINTER)
     const moved = advance(ctx, state);
     if (waits) flush();
     else passed.push(id);

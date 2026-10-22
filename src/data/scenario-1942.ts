@@ -79,7 +79,8 @@ export const SCENARIO_1942: Scenario = {
   startingStrategicWarfare: { germany: { submarines: 6, asw: 0, sac: 0 } },
 
   victory: VICTORY_1942,
-  rules: [],
+  // Ref 28.0: the Germans have been in Russia since 1941, so the first Russian winter is over (spec 14 R10).
+  rules: [{ kind: "first-winter-past" }],
 
   forces: {
     usa: nationSetup({

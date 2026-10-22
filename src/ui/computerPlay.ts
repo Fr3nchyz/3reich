@@ -1,6 +1,6 @@
 import { chooseAction, placeOf } from "../ai";
 import { createMemory, type AiMemory } from "../ai/memory";
-import { combatOf } from "../engine/combat-record";
+import { sideToAct } from "../engine/actor";
 import { otherSide } from "../engine/game";
 import type { Side } from "../engine/types";
 import { sideName } from "./format";
@@ -23,18 +23,17 @@ export const TICK_BUDGET_MS = 60;
 const memories = new WeakMap<Session, AiMemory>();
 const moveTally = new WeakMap<Session, { moves: number; units: number }>();
 
-/** The side the computer plays: the one the player did not pick; when two computers play (watch mode), the side now acting (the one to choose the losses of a pending Exchange, else the side whose Player Turn it is). */
-export const computerSide = (s: Session): Side => (s.watch ? (combatOf(s.state).pending?.chooser ?? s.state.activeSide) : otherSide(s.humanSide));
+/** The side the computer plays: the one the player did not pick; when two computers play (watch mode), the side now acting (`sideToAct`). */
+export const computerSide = (s: Session): Side => (s.watch ? sideToAct(s.state) : otherSide(s.humanSide));
 
 /**
- * Whether the computer is the one to move now: its Player Turn, or an Exchange (step 7h) whose losses it must choose
- * even though the other side is attacking (the chooser is the owner of the units that lose, Ref 12.2).
+ * Whether the computer is the one to move now: the side to act (`sideToAct`) is its side. That is its Player Turn, or the choice of losses of an Exchange
+ * (step 7h) even though the other side is attacking (Ref 12.2), or the Allies' answer about the Russian winter at II.A (spec 14 R10).
  */
 export const computerToMove = (s: Session): boolean => {
   if (s.state.phase !== "player-turn") return false;
   if (s.watch) return true;
-  const pending = combatOf(s.state).pending;
-  return pending ? pending.chooser === computerSide(s) : s.state.activeSide === computerSide(s);
+  return sideToAct(s.state) === computerSide(s);
 };
 
 /** "more": the step is not finished, tick again soon. "done": it left the step. "stuck": the computer could not act. */

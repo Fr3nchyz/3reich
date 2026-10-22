@@ -22,6 +22,7 @@ import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
 import type { WatchInfo } from "./watchController";
 import { gameOverLine } from "./victoryLine";
 import { conquestLine } from "./conquestText";
+import { winterLine } from "./winterText";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -196,6 +197,10 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "UNITS_REMOVED_BY_CONQUEST":
     case "CONTROL_PASSED":
       return conquestLine(ctx, e);
+    case "WINTER_ROLLED":
+    case "WINTER_POSTPONED":
+    case "WINTER_STARTED":
+      return winterLine(e);
     case "GAME_OVER":
       return gameOverLine(e.season, e.year, e.result);
   }

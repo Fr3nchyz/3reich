@@ -4,6 +4,7 @@ import { POWER_NAMES, spendingLimit } from "../engine/nations";
 import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
+import { winterAsking } from "../engine/winter-record";
 import { computerSide, computerToMove } from "./computerPlay";
 import type { GameContext } from "../engine/context";
 import type { GameState } from "../engine/types";
@@ -29,6 +30,8 @@ function turnLine(s: Session): string {
   const { state } = s;
   if (state.phase === "game-over") return statusText(state);
   if (state.phase === "setup") return `${cap(state.season)} ${state.year} &mdash; setting up`;
+  // At II.A the Allies are asked about the Russian winter, whoever played last: the line says so instead of naming the side that played (the card and banner are ticket 14-13).
+  if (winterAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step II.A (Russian winter): the Allies say whether it waits`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }
@@ -59,6 +62,8 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return `${POWER_NAMES[a.by]} declares war on ${nameOf(a.on)} (${isMajorPower(a.on) ? BRP_COSTS.declareWarOnMajorPower : BRP_COSTS.declareWarOnMinorCountry} BRPs)`;
     case "SELECT_FRONT_OPTION":
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
+    case "CHOOSE_WINTER":
+      return a.postpone ? "Put the Russian winter off for a year" : "Let the Russian winter start now"; // a plain button until the winter card (ticket 14-13)
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     default:

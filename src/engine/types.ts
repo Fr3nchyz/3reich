@@ -7,6 +7,7 @@ import type { NavalState } from "./naval-record";
 import type { Conquest } from "./conquest-record";
 import type { SiberianRecord } from "./soviet-record";
 import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
+import type { RussianWinter } from "./winter-record";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -236,7 +237,9 @@ export type ScenarioRule =
   /** Units of `side` still in the zone are eliminated at the end of that side's player turn. */
   | { kind: "eliminate-in-zone"; zone: ZoneId; side: Side; turn: GameTurn }
   /** `side` may choose this Option on this Front on that turn without paying (Ref 29.0 for Germany's opening Eastern Front Offensive Option). */
-  | { kind: "free-front-option"; side: Side; front: Front; option: FrontOption; turn: GameTurn };
+  | { kind: "free-front-option"; side: Side; front: Front; option: FrontOption; turn: GameTurn }
+  /** The first Russian Winter is taken as over (1942 and 1944 start after it): step II.A never rolls (spec 14 R10). */
+  | { kind: "first-winter-past" };
 
 /**
  * What a side may do on a Front in its Player Turn (Ref 11.21): the Offensive Option costs BRPs
@@ -318,6 +321,8 @@ export interface GameState {
   moves?: MoveRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
+  /** The Russian Winter (spec 14 R10): the roll made at II.A, whether the Allies are asked, the Game Turn it is in force in. Absent in an older saved game: no winter yet (or already past, where the scenario says so). */
+  winter?: RussianWinter;
   /** The Free Siberian Transfer so far (spec 14 R11); `used` switches the victory tables. Absent: not used. */
   siberian?: SiberianRecord;
   /** What the victory rules remember during play (spec 14): the Campaign's Winter 1943 Objective count. Absent: nothing yet. */
