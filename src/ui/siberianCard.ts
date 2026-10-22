@@ -109,7 +109,7 @@ export function siberianCardHtml(s: Session, actions: readonly Action[], endButt
     `<button type="button" data-siberian="${c.key}" aria-pressed="${c.chosen}"${c.allowed ? "" : ' disabled aria-disabled="true"'}>${counterIcon(c.type)} ${escape(c.numbers)}<br><small>${c.inPool} in the pool${c.allowed ? "" : ` &middot; ${SIBERIAN_TEXT.armorFirst}`}</small></button>`;
   const hint = m.finished ? SIBERIAN_TEXT.allTaken : m.chips.some((c) => c.allowed) ? SIBERIAN_TEXT.pick : "";
   const cities = m.picked
-    ? `<p class="siberian-line">${escape(siberianCitiesLine(m.picked.counter))}</p><div class="siberian-cities">${m.picked.cities.map((c) => `<button type="button" data-siberian-city="${c.hex}">${escape(c.name)}</button>`).join("")}</div>`
+    ? `<p class="siberian-line">${escape(siberianCitiesLine(m.picked.counter))}</p><div class="siberian-cities" role="group" aria-label="Cities for the counter" tabindex="0">${m.picked.cities.map((c) => `<button type="button" data-siberian-city="${c.hex}">${escape(c.name)}</button>`).join("")}</div>`
     : "";
   return `<section class="siberiancard" id="siberian-card" aria-labelledby="siberian-title">
       <h2 id="siberian-title" tabindex="-1">${escape(SIBERIAN_TEXT.title)}</h2>
