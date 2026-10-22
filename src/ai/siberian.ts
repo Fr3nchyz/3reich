@@ -10,9 +10,8 @@ import type { AiConfig, Decision } from "./types";
  * leave the free units on the table; the full policy set is ticket 14-19). The Allies take everything on offer: infantry first (the engine lists armor only once the infantry
  * taken at least equal it), the biggest counter, in the Russian city nearest an Axis ground unit. A policy of the computer, not a rule: it does not weigh that the first unit
  * taken raises the Allied target by one Objective.
- * TODO(verify) V61: policy only; tune against the self-play results of ticket 14-19.
  */
-export const SIBERIAN_TAKE_ALL = true;
+export const SIBERIAN_TAKE_ALL = true; // TODO(verify) V61: policy only; tune against the self-play results of ticket 14-19
 
 type Transfer = Extract<Action, { type: "SIBERIAN_TRANSFER" }>;
 

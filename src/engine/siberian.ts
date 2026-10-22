@@ -19,10 +19,10 @@ import { RUSSIA_COUNTRY } from "./winter-record";
  */
 
 /** The units the Allies may take, by Game Turn (Ref 11.63, R11). A Game Turn that is not listed has no Transfer; the 1944 scenario starts after the last, so it is exempt without a rule of its own. */
-export const SIBERIAN_QUOTAS: Readonly<Record<string, number>> = { "1941-winter": 4, "1942-spring": 3, "1942-summer": 2, "1942-fall": 1 };
+export const SIBERIAN_QUOTAS: Readonly<Record<string, number>> = { "1941-winter": 4, "1942-spring": 3, "1942-summer": 2, "1942-fall": 1 }; // TODO(verify) V26: the quotas (the manual: four, then three, two and one) apply in the Allied Player Turn of those Game Turns, once each, with no carry-over
 
-/** The kinds of counter that may be taken: ground units that are not airborne (R11). TODO(verify) V58: a replacement is not taken. */
-export const TAKEN_TYPES: readonly ForceEntry["type"][] = ["infantry", "armor"];
+/** The kinds of counter that may be taken: ground units that are not airborne (R11). */
+export const TAKEN_TYPES: readonly ForceEntry["type"][] = ["infantry", "armor"]; // TODO(verify) V58: "non-airborne ground units" is read as infantry and armor; a replacement counter is not taken
 
 const byHex = (a: HexId, b: HexId): number => (a < b ? -1 : a > b ? 1 : 0);
 
@@ -40,24 +40,25 @@ export function siberianLeft(state: GameState): number {
 }
 
 /**
- * TODO(verify) V58: the Russian Force Pool is read as the U.S.S.R.'s Allowable Builds (the counters it may still construct: everything else of its Force Pool is on the map after
- * the opening setup), only infantry and armor, only those whose "in or after" date has come. Taking a unit uses up one of that entry, as building it would.
+ * The Russian Force Pool (Ref 11.63: "ground units currently available in his Force Pool"; Ops 5.47b builds from the same pool): the U.S.S.R.'s Allowable Builds that are infantry or armor and whose
+ * "in or after" date has come. Taking a unit uses up one of that entry, as building it would. The engine keeps no other pool: the rest of the Force Pool is on the map after the opening setup,
+ * and a unit eliminated does not return to it.
  */
 export function siberianPool(state: GameState): ForceEntry[] {
-  return availableBuilds(state, "ussr").filter((e) => TAKEN_TYPES.includes(e.type));
+  return availableBuilds(state, "ussr").filter((e) => TAKEN_TYPES.includes(e.type)); // TODO(verify) V58: the Russian Force Pool is read as the U.S.S.R.'s Allowable Builds (the Force Pool of the manual, which also takes back eliminated units, is not modelled)
 }
 
 /** Whether the Transfer is open to the side to move now: the Allied Player Turn, the U.S.S.R. still in the game, and units left in this Game Turn's quota. */
 const open = (state: GameState): boolean => !!state.nations.ussr && state.phase === "player-turn" && state.activeSide === "allies" && !isGone(state.nations.ussr) && siberianLeft(state) > 0;
 
 /**
- * Which pool entries may be taken now: those of the pool (V58) that the armor rule allows. R11: the armor taken may not outnumber the infantry taken, tested after every unit
- * (TODO(verify) V60), so an armor counter can be taken only once at least as many infantry have been.
+ * Which pool entries may be taken now: those of the pool that the armor rule allows. R11: the armor taken may not outnumber the infantry taken, tested after every unit,
+ * so an armor counter can be taken only once at least as many infantry have been.
  */
 export function siberianOptions(state: GameState): { left: number; entries: ForceEntry[] } {
   if (!open(state)) return { left: 0, entries: [] };
   const { infantry, armor } = siberianTakenNow(state);
-  return { left: siberianLeft(state), entries: siberianPool(state).filter((e) => e.type === "infantry" || armor + 1 <= infantry) };
+  return { left: siberianLeft(state), entries: siberianPool(state).filter((e) => e.type === "infantry" || armor + 1 <= infantry) }; // TODO(verify) V60: the armor rule is tested after every unit taken, so the infantry come first (the manual states it for the Game Turn as a whole)
 }
 
 /** Whether a hex is a city (every kind the rules call a base: Ref 4.7, so cities, ports, capitals and Objectives) of the map country "ussr". */
@@ -68,11 +69,10 @@ const isRussianCity = (ctx: GameContext, h: HexId): boolean => {
 
 /**
  * The Russian cities where a unit may appear now, in hex order: held by the U.S.S.R. and joined to the east edge of the map by a supply line (the east-edge source of
- * supply-sources.ts: land the Allies control with no enemy ground unit, Ref 19.2, 19.3). TODO(verify) V59: no test of an enemy Zone of Control on the city itself, no
- * separate test that Russia is at war (a neutral Russia holds no supply line, so nothing qualifies); stacking is checked per counter (`siberianPlaces`).
+ * supply-sources.ts: land the Allies control with no enemy ground unit, Ref 19.2, 19.3); stacking is checked per counter (`siberianPlaces`).
  */
 export function siberianCities(ctx: GameContext, state: GameState): HexId[] {
-  const edge = specialNets(ctx, state, "allies").find((n) => n.id === "soviet-edge");
+  const edge = specialNets(ctx, state, "allies").find((n) => n.id === "soviet-edge"); // TODO(verify) V59: "supply line to the east edge" is the existing east-edge source; an enemy Zone of Control on the city is not tested, and no separate test that Russia is at war (a neutral Russia holds no supply line, so nothing qualifies)
   if (!edge) return [];
   const reached = supplyNetwork(ctx, state, "allies").reachFrom(edge.sources);
   return [...reached.keys()].filter((h) => isRussianCity(ctx, h) && controllerOf(ctx, state, h) === "ussr").sort(byHex);

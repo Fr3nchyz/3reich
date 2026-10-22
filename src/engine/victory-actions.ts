@@ -77,7 +77,7 @@ export function applySiberian(ctx: GameContext, state: GameState, action: Siberi
   const record = state.siberian ?? { used: false, taken: {} };
   const firstUse = !record.used;
   const siberian = {
-    used: true,
+    used: true, // TODO(verify) V26: any one unit taken counts as using the Transfer, so it switches the victory tables for good (the program asks a yes-or-no question)
     taken: { ...record.taken, [key]: (record.taken[key] ?? 0) + 1 },
     armor: { ...record.armor, [key]: (record.armor?.[key] ?? 0) + (type === "armor" ? 1 : 0) },
   };
