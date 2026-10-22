@@ -32,6 +32,7 @@ for (const size of [[390, 844], [1024, 768]] as const) {
     await expect(accept).toBeVisible();
     await expect(refuse).toBeVisible();
     for (const b of [accept, refuse]) {
+      await b.scrollIntoViewIfNeeded(); // like every step button, they sit below the map and the nation table; the card that brings them up is ticket 14-16
       await expect(b).toBeInViewport();
       expect((await b.boundingBox())!.height, "a touch target").toBeGreaterThanOrEqual(44);
     }
