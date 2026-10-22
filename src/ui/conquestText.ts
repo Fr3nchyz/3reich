@@ -22,7 +22,7 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
     case "SURRENDER_REFUSED":
       return "The Axis refuse Russia's surrender: the war goes on until the last Russian unit inside Russia is gone, and Russia will not offer again.";
     case "OBJECTIVES_CREDITED":
-      return `${e.hexes.length} objective${e.hexes.length === 1 ? "" : "s"} now count for the Allies for good: ${e.hexes.map((h) => placeName(ctx.map, h)).join(", ")}.`;
+      return `${e.hexes.length} objective${e.hexes.length === 1 ? " now counts" : "s now count"} for the Allies for good: ${e.hexes.map((h) => placeName(ctx.map, h)).join(", ")}.`;
     case "CAPITAL_RETAKEN":
       return `${POWER_NAMES[e.power]} has taken back ${placeName(ctx.map, e.capital)}.`;
     case "COUNTRY_CONQUERED":

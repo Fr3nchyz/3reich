@@ -14,7 +14,7 @@ import { runYearStartSequence } from "../src/engine/yearstart";
 import type { GameState } from "../src/engine/types";
 import { counter } from "./board";
 import { CTX, ctxFor } from "./helpers";
-import { air, answer, asked, askedWith, at9k, eventsOf, ger, IN, LENINGRAD, many, MOSCOW, objectiveOutside, objectivesInside, OUT, rus, STALINGRAD } from "./helpers-surrender";
+import { air, answer, asked, askedWith, at9k, eventsOf, ger, IN, LENINGRAD, many, MOSCOW, objectiveOutside, OUT, rus, STALINGRAD } from "./helpers-surrender";
 
 // Spec 14 ticket 14-15, R7c (Ref 18.41): the Axis accept. Russia is conquered by Germany without its land changing hands: units and pool go, the Objectives credited to the Allies
 // for good, Germany gets half of Russia's starting BRPs, the 15s of Moscow and Leningrad stop, Russian land is closed to the Axis. TODO(verify) V19, V48, V49.
@@ -137,6 +137,10 @@ describe("what the Axis accept (R7c)", () => {
       expect(conquestIncome(CTX, after, "germany")).toBe(Math.floor(start / 2));
       expect(controllerOf(CTX, after, MOSCOW)).toBe("ussr");
       expect(conquestIncome(CTX, after, "britain")).toBe(0);
+    });
+    it("rounds down: a starting total of 91 would pay 45", () => {
+      const odd: GameState = { ...after, conquests: [{ ...after.conquests![0]!, startingBrps: 91 }] };
+      expect(conquestIncome(CTX, odd, "germany")).toBe(45);
     });
     it("the Year Start Sequence adds it to Germany's total, leaves the U.S.S.R. alone, and says so", () => {
       const spring = { ...after, season: "spring" as const, year: 1942 };

@@ -126,8 +126,7 @@ export function advance(ctx: GameContext, state: GameState): Transition {
 /** Leaving 7p: the Major Powers and minor countries that fall now (spec 14 R4, R9), then, after a refusal, Russia if its last factor inside Russia is gone (R7d). Stops as soon as a fall ends the game. */
 function endCombatPhase(ctx: GameContext, state: GameState): Transition {
   const fell = settleConquests(ctx, state);
-  if (fell.state.phase !== "player-turn") return fell;
-  const russia = settleSoviet(ctx, fell.state);
+  const russia = settleSoviet(ctx, fell.state); // does nothing once a fall has ended the game
   return { state: russia.state, events: [...fell.events, ...russia.events] };
 }
 

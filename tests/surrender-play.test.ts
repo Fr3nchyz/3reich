@@ -255,6 +255,7 @@ describe("the log lines", () => {
     expect(conquestLine(ctx, { type: "RUSSIA_SURRENDERED" })).toBe("The Axis accept Russia's surrender: Russia leaves the war.");
     expect(conquestLine(ctx, { type: "SURRENDER_REFUSED" })).toContain("refuse Russia's surrender");
     expect(conquestLine(ctx, { type: "OBJECTIVES_CREDITED", hexes: ["H47", "D44"] })).toBe("2 objectives now count for the Allies for good: Moscow (H47), Leningrad (D44).");
+    expect(conquestLine(ctx, { type: "OBJECTIVES_CREDITED", hexes: ["H47"] })).toBe("1 objective now counts for the Allies for good: Moscow (H47).");
     expect(conquestLine(ctx, { type: "COUNTRY_CONQUERED", country: "ussr", by: "germany", how: "surrender", unitsRemoved: 1, hexesPassed: 0 })).toContain("land stays as it is");
   });
   it("go to the right side of the log", () => {

@@ -1,6 +1,5 @@
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { GameContext } from "../src/engine/context";
-import type { Action } from "../src/engine/actions";
 import { applyAction } from "../src/engine/actions";
 import type { GameEvent } from "../src/engine/action-types";
 import { objectiveHexes } from "../src/engine/objectives";
@@ -68,7 +67,7 @@ export function askedWith(units: Unit[], tweak: Partial<GameState> = {}, scenari
 }
 
 export const answer = (s: GameState, accept: boolean, ctx: GameContext = CTX) => {
-  const r = applyAction(ctx, s, { type: "SURRENDER_ANSWER", side: "axis", accept } as Action);
+  const r = applyAction(ctx, s, { type: "SURRENDER_ANSWER", side: "axis", accept });
   if (!r.ok) throw new Error(r.error);
   return r;
 };
@@ -77,4 +76,3 @@ export const eventsOf = <T extends GameEvent["type"]>(events: readonly GameEvent
 
 /** An Objective hex outside Russia, to give to someone. */
 export const objectiveOutside = (): string => objectiveHexes(CTX).find((h) => CTX.map.hexes[h]!.country !== "ussr")!;
-export const objectivesInside = (): string[] => objectiveHexes(CTX).filter((h) => CTX.map.hexes[h]!.country === "ussr");

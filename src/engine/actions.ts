@@ -24,7 +24,7 @@ import type { GameState } from "./types";
 
 export type { Action, ActionResult, GameEvent } from "./action-types";
 
-/** Why nothing else is legal while Russia's offer to surrender waits (step 10a, spec 14 R7b). */
+/** Why nothing else is legal while Russia's offer to surrender waits (step 10a, spec 14 R7b); `applyAction` refuses every action but the answer before it looks at which. */
 const SURRENDER_WAITS = "The game waits at step 10a for the Axis to answer Russia's offer to surrender.";
 
 /** The step a Player Turn is waiting at, or undefined when the state has no position (setup, game over, old saves). */
@@ -154,7 +154,6 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
   const step = waitingStep(state);
   if (winterAsking(state)) return { ok: false, error: "The game waits at step II.A for the Allies to say whether the Russian winter waits." };
-  if (surrenderAsking(state)) return { ok: false, error: SURRENDER_WAITS };
   if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {
