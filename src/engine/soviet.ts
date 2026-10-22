@@ -43,10 +43,11 @@ export const sovietCityHexes = (ctx: GameContext): HexId[] => [...citiesOf(ctx).
 
 /**
  * Whether the 15s are still in play: the U.S.S.R. is in the game and was not conquered or surrendered (a Conquest of "ussr" counts too, so ticket 14-15
- * need not also set the status for this to stop). TODO(verify) V22: after a surrender they stop (Ref 18.41); until the last factor is gone after a refusal they go on (V20).
+ * need not also set the status for this to stop).
  */
 export function sovietCityOpen(state: GameState): boolean {
   const ussr: Nation | undefined = state.nations.ussr;
+  // TODO(verify) V22: after a surrender they stop (Ref 18.41); after a refusal they go on until the last Russian factor in Russia is gone (V20).
   return ussr !== undefined && !isGone(ussr) && !(state.conquests ?? []).some((c) => c.country === "ussr");
 }
 
@@ -56,18 +57,17 @@ export const cityPaid = (state: GameState, city: SovietCity): boolean => state.s
 /**
  * An Axis ground unit has just taken `hex` from the Allies: if it is Moscow or Leningrad for the first time, Germany gains 15 BRPs and the U.S.S.R. loses 15 at once.
  * Returns the new state and its event, or null when nothing moves (not one of the cities, taken before, or the U.S.S.R. is gone).
- *
- * TODO(verify) V45: the loss is what the U.S.S.R. has, at most 15 (its total never goes below 0, as for every charge in brps.ts), the gain is the full 15, and neither
- * touches the spending limit, which is fixed for the year (Ref 10.0).
- * TODO(verify) V47: "capture" is read as an Axis ground unit (Italian and Minor-Ally units too) entering the city, at that moment, in any phase; control that
- * passes by a conquest is no capture. Germany is the recipient in every case (V22); a conquered Germany gets nothing, the U.S.S.R. still loses its 15.
  */
 export function sovietCityTaken(ctx: GameContext, state: GameState, hex: HexId): { state: GameState; events: GameEvent[] } | null {
   const city = sovietCityAt(ctx, hex);
+  // TODO(verify) V47: "capture" is read as an Axis ground unit (Italian and Minor-Ally units too) entering the city, at that moment and in any phase; control that passes
+  // by a conquest is no capture (the caller, enterHexes, only asks when a unit enters); the immediate 15 is paid once for each city and never again (R7a).
   if (city === null || !sovietCityOpen(state) || cityPaid(state, city)) return null;
   const ussr = state.nations.ussr;
   const germany = state.nations.germany;
+  // TODO(verify) V45: the U.S.S.R. loses what it has, at most 15 (never below 0, as for every charge in brps.ts); the gain is the full 15; neither touches the spending limit (fixed for the year, Ref 10.0).
   const lost = Math.min(SOVIET_CITY_BRPS, ussr.brpTotal);
+  // TODO(verify) V22: Germany is the recipient even when an Italian or Minor-Ally unit took the city (V47: a conquered Germany gets nothing, the U.S.S.R. still loses its 15).
   const gain = isGone(germany) ? 0 : SOVIET_CITY_BRPS;
   const nations = { ...state.nations, ussr: { ...ussr, brpTotal: ussr.brpTotal - lost }, germany: { ...germany, brpTotal: germany.brpTotal + gain } };
   const soviet = { ...state.soviet, citiesTaken: { ...state.soviet?.citiesTaken, [city]: true } };

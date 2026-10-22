@@ -69,6 +69,8 @@ function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: 
   const conquered = conquestIncome(ctx, state, n.id);
   const minors = minorAllyBrps(ctx, state, n.id);
   const cities = sovietCityIncome(ctx, state, n.id);
+  // TODO(verify) V46: the 15s of Moscow and Leningrad join the new initial total after the growth of the Base (they do not feed it, nor the next year's growth), so the spending
+  // limit, half the total, moves with them; a total never goes below 0 (it only could for the U.S.S.R.).
   const brpTotal = Math.max(0, brpBase + minors + conquered + cities + (KEEP_UNUSED_BRPS ? unused : 0));
   return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth, minors, conquered, cities };
 }

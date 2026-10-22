@@ -122,6 +122,7 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
     control = { ...control, [hex]: to };
     events.push({ type: "HEX_CONTROL_CHANGED", hex, from: now, to, unitId: unit.id }, ...capitalEvents(ctx, state, hex, now, to));
     // Spec 14 R7a: the Axis taking Moscow or Leningrad from the Allies moves 15 BRPs from the U.S.S.R. to Germany, at once and once for each city (soviet.ts).
+    // TODO(verify) V47: a unit entering the city is the capture, in the Movement Phase as well as after a battle.
     if (now !== null && sideInWar(state, to) === "axis" && sideInWar(state, now) === "allies") {
       const moved = sovietCityTaken(ctx, { ...state, ...rest }, hex);
       if (moved) {
