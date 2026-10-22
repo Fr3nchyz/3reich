@@ -97,7 +97,8 @@ describe("the construction warning on the screen", () => {
     const page = html(s);
     expect(page).toContain('class="surrender-warning"');
     expect(page).toContain("unless it has 1 more ground or air factor on the map");
-    expect(page.indexOf("<h2>Construction</h2>")).toBeLessThan(page.indexOf("surrender-warning")); // under the build list
+    expect(page.indexOf("<h2>Construction</h2>")).toBeLessThan(page.indexOf("surrender-warning"));
+    expect(page.lastIndexOf('<button data-build="')).toBeLessThan(page.indexOf("surrender-warning")); // under the build list: after every counter chip
     expect(surrenderWarning(12)).toContain("unless it has 12 more ground or air factors on the map");
   });
   it("appears only when it should: the Axis human, a watcher, another step, the Axis' turn, no war, an offer made, a test not met", () => {
