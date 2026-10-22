@@ -124,6 +124,9 @@ describe("the pool (V58)", () => {
     expect(as("fleet", 9)).toMatch(/Only infantry and armor/);
     expect(as("replacement", 3)).toMatch(/Only infantry and armor/);
     expect(transfers(s).every((a) => a.type === "SIBERIAN_TRANSFER" && a.unit.type === "infantry")).toBe(true);
+    const later = takeAll(s, [["infantry", 3, MOSCOW]]); // with infantry taken, the airborne counter is still not on offer
+    expect(transfers(later).every((a) => a.type === "SIBERIAN_TRANSFER" && a.unit.type === "infantry")).toBe(true);
+    expect(siberianOptions(later).entries.map((e) => e.type)).toEqual(["infantry"]);
   });
 
   it("takes the unit for nothing: no BRP is spent or paid", () => {
@@ -224,6 +227,23 @@ describe("placement: a Russian city, held by the U.S.S.R., with a supply line to
     expect(siberianCities(CTX, s)).toEqual([]);
     expect(transfers(s)).toEqual([]);
     expect(refusal(s, transfer("infantry", 3, MOSCOW))).toMatch(/supply line to the east edge/);
+  });
+
+  it("a city of the U.S.S.R. is not enough: a Russian city under another Allied Power's control is not offered", () => {
+    const s = at8a([], { control: { [KAZAN]: "britain" } });
+    expect(siberianCities(CTX, s)).not.toContain(KAZAN);
+    expect(siberianCities(CTX, s)).toContain(GORKI);
+    expect(refusal(s, transfer("infantry", 3, KAZAN))).toMatch(/cannot be placed/);
+  });
+
+  it("a city outside the U.S.S.R. is never offered, even one the U.S.S.R. holds on a supply line from the east edge", () => {
+    const outside = Object.values(CTX.map.hexes).filter((h) => h.land && ["poland", "baltic-states", "rumania", "finland", "turkey"].includes(h.country ?? "")).map((h) => h.id);
+    const control: Record<string, ForceOwner> = Object.fromEntries(outside.map((h) => [h, "ussr" as const]));
+    const s = at8a([], { control });
+    const cities = siberianCities(CTX, s);
+    expect(cities).not.toContain(WARSAW);
+    expect(cities.every((h) => CTX.map.hexes[h]!.country === "ussr")).toBe(true);
+    expect(refusal(s, transfer("infantry", 3, WARSAW))).toMatch(/cannot be placed/);
   });
 
   it("an Axis ground unit standing in a city keeps it off the list", () => {

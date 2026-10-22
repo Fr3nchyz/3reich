@@ -40,7 +40,7 @@ export function siberianLeft(state: GameState): number {
 }
 
 /**
- * The Russian Force Pool (Ref 11.63: "ground units currently available in his Force Pool"; Ops 5.47b builds from the same pool): the U.S.S.R.'s Allowable Builds that are infantry or armor and whose
+ * The Russian Force Pool (Ref 11.63; Ops 5.47b builds from the same pool): the U.S.S.R.'s Allowable Builds that are infantry or armor and whose
  * "in or after" date has come. Taking a unit uses up one of that entry, as building it would. The engine keeps no other pool: the rest of the Force Pool is on the map after the opening setup,
  * and a unit eliminated does not return to it.
  */
@@ -58,7 +58,7 @@ const open = (state: GameState): boolean => !!state.nations.ussr && state.phase 
 export function siberianOptions(state: GameState): { left: number; entries: ForceEntry[] } {
   if (!open(state)) return { left: 0, entries: [] };
   const { infantry, armor } = siberianTakenNow(state);
-  return { left: siberianLeft(state), entries: siberianPool(state).filter((e) => e.type === "infantry" || armor + 1 <= infantry) }; // TODO(verify) V60: the armor rule is tested after every unit taken, so the infantry come first (the manual states it for the Game Turn as a whole)
+  return { left: siberianLeft(state), entries: siberianPool(state).filter((e) => e.type !== "armor" || armor + 1 <= infantry) }; // TODO(verify) V60: the armor rule is tested after every unit taken, so the infantry come first (the manual states it for the Game Turn as a whole)
 }
 
 /** Whether a hex is a city (every kind the rules call a base: Ref 4.7, so cities, ports, capitals and Objectives) of the map country "ussr". */

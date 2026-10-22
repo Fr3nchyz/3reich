@@ -59,6 +59,7 @@ describe("when the card is drawn", () => {
     expect(card(sessionAt(at8a(), "axis"))).toBe("");
     const watcher = newWatchSession(SCENARIO_1939, 1, "turbo", null);
     watcher.state = at8a();
+    watcher.humanSide = "allies"; // a watched game has no human side; the side it names changes nothing
     expect(siberianShown(watcher)).toBe(false);
     expect(html(watcher)).not.toContain("siberiancard");
     expect(siberianShown(sessionAt(at8a([], { position: { part: "player-turn", turn: 2, step: "8b" } })))).toBe(false);
