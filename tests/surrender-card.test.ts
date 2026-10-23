@@ -1,14 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
+import { SCENARIO_1942 } from "../src/data/scenario-1942";
+import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { conquestHalf, conquestIncome } from "../src/engine/conquest-income";
 import { objectiveStandings } from "../src/engine/objectives";
 import { surrenderAsking } from "../src/engine/soviet-record";
 import { avoidOfferAt, offerSurrender, sovietOffer, SURRENDER_FACTOR_LIMIT, SURRENDER_RATIO, surrenderShortfall } from "../src/engine/soviet-surrender";
-import type { GameState, Side } from "../src/engine/types";
+import type { GameState, Scenario, Side } from "../src/engine/types";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
-import { SURRENDER_TEXT, surrenderCreditedLine, surrenderIncomeLine, surrenderWarning } from "../src/ui/endText";
+import { SURRENDER_TEXT, surrenderCreditedLine, surrenderEndsGameLine, surrenderIncomeLine, surrenderWarning } from "../src/ui/endText";
 import { objectivesCard } from "../src/ui/objectivesCard";
 import { sessionFromRecord } from "../src/ui/e2eLoad";
 import { createSession, type Session } from "../src/ui/session";
@@ -177,6 +179,30 @@ describe("the offer card (the model)", () => {
     expect(conquestHalf(91)).toBe(45);
     const c = surrenderCard(ctxFor(), asked())!;
     expect(c.accept.lines[2]).toContain(`${Math.floor(SCENARIO_1939.nations.ussr.brpTotal / 2)} Base Resource Points`);
+  });
+});
+
+describe("the sentence that accepting can end the Campaign at once", () => {
+  const fell = (country: "britain" | "france") => ({ country, by: "germany", side: "allies", how: "capital", at: { year: 1940, season: "spring" } }) as const;
+  const lines = (scenario: Scenario, tweak: Partial<GameState> = {}) => surrenderCard(ctxFor(scenario), asked(tweak, scenario))!.accept.lines;
+  it("Campaign, Britain and France conquered: says the game ends at once, and the engine does end it, Axis Decisive", () => {
+    const tweak = { conquests: [fell("britain"), fell("france")] };
+    expect(lines(SCENARIO_CAMPAIGN, tweak)).toContain(surrenderEndsGameLine(true));
+    expect(answer(asked(tweak, SCENARIO_CAMPAIGN), true, ctxFor(SCENARIO_CAMPAIGN)).state.result).toMatchObject({ winner: "axis", level: "decisive" });
+    expect(surrenderEndsGameLine(true)).toBe("This ends the game at once: Britain and France are already conquered, so Russia is the third Allied Major Power to fall, and the Axis win a Decisive Victory.");
+  });
+  it("Campaign, fewer conquered: says it only happens with both, and the engine goes on", () => {
+    for (const tweak of [{}, { conquests: [fell("france")] }]) {
+      expect(lines(SCENARIO_CAMPAIGN, tweak)).toContain(surrenderEndsGameLine(false));
+      expect(answer(asked(tweak, SCENARIO_CAMPAIGN), true, ctxFor(SCENARIO_CAMPAIGN)).state.phase).toBe("player-turn");
+    }
+    expect(surrenderEndsGameLine(false)).toBe("In the Campaign, accepting ends the game at once only if Britain and France are both already conquered. They are not, so the game would go on.");
+  });
+  it("no sentence in the other scenarios, where no conquest ends the game early", () => {
+    for (const scenario of [SCENARIO_1939, SCENARIO_1942]) {
+      const all = lines(scenario, { conquests: [fell("britain"), fell("france")] }).join(" ");
+      expect(all).not.toContain("ends the game at once");
+    }
   });
 });
 
