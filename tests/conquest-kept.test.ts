@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
+import { SCENARIO_1944 } from "../src/data/scenario-1944";
+import { MAP } from "../src/data/map";
 import { applyAction, legalActions } from "../src/engine/actions";
 import type { GameEvent } from "../src/engine/action-types";
 import { fall } from "../src/engine/conquest";
-import { KEPT_HEX_PASSES_WHEN_FREED, releaseKept } from "../src/engine/conquest-kept";
+import { KEPT_HEX_PASSES_WHEN_FREED, keptDestination, releaseKept } from "../src/engine/conquest-kept";
+import { fallCountry } from "../src/engine/conquest-minor";
+import type { Conquest } from "../src/engine/conquest-record";
 import { controllerOf } from "../src/engine/control";
 import { advance, settle } from "../src/engine/turn";
 import type { ForceOwner, GameState, Side, Unit } from "../src/engine/types";
@@ -124,6 +128,48 @@ describe("a minor country's fall (Poland to Germany)", () => {
     expect(s.control.L25).toBeNull();
     expect(s.keptHexes?.L25).toEqual({ country: "belgium", side: "axis", to: "germany", was: null });
     expect(controllerOf(CTX, releaseKept(CTX, without(s, "b1")).state, "L25")).toBe("germany");
+  });
+});
+
+describe("the owner a kept hex was to go to has fallen since (V62)", () => {
+  it("Poland falls to Germany with M36 kept under a British unit; Germany then falls to Britain; when the unit leaves, M36 (outside Germany) becomes nobody's, not a conquered Germany's", () => {
+    const s = polandFallen();
+    const withBerlin = { ...s, units: { ...s.units, b2: british("b2", BERLIN) }, control: { ...s.control, [BERLIN]: "britain" as ForceOwner } };
+    const g = fall(CTX, withBerlin, "germany", "britain").state;
+    expect(g.keptHexes?.M36).toMatchObject({ to: "germany", was: "poland" });
+    const r = releaseKept(CTX, moved(g, "b1", "M37"));
+    expect(r.state.control.M36).toBeNull();
+    expect(passedEvents(r.events)).toEqual([{ type: "CONTROL_PASSED", country: "poland", to: null, hexes: ["M36"] }]);
+  });
+  it("keptDestination follows that owner's own fall: its home land to its conqueror, other land to nobody, France's everything to its conqueror, Russia after a surrender keeps it, an owner that stands keeps it", () => {
+    const at = { year: 1941, season: "spring" as const };
+    const conquests: Conquest[] = [
+      { country: "germany", by: "britain", side: "axis", how: "capital", at },
+      { country: "france", by: "germany", side: "allies", how: "capital", at },
+      { country: "ussr", by: "germany", side: "allies", how: "surrender", at },
+    ];
+    const s = { ...board([]), conquests };
+    expect(keptDestination(CTX, s, "germany", "J29")).toBe("britain"); // German land
+    expect(keptDestination(CTX, s, "germany", "M36")).toBeNull(); // Polish land
+    expect(keptDestination(CTX, s, "france", "M36")).toBeNull(); // France's conqueror Germany has fallen too: M36 is not German land
+    expect(keptDestination(CTX, s, "france", "J29")).toBe("britain"); // to Germany, then down the chain to Germany's conqueror
+    expect(keptDestination(CTX, s, "ussr", "M36")).toBe("ussr");
+    expect(keptDestination(CTX, s, "italy", "M36")).toBe("italy");
+    expect(keptDestination(CTX, s, null, "M36")).toBeNull();
+  });
+});
+
+describe("other kinds of fall", () => {
+  it("an active Minor-Ally falls (Hungary to the U.S.S.R., 1944): a Hungarian hex under a German unit is kept, then passes to the U.S.S.R. when it leaves", () => {
+    const ctx = ctxFor(SCENARIO_1944);
+    const hexes = Object.values(MAP.hexes).filter((h) => h.land && h.country === "hungary").map((h) => h.id).sort();
+    const hex = hexes.find((h) => !MAP.hexes[h]!.features.some((f) => f.startsWith("capital")))!;
+    const s0 = board([counter("g1", "germany", "infantry", 3, hex, 3)], SCENARIO_1944, { year: 1944, season: "spring", firstSide: "allies", activeSide: "allies", position: STEP_7P });
+    expect(s0.minorAllies.some((m) => m.owner === "hungary" && m.active)).toBe(true);
+    const s = fallCountry(ctx, s0, { country: "hungary", conqueror: "ussr" }).state;
+    expect(controllerOf(ctx, s, hex)).toBe("hungary");
+    expect(s.keptHexes?.[hex]).toEqual({ country: "hungary", side: "allies", to: "ussr", was: "hungary" });
+    expect(controllerOf(ctx, releaseKept(ctx, without(s, "g1")).state, hex)).toBe("ussr");
   });
 });
 
