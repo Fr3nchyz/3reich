@@ -244,14 +244,14 @@ describe("R7: a record made before ticket 17-1 still replays to its end", () => 
   const fixtures = ["axis-at-7h", "ended-1939", "siberian-card", "surrender-build", "winter-question", "winter-started"];
   const scenarios = { "1939": SCENARIO_1939, "1942": SCENARIO_1942 } as Record<string, typeof SCENARIO_1939>;
   for (const name of fixtures) {
-    it(`${name}.json (recorded on the old engine): every recorded action is applied, in order; a step is ended only at 8a or 8b`, () => {
+    it(`${name}.json (recorded on the old engine): every recorded action is applied, in order; a step is ended only at 8a, 8b or 9e`, () => {
       const rec = JSON.parse(readFileSync(`tests/e2e/fixtures/${name}.json`, "utf8")) as { scenario: string; seed: number; end?: { year: number; season: "spring" | "summer" | "fall" | "winter" }; actions: Action[] };
       const scenario = rec.end ? { ...scenarios[rec.scenario]!, end: rec.end } : scenarios[rec.scenario]!;
       const ctx = ctxFor(scenario);
       const r = replayRecord(ctx, newGame(scenario, rec.seed), rec.actions);
       const inserted = r.actions.filter((a) => !rec.actions.includes(a));
       expect(inserted).toHaveLength(r.ended.length);
-      for (const a of inserted) expect(a.type === "END_STEP" && /^8[ab]$/.test(a.step), JSON.stringify(a)).toBe(true);
+      for (const a of inserted) expect(a.type === "END_STEP" && /^(8[ab]|9e)$/.test(a.step), JSON.stringify(a)).toBe(true);
       expect(r.actions.filter((a) => rec.actions.includes(a))).toEqual(rec.actions);
       expect(replay(ctx, newGame(scenario, rec.seed), r.actions).state).toEqual(r.state);
     });

@@ -31,8 +31,8 @@ async function load(page: Page, f: Fixture, side: "axis" | "allies", size?: Size
 /** A tap on a touch screen, a click with a mouse. */
 const press = (target: Locator, touch: boolean) => (touch ? target.tap() : target.click());
 
-/** The game one action before the offer: the computer, playing the Allies, ends step 9a itself and the offer arrives on the screen as it does in play (the card scrolls into view then, which a loaded position does not do). */
-const JUST_BEFORE: Fixture = { ...QUESTION, actions: QUESTION.actions.slice(0, -1) };
+/** The game two actions before the offer (the ends of 9a and 9e; ticket 16-17 made 9e wait): the computer, playing the Allies, ends step 9a itself and the offer arrives on the screen as it does in play (the card scrolls into view then, which a loaded position does not do). */
+const JUST_BEFORE: Fixture = { ...QUESTION, actions: QUESTION.actions.slice(0, -2) };
 
 for (const size of SIZES) {
   test(`${size[0]}x${size[1]}: a human Axis player is asked: the card shows the sums and both consequences, the heading has the focus, the answers are touch targets`, async ({ page }) => {

@@ -45,16 +45,19 @@ const fnv = (text: string): number => {
 // counter (counting the setup actions: 1939 seed 1 at 241, a French 1-factor replacement where the old game ended step 8b; 1942 seed 1 at 366; 1939 seed 5 at 216
 // and seed 2 at 236), and nothing before it differs; the first 12 lists at 7h are the same, and the 13th comes after the build of seed 5. The same holds for the 22 games of
 // `npm run compare-games` (1939 seeds 1 to 10, Campaign, 1942 and 1944 seeds 1 to 4): every first difference is a BUILD of a returned counter.
+// Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
+// Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (2043974362,
+// 2888855255, 922265850, 1870869960), so nothing else in the computer's play changed.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2043974362));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(2888855255));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3547352470));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(4227722601));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(922265850);
-    expect(hashOf("1939", 2, 4)).toBe(1870869960);
+    expect(hashOf("1939", 5, 4)).toBe(3393135674);
+    expect(hashOf("1939", 2, 4)).toBe(452241258);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2043974362));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(3547352470));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in

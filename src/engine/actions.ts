@@ -16,6 +16,7 @@ import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
 import { applyEliminateOverstack, hasOverstackWork, legalOverstack, OVERSTACK_STEPS } from "./overstack-action";
 import { applyMove, legalMoves } from "./move-action";
+import { applySr, legalSr, SR_STEP } from "./sr-action";
 import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
@@ -41,6 +42,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
   if (OVERSTACK_STEPS.includes(step)) return legalOverstack(ctx, state);
+  if (step === SR_STEP) return legalSr(ctx, state);
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
@@ -134,6 +136,13 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       if (at === undefined || !OVERSTACK_STEPS.includes(at)) return { ok: false, error: `Overstacked units are eliminated in step ${describeStep("6g")} or ${describeStep("9j")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
       const done = applyEliminateOverstack(ctx, state, action);
       if (!done.ok) return done;
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
+    }
+    case "SR_UNITS": {
+      const done = atStep(state, SR_STEP, "Units are redeployed", () => applySr(ctx, state, action));
+      if (!done.ok) return done;
+      // The step goes on by itself once nothing more can be redeployed (C5), as after any action that used up a step's work.
       const settled = settle(ctx, done.state);
       return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
     }
