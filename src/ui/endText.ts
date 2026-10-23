@@ -55,7 +55,7 @@ export type Holder = "Axis" | "Allies" | "nobody";
 /** The title of a block of the Objectives card: "Western Front (14)". */
 export const frontTitle = (front: string, n: number): string => `${cap(front)} Front (${n})`;
 /** What a screen reader says for a row of the Objectives card. */
-export const rowLabel = (name: string, holder: Holder): string => `${name}: ${holder}. Show on the map.`;
+export const rowLabel = (name: string, holder: Holder, credited = false): string => `${name}: ${holder}.${credited ? ` ${SURRENDER_TEXT.credited}.` : ""} Show on the map.`;
 
 export const scenarioEnded = (t: GameTurn): string => `The scenario ended after ${turnName(t)}.`;
 
@@ -159,14 +159,48 @@ export const WINTER_TEXT = {
 } as const;
 
 /**
- * Russia's offer to surrender at step 10a (spec 14 R7b, D5). The words of the two answers and of the turn line only: the card of D5 and the construction warning are ticket 14-16.
+ * Russia's offer to surrender at step 10a (spec 14 R7b, D5; tickets 14-15 and 14-16): the two answers and the turn lines, the offer card of the Axis and the
+ * construction warning of the Allies at step 8b. The Occupation Force of D5 (45 factors kept in Russia, a penalty each turn) is not on the card: it is rule R7c's
+ * and ticket 14-17's, and the game does not apply it yet, so the card does not promise it.
  */
 export const SURRENDER_TEXT = {
   accept: "Accept Russia's surrender",
   refuse: "Refuse Russia's surrender",
   askLine: "Russia offers to surrender: the Axis accept or refuse",
   askLineComputer: "Russia offers to surrender: the computer, playing the Axis, answers",
+  title: "Russia offers to surrender",
+  ifAccept: "If you accept",
+  ifRefuse: "If you refuse",
+  leavesWar: "Russia leaves the war. All its units are removed.",
+  refuseGoesOn: "The war goes on. Russia stays in the game until its last ground or air unit inside Russia is gone.",
+  refuseOnce: "Russia will not offer again.",
+  /** The note on a row of the Objectives card: the Allies hold this Objective whoever has the hex. */
+  credited: "Credited to the Allies for good",
 } as const;
+
+const plural = (n: number, one: string, many: string): string => (n === 1 ? one : many);
+
+/** "Russia has 38 ground and air factors on the map." */
+export const surrenderRussianLine = (n: number): string => `Russia has ${n} ground and air ${plural(n, "factor", "factors")} on the map.`;
+
+/** "The Axis has 71 inside Russia." */
+export const surrenderAxisLine = (n: number): string => `The Axis has ${n} inside Russia.`;
+
+/** Why Russia offers: the two limits of the test (Ref 11.8), from the engine's constants. */
+export const surrenderWhyLine = (limit: number, axisPart: number, russianPart: number): string =>
+  `Russia offers because it has fewer than ${limit} and the Axis has at least ${axisPart} for every ${russianPart} of its own.`;
+
+/** What the Objectives do on acceptance: "3 Objectives count for the Allies for good, whoever holds them later." */
+export const surrenderCreditedLine = (n: number): string =>
+  n === 0 ? "No Objective is credited to the Allies." : `${n} ${plural(n, "Objective counts", "Objectives count")} for the Allies for good, whoever holds ${plural(n, "it", "them")} later.`;
+
+/** The income, with BRP spelled out once: "Germany receives 45 Base Resource Points (BRPs) a year from Russia, from the next Year Start Sequence. That is half of the 90 BRPs Russia began the scenario with." */
+export const surrenderIncomeLine = (half: number, start: number): string =>
+  `Germany receives ${half} Base Resource Points (BRPs) a year from Russia, from the next Year Start Sequence. That is half of the ${start} BRPs Russia began the scenario with.`;
+
+/** The construction warning of step 8b (D5): `n` more Russian ground or air factors on the map stop the offer. */
+export const surrenderWarning = (n: number): string =>
+  `Russia will offer to surrender at the end of this turn unless it has ${n} more ground or air ${plural(n, "factor", "factors")} on the map. Build Russian ground or air units to stop it.`;
 
 /** "Dice: 4 + 6 + 3 + 5 = 18". */
 export const diceLine = (dice: readonly number[], total: number): string => `Dice: ${dice.join(" + ")} = ${total}`;

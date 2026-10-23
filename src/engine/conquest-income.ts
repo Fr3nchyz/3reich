@@ -12,6 +12,9 @@ import { isMajorPower } from "./war";
  * sequence later with no rule of its own.
  */
 
+/** What a conquered Power pays each Year Start Sequence: half of the BRPs it began the scenario with, rounded down (spec 14 R4, R7c; the offer card of the Russian surrender shows it too). */
+export const conquestHalf = (startingBrps: number): number => Math.floor(startingBrps / 2);
+
 /** The Major Power that receives what a conquest pays: the conqueror itself if it is one. */
 export function conquestRecipient(state: GameState, by: ForceOwner): PowerId {
   if (isMajorPower(by)) return by;
@@ -28,10 +31,10 @@ export function conquestIncome(ctx: GameContext, state: GameState, id: PowerId):
   for (const c of state.conquests ?? []) {
     if (c.startingBrps === undefined || !(c.country in state.nations) || conquestRecipient(state, c.by) !== id) continue; // only a Major Power has starting BRPs; minors, colonies and Eastern Europe pay through spec 15
     // TODO(verify) V48: Russia pays Germany half of its starting BRPs a year (R7c, R7d) whether or not the Axis hold Moscow: the text names no capital for it (Moscow is not one of the engine's capitals, capital.ts), and after a surrender the land stays Russian.
-    if (c.country === "ussr") { total += Math.floor(c.startingBrps / 2); continue; }
+    if (c.country === "ussr") { total += conquestHalf(c.startingBrps); continue; }
     const capital = capitalOf(ctx, c.country as PowerId);
     // TODO(verify) V31: "while it still holds the capital" is read as: the side of the conqueror controls the capital hex.
-    if (capital !== null && controllingSide(ctx, state, capital) === sideOfOwner(c.by)) total += Math.floor(c.startingBrps / 2);
+    if (capital !== null && controllingSide(ctx, state, capital) === sideOfOwner(c.by)) total += conquestHalf(c.startingBrps);
   }
   return total;
 }
