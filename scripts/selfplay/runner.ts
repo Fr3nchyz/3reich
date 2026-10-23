@@ -7,7 +7,7 @@ import { newGame, turnIndex } from "../../src/engine/game";
 import { overstacks } from "../../src/engine/stacking";
 import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
 import type { GameState, Scenario } from "../../src/engine/types";
-import { auditConquered, auditEnd, auditObjectives, SequenceAudit } from "./audit";
+import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
 import { MAP } from "../../src/data/map";
 import { SCENARIOS } from "./scenarios";
 import { turnLabel, TurnTally } from "./stats";
@@ -130,6 +130,6 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state)]) note(p.kind, state, p.detail);
   const ended = state.phase === "game-over" ? "game-over" : turnIndex(state) >= stop ? "turn-limit" : "stopped";
   // A game played "to the end" that did not stop on another anomaly must have ended with a result.
-  if (opt.turns === "end" && ended !== "game-over" && anomalies.length === 0) note("no-result", state, `the game did not reach its end (phase "${state.phase}")`);
+  if (endedWithoutResult(opt.turns, ended, anomalies.length)) note("no-result", state, `the game did not reach its end (phase "${state.phase}")`);
   return { options: opt, ctx, initial, actions, setupActions, final: state, turns, anomalies, ended, runtimeMs: performance.now() - started };
 }

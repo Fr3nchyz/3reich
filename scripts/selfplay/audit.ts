@@ -117,3 +117,6 @@ export function conquestList(state: GameState): string[] {
   const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
   return (state.conquests ?? []).map((c) => `${c.country} by ${c.by} (${c.how}, ${cap(c.at.season)} ${c.at.year})`);
 }
+
+/** A game played "to the end" that stopped without a result and without any other anomaly to explain it. */
+export const endedWithoutResult = (turns: number | "end", ended: "game-over" | "turn-limit" | "stopped", anomalyCount: number): boolean => turns === "end" && ended !== "game-over" && anomalyCount === 0;

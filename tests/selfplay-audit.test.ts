@@ -4,7 +4,7 @@ import { controlMap } from "../src/engine/control";
 import { objectiveHexes, objectiveStandings } from "../src/engine/objectives";
 import { MAP } from "../src/data/map";
 import type { GameState } from "../src/engine/types";
-import { auditConquered, auditEnd, auditObjectives, conquestList, SequenceAudit } from "../scripts/selfplay/audit";
+import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, conquestList, SequenceAudit } from "../scripts/selfplay/audit";
 import { gameReport } from "../scripts/selfplay/report";
 import { runGame } from "../scripts/selfplay/runner";
 import { CTX } from "./helpers";
@@ -79,6 +79,15 @@ describe("a game ends with a result", () => {
     const result = { winner: null, level: null, basis: "turn-limit" as const, objectives: { axis: s.axis.length + 1, allies: s.allies.length, nobody: s.nobody.length }, at: { year: 1941, season: "fall" as const }, early: false, siberian: false };
     expect(kinds(auditEnd(CTX, { ...base(), phase: "game-over", result }))).toEqual(["objective-count"]);
     expect(auditEnd(CTX, { ...base(), phase: "game-over", result: { ...result, objectives: { axis: s.axis.length, allies: s.allies.length, nobody: s.nobody.length } } })).toEqual([]);
+  });
+});
+
+describe("a game played to the end must end", () => {
+  it("fires on a stop with no anomaly, and not on a finished game, a limit, or an explained stop", () => {
+    expect(endedWithoutResult("end", "stopped", 0)).toBe(true);
+    expect(endedWithoutResult("end", "game-over", 0)).toBe(false);
+    expect(endedWithoutResult("end", "stopped", 1)).toBe(false);
+    expect(endedWithoutResult(4, "stopped", 0)).toBe(false);
   });
 });
 
