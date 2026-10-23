@@ -202,6 +202,15 @@ export const surrenderIncomeLine = (half: number, start: number): string =>
 export const surrenderWarning = (n: number): string =>
   `Russia will offer to surrender at the end of this turn unless it has ${n} more ground or air ${plural(n, "factor", "factors")} on the map. Build Russian ground or air units to stop it.`;
 
+/**
+ * The Campaign only (spec 14 R3, R7c; `byConquest`, victory.ts): the surrender is a conquest of the U.S.S.R., the third Allied Major Power, and the game ends at once, Axis
+ * Decisive, when Britain and France are already conquered. `met` is that condition now. No sentence in the other scenarios, where no conquest ends the game early.
+ */
+export const surrenderEndsGameLine = (met: boolean): string =>
+  met
+    ? "This ends the game at once: Britain and France are already conquered, so Russia is the third Allied Major Power to fall, and the Axis win a Decisive Victory."
+    : "In the Campaign, accepting ends the game at once only if Britain and France are both already conquered. They are not, so the game would go on.";
+
 /** "Dice: 4 + 6 + 3 + 5 = 18". */
 export const diceLine = (dice: readonly number[], total: number): string => `Dice: ${dice.join(" + ")} = ${total}`;
 
