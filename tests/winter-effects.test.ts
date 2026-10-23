@@ -199,7 +199,7 @@ describe("step 3: the Axis Offensive Option on the Eastern Front (Ref 28.0)", ()
     expect(legalActions(CTX, s).some((a) => a.type === "END_STEP")).toBe(true);
   });
   it("does not touch the Allies: their Eastern Offensive Option is offered in the same winter", () => {
-    const s = allied7h([], { position: { part: "player-turn", turn: 2, step: "3" }, nations: { ...allied7h([]).nations, ussr: { ...allied7h([]).nations.ussr, status: "allied", brpTotal: 100, spent: 0 } } });
+    const s = allied7h([], { frontOptions: {}, position: { part: "player-turn", turn: 2, step: "3" }, nations: { ...allied7h([]).nations, ussr: { ...allied7h([]).nations.ussr, status: "allied", brpTotal: 100, spent: 0 } } });
     expect(legalFrontOptions(CTX, s).some((a) => a.type === "SELECT_FRONT_OPTION" && a.front === "eastern" && a.option === "offensive")).toBe(true);
     expect(winterBansOffensive(s, "allies", "eastern", "offensive")).toBe(false);
     expect(winterBansOffensive(s, "axis", "eastern", "offensive")).toBe(true);
