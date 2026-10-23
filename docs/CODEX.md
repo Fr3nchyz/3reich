@@ -48,6 +48,12 @@ Codex on Plus has two allowances: a rolling **5-hour window** and a **weekly** c
 
 ## Issues so far
 
-| Issue | Ticket | Status |
-|---|---|---|
-| (filled in as issues are written) | | |
+In hand-off order. Tier as in the section above.
+
+| Issue | Ticket | Tier | Status |
+|---|---|---|---|
+| #130 | 16-0 spec 16 facts and constants | Light | Ready |
+| #131 | 16-26 Anglo-French stop ban | Standard | Ready (16-0 and 16-26 touch different files) |
+| #132 | 12-9 naval combat resolver (Release 1) | Standard, high effort | Ready, lower priority |
+
+Next candidates, written once the ones above are in review: 16-24 (Sevastopol's two conditions, after 16-0), 16-3 (Attrition rules, pure, after 16-0), and the pure rule queries of spec 15.
