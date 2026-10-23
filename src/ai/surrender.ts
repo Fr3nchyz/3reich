@@ -1,13 +1,12 @@
 import type { Action } from "../engine/actions";
 import type { Decision } from "./types";
+import { ACCEPT_SURRENDER } from "./policies";
 
+export { ACCEPT_SURRENDER };
 /**
- * The computer's answer to Russia's offer to surrender at step 10a (spec 14 part E; ticket 14-15 gives only this minimal, constant answer, so the game cannot stall at the
- * new prompt; the full policy set is ticket 14-19, and the Axis computer that keeps its Occupation Force is ticket 14-21). The Axis accept: the war in the East
- * ends and Germany gets half of Russia's income (Q5 of the spec, recommended yes). A policy of the computer, not a rule.
- * TODO(verify) V52: policy only; tune against the self-play results of ticket 14-19.
+ * The computer's answer to Russia's offer to surrender at step 10a (spec 14 part E; tickets 14-15 and 14-19). The policy is the constant `ACCEPT_SURRENDER` in
+ * `policies.ts`, with its reason; this file only picks the matching action from the legal list.
  */
-export const ACCEPT_SURRENDER = true;
 
 /** The SURRENDER_ANSWER on the legal list that matches the policy, or null if the list has none (then the caller stops: nothing is asked). */
 export function chooseSurrender(legal: readonly Action[]): Decision | null {
