@@ -167,7 +167,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-2 Attacks need the Offensive Option (spec 16, owner's Q1) | | M (Beta) |
 | 16-9 to 16-13 Exploitation (owner's Q2): Breakthrough, movement, combat, screens, computer | 6.3 | M, L, M, L, M (Beta) |
 | 16-14, 16-15 The vacant-hex attack, air support in Exploitation | | M, M (Release 1) |
-| 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta) |
+| 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta). 16-18: in progress (Codex, #159). |
 | 16-21 Sea Escort for ground units (owner's Q3) | | L (Beta) |
 | 16-22, 16-23 Air units and airbases, fleets and escort chains, by redeployment | | M, L (Release 1) |
 | 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). |
