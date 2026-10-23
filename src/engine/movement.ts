@@ -1,4 +1,5 @@
 import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
+import { angloFrenchStopProblem } from "./anglo-french";
 import type { GameContext } from "./context";
 import { type HexId } from "./hex";
 import { stackingProblem } from "./placement";
@@ -129,7 +130,7 @@ export function endProblem(ctx: GameContext, state: GameState, units: readonly U
   let s = { ...state, units: Object.fromEntries(occupants(state, to).map((u) => [u.id, u])) };
   for (const u of units) {
     const spec = { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) };
-    const problem = stackingProblem(ctx, s, u.owner, spec, to);
+    const problem = angloFrenchStopProblem(ctx, state, u.owner, to) ?? stackingProblem(ctx, s, u.owner, spec, to);
     if (problem) return problem;
     s = { ...s, units: { ...s.units, [u.id]: { ...u, at: to } } };
   }

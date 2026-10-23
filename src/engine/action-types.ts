@@ -54,6 +54,8 @@ export type Action =
   | { type: "DESIGNATE_SEA_SUPPLY"; side: Side; fleets: string[]; to: HexId; units: string[] }
   /** Step 7b: air units are committed to ground support of a hex that will be attacked (Ref 20.41). */
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support"; units: string[]; target: HexId }
+  /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
+  | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */

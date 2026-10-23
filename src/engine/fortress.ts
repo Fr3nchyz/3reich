@@ -1,5 +1,6 @@
 import { controllerOf, controllingSide, startingControl } from "./control";
 import type { GameContext } from "./context";
+import { MAGINOT_GONE_YEAR, WEST_WALL_YEAR } from "./fortress-rules";
 import { isGone } from "./nations";
 import { sideOfOwner } from "./setup";
 import type { GameState } from "./types";
@@ -39,11 +40,11 @@ export function refreshFortresses(ctx: GameContext, state: GameState): GameState
       next[id] = true;
       continue;
     }
-    if (kind === "maginot" && (startYear >= 1942 || franceFallen)) {
+    if (kind === "maginot" && (startYear >= MAGINOT_GONE_YEAR || franceFallen)) {
       next[id] = false;
       continue;
     }
-    if (kind === "west-wall" && state.year < 1944) continue;
+    if (kind === "west-wall" && state.year < WEST_WALL_YEAR) continue;
     const owner = initial.get(id);
     const holder = controllingSide(ctx, state, id);
     const taken = owner !== undefined && holder !== null && holder !== sideOfOwner(owner);

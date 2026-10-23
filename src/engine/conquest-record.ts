@@ -27,6 +27,21 @@ export interface Conquest {
   startingBrps?: number;
 }
 
+/**
+ * A hex that did not pass on at a fall because a ground unit hostile to the conqueror stood on it (V12, simplified), with what the fall would have done
+ * to it. It passes on that way once no such unit stands there, if nobody has taken it in the meantime (ticket 14-25, `releaseKept` in conquest-kept.ts, V62).
+ */
+export interface KeptHex {
+  /** The country whose fall kept it. */
+  country: FallenCountry;
+  /** The conqueror's side: a ground unit of the other side keeps the hex. */
+  side: Side;
+  /** Where the hex goes: the conqueror, or nobody (`null`, V11). */
+  to: ForceOwner | null;
+  /** Who controlled it just after the fall (null: nobody). If that has changed, the hex is no longer the fallen country's to pass on, and the record is dropped. */
+  was: ForceOwner | null;
+}
+
 /** The Conquest record of a country, or undefined while it stands. Spec 15 reads this for the income of a conquered country and to keep a conquered Minor-Ally asleep for good. */
 export const conquestOf = (state: GameState, country: FallenCountry): Conquest | undefined => state.conquests?.find((c) => c.country === country);
 

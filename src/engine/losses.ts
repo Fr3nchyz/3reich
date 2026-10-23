@@ -7,7 +7,7 @@ import type { ForceEntry, ForceOwner, GameState, PowerId, Unit } from "./types";
  * Where a lost unit goes (spec 17 R1, R4; Ref 11.6, 11.63; Ops 5.47b): back to the Force Pool of its own nation, to be built again at step 8b like any other
  * counter, or out of the game for good. Every loss of a unit in play comes here: a battle and its sweep (attack-losses.ts), ground support not used
  * (air-missions.ts), being unsupplied (supply-effects.ts), overstacking (stacking.ts), a fleet with no port to go to (naval-displace.ts), the counters
- * swept from the land a conquest passed (conquest-stages.ts) and the British units in Vichy territory (conquest-france.ts). TODO(verify) RB1: every kind of
+ * swept from the land a conquest passed (`sweepPassed`, conquest-forces.ts) and the British units in Vichy territory (conquest-france.ts). TODO(verify) RB1: every kind of
  * loss alike; only the list of R4 below makes a loss permanent.
  *
  * Not routed here, on purpose: the units of a country that is conquered (`removeUnits`, conquest-forces.ts) leave the game for good with their pools (V10;
