@@ -322,6 +322,8 @@ export interface GameState {
   airFlown?: AirFlown;
   /** What the fleet rules have recorded (spec 12): fleets used this Game Turn, and this Player Turn's lists; absent in an older saved game. */
   naval?: NavalState;
+  /** Fleets bought back from the pool (spec 17 R5, RB6): the first Game Turn each may act (four Game Turns after the build). Kept apart from `naval`, which restarts each Game Turn. Absent in an older saved game: no fleet is gray. */
+  grayFleets?: Record<string, GameTurn>;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
