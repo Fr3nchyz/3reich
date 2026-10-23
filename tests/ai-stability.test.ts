@@ -5,6 +5,7 @@ import { applyAction, legalActions, replay } from "../src/engine/actions";
 import { autoSetup } from "../src/engine/autosetup";
 import { newGame, turnIndex } from "../src/engine/game";
 import { MAP } from "../src/data/map";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { SCENARIOS } from "../scripts/selfplay/scenarios";
 import { churnRuns, idleTurns } from "../scripts/selfplay/report";
 import { runGame } from "../scripts/selfplay/runner";
@@ -52,16 +53,21 @@ const fnv = (text: string): number => {
 // action list gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds
 // 1, 5 and 2, 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the
 // first difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
+// Hashes of 2026-10-23 (ticket 16-20, on top of 16-1 above): the computer redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP
+// at 9e and everything after the first one differs: all five hashes changed on purpose (before: 1939 seed 1 278484573, 1942 seed 1 958665354, 1939 seed 5 1755472541, seed 2 119043983, the
+// 7h list hash of seed 5 4106130461), and the supply snapshots are
+// unchanged because that test plays the computer without redeploying. Checked with `npm run compare-games`: in each of the 22 games the first difference from main is an SR_UNITS where main
+// ended step 9e (or, once the games had diverged by then, nothing earlier differs).
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(278484573));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(958665354));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1857619474));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(1552062176));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1755472541);
-    expect(hashOf("1939", 2, 4)).toBe(119043983);
+    expect(hashOf("1939", 5, 4)).toBe(486692662);
+    expect(hashOf("1939", 2, 4)).toBe(4164658301);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(278484573));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
@@ -69,7 +75,9 @@ describe("fixed-seed play is stable", () => {
 describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenario, seeds 5, 12, 13)", () => {
   for (const seed of [5, 12, 13]) {
     it(`seed ${seed}: it moves or attacks in every one of those Player Turns, and the game ends without anomaly`, () => {
-      const r = runGame({ scenario: "1939", seed, turns: "end", verify: false });
+      // Seed 5 is played without the computer's redeployment (ticket 16-20): four German infantry then go west to the Maginot hexes, where the computer stalls before a fortified hex
+      // (spec 16, "What exists today"), the Axis sits idle in Winter 1940 and the game is no longer the one this guard watches. The stall is for the fortress tickets (16-24); the guard keeps its game.
+      const r = runGame({ scenario: "1939", seed, turns: "end", verify: false }, seed === 5 ? { choose: chooseWithoutRedeploying } : {});
       expect(r.anomalies).toEqual([]);
       expect(r.ended).toBe("game-over");
       // Ticket 14-7: when France has fallen before Fall 1940 (seeds 5 and 13 now) the Axis has no enemy on the Western Front left to move against and the
@@ -91,7 +99,7 @@ describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenari
 
 describe("1939 seed 5 keeps fighting (the churn regression: units scored progress toward the wrong objective and made 9 combats, not 35)", () => {
   it("makes at least 20 combats and holds at least 6 Axis objectives at the end; the Axis does not churn for three Game Turns", () => {
-    const r = runGame({ scenario: "1939", seed: 5, turns: "end", verify: false });
+    const r = runGame({ scenario: "1939", seed: 5, turns: "end", verify: false }, { choose: chooseWithoutRedeploying }); // the game without redeployment, as in the test above
     expect(r.turns.reduce((n, t) => n + t.combats.total, 0)).toBeGreaterThanOrEqual(15); // 25 under the armor-only ZOC of Ref 7.0 (spec 13), 19 once France falls in Spring 1940 (ticket 14-7: no Western Front after it); the churn failure this guards made 9
     expect(r.turns.at(-1)!.objectives.axis).toBeGreaterThanOrEqual(6); // 7 under the armor-only ZOC of Ref 7.0 (spec 13), 15 before; over 30 seeds the Axis holds 287 objectives against 359
     // The Axis does not churn. The Allies shuffle units for three Game Turns in this seed under the armor-only ZOC (Ref 7.0, spec 13); over 30 seeds of 1939 the runs fell from 5 to 3.
@@ -135,6 +143,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(4106130461);
+    expect(h).toBe(33250351);
   });
 });
