@@ -178,7 +178,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). |
 | 16-27 Gate and docs | | M (Beta-critical) |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
-| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
+| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S: in progress (Codex, #168)), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
 
