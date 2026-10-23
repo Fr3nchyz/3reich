@@ -73,6 +73,8 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return a.postpone ? WINTER_TEXT.wait : WINTER_TEXT.start; // the buttons of the winter card (winterCard.ts)
     case "SURRENDER_ANSWER":
       return a.accept ? SURRENDER_TEXT.accept : SURRENDER_TEXT.refuse;
+    case "ELIMINATE_OVERSTACK":
+      return "Choose for me: eliminate the fewest and weakest units that bring each hex within its limit";
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     default:

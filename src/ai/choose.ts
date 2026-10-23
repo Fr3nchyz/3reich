@@ -9,6 +9,7 @@ import { chooseLosses } from "./doomed";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
 import { chooseMove } from "./move";
+import { chooseOverstack } from "./overstack";
 import { chooseSurrender } from "./surrender";
 import { chooseWinter } from "./winter";
 import type { AiConfig, Decision } from "./types";
@@ -33,6 +34,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
+    : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
@@ -56,6 +58,8 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
+    "6g": "Nothing is overstacked.",
+    "9j": "Nothing is overstacked.",
     "8a": "Nothing more to take in the Free Siberian Transfer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
     "9a": "No ally is short of BRPs.",

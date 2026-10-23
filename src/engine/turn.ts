@@ -16,6 +16,7 @@ import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
+import { hasOverstackWork } from "./overstack-action";
 import { hasMoveWork } from "./move-action";
 import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
 import { recordCheckpoint, evaluateVictory } from "./victory";
@@ -160,6 +161,9 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "6e":
     case "9f":
       return hasSeaSupplyWork(ctx, state);
+    case "6g":
+    case "9j":
+      return hasOverstackWork(ctx, state);
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
