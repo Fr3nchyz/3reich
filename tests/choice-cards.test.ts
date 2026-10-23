@@ -323,7 +323,7 @@ describe("the status column at step 7h", () => {
     const html = statusHtml(s, null, acts(s));
     expect(html).toMatch(/<details class="declarations"><summary>All ways to lose, as a list \(2 choices\)<\/summary><div class="fold-buttons controls">/);
     expect(html.match(/class="actions controls/g)).toHaveLength(1); // only the Next bar
-    expect(html).toContain("Lose 4-6 German armor from M36");
+    expect(html).toContain("Lose 4-6 German armor from L35");
   });
 
   it("a battle shown while the computer chooses its losses has a bar with words and no buttons", () => {

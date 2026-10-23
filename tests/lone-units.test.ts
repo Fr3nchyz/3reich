@@ -7,7 +7,7 @@ import { sweepLine } from "../src/ui/format";
 import { run, type Session } from "../src/ui/session";
 import type { GameState, Unit, UnitType, ForceOwner } from "../src/engine/types";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 
 /**
  * Air units, fleets and airbases left alone in a hex (the Warsaw case of docs/FEEDBACK.md, 2 (2026-10-14)): they cannot defend on

@@ -4,7 +4,7 @@ import { ATTACK_MAX_EXCHANGE_FACTORS, ATTACK_STALL_MAX_EXCHANGE_FACTORS, ATTACK_
 import { createMemory, type AiMemory } from "../src/ai/memory";
 import { turnIndex } from "../src/engine/game";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 // The stall rule is computer POLICY (spec 05, "What staging does not fix"), not a rule of the game: a side that has made no real

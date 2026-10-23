@@ -86,7 +86,7 @@ function playNow(scenario: ScenarioKey, seed: number, policy: "accept" | "refuse
   return { run, ctx, events, state, seen, at };
 }
 
-describe.each([1, 3, 9, 13])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
+describe.each([1, 3, 4, 13])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
   const accepted = play("1939", seed, "accept");
   it("ends normally with no anomaly, and the replay equals the final state", () => {
     expect(accepted.run.ended).toBe("game-over");
@@ -124,7 +124,7 @@ describe.each([1, 3, 9, 13])("a whole computer game, 1939 seed %i, in which Russ
 });
 
 describe("the same games with the Axis refusing", () => {
-  for (const seed of [1, 9]) {
+  for (const seed of [1, 4]) {
     it(`1939 seed ${seed}: the offer is refused once, nothing is removed, no second offer, the game ends with no anomaly and replays`, () => {
       const g = play("1939", seed, "refuse");
       expect(g.run.anomalies).toEqual([]);

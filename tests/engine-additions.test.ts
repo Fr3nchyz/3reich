@@ -6,7 +6,7 @@ import { exchangeCost } from "../src/engine/attack-losses";
 import { combatOf } from "../src/engine/combat-record";
 import { defenseBasis, defenseMultiplier, type DefenseSituation } from "../src/engine/terrain";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 
 /**
  * Spec 07 ticket 07-2: the two engine pieces the odds preview reads, with no change of behaviour.

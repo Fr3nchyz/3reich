@@ -13,7 +13,7 @@ import { newGame, turnIndex } from "../src/engine/game";
 import type { GameState, Scenario, Unit } from "../src/engine/types";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { createSession } from "../src/ui/session";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 
 /** The computer at step 7h (spec 04/05): it attacks only at good odds (ai-assault.test.ts) and never gets stuck there. */
 

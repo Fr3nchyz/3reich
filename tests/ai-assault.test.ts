@@ -4,7 +4,7 @@ import { ATTACK_MAX_PER_TURN } from "../src/ai/assault";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { combatOf, turnKey } from "../src/engine/combat-record";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 // The computer's attacks at step 7h are POLICY (spec 05, docs/RULES.md "Computer opponent policy"), not rules.

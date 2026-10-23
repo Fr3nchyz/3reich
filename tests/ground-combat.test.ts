@@ -8,7 +8,7 @@ import { resolveOffensiveCombat } from "../src/engine/combat";
 import { rollD6 } from "../src/engine/rng";
 import { settle } from "../src/engine/turn";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart, atStartOffensive } from "./helpers";
+import { CTX, atStartOffensive } from "./helpers";
 
 /**
  * Spec 04: ground combat at step 7h (Ref 12.1-12.2, 4.5; PC README 14.23). Positions are on the real
