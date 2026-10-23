@@ -66,6 +66,6 @@ body:
       label: What the PR must report back
       description: Claude reviews the PR against this.
       value: |
-        PR body starts with "Closes #<this issue>" and has the AGENTS.md sections: what it does; files changed; rules and sources (TODO(verify) ids); tests added; mutation checks (about 10); gate results (lint, typecheck, test counts, build); `npm run compare-games` summary with every difference explained (if src/engine, src/ai or src/data changed); fixed-seed hashes; remaining concerns.
+        The report (a comment on the starter PR, or the PR body) references this issue ("Closes #<this issue>") and has the AGENTS.md sections: what it does; files changed; rules and sources (TODO(verify) ids); tests added; mutation checks (about 10); gate results (lint, typecheck, test counts, build); `npm run compare-games` summary with every difference explained (if src/engine, src/ai or src/data changed); fixed-seed hashes; remaining concerns.
     validations:
       required: true
