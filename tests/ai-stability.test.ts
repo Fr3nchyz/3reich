@@ -45,20 +45,23 @@ const fnv = (text: string): number => {
 // counter (counting the setup actions: 1939 seed 1 at 241, a French 1-factor replacement where the old game ended step 8b; 1942 seed 1 at 366; 1939 seed 5 at 216
 // and seed 2 at 236), and nothing before it differs; the first 12 lists at 7h are the same, and the 13th comes after the build of seed 5. The same holds for the 22 games of
 // `npm run compare-games` (1939 seeds 1 to 10, Campaign, 1942 and 1944 seeds 1 to 4): every first difference is a BUILD of a returned counter.
-// Hashes of 2026-10-23 (ticket 16-1, on top of 17-1 above): the computer chooses the Front Options at step 3 (src/ai/options.ts) and pays 15 BRPs for each Offensive Option, so the action list
-// gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds 1, 5 and 2,
-// 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the first
-// difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
+// Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
+// Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (2043974362,
+// 2888855255, 922265850, 1870869960), so nothing else in the computer's play changed.
+// Hashes of 2026-10-23 (ticket 16-1, on top of 17-1 and 16-17 above): the computer chooses the Front Options at step 3 (src/ai/options.ts) and pays 15 BRPs for each Offensive Option, so the
+// action list gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds
+// 1, 5 and 2, 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the
+// first difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2816231999));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(2795409320));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(278484573));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(958665354));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(4168194497);
-    expect(hashOf("1939", 2, 4)).toBe(1927182665);
+    expect(hashOf("1939", 5, 4)).toBe(1755472541);
+    expect(hashOf("1939", 2, 4)).toBe(119043983);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2816231999));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(278484573));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in

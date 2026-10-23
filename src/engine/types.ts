@@ -2,6 +2,7 @@ import type { HexId } from "./hex";
 import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
+import type { SrRecord } from "./sr-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
 import type { Conquest, KeptHex } from "./conquest-record";
@@ -322,8 +323,12 @@ export interface GameState {
   airFlown?: AirFlown;
   /** What the fleet rules have recorded (spec 12): fleets used this Game Turn, and this Player Turn's lists; absent in an older saved game. */
   naval?: NavalState;
+  /** Fleets bought back from the pool (spec 17 R5, RB6): the first Game Turn each may act (four Game Turns after the build). Kept apart from `naval`, which restarts each Game Turn. Absent in an older saved game: no fleet is gray. */
+  grayFleets?: Record<string, GameTurn>;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
+  /** Strategic Redeployment so far in the current Player Turn (step 9e, spec 16 C1); absent until the first one, and in an older saved game. */
+  sr?: SrRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
   /** Hexes kept at a fall under hostile ground units (V12) that have not passed on yet (ticket 14-25, V62). Absent: none (and in an older saved game). */
