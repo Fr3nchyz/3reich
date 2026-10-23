@@ -93,7 +93,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Done |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Done |
 | 12-4 Fleets displaced on capture | the fleet in a captured port moves away; Malta holds 9 | M | Done |
-| 12-5 Computer: sea supply | the computer answers the prompts | S | Next |
+| 12-5 Computer: sea supply | the computer answers the prompts | S | In progress (Codex, #146) |
 | 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | Next |
 | 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | Next |
 | 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended |
