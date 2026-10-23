@@ -27,7 +27,7 @@ Examples: `npm run selfplay -- --scenario 1942 --turns end --seed 1` (about 25 s
 For each game, in the output folder:
 
 - `<scenario>-seed<n>.json`: the recorded action list (setup and play, in order) with the scenario, the seed and `supplyEffects` (whether the supply effects applied). Replay it with the engine in the context the recording names: `replay(recordingContext(recording), newGame(scenario, seed), recording.actions)` (`scripts/selfplay/args.ts`) gives the identical final state (a test checks this for every scenario, and for a game with the effects on). `supplyEffects: true` is written only when the effects were on; a recording without it (effects off, older ones, the browser's watch mode) replays with them off, the setting every such game was played with.
-- `<scenario>-seed<n>.md`: a Markdown report with a final summary, the list of anomalies, and per Game Turn: BRP totals per nation, BRPs spent (by nation and by war / construction / grants / Front Options), wars declared, units built, grants, units moved (and by which side, with each side's ground units), ground combats (attacker eliminated / defender eliminated / Exchange), units and factors lost per side, hexes that changed hands, hexes and capitals/objectives held per side, units and factors per side, and the Front Options chosen.
+- `<scenario>-seed<n>.md`: a Markdown report with a final summary (the result, and the list of conquests with the conqueror, how and when), the list of anomalies, and per Game Turn: BRP totals per nation, BRPs spent (by nation and by war / construction / grants / Front Options), wars declared, units built, grants, units moved (and by which side, with each side's ground units), ground combats (attacker eliminated / defender eliminated / Exchange), units and factors lost per side, hexes that changed hands, hexes and capitals/objectives held per side, units and factors per side, and the Front Options chosen.
 - `comparison-<scenario>-seed<n>x<k>.md`: the one-page table of all games of the run (also printed), with the runtime of each.
 
 The report counts, among the units lost, those eliminated for being out of supply at the end of their Player Turn ("Unsupplied lost ax / al", in the summary, per Game Turn and in the comparison table); the report's command line names the `--supply-effects` setting it ran with.
@@ -51,9 +51,33 @@ A run never loops and never throws. It stops the game and lists the problem when
 | `turn-budget` | more than 8000 actions in one Game Turn |
 | `negative-brp` | a nation's BRP total went below zero |
 | `overstack` | a hex is over its stacking limit when a Player Turn ends |
+| `no-result` | a game ends (or a `--turns end` game stops) without a result, or a result exists while the game is not over |
+| `conquered-unit` | a unit of a conquered nation is still on the map |
+| `conquered-hex` | a hex is still controlled by a conquered nation (not after a Russian surrender, whose land stays Russian, R7c; not a hex that holds a ground unit of the conquered nation's side, V12) |
+| `winter-length` | the Russian winter starts twice, is in force in more than one Game Turn, stops before its Game Turn is over, or is in force without having started |
+| `surrender-twice` | Russia offers to surrender more than once |
+| `objective-count` | an Objective is on two lists, is counted though the map does not print it as an Objective (a capital only), or is counted for nobody at all; or the result's Objective counts differ from the standings |
 
-The Vitest tests provoke each of these with a replacement chooser (`tests/selfplay.test.ts`).
+The Vitest tests provoke each of these with a replacement chooser (`tests/selfplay.test.ts`); the last six are checks in `scripts/selfplay/audit.ts`, each fed a bad state by `tests/selfplay-audit.test.ts` and checked not to fire on real games.
 
 ## What it is for
 
 Watching a change to the engine or the computer play out over many Game Turns, comparing seeds, and finding stalls. It is not a measure of play strength: the computer's movement and attack choices are simple policy (docs/RULES.md, "Computer opponent policy"), and Front Options and strategic choices are not made by the computer yet, so every Front stays on the default Option.
+
+## Runs
+
+### 2026-10-23: 30 seeds of each scenario (ticket 14-20)
+
+`npm run selfplay -- --scenario <s> --turns end --seed 1 --games 30` for each of the four scenarios (seeds 1 to 30, the computer on both sides, the action check on, supply effects off), the four runs at once on one machine. Reports are in `selfplay-out/` (git-ignored); the numbers:
+
+| Scenario | Game Turns | Actions per game | Axis Decisive / Tactical / Marginal | Allied Decisive / Tactical / Marginal | Stalemate | Conquests (games with one) | Anomalies | Runtime (all 30, longest) |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1939 | 12 | 605 | 0 / 0 / 0 | 17 / 4 / 4 | 5 | 68 (30) | 0 | 97 s (4.3 s) |
+| 1942 | 12 | 987 | 28 / 0 / 0 | 0 / 0 / 0 | 2 | 35 (28) | 1 game, see below | 297 s (11.6 s) |
+| 1944 | 9 | 704 | 30 / 0 / 0 | 0 / 0 / 0 | 0 | 35 (28) | 0 | 205 s (8.1 s) |
+| Campaign | 24 | 894 | 0 / 7 Tactical / 0 | 0 / 0 / 0 | 23 | 80 (30) | 0 | 163 s (7.5 s) |
+
+Conquests seen (games out of 30 in which the country fell): 1939: Poland 30, France 24, U.S.S.R. 10, Germany 4. 1942: Finland 27, U.S.S.R. 3, Germany 2, Hungary 2, Rumania 1. 1944: Finland 27, Rumania 6, U.S.S.R. 2. Campaign: Poland 30, France 25, Germany 18, U.S.S.R. 7. Every game reached its last Game Turn and has a result; no game ended early. The 1944 verdict is an Axis Decisive Victory in all 30 because Germany still stands at the end (V3; the scenario is decided by Germany's fall). The computer does not play for the Objective count (spec 14 part E), so the verdicts say how the engine's rules and the computer's simple policy meet, not how the scenarios balance.
+
+Anomalies: **one game, 1942 seed 2**: `conquered-hex`, first seen at Fall 1944, Axis step 1 and still there at Winter 1944: Germany was conquered in Summer 1944 and still controls hex KK33. At the fall an Italian infantry unit stood on KK33, so the hex was kept (V12: land under hostile ground units is not passed on); in Fall 1944 that unit left the hex (eliminated at action 977 of the recording), and the hex stayed with Germany instead of passing to the conqueror or to nobody. Nothing was fixed in this ticket. A first version of the check, which did not know V12, also fired in 7 games of 1942 and 1944 (hexes under a unit of the conquered nation's side at the fall); with V12 built in, only this one is left. The other checks (winter length, surrender offered twice, Objectives counted twice or as capitals only, a unit of a conquered nation on the map, a game without a result) never fired on the 120 games.
+
