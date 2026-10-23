@@ -18,7 +18,7 @@ export interface RunOptions {
   supplyEffects?: boolean;
 }
 
-export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack";
+export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack" | "no-result" | "conquered-unit" | "conquered-hex" | "winter-length" | "surrender-twice" | "objective-count";
 
 export interface Anomaly {
   kind: AnomalyKind;
