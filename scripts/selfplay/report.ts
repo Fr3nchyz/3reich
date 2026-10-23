@@ -2,6 +2,7 @@ import { verdictName } from "../../src/engine/victory-record";
 import type { PowerId } from "../../src/engine/types";
 import { conquestList } from "./audit";
 import { holdings, turnLabel } from "./stats";
+import type { RebuildStats } from "./rebuild";
 import type { GameResult, TurnStats } from "./types";
 
 const POWERS: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
@@ -103,6 +104,24 @@ export function optionsPerFront(turns: readonly { frontOptions: string[] }[]): s
   return ["western", "eastern", "mediterranean"].map((f) => `${f}: ${["offensive", "attrition", "defensive"].map((o) => `${o} ${count.get(`${f} ${o}`) ?? 0}`).join(", ")}`).join("; ");
 }
 
+/** The lost-units section (spec 17 Part E): per nation, units returned to the pool, rebuilt, lost for good by reason, BRPs paid for rebuilds, Siberian units taken; then the BRPs left unspent at each Year Start. */
+export function rebuildReport(s: RebuildStats): string {
+  const rows = Object.entries(s.nations).map(([id, n]) => [id, n.returned, n.rebuilt, Object.entries(n.lostForGood).map(([why, c]) => `${why} ${c}`).join(", ") || "-", Object.values(n.lostForGood).reduce((a, b) => a + b, 0), n.brps, n.siberian]);
+  const years = s.yearStarts.map((y) => [y.year, ...POWERS.map((p) => y.unspent[p] ?? "-")]);
+  return [
+    "## Lost units and rebuilds",
+    "",
+    rows.length ? table(["Nation (pool)", "Returned to the pool", "Rebuilt", "Lost for good, by reason", "Lost for good", "BRPs spent on rebuilds", "Siberian units taken"], rows) : "No unit was lost or taken.",
+    "",
+    `Russia's offer to surrender was made ${s.surrenderOffers} time(s).`,
+    "",
+    "BRPs left unspent when each year ended (before the Year Start Sequence):",
+    "",
+    years.length ? table(["Year started", ...POWERS.map((p) => SHORT[p])], years) : "No Year Start was reached.",
+    "",
+  ].join("\n");
+}
+
 /** The Markdown report of one game. It holds nothing that varies between runs of the same seed (the runtime is left out). */
 export function gameReport(r: GameResult): string {
   const o = r.options;
@@ -135,6 +154,7 @@ export function gameReport(r: GameResult): string {
     "",
     r.anomalies.length === 0 ? "None." : table(["Kind", "Where", "Detail"], r.anomalies.map((a) => [a.kind, a.at, a.detail])),
     "",
+    rebuildReport(r.rebuild),
     "## Game Turns",
     "",
     turnTables(r.turns),
