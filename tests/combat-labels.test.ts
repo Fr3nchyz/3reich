@@ -112,7 +112,9 @@ describe("the battle log", () => {
       }
       expect(s.log[0]).toMatch(/^Attack on Warsaw \(M35\): /);
       for (const line of s.log) expect(line, line).not.toMatch(NO_ID);
-      expect(s.log.some((l) => l.startsWith("Eliminated: "))).toBe(true);
+      // spec 17: a unit lost in play says where it went (lossText.ts), and its elimination is not told twice
+      expect(s.log.some((l) => / destroyed at .*(back in the pool|lost for good)/.test(l))).toBe(true);
+      expect(s.log.some((l) => l.startsWith("Eliminated: "))).toBe(false);
     }
     expect(sawLoss && sawAdvance).toBe(true);
   });
