@@ -7,6 +7,7 @@ import { newGame, turnIndex } from "../../src/engine/game";
 import { overstacks } from "../../src/engine/stacking";
 import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
 import type { GameState, Scenario } from "../../src/engine/types";
+import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
 import { MAP } from "../../src/data/map";
 import { SCENARIOS } from "./scenarios";
 import { turnLabel, TurnTally } from "./stats";
@@ -83,6 +84,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   }
 
   const stop = opt.turns === "end" ? Infinity : turnIndex(state) + opt.turns;
+  const sequence = new SequenceAudit();
   let tally = new TurnTally(turnLabel(state));
   let place = "";
   let stepCount = 0;
@@ -110,7 +112,12 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     actions.push(action);
     tally.add(events, state);
     for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
-    if (turnIndex(next) !== turnIndex(state) || next.phase !== "player-turn") {
+    for (const p of sequence.step(events, next)) note(p.kind, next, p.detail);
+    const conquered = events.some((e) => e.type === "COUNTRY_CONQUERED");
+    const gameTurnEnded = turnIndex(next) !== turnIndex(state) || next.phase !== "player-turn";
+    if (conquered || action.type === "END_PLAYER_TURN") for (const p of auditConquered(ctx, next)) note(p.kind, next, p.detail);
+    if (gameTurnEnded) for (const p of auditObjectives(ctx, next)) note(p.kind, next, p.detail);
+    if (gameTurnEnded) {
       // The Game Turn ended with this action: read its closing numbers from the state the action was taken in (before the next Year Start).
       turns.push(tally.close(ctx, state, false));
       tally = new TurnTally(turnLabel(next));
@@ -120,6 +127,9 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   }
   // The run stopped inside a Game Turn (an anomaly): report what it did so far.
   if (tally.count > 0) turns.push(tally.close(ctx, state, true));
+  for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state)]) note(p.kind, state, p.detail);
   const ended = state.phase === "game-over" ? "game-over" : turnIndex(state) >= stop ? "turn-limit" : "stopped";
+  // A game played "to the end" that did not stop on another anomaly must have ended with a result.
+  if (endedWithoutResult(opt.turns, ended, anomalies.length)) note("no-result", state, `the game did not reach its end (phase "${state.phase}")`);
   return { options: opt, ctx, initial, actions, setupActions, final: state, turns, anomalies, ended, runtimeMs: performance.now() - started };
 }

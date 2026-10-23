@@ -1,5 +1,6 @@
 import { verdictName } from "../../src/engine/victory-record";
 import type { PowerId } from "../../src/engine/types";
+import { conquestList } from "./audit";
 import { holdings, turnLabel } from "./stats";
 import type { GameResult, TurnStats } from "./types";
 
@@ -108,6 +109,7 @@ export function gameReport(r: GameResult): string {
     "",
     `- Ended: **${r.ended}** (${r.ended === "game-over" ? "the scenario's last Game Turn was played" : r.ended === "turn-limit" ? `the limit of ${o.turns} Game Turns was reached` : "stopped by an anomaly"}); ${t.turnsPlayed} complete Game Turns, ${first} to ${last}; ${r.actions.length} actions (${r.setupActions} of them setup).`,
     `- Result: ${resultText(r)}`,
+    `- Conquests (${r.final.conquests?.length ?? 0}): ${conquestList(r.final).join("; ") || "none"}.`,
     `- Wars declared (${t.wars.length}): ${t.wars.join("; ") || "none"}.`,
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (of them out of supply ${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}; factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,
@@ -134,9 +136,9 @@ export function gameReport(r: GameResult): string {
 export function comparison(results: readonly GameResult[]): string {
   const rows = results.map((r) => {
     const t = totals(r);
-    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.final.result ? verdictName(r.final.result) : "-", r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, t.churn.length, `${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}`, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
+    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.final.result ? verdictName(r.final.result) : "-", r.final.conquests?.length ?? 0, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, t.churn.length, `${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}`, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
   });
-  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Result", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Churn runs", "Unsupplied lost ax / al", "Anomalies", "Runtime s"];
+  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Result", "Conquests", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Churn runs", "Unsupplied lost ax / al", "Anomalies", "Runtime s"];
   const totalMs = sum(results.map((r) => r.runtimeMs));
   const anomalies = results.flatMap((r) => r.anomalies.map((a) => `- ${r.options.scenario} seed ${r.options.seed}: ${a.kind} at ${a.at}: ${a.detail}`));
   return [`# Self-play comparison`, "", table(head, rows), "", `${results.length} games, ${(totalMs / 1000).toFixed(1)} s in all, ${sum(results.map((r) => r.anomalies.length))} anomalies.`, "", ...(anomalies.length ? ["## Anomalies", "", ...anomalies, ""] : [])].join("\n");
