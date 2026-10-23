@@ -48,16 +48,20 @@ const fnv = (text: string): number => {
 // Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
 // Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (2043974362,
 // 2888855255, 922265850, 1870869960), so nothing else in the computer's play changed.
+// Hashes of 2026-10-24 (ticket 16-20): the computer now redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP at 9e,
+// and everything after the first one differs. Changed on purpose: 1939 seed 1 (3547352470 before), 1942 seed 1 (4227722601), 1939 seed 5 (3393135674) and the 7h list hash of seed 5
+// (3279645025), 1939 seed 2 (452241258). Checked then with `npm run compare-games`: in each of the 22 games the first
+// action to differ is an SR_UNITS where the old game had the END_STEP at 9e, and nothing before it differs.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3547352470));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(4227722601));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2256962571));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(2610091829));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(3393135674);
-    expect(hashOf("1939", 2, 4)).toBe(452241258);
+    expect(hashOf("1939", 5, 4)).toBe(3755203274);
+    expect(hashOf("1939", 2, 4)).toBe(748967637);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(3547352470));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2256962571));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
@@ -131,6 +135,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(3279645025);
+    expect(h).toBe(732363693);
   });
 });

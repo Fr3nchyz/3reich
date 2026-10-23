@@ -18,7 +18,7 @@ export interface RunOptions {
   supplyEffects?: boolean;
 }
 
-export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack" | "no-result" | "conquered-unit" | "conquered-hex" | "winter-length" | "surrender-twice" | "objective-count";
+export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack" | "no-result" | "conquered-unit" | "conquered-hex" | "winter-length" | "surrender-twice" | "objective-count" | "redeploy-near-enemy";
 
 export interface Anomaly {
   kind: AnomalyKind;
@@ -40,6 +40,8 @@ export interface TurnStats {
   builtList: string[];
   grants: number;
   grantAmount: number;
+  /** Units redeployed in step 9e (spec 16 R18), by the nation whose allowance they used. */
+  redeployed: Record<PowerId, number>;
   moves: number;
   unitsMoved: number;
   /** Units moved by each side's Player Turn. */

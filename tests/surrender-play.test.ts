@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { chooseAction } from "../src/ai";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { ACCEPT_SURRENDER, chooseSurrender } from "../src/ai/surrender";
 import { createMemory } from "../src/ai/memory";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
@@ -56,7 +57,7 @@ function probing(policy: "accept" | "refuse", seen: { states: number; asked: num
     }
     expect(winterAsking(state) ? sideToAct(state) === "allies" : legal.some((a) => a.type === "SURRENDER_ANSWER")).toBe(winterAsking(state));
     seen.sides.add(sideToAct(state));
-    return chooseAction(ctx, withoutRussianRebuilds(state), cfg);
+    return chooseWithoutRedeploying(ctx, withoutRussianRebuilds(state), cfg);
   };
 }
 
@@ -157,7 +158,7 @@ describe("a refused game in which Russia is then wiped out (hazard 1, R7d)", () 
     for (let i = 0; i < 3000 && state.phase === "player-turn"; i++) {
       const legal = legalActions(ctx, state);
       expect(legal.length).toBeGreaterThan(0);
-      const decision = chooseAction(ctx, withoutRussianRebuilds(state), { seed: 1, memory });
+      const decision = chooseWithoutRedeploying(ctx, withoutRussianRebuilds(state), { seed: 1, memory });
       expect(decision).not.toBeNull();
       const refuse = surrenderAsking(state) ? legal.find((x) => x.type === "SURRENDER_ANSWER" && !x.accept)! : null;
       const action = refuse ?? decision!.action;

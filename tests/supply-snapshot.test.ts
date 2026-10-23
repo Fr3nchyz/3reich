@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseAction } from "../src/ai";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { createMemory } from "../src/ai/memory";
 import { applyAction } from "../src/engine/actions";
 import { autoSetup } from "../src/engine/autosetup";
@@ -36,7 +36,7 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
       positions++;
       hash = fnv(`${hash}${JSON.stringify([supplyStatus(ctx, state, "axis"), supplyStatus(ctx, state, "allies")])}`);
     }
-    const d = chooseAction(ctx, state, { seed, memory, supplyRules: false });
+    const d = chooseWithoutRedeploying(ctx, state, { seed, memory, supplyRules: false });
     if (!d) break;
     const r = applyAction(ctx, state, d.action);
     if (!r.ok) throw new Error(r.error);

@@ -43,7 +43,8 @@ function playFrom(ctx: GameContext, from: GameState, seed: number, stop: number)
     expect(actions++, "the computer must not stall").toBeLessThan(MAX_ACTIONS);
     const d = chooseAction(ctx, state, { seed });
     expect(d, `a decision at ${JSON.stringify(state.position)}`).not.toBeNull();
-    expect(legalActions(ctx, state), "the chosen action is on the legal list").toContainEqual(d!.action);
+    // A redeployment of part of a stack is accepted by the engine but not listed (sr-action.ts): applyAction below is its check.
+    if (d!.action.type !== "SR_UNITS") expect(legalActions(ctx, state), "the chosen action is on the legal list").toContainEqual(d!.action);
     const r = applyAction(ctx, state, d!.action);
     if (!r.ok) throw new Error(`illegal action ${JSON.stringify(d!.action)}: ${r.error}`);
     expect(d!.why.length).toBeGreaterThan(0);

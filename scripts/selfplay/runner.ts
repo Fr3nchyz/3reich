@@ -7,7 +7,7 @@ import { newGame, turnIndex } from "../../src/engine/game";
 import { overstacks } from "../../src/engine/stacking";
 import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
 import type { GameState, Scenario } from "../../src/engine/types";
-import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
+import { auditConquered, auditEnd, auditRedeployed, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
 import { MAP } from "../../src/data/map";
 import { SCENARIOS } from "./scenarios";
 import { turnLabel, TurnTally } from "./stats";
@@ -100,7 +100,8 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
       const decision = choose(ctx, state, { seed: opt.seed, memory });
       if (!decision) { note("stuck", state, "the computer has no action to take"); break; }
       action = decision.action;
-      if (opt.verify && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);
+      // A redeployment of one unit of a stack is accepted but not listed (sr-action.ts), and listing 9e takes 70 to 120 ms: `applyAction` below is its check.
+      if (opt.verify && action.type !== "SR_UNITS" && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);
       const r = applyAction(ctx, state, action);
       if (!r.ok) { note("refused", state, `${JSON.stringify(action)}: ${r.error}`); break; }
       next = r.state;
@@ -112,6 +113,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     actions.push(action);
     tally.add(events, state);
     for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
+    for (const p of auditRedeployed(ctx, events, next, state.activeSide)) note(p.kind, next, p.detail);
     for (const p of sequence.step(events, next)) note(p.kind, next, p.detail);
     const conquered = events.some((e) => e.type === "COUNTRY_CONQUERED");
     const gameTurnEnded = turnIndex(next) !== turnIndex(state) || next.phase !== "player-turn";
