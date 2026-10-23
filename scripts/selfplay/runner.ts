@@ -110,7 +110,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
       break;
     }
     actions.push(action);
-    tally.add(events, state);
+    tally.add(events, state, ctx);
     for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
     for (const p of sequence.step(events, next)) note(p.kind, next, p.detail);
     const conquered = events.some((e) => e.type === "COUNTRY_CONQUERED");

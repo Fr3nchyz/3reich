@@ -254,13 +254,16 @@ describe("a designation that no longer holds lapses at the end of the Player Tur
   });
 });
 
-describe("the computer answers the prompt by passing (ticket 12-5 gives it a plan)", () => {
-  it("at 6e and at 9f it ends the step, so its turn is never blocked", () => {
+describe("the computer answers the prompt with sea supply (ticket 12-5)", () => {
+  it("at 6e and at 9f it designates a legal saving proposal", () => {
     for (const step of ["6e", "9f"]) {
       const s = at(step, [...pocket(), fleet("f1", "K28")]);
       expect(legalActions(ON, s).some((a) => a.type === "DESIGNATE_SEA_SUPPLY")).toBe(true);
       const d = chooseAction(ON, s, { seed: 1 });
-      expect(d?.action).toEqual({ type: "END_STEP", side: "axis", step });
+      expect(d?.action.type).toBe("DESIGNATE_SEA_SUPPLY");
+      expect(legalActions(ON, s)).toContainEqual(d!.action);
+      const after = ok(applyAction(ON, s, d!.action)).state;
+      expect(unsuppliedUnits(ON, after, "axis")).toEqual([]);
     }
   });
 });

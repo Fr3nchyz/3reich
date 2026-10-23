@@ -18,9 +18,10 @@ describe("four Game Turns with the supply effects on, computer against computer"
       expect(r.ctx.supplyEffects).toBe(true);
     }, 120_000);
   }
-  it("1942: the Italians in Sardinia and the Germans in Norway, who can only be supplied by sea (not built), are lost at the end of the first Axis Player Turn", () => {
+  it("1942: the sea-supply policy saves the four cut-off units in Sardinia and Norway", () => {
     const r = runGame({ scenario: "1942", seed: 1, turns: 1, verify: false, supplyEffects: true });
-    expect(r.turns[0]!.lostUnsupplied.axis).toBe(4);
+    expect(r.turns[0]!.lostUnsupplied.axis).toBe(0);
+    expect(r.turns[0]!.savedBySea).toBeGreaterThanOrEqual(4);
   }, 60_000);
 });
 

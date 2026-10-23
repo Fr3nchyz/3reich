@@ -60,6 +60,7 @@ export function totals(r: GameResult) {
     lostUnsuppliedAllies: sum(t.map((x) => x.lostUnsupplied.allies)),
     lostFactorsAxis: sum(t.map((x) => x.lostFactors.axis)),
     lostFactorsAllies: sum(t.map((x) => x.lostFactors.allies)),
+    savedBySea: sum(t.map((x) => x.savedBySea)),
     hexChanges: sum(t.map((x) => x.hexChanges)),
     unitsMoved: sum(t.map((x) => x.unitsMoved)),
     idle: idleTurns(t),
@@ -113,6 +114,7 @@ export function gameReport(r: GameResult): string {
     `- Wars declared (${t.wars.length}): ${t.wars.join("; ") || "none"}.`,
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (of them out of supply ${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}; factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,
+    `- Units saved by sea: ${t.savedBySea} (newly supplied counters per Player Turn).`,
     `- Player Turns in which a side with ${IDLE_MIN_GROUND} or more ground units neither moved nor attacked (${t.idle.length}): ${t.idle.join("; ") || "none"}.`,
     `- Churn (a side moving ${CHURN_MIN_MOVED} or more units without a single attack for ${CHURN_RUN} or more Game Turns in a row) (${t.churn.length}): ${t.churn.join("; ") || "none"}.`,
     `- Hexes held Axis / Allies / neutral: ${f.hexes.axis} / ${f.hexes.allies} / ${f.hexes.neutral} (at the start ${t.start.hexes.axis} / ${t.start.hexes.allies} / ${t.start.hexes.neutral}).`,
@@ -136,9 +138,9 @@ export function gameReport(r: GameResult): string {
 export function comparison(results: readonly GameResult[]): string {
   const rows = results.map((r) => {
     const t = totals(r);
-    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.final.result ? verdictName(r.final.result) : "-", r.final.conquests?.length ?? 0, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, t.churn.length, `${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}`, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
+    return [r.options.scenario, r.options.seed, t.turnsPlayed, r.ended, r.final.result ? verdictName(r.final.result) : "-", r.final.conquests?.length ?? 0, r.actions.length, t.wars.length, t.built, t.combats, `${t.attacksAxis} / ${t.attacksAllies}`, `${t.lostAxis} / ${t.lostAllies}`, t.hexChanges, `${t.final.hexes.axis} / ${t.final.hexes.allies}`, `${t.final.objectives.axis} / ${t.final.objectives.allies}`, t.idle.length, t.churn.length, `${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}`, t.savedBySea, r.anomalies.length, (r.runtimeMs / 1000).toFixed(1)];
   });
-  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Result", "Conquests", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Churn runs", "Unsupplied lost ax / al", "Anomalies", "Runtime s"];
+  const head = ["Scenario", "Seed", "Game Turns", "Ended", "Result", "Conquests", "Actions", "Wars", "Built", "Combats", "Attacks ax / al", "Lost ax / al", "Hexes changed", "Hexes ax / al", "Objectives ax / al", "Idle turns", "Churn runs", "Unsupplied lost ax / al", "Saved by sea", "Anomalies", "Runtime s"];
   const totalMs = sum(results.map((r) => r.runtimeMs));
   const anomalies = results.flatMap((r) => r.anomalies.map((a) => `- ${r.options.scenario} seed ${r.options.seed}: ${a.kind} at ${a.at}: ${a.detail}`));
   return [`# Self-play comparison`, "", table(head, rows), "", `${results.length} games, ${(totalMs / 1000).toFixed(1)} s in all, ${sum(results.map((r) => r.anomalies.length))} anomalies.`, "", ...(anomalies.length ? ["## Anomalies", "", ...anomalies, ""] : [])].join("\n");
