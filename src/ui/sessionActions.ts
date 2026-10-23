@@ -10,7 +10,7 @@ import { normaliseAir, tapToAir } from "./airTap";
 import { normaliseAttack, tapToAttack } from "./attackTap";
 import { normaliseChoice } from "./choiceTap";
 import { normaliseMove, tapToMove } from "./moveTap";
-import { buildKey, parseBuildKey } from "./buildView";
+import { buildAction, buildKey, parseBuildKey, pickOf } from "./buildView";
 import { parseSiberianKey } from "./siberianCard";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
 
@@ -70,7 +70,7 @@ export function pickBuild(s: Session, key: string): void {
 /** "Build in the U.S. Box": put the chosen build off the map. */
 export function buildInBox(s: Session, box: OffMapBox): void {
   s.toast = "";
-  if (s.build) run(s, { type: "BUILD", owner: s.build.owner, unit: { type: s.build.type, strength: s.build.strength }, at: box });
+  if (s.build) run(s, buildAction(s.build, box));
 }
 
 /**
@@ -114,9 +114,10 @@ export function tapHex(s: Session, h: MapHex): void {
 /** A tap on a map hex at step 8b: build the chosen counter there. */
 function tapToBuild(s: Session, h: MapHex): void {
   if (!s.build) return;
-  const { owner, type, strength } = s.build;
-  if (builds(s).some((a) => a.owner === owner && a.unit.type === type && a.unit.strength === strength && a.at === h.id)) {
-    run(s, { type: "BUILD", owner, unit: { type, strength }, at: h.id });
+  const { type, strength } = s.build;
+  const key = buildKey(s.build);
+  if (builds(s).some((a) => buildKey(pickOf(a)) === key && a.at === h.id)) {
+    run(s, buildAction(s.build, h.id));
   } else {
     s.toast = `A ${strength}-factor ${type} cannot be built there. The yellow hexes are the places it can.`;
   }

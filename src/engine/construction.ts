@@ -8,7 +8,7 @@ import { markUsed } from "./naval-record";
 import { baseSuits, stackingProblem, type UnitSpec } from "./placement";
 import { turnIndex } from "./game";
 import { BUILD_COST_PER_FACTOR } from "./tables";
-import type { ForceEntry, GameState, PowerId, Unit, UnitType } from "./types";
+import type { ForceEntry, ForceOwner, GameState, PowerId, Unit, UnitType } from "./types";
 import { atWar, sideOfPower } from "./war";
 
 /**
@@ -20,8 +20,11 @@ import { atWar, sideOfPower } from "./war";
  * 11.64). Supply, control and ZOC are not modelled, so a build here is allowed in any hex of the
  * nation's home territory (the countries and zones it controlled at the start of the scenario) that
  * has no enemy ground unit in it or next to it. Also not built: the "rebuilt fleet is unusable for a
- * year" rule, the home-territory exceptions (East Prussia, Ulster, Sicily; no builds in Corsica) and
- * the builds of Minor-Allies.
+ * year" rule (spec 17 R5, ticket 17-3), the home-territory exceptions (East Prussia, Ulster, Sicily; no builds in Corsica) and
+ * the builds of Minor-Allies (ticket 15-19).
+ *
+ * Spec 17 R2: a counter lost in play comes back to its pool (losses.ts) as an entry marked `returned`, with no date, and is bought here like any other,
+ * at the chart price and inside the spending limit, as soon as the next step 8b (TODO(verify) RB2), with no other limit (TODO(verify) RB13).
  */
 
 /** The counter types that can be built, and the chart's name for each (BUILD_COST_PER_FACTOR). */
@@ -39,8 +42,8 @@ const GROUND: readonly UnitType[] = ["infantry", "armor", "airborne"];
 
 const firstTurn = (from: NonNullable<ForceEntry["from"]>) => ({ year: from.year, season: from.season ?? "spring" });
 
-/** Builds the nation may still make now: its entries with some left, whose "in or after" date has come. */
-export function availableBuilds(state: GameState, owner: PowerId): ForceEntry[] {
+/** Builds the pool's owner may still make now: its entries with some left, whose "in or after" date has come (a returned counter has none, RB3). */
+export function availableBuilds(state: GameState, owner: ForceOwner): ForceEntry[] {
   const entries = state.pools[owner]?.allowableBuilds ?? [];
   return entries.filter((e) => e.count > 0 && buildCost(e.type, e.strength) !== null && (!e.from || turnIndex(state) >= turnIndex(firstTurn(e.from))));
 }
@@ -62,15 +65,26 @@ export function buildPlaces(ctx: GameContext, state: GameState, owner: PowerId, 
 
 type BuildAction = Extract<Action, { type: "BUILD" }>;
 
-/** Every build the side to move may make now (step 8b): one action per counter and place. */
+/**
+ * The pools a Major Power builds from at step 8b, with the entries it may take from each: its own, and for Britain the Free French counters that came back
+ * (TODO(verify) RB10: Britain pays for them and builds them in Britain; they stay Free French). Ticket 15-19 adds the active Minor-Allies' pools here (RB9).
+ */
+export function buildSources(state: GameState, power: PowerId): { pool: ForceOwner; entries: ForceEntry[] }[] {
+  const own = { pool: power as ForceOwner, entries: availableBuilds(state, power) };
+  return power === "britain" ? [own, { pool: "free-france", entries: availableBuilds(state, "free-france").filter((e) => e.returned) }] : [own];
+}
+
+/** Every build the side to move may make now (step 8b): one action per counter and place. A returned counter is offered apart from a new one of the same kind. */
 export function legalBuilds(ctx: GameContext, state: GameState): BuildAction[] {
   const out: BuildAction[] = [];
   for (const owner of Object.keys(state.nations) as PowerId[]) {
     if (sideOfPower(state.nations[owner]) !== state.activeSide) continue;
-    for (const e of availableBuilds(state, owner)) {
-      const cost = buildCost(e.type, e.strength)!;
-      if (cost > spendable(state.nations[owner])) continue;
-      for (const at of buildPlaces(ctx, state, owner, e)) out.push({ type: "BUILD", owner, unit: { type: e.type, strength: e.strength }, at });
+    for (const { pool, entries } of buildSources(state, owner)) {
+      for (const e of entries) {
+        if (buildCost(e.type, e.strength)! > spendable(state.nations[owner])) continue;
+        const unit = { type: e.type, strength: e.strength, ...(e.returned ? { returned: true as const } : {}) };
+        for (const at of buildPlaces(ctx, state, owner, e)) out.push({ type: "BUILD", owner, ...(pool !== owner ? { pool } : {}), unit, at });
+      }
     }
   }
   return out;
@@ -80,9 +94,13 @@ export function applyBuild(ctx: GameContext, state: GameState, action: BuildActi
   const nation = state.nations[action.owner];
   if (!nation) return { ok: false, error: `${String(action.owner)} is not a Major Power in this game.` };
   if (sideOfPower(nation) !== state.activeSide) return { ok: false, error: `${action.owner} is not on the ${state.activeSide} side, so it cannot build now.` };
-  const { type, strength } = action.unit;
-  const entry = availableBuilds(state, action.owner).find((e) => e.type === type && e.strength === strength);
-  if (!entry) return { ok: false, error: `${action.owner} has no ${strength}-factor ${type} it may build now (none left, or not yet allowed).` };
+  const { type, strength, returned } = action.unit;
+  if (returned !== undefined && returned !== true) return { ok: false, error: "A build's `returned` mark is true or left out." };
+  const poolId = action.pool ?? action.owner;
+  const source = buildSources(state, action.owner).find((p) => p.pool === poolId);
+  if (!source) return { ok: false, error: `${action.owner} cannot build counters of the ${String(poolId)} pool.` };
+  const entry = source.entries.find((e) => e.type === type && e.strength === strength && (e.returned === true) === (returned === true));
+  if (!entry) return { ok: false, error: `${action.owner} has no ${returned ? "returned " : ""}${strength}-factor ${type}${poolId !== action.owner ? ` of the ${poolId} pool` : ""} it may build now (none left, or not yet allowed).` };
   const cost = buildCost(type, strength)!;
   if (!buildPlaces(ctx, state, action.owner, entry).includes(action.at)) {
     return { ok: false, error: `${action.owner} may not build a ${strength}-factor ${type} at ${action.at}: it must be in its home territory, suit the counter, fit the stacking limit and have no enemy ground unit next to it.` };
@@ -90,11 +108,12 @@ export function applyBuild(ctx: GameContext, state: GameState, action: BuildActi
   const paid = spend(state, action.owner, cost, `building a ${strength}-factor ${type}`);
   if (!paid.ok) return paid;
   const id = `u${paid.state.nextUnitId}`;
-  const unit: Unit = { id, owner: action.owner, type, strength, ...(entry.movement !== undefined ? { movement: entry.movement } : {}), at: action.at };
-  const pool = paid.state.pools[action.owner]!;
+  const unit: Unit = { id, owner: poolId, type, strength, ...(entry.movement !== undefined ? { movement: entry.movement } : {}), at: action.at };
+  const pool = paid.state.pools[poolId]!;
   const allowableBuilds = pool.allowableBuilds.map((e) => (e === entry ? { ...e, count: e.count - 1 } : e)).filter((e) => e.count > 0);
-  const events: GameEvent[] = [paid.event, { type: "UNIT_BUILT", unitId: id, owner: action.owner, unitType: type, strength, at: action.at, cost }];
-  const built: GameState = { ...paid.state, nextUnitId: paid.state.nextUnitId + 1, units: { ...paid.state.units, [id]: unit }, pools: { ...paid.state.pools, [action.owner]: { ...pool, allowableBuilds } } };
+  const marks = { ...(entry.returned ? { returned: true as const } : {}), ...(poolId !== action.owner ? { pool: poolId } : {}) };
+  const events: GameEvent[] = [paid.event, { type: "UNIT_BUILT", unitId: id, owner: action.owner, unitType: type, strength, at: action.at, cost, ...marks }];
+  const built: GameState = { ...paid.state, nextUnitId: paid.state.nextUnitId + 1, units: { ...paid.state.units, [id]: unit }, pools: { ...paid.state.pools, [poolId]: { ...pool, allowableBuilds } } };
   // Ref 20.3, 21.3: an air unit or a fleet built in a Game Turn flies no mission, does nothing, in it.
   return { ok: true, state: type === "air" ? markFlown(built, [id], "new") : type === "fleet" ? markUsed(built, [id], "new") : built, events };
 }

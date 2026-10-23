@@ -137,6 +137,11 @@ export interface ForceEntry {
   from?: { year: number; season?: Season };
   /** Set when the counter belongs to another nation than the pool's owner (the Italian fleet Germany holds in 1944). */
   nationality?: ForceOwner;
+  /**
+   * Allowable builds only: a counter that was lost and came back to the pool (spec 17 R1; losses.ts). It has no "in or after" date (RB3) and is offered
+   * at step 8b apart from the scenario's builds of the same kind (BUILD's `unit.returned`). Absent in a game saved before spec 17: nothing came back yet.
+   */
+  returned?: true;
 }
 
 /** What a nation may still bring into play: units in its pool and units it may yet build. */

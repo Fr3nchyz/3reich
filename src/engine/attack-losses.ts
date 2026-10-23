@@ -5,6 +5,7 @@ import { afterHexTaken } from "./capture";
 import { combatOf, type CombatRecord, type PendingLosses } from "./combat-record";
 import type { HexId } from "./hex";
 import { clearGroundSupport } from "./air-support";
+import { eliminateUnits } from "./losses";
 import { ADVANCE_AFTER_COMBAT, lonersAt } from "./attack-rules";
 import type { GameState, Side, Unit } from "./types";
 
@@ -36,18 +37,8 @@ export function minimalSets(ids: readonly string[], values: Readonly<Record<stri
   return out;
 }
 
-/** Removes the units from the game, one UNIT_ELIMINATED event each. */
-function eliminate(state: GameState, ids: readonly string[]): { state: GameState; events: GameEvent[] } {
-  const units = { ...state.units };
-  const events: GameEvent[] = [];
-  for (const id of ids) {
-    const u = units[id];
-    if (!u) continue;
-    delete units[id];
-    events.push({ type: "UNIT_ELIMINATED", unitId: id, owner: u.owner, at: u.at });
-  }
-  return { state: { ...state, units }, events };
-}
+/** Removes the units from the game, one UNIT_ELIMINATED event each, and sends each back to its pool or out of the game for good (losses.ts, spec 17 R1). */
+const eliminate = (state: GameState, ids: readonly string[]): { state: GameState; events: GameEvent[] } => eliminateUnits(state, ids);
 
 const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState => ({ ...state, combat: { ...combatOf(state), ...patch } });
 

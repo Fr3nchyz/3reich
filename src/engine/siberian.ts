@@ -41,11 +41,12 @@ export function siberianLeft(state: GameState): number {
 
 /**
  * The Russian Force Pool (Ref 11.63; Ops 5.47b builds from the same pool): the U.S.S.R.'s Allowable Builds that are infantry or armor and whose
- * "in or after" date has come. Taking a unit uses up one of that entry, as building it would. The engine keeps no other pool: the rest of the Force Pool is on the map after the opening setup,
- * and a unit eliminated does not return to it.
+ * "in or after" date has come. Taking a unit uses up one of that entry, as building it would. The rest of the Force Pool is on the map after the opening setup;
+ * a Russian unit eliminated comes back to the Allowable Builds as a `returned` entry (losses.ts, spec 17 R1) and may be taken like any other (TODO(verify) RB12).
+ * When a returned and a new counter of one kind are both there, the first entry of the list is taken: the scenario's, since returned entries come last.
  */
 export function siberianPool(state: GameState): ForceEntry[] {
-  return availableBuilds(state, "ussr").filter((e) => TAKEN_TYPES.includes(e.type)); // TODO(verify) V58: the Russian Force Pool is read as the U.S.S.R.'s Allowable Builds (the Force Pool of the manual, which also takes back eliminated units, is not modelled)
+  return availableBuilds(state, "ussr").filter((e) => TAKEN_TYPES.includes(e.type)); // TODO(verify) V58, RB12: the Russian Force Pool is read as the U.S.S.R.'s Allowable Builds, which take back eliminated units since spec 17
 }
 
 /** Whether the Transfer is open to the side to move now: the Allied Player Turn, the U.S.S.R. still in the game, and units left in this Game Turn's quota. */
