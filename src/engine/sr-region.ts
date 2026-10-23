@@ -27,7 +27,8 @@ import { adjacentHexes, canCross } from "./zoc";
  *   shipped setting) the supply test is skipped; control and enemy adjacency are always tested.
  * - TODO(verify) AER22: a unit that moved, attacked or was built this Player Turn may be redeployed; only a unit already redeployed (AER28) may not.
  * - TODO(verify) AER25: no Front restriction on land. TODO(verify) AER27: a redeployment may not end overstacked (`endProblem`, Ref 5.0, 26.0).
- * Not here: Sea Escort (16-21), the Anglo-French stop ban (R32, 16-26), the Occupation Force flag (AER31: spec 14 has not built it).
+ * The Anglo-French stop ban (R32) reaches the end of a redeployment through `endProblem` (anglo-french.ts). Not here: Sea Escort (16-21), the
+ * Occupation Force flag (AER31: spec 14 has not built it).
  */
 
 /** Enemy counters a redeployed unit may not stand next to (Ref 11.72; R20). TODO(verify): AER23. */

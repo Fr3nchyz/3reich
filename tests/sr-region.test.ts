@@ -143,6 +143,14 @@ describe("the region and the destination (spec 16 R20)", () => {
     expect(srProblem(CTX, s, ["g2", "g3"], "M27")).toBeNull();
   });
 
+  it("the Anglo-French stop ban applies to a redeployment's end, through endProblem (R32, AER42)", () => {
+    const s = board([inf("b1", "britain", "O23"), inf("f1", "france", "N22")], undefined, { activeSide: "allies" });
+    expect(controllingSide(CTX, s, "O23")).toBe("allies");
+    expect(srProblem(CTX, s, ["b1"], "O22")).toMatch(/British units may not stop in Paris/);
+    expect(srDestinations(CTX, s, s.units.b1!)).not.toContain("O22");
+    expect(srProblem(CTX, s, ["f1"], "O22")).toBeNull();
+  });
+
   it("the allowance is checked: Germany's tenth redeployment is refused, Italy's use does not count (R18)", () => {
     const s = axis([inf("g1", "germany", "L31")]);
     expect(srProblem(CTX, s, ["g1"], "Q27", { used: { germany: 9 } })).toMatch(/germany has 0 of 9/);
