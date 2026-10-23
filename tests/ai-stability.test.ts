@@ -49,19 +49,13 @@ const fnv = (text: string): number => {
 // Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
 // Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (2043974362,
 // 2888855255, 922265850, 1870869960), so nothing else in the computer's play changed.
-// Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
-// Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (2043974362,
-// 2888855255, 922265850, 1870869960), so nothing else in the computer's play changed.
-// Hashes of 2026-10-24 (ticket 16-20): the computer now redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP at 9e,
-// and everything after the first one differs. Changed on purpose: 1939 seed 1 (3547352470 before), 1942 seed 1 (4227722601), 1939 seed 5 (3393135674) and the 7h list hash of seed 5
-// (3279645025), 1939 seed 2 (452241258). Checked then with `npm run compare-games`: in each of the 22 games the first
-// action to differ is an SR_UNITS where the old game had the END_STEP at 9e, and nothing before it differs.
 // Hashes of 2026-10-23 (ticket 16-1, on top of 17-1 and 16-17 above): the computer chooses the Front Options at step 3 (src/ai/options.ts) and pays 15 BRPs for each Offensive Option, so the
 // action list gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds
 // 1, 5 and 2, 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the
 // first difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
-// Hashes of 2026-10-24 (ticket 16-20, on top of 16-1 above): the computer redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP
-// at 9e and everything after the first one differs: all five hashes changed on purpose (1939 seed 1, 1942 seed 1, 1939 seeds 5 and 2, the 7h list hash of seed 5), and the supply snapshots are
+// Hashes of 2026-10-23 (ticket 16-20, on top of 16-1 above): the computer redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP
+// at 9e and everything after the first one differs: all five hashes changed on purpose (before: 1939 seed 1 278484573, 1942 seed 1 958665354, 1939 seed 5 1755472541, seed 2 119043983, the
+// 7h list hash of seed 5 4106130461), and the supply snapshots are
 // unchanged because that test plays the computer without redeploying. Checked with `npm run compare-games`: in each of the 22 games the first difference from main is an SR_UNITS where main
 // ended step 9e (or, once the games had diverged by then, nothing earlier differs).
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
