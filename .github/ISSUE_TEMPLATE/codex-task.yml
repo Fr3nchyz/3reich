@@ -1,5 +1,5 @@
 name: Codex task
-description: A bounded implementation task to hand off to Codex Cloud
+description: A bounded implementation ticket to hand off to Codex Cloud (see docs/CODEX.md)
 title: "[codex] "
 labels: ["codex-task"]
 body:
@@ -7,33 +7,65 @@ body:
     id: objective
     attributes:
       label: Objective
-      description: One or two sentences — what should exist when this is done.
+      description: One or two sentences — what should exist when this is done, and the spec ticket it implements (e.g. spec 16, ticket 16-0).
+    validations:
+      required: true
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Model tier (docs/CODEX.md)
+      options:
+        - Light (small model, low effort)
+        - Standard (default model, medium effort)
+        - Heavy (top model, high effort)
+    validations:
+      required: true
+  - type: textarea
+    id: behaviour
+    attributes:
+      label: Expected behaviour
+      description: What the game or the code does after the change, rule by rule, with the spec section and Ref for each.
     validations:
       required: true
   - type: textarea
     id: scope
     attributes:
       label: In scope / out of scope
-      description: Files or areas Codex should touch, and anything it must leave alone.
+      description: Files Codex may create or edit, and anything it must leave alone.
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
       label: Acceptance criteria
-      description: How to verify this is done — specific commands, pages, or behaviors to check.
+      description: A checklist a reviewer can verify — specific commands, behaviours, numbers.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Required tests
+      description: The tests that must exist (file, what each pins) and the mutation checks to run.
     validations:
       required: true
   - type: textarea
     id: constraints
     attributes:
       label: Constraints
-      description: Reminder of standing guardrails.
+      description: Standing guardrails (AGENTS.md has the full list).
       value: |
-        - No direct push to main; open a PR from a branch.
-        - No merges, production deploys, or Porkbun DNS changes.
-        - Do not modify secrets or environment variables.
-        - Do not weaken, skip, or delete tests to make CI pass.
-        - Only touch files relevant to this task.
+        - Follow AGENTS.md and README.md "Working rules": cite every rule, never invent one (unsettled values are TODO(verify) constants with an id listed in docs/RULES.md and docs/TODO-VERIFY.md), engine stays pure and deterministic, src files at most 300 lines.
+        - No direct push to main; open one PR from a branch. No merges, deploys, secrets or settings changes.
+        - Do not weaken, skip or delete tests to make CI pass. Fixed-seed hashes do not change unless unavoidable and explained.
+        - Only touch files relevant to this task. If the spec does not settle something, stop and ask in a draft PR.
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: What the PR must report back
+      description: Claude reviews the PR against this.
+      value: |
+        The report (a comment on the starter PR, or the PR body) references this issue ("Closes #<this issue>") and has the AGENTS.md sections: what it does; files changed; rules and sources (TODO(verify) ids); tests added; mutation checks (about 10); gate results (lint, typecheck, test counts, build); `npm run compare-games` summary with every difference explained (if src/engine, src/ai or src/data changed); fixed-seed hashes; remaining concerns.
     validations:
       required: true
