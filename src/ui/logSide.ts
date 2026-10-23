@@ -93,6 +93,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     }
     case "AIR_STAGED":
     case "UNITS_MOVED":
+    case "UNITS_REDEPLOYED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
     case "FLEET_DESIGNATED_FOR_SUPPLY":

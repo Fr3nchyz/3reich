@@ -39,14 +39,17 @@ const fnv = (text: string): number => {
 // Turn the game now waits at step 8a and the computer takes three units (and ends the step): the action list gains SIBERIAN_TRANSFER and END_STEP actions at action 273 (counting
 // the setup actions) and everything after differs. With the computer's policy off (`SIBERIAN_TAKE_ALL = false`) the list differs only by the END_STEP at 8a. The other hashes
 // are unchanged: four Game Turns of the 1939 scenario end before Winter 1941, the first Game Turn with a Transfer (spec 14, "As built (ticket 14-18)").
+// Hashes of 2026-10-23 (ticket 16-17): step 9e now waits while a unit of the side can be redeployed, so the computer's list gains one END_STEP at 9e for each such
+// Player Turn (it does not redeploy yet: 16-20). Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (3772813808,
+// 3620992269, 2925722605, 4061975126), so nothing else in the computer's play changed.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3772813808));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3620992269));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3449389818));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(878545923));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(2925722605);
-    expect(hashOf("1939", 2, 4)).toBe(4061975126);
+    expect(hashOf("1939", 5, 4)).toBe(2891263597);
+    expect(hashOf("1939", 2, 4)).toBe(294216548);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(3772813808));
 });

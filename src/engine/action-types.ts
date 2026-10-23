@@ -52,6 +52,8 @@ export type Action =
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support"; units: string[]; target: HexId }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
   | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
+  /** Step 9e: ground units and Replacements are redeployed to a hex of their region, one use of their nation's allowance each (Ref 11.72; spec 16 R18 to R20). `escort` (a Sea Escort fleet) is ticket 16-21 and is refused until then. */
+  | { type: "SR_UNITS"; side: Side; units: string[]; to: HexId; escort?: string }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -102,6 +104,8 @@ export type GameEvent =
   | { type: "LOSSES_CHOSEN"; side: Side; units: string[] }
   /** Step 6f: units moved along a path (the hexes entered, in order). */
   | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
+  /** Step 9e: units of one nation left one hex for another by Strategic Redeployment; `left` is what the nation's allowance has left (spec 16 C4). */
+  | { type: "UNITS_REDEPLOYED"; units: string[]; from: HexId; to: HexId; nation: PowerId; left: number; escort?: string }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
   /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
   | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }

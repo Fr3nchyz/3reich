@@ -137,7 +137,7 @@ describe("whole computer games", () => {
     expect(seen.at8a).toBe(0);
     expect(result.final.siberian).toBeUndefined();
     expect(result.final.result!.siberian).toBe(false);
-    expect(result.actions).toHaveLength(554);
+    expect(result.actions).toHaveLength(577); // 554 before step 9e waited (ticket 16-17): the computer ends it at each of 23 Player Turns where a unit could be redeployed
   }, 240_000);
 
   it("the 1944 scenario is exempt: no unit, no stop", () => {
