@@ -6,6 +6,7 @@ import { gameReport, rebuildReport } from "../scripts/selfplay/report";
 import { runGame } from "../scripts/selfplay/runner";
 import { atStart } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
+import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { counter } from "./board";
 
 // Spec 17 ticket 17-5 (Part E): the self-play report counts returned, rebuilt and lost units from the events, and RB13 (no nation ends with more counters of a kind than its scenario
@@ -18,6 +19,7 @@ const at = "L32";
 describe("the tally of the events", () => {
   const events: GameEvent[] = [
     { type: "UNIT_RETURNED_TO_POOL", unitId: "a", owner: "germany", unitType: "infantry", strength: 3, at, pool: "germany" },
+    { type: "UNIT_RETURNED_TO_POOL", unitId: "z", owner: "britain", unitType: "infantry", strength: 2, at, pool: "free-france" },
     { type: "UNIT_RETURNED_TO_POOL", unitId: "b", owner: "ussr", unitType: "infantry", strength: 3, at, pool: "ussr" },
     { type: "UNIT_LOST_FOR_GOOD", unitId: "c", owner: "poland", unitType: "infantry", strength: 2, at, reason: "minor-country" },
     { type: "UNIT_LOST_FOR_GOOD", unitId: "d", owner: "poland", unitType: "air", strength: 2, at, reason: "minor-country" },
@@ -37,6 +39,8 @@ describe("the tally of the events", () => {
     const n = tally().nations;
     expect(n.germany!.returned).toBe(1);
     expect(n.ussr!.returned).toBe(1);
+    expect(n["free-france"]!.returned).toBe(1); // the pool it went back to, not the Power that controlled it
+    expect(n.britain?.returned ?? 0).toBe(0);
   });
   it("counts what was lost for good, by reason", () => {
     const n = tally().nations;
@@ -119,10 +123,10 @@ describe("RB13: no nation ends with more counters of a kind than its scenario li
     expect(auditCounters(s, withUnit(fr, counter("v2", "vichy-france", "infantry", 2, at, 3))).map((f) => f.detail)[0]).toMatch(/^france infantry/);
   });
   it("counts a counter by its nationality (the Italian fleet Germany holds is Italian)", () => {
-    const s = start();
-    const pool = s.pools.italy!;
-    const e = pool.forcePool.find((x) => x.type === "fleet")!;
-    const moved = withUnit({ ...s, pools: { ...s.pools, italy: { ...pool, forcePool: pool.forcePool.map((x) => (x === e ? { ...x, count: x.count - 1 } : x)) } } }, { ...counter("f1", "germany", "fleet", 9, at), nationality: "italy" });
+    const s = atStart(SCENARIO_1944, 1);
+    const pool = s.pools.germany!;
+    const e = pool.forcePool.find((x) => x.nationality === "italy")!;
+    const moved = withUnit({ ...s, pools: { ...s.pools, germany: { ...pool, forcePool: pool.forcePool.map((x) => (x === e ? { ...x, count: x.count - 1 } : x)) } } }, { ...counter("f1", "germany", "fleet", 6, at), nationality: "italy" });
     expect(auditCounters(s, moved)).toEqual([]);
   });
 });
