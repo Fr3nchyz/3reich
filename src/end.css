@@ -46,6 +46,16 @@
 .winter-buttons button { flex: 1 1 10rem; min-height: 48px; }
 .actions button.greyed { background: #ddd6c3; color: #4f473e; border-style: dashed; cursor: default; box-shadow: none; min-height: 44px; }
 .actions button.greyed:hover { background: #ddd6c3; }
+/* The Free Siberian Transfer (spec 14, part D6): the card of step 8a. */
+.siberiancard { margin: .3rem 0; padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid #8a4b2a; border-radius: 4px; }
+.siberiancard h2 { margin: 0 0 .25rem; font-size: 1.1rem; }
+.siberiancard h2:focus { outline: none; }
+.siberian-line { margin: .2rem 0; }
+.siberiancard .chips button:disabled { opacity: .6; cursor: default; }
+.siberian-cities { display: flex; flex-wrap: wrap; gap: .5rem; margin: .3rem 0; max-height: 15rem; overflow-y: auto; padding: .1rem; }
+.siberian-cities button { min-height: 44px; flex: 1 1 9rem; }
+.siberian-buttons { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .6rem; }
+.siberian-buttons button { flex: 1 1 10rem; min-height: 48px; }
 
 /* Russia's offer to surrender (spec 14, part D5): the card at step 10a, the construction warning at step 8b, and the note on a credited Objective. */
 .surrendercard { margin: .3rem 0; padding: .6rem 1rem .9rem; background: var(--paper); color: var(--ink); border: 1px solid var(--border); border-left: 6px solid #8a5a2b; border-radius: 4px; scroll-margin-top: .5rem; }

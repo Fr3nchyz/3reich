@@ -4,13 +4,15 @@ import type { GameState } from "./types";
 /**
  * The Russian records of spec 14 C1. `SiberianRecord` holds what the victory tables read: from the first unit taken (Ref 11.63), the tables for the Transfer apply
  * to the end of the game (R2, R11). `SovietRecord` holds the once-only 15s for Moscow and Leningrad (ticket 14-14, R7a); the surrender offer, the credited
- * Objectives and the Occupation Force shortfall (tickets 14-15 and 14-17) are added to it by those tickets. The Transfer itself comes with ticket 14-18.
+ * Objectives and the Occupation Force shortfall (tickets 14-15 and 14-17) are added to it by those tickets. The Transfer itself is `siberian.ts` (ticket 14-18).
  */
 export interface SiberianRecord {
   /** True once any unit has been taken. */
   used: boolean;
   /** "1941-winter" -> units taken that Game Turn. */
   taken: Record<string, number>;
+  /** "1941-winter" -> how many of those were armor (the rest are infantry; the armor taken may not outnumber the infantry taken, R11). Absent reads as none. */
+  armor?: Record<string, number>;
 }
 
 /** The two Russian cities whose capture by the Axis moves 15 BRPs (Ref 18.4, 9.2). */

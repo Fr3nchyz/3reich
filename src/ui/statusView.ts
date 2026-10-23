@@ -16,6 +16,7 @@ import { cap, nameOf, sideName } from "./format";
 import { combatLabel, labelled } from "./actionLabels";
 import type { Session, SetupView } from "./session";
 import { buildPanel } from "./buildView";
+import { siberianCardHtml, siberianEndLabel, siberianShown } from "./siberianCard";
 import { setupPanel } from "./setupView";
 import { logHtml } from "./logView";
 import { panelHtml } from "./watchBar";
@@ -63,7 +64,7 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
     case "END_PLAYER_TURN":
       return `End ${sideName(a.side)} turn`;
     case "END_STEP":
-      return `Done with step ${a.step}`;
+      return a.step === "8a" ? siberianEndLabel(state) : `Done with step ${a.step}`; // the Free Siberian Transfer card's closing button (ticket 14-18)
     case "DECLARE_WAR":
       return `${POWER_NAMES[a.by]} declares war on ${nameOf(a.on)} (${isMajorPower(a.on) ? BRP_COSTS.declareWarOnMajorPower : BRP_COSTS.declareWarOnMinorCountry} BRPs)`;
     case "SELECT_FRONT_OPTION":
@@ -79,9 +80,9 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
   }
 }
 
-/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels, identical actions appear once, and no two read alike. */
+/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels (so does the Free Siberian Transfer: its card), identical actions appear once, and no two read alike. */
 export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
-  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE"), ctx, state, (a) => label(a, ctx, state));
+  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**
@@ -93,7 +94,7 @@ export function buttonLabels(actions: Action[], ctx: GameContext, state: GameSta
 /** The folds of the combat buttons: their inner row is not `.actions`, so the buttons that move the game on stay the last `.actions` buttons in the page (the browser tests click that one). */
 const COMBAT_FOLDS: readonly Action["type"][] = ["ATTACK", "ALLOCATE_LOSSES", "ADVANCE", "DESIGNATE_AIR"];
 
-function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState): { folds: string; rest: string; winter: string; surrender: string } {
+function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: GameState, cardEnds8a: boolean): { folds: string; rest: string; winter: string; surrender: string; siberian: string } {
   const shown = buttonLabels(actions, ctx, state);
   const text = new Map(shown.map((l) => [l.action, l.text]));
   const button = (a: Action) => `<button data-action="${actions.indexOf(a)}">${text.get(a)}</button>`;
@@ -101,10 +102,11 @@ function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: 
     const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${type === "SELECT_FRONT_OPTION" ? frontOptionButtons(state, group, button) : group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR" && a.type !== "CHOOSE_WINTER" && a.type !== "SURRENDER_ANSWER");
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR" && a.type !== "CHOOSE_WINTER" && a.type !== "SURRENDER_ANSWER" && !(cardEnds8a && a.type === "END_STEP" && a.step === "8a"));
   return {
     folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DESIGNATE_AIR", "All air support as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
     rest: rest.map(button).join(""),
+    siberian: cardEnds8a ? actions.filter((a) => a.type === "END_STEP" && a.step === "8a" && text.has(a)).map(button).join("") : "", // the closing button of the Free Siberian Transfer card (ticket 14-18)
     winter: actions.filter((a) => a.type === "CHOOSE_WINTER" && a.postpone && text.has(a)).concat(actions.filter((a) => a.type === "CHOOSE_WINTER" && !a.postpone && text.has(a))).map(button).join(""), // waiting first, as the card of spec 14 D4 shows it
     surrender: actions.filter((a) => a.type === "SURRENDER_ANSWER" && text.has(a)).map(button).join(""), // the engine's order: accept, then refuse (the card of D5)
   };
@@ -120,14 +122,14 @@ function frontPrompt(s: Session, actions: Action[]): string {
 /** The whole status area. `setup` is set while a nation of yours is setting up. */
 export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
   const totals = initiativeTotals(s.state);
-  const { folds, rest, winter, surrender } = turnButtons(actions, s.foldOpen, s.ctx, s.state);
+  const { folds, rest, winter, surrender, siberian } = turnButtons(actions, s.foldOpen, s.ctx, s.state, siberianShown(s));
   const toast = `<p class="toast" role="status">${s.toast}</p>`;
   // Step 7h: the bar, the message and the cards come first, so the next thing to do is in view; everything else follows.
   const lead = leadsStatus(s);
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
-      ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}
+      ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
       ${scoreHtml(s)}
       ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}

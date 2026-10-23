@@ -7,9 +7,21 @@ import { bindAttack } from "./attackBind";
 import { bindChoice } from "./choiceBind";
 import { bindMove } from "./moveBind";
 import type { Session, SetupView, TapMode } from "./session";
-import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSpec, placeInBox, setMode, takeAction, undoLast } from "./sessionActions";
+import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSiberian, pickSpec, placeInBox, setMode, takeAction, takeSiberian, undoLast } from "./sessionActions";
+import { turnKey } from "../engine/victory";
 
 /** Click handlers for the buttons statusView draws. Each one changes the session, then calls `redraw`. */
+
+/** After the Free Siberian Transfer card first appears in a Game Turn its heading takes the keyboard focus, once, and the card is scrolled into view; a card of an earlier Game Turn is forgotten (the style of `revealWinter`). */
+function revealSiberian(root: HTMLElement, s: Session): void {
+  const card = root.querySelector<HTMLElement>("#siberian-card");
+  const key = turnKey(s.state);
+  if (!card) { if (s.siberianFocused === key) s.siberianFocused = undefined; return; }
+  if (s.siberianFocused === key) return;
+  s.siberianFocused = key;
+  root.querySelector<HTMLElement>("#siberian-title")?.focus({ preventScroll: true });
+  card.scrollIntoView({ block: "nearest" });
+}
 
 export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | null, actions: Action[], redraw: () => void): void {
   const owner = setup?.owner;
@@ -24,6 +36,8 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on<HTMLButtonElement>("button[data-spec]", (b) => pickSpec(s, b.dataset.spec!));
   on<HTMLButtonElement>("button[data-build]", (b) => pickBuild(s, b.dataset.build!));
   on<HTMLButtonElement>("button[data-buildbox]", (b) => buildInBox(s, b.dataset.buildbox as OffMapBox));
+  on<HTMLButtonElement>("button[data-siberian]", (b) => pickSiberian(s, b.dataset.siberian!));
+  on<HTMLButtonElement>("button[data-siberian-city]", (b) => takeSiberian(s, b.dataset.siberianCity!));
   on<HTMLButtonElement>("button[data-box]", (b) => { if (owner) placeInBox(s, owner, spec, b.dataset.box as OffMapBox); });
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
@@ -37,4 +51,5 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on("#undo", () => { if (owner) undoLast(s, owner); });
   on("#fill", () => fillRest(s));
   on("#done", () => { if (owner) finishOwner(s, owner); });
+  revealSiberian(root, s);
 }

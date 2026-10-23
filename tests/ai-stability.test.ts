@@ -35,11 +35,15 @@ const fnv = (text: string): number => {
 // after the fall of France (counting the setup actions: seed 5, the fall is at action 279 and the first difference at 282; seed 2, 403 and 404) and nothing before it differs.
 // The same holds for 1939 seeds 1 to 10 and Campaign seeds 1 to 4 (the two games where Paris is never taken are identical) and for 1942 and 1944 seeds 1 to 4 (identical).
 // The two expectations below that the computer's play after the fall of France could no longer keep are relaxed, each in its test.
+// Hashes of 2026-10-22 (ticket 14-18): the 1942 hash changed on purpose. The 1942 scenario starts in Spring 1942, a Game Turn with a Free Siberian Transfer, so in the first Allied Player
+// Turn the game now waits at step 8a and the computer takes three units (and ends the step): the action list gains SIBERIAN_TRANSFER and END_STEP actions at action 273 (counting
+// the setup actions) and everything after differs. With the computer's policy off (`SIBERIAN_TAKE_ALL = false`) the list differs only by the END_STEP at 8a. The other hashes
+// are unchanged: four Game Turns of the 1939 scenario end before Winter 1941, the first Game Turn with a Transfer (spec 14, "As built (ticket 14-18)").
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3772813808));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(119964332));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3620992269));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
     expect(hashOf("1939", 5, 4)).toBe(2925722605);
     expect(hashOf("1939", 2, 4)).toBe(4061975126);

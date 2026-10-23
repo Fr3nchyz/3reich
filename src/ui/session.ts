@@ -23,6 +23,7 @@ import type { WatchInfo } from "./watchController";
 import { gameOverLine } from "./victoryLine";
 import { conquestLine } from "./conquestText";
 import { winterLine } from "./winterText";
+import { siberianLogLine } from "./endText";
 
 /**
  * Everything that makes up one game being played in the browser, in one object, and the game-flow
@@ -99,6 +100,10 @@ export interface Session {
   winterSeen?: string;
   /** The card of the winter question has taken the keyboard focus once for this question. Screen state, never saved. */
   winterFocused?: string;
+  /** The counter chosen to take at step 8a, the Free Siberian Transfer (spec 14, D6): its kind and strength (the yellow hexes of the map are the cities it may go in), or null. Screen state, never saved. */
+  siberian?: { type: UnitType; strength: number } | null;
+  /** The Game Turn ("1941-winter") whose Free Siberian Transfer card has taken the keyboard focus once. Screen state, never saved. */
+  siberianFocused?: string;
   /** The card of Russia's offer to surrender has taken the keyboard focus once for this offer (spec 14, ticket 14-16). Screen state, never saved. */
   surrenderFocused?: boolean;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
@@ -212,6 +217,8 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "WINTER_POSTPONED":
     case "WINTER_STARTED":
       return winterLine(e);
+    case "SIBERIAN_TRANSFER_USED":
+      return siberianLogLine(e.strength, e.unitType, placeName(ctx.map, e.at), e.left, e.firstUse);
     case "GAME_OVER":
       return gameOverLine(e.season, e.year, e.result);
   }

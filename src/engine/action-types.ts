@@ -26,6 +26,8 @@ export type Action =
   | { type: "GRANT_BRPS"; from: PowerId; to: PowerId; amount: number }
   /** Step II.A: the Allies decide whether the Russian winter waits for next year (`postpone`) or starts now; legal only when the dice allowed it (spec 14 R10; Ref 28.0). */
   | { type: "CHOOSE_WINTER"; side: "allies"; postpone: boolean }
+  /** Step 8a: the Allies take one infantry or armor counter from the Russian Force Pool, free of charge, and place it in a Russian city (the Free Siberian Transfer, spec 14 R11; Ref 11.63). */
+  | { type: "SIBERIAN_TRANSFER"; side: "allies"; unit: { type: UnitType; strength: number }; at: HexId }
   /** Step 10a: the Axis answers Russia's one-time offer to surrender, accepting it or refusing it (spec 14 R7b to R7d; Ref 11.8, 18.41). Legal only while the offer waits, and only for the Axis. */
   | { type: "SURRENDER_ANSWER"; side: "axis"; accept: boolean }
   /** Step 7h: ground units attack an adjacent enemy hex (Ref 12.1; each unit attacks one hex, PC README 14.23). */
@@ -131,6 +133,8 @@ export type GameEvent =
   | { type: "SURRENDER_REFUSED" }
   /** After a surrender these Objectives count for the Allies for good (spec 14 R7c, R1). */
   | { type: "OBJECTIVES_CREDITED"; hexes: HexId[] }
+  /** Step 8a: the Allies took a unit in the Free Siberian Transfer (spec 14 R11): `left` units may still be taken this Game Turn; `firstUse` marks the unit that switched the victory tables (the Allied targets are one Objective higher from then on). */
+  | { type: "SIBERIAN_TRANSFER_USED"; unitId: string; unitType: UnitType; strength: number; at: HexId; left: number; firstUse: boolean }
   /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
 
