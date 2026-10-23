@@ -55,7 +55,7 @@ jobs:
       - run: npm run coverage
       - run: npm run build
   # Browser tests against `vite preview` on a build made for them (see playwright.config.ts), in three parallel shards so the wait is a third as long.
-  e2e:
+  e2e-shard:
     needs: scope
     if: needs.scope.outputs.e2e == 'true'
     runs-on: ubuntu-latest
@@ -79,3 +79,17 @@ jobs:
           name: playwright-traces-${{ matrix.shard }}
           path: test-results/
           if-no-files-found: ignore
+  # The one check that branch protection requires ("e2e"): a matrix job reports as "e2e (1)" to "e2e (3)", which never satisfies it.
+  # Passes when the shards passed or were skipped (no browser tests needed), fails otherwise.
+  e2e:
+    needs: [scope, e2e-shard]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - env:
+          SCOPE: ${{ needs.scope.result }}
+          SHARDS: ${{ needs.e2e-shard.result }}
+        run: |
+          echo "scope: $SCOPE, shards: $SHARDS"
+          [ "$SCOPE" = "success" ] && { [ "$SHARDS" = "success" ] || [ "$SHARDS" = "skipped" ]; }
