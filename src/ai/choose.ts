@@ -24,8 +24,8 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
-  // At 7b the computer commits no air yet, so the designations are not worked out either.
-  const legal = step === "6f" || step === "7b" ? moveOnAction(state) : legalActions(ctx, state);
+  // At 7b the computer commits no air yet, so the designations are not worked out either; nor are the redeployments at 9e (its policy is ticket 16-20).
+  const legal = step === "6f" || step === "7b" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
@@ -62,6 +62,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "9j": "Nothing is overstacked.",
     "8a": "Nothing more to take in the Free Siberian Transfer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
+    "9e": "The computer does not redeploy yet.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",
   };

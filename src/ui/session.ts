@@ -182,6 +182,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "UNITS_REDEPLOYED":
+      return `${stackSummary(unitsWithIds(before, e.units))} redeployed from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} (${POWER_NAMES[e.nation]} has ${e.left} left).`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_MISSION_DESIGNATED":

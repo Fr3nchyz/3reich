@@ -67,6 +67,19 @@ describe("who may be redeployed (spec 16 R19)", () => {
     expect(srUnitProblem(CTX, s, s.units.g1!)).toBeNull();
   });
 
+  it("the region does not step between two land hexes across plain water with no Crossing Arrow: England L23 and France L24 (R20, Ref 4.3)", () => {
+    // Konigsberg and Danzig are joined by land round the lagoon, so the pair here is two hexes that are not: Dover's side of the Channel.
+    const s = board([inf("b1", "britain", "L23")], undefined, { activeSide: "allies" });
+    expect(adjacentHexes(CTX, "L23")).toContain("L24");
+    expect(landNext("L23", "L24")).toBe(false);
+    expect(CTX.map.hexsides[hexsideId(parseHexId("L23")!, parseHexId("L24")!)]?.crossingArrow).not.toBe(true);
+    expect(controllingSide(CTX, s, "L24")).toBe("allies");
+    expect(srRegion(CTX, s, s.units.b1!).has("L23")).toBe(true);
+    expect(srRegion(CTX, s, s.units.b1!).has("L24")).toBe(false);
+    expect(srProblem(CTX, s, ["b1"], "L24")).toMatch(/cannot be reached/);
+    expect(srDestinations(CTX, s, s.units.b1!)).not.toContain("L24");
+  });
+
   it("an enemy across a Crossing Arrow is not next to it either (R20): Messina", () => {
     const s = withItaly([inf("i1", "italy", "DD21"), inf("b1", "britain", "DD22")]);
     expect(CTX.map.hexsides[hexsideId(parseHexId("DD21")!, parseHexId("DD22")!)]?.crossingArrow).toBe(true);
