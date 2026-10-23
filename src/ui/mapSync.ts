@@ -9,6 +9,7 @@ import { fromMarks, moveMarksOf } from "./moveMarks";
 import { moveFurther, moveTargets, selectionNow } from "./moveTap";
 import { shownOnMap } from "./attackSync";
 import { builds, siberianOffers } from "./sessionActions";
+import { buildKey, pickOf } from "./buildView";
 import { syncAttackMarks } from "./attackSync";
 import type { Action } from "../engine/actions";
 
@@ -23,7 +24,7 @@ function highlightedHexes(s: Session, setup: SetupView | null): string[] {
     const taking = s.siberian;
     if (taking) return siberianOffers(s).filter((a) => a.unit.type === taking.type && a.unit.strength === taking.strength).map((a) => a.at);
     const pick = s.build;
-    return pick ? builds(s).filter((a) => a.owner === pick.owner && a.unit.type === pick.type && a.unit.strength === pick.strength && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
+    return pick ? builds(s).filter((a) => buildKey(pickOf(a)) === buildKey(pick) && s.ctx.map.hexes[a.at]).map((a) => a.at) : [];
   }
   const { owner: mine, spec } = setup;
   const onMap = (id: string) => s.ctx.map.hexes[id] !== undefined;

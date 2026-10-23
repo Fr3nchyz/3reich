@@ -8,6 +8,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { sideInWar } from "./control";
 import type { HexId } from "./hex";
+import { eliminateUnits } from "./losses";
 import type { GameState, Unit } from "./types";
 
 /**
@@ -118,11 +119,9 @@ export function loseUnusedGroundSupport(state: GameState): { state: GameState; e
   for (const hex of Object.keys(airOf(state).groundSupport).sort()) {
     const lost = committedAt(next, hex);
     if (lost.length > 0) {
-      const units = { ...next.units };
-      for (const u of lost) delete units[u.id];
-      next = { ...next, units };
-      events.push({ type: "GROUND_SUPPORT_LOST", hex, units: lost.map((u) => ({ id: u.id, owner: u.owner, strength: u.strength })) });
-      for (const u of lost) events.push({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: u.at });
+      const gone = eliminateUnits(next, lost.map((u) => u.id)); // back to the pool, or lost for good (spec 17 R1)
+      next = gone.state;
+      events.push({ type: "GROUND_SUPPORT_LOST", hex, units: lost.map((u) => ({ id: u.id, owner: u.owner, strength: u.strength })) }, ...gone.events);
     }
     next = clearGroundSupport(next, hex);
   }

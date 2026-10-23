@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { controllerOf } from "./control";
 import { removeUnits } from "./conquest-forces";
+import { routeLosses } from "./losses";
 import { sideOfOwner } from "./setup";
 import type { FallPlan } from "./conquest-stages";
 import type { HexId } from "./hex";
@@ -131,6 +132,8 @@ interface Report {
   lost: number;
   colonies: Extract<GameEvent, { type: "VICHY_CREATED" }>["colonies"];
   eliminated: Unit[];
+  /** The routing event of each British unit eliminated (losses.ts), by unit id. */
+  routed: Map<string, GameEvent[]>;
   vichy: HexId[];
   free: HexId[];
 }
@@ -139,7 +142,7 @@ interface Report {
  * The `before` and `after` steps of France's fall (see the top of this file). One pair per fall: `before` keeps what it did for `after` to report.
  */
 export function franceSteps(): Pick<FallPlan, "before" | "after"> {
-  const report: Report = { kept: 0, lost: 0, colonies: [], eliminated: [], vichy: [], free: [] };
+  const report: Report = { kept: 0, lost: 0, colonies: [], eliminated: [], routed: new Map(), vichy: [], free: [] };
   return {
     before: (ctx, state) => {
       let s = state;
@@ -171,6 +174,11 @@ export function franceSteps(): Pick<FallPlan, "before" | "after"> {
       const british = Object.values(s.units).filter((u) => u.owner === "britain" && territory.has(u.at));
       s = removeUnits(s, british.map((u) => u.id)).state;
       report.eliminated = british;
+      for (const u of british) { // each back to the British pool, or lost for good (losses.ts, spec 17 R1); the events are written by `after`
+        const routed = routeLosses(s, [u]);
+        s = routed.state;
+        report.routed.set(u.id, routed.events);
+      }
       // 2. the French units of European France are halved; the Vichy half is set up in the Vichy hexes
       const european = Object.values(s.units).filter((u) => u.owner === "france" && ctx.map.hexes[u.at]?.country === "france" && ctx.map.hexes[u.at]?.land);
       const halves = halve(european);
@@ -185,7 +193,7 @@ export function franceSteps(): Pick<FallPlan, "before" | "after"> {
         { type: "VICHY_CREATED", halved: { kept: report.kept, lost: report.lost }, colonies: report.colonies, britishEliminated: report.eliminated.length },
         ...(report.vichy.length > 0 ? [{ type: "CONTROL_PASSED", country: "france", to: "vichy-france", hexes: [...report.vichy].sort() } satisfies GameEvent] : []),
         ...(report.free.length > 0 ? [{ type: "CONTROL_PASSED", country: "france", to: "free-france", hexes: [...report.free].sort() } satisfies GameEvent] : []),
-        ...report.eliminated.map((u): GameEvent => ({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: u.at })),
+        ...report.eliminated.flatMap((u): GameEvent[] => [{ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: u.at }, ...(report.routed.get(u.id) ?? [])]),
       ],
     }),
   };

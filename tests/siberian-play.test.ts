@@ -5,6 +5,7 @@ import { SIBERIAN_TAKE_ALL } from "../src/ai/siberian";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
 import type { GameEvent } from "../src/engine/action-types";
 import { sideToAct } from "../src/engine/actor";
+import { availableBuilds } from "../src/engine/construction";
 import { newGame } from "../src/engine/game";
 import { SIBERIAN_QUOTAS, siberianCities } from "../src/engine/siberian";
 import type { GameState, Scenario } from "../src/engine/types";
@@ -73,6 +74,9 @@ function audit(scenario: Scenario, seed: number, actions: readonly Action[]): Au
   return out;
 }
 
+/** The pool entry a unit taken came from: the first of its kind the Transfer could take (victory-actions.ts takes the first). */
+const takenEntry = (t: Audit["taken"][number]) => availableBuilds(t.before, "ussr").find((e) => e.type === t.action.unit.type && e.strength === t.action.unit.strength);
+
 /** Every rule of R11 over the units a game took. */
 function expectRules(scenario: Scenario, a: Audit): void {
   const ctx = { map: MAP, scenario };
@@ -105,39 +109,51 @@ function playOnce(key: ScenarioKey, seed: number, scenario?: Scenario) {
 }
 
 describe("whole computer games", () => {
-  it("1942 seed 1: three units in Spring 1942, two in Summer, none in Fall (only armor is left), and every rule holds", () => {
+  // Spec 17 (ticket 17-1): a Russian infantry lost before Summer 1942 is back in the pool, so the computer takes two infantry in Summer 1942 where it took an infantry
+  // and an armor before (the armor rule lets armor in only behind infantry, V60).
+  it("1942 seed 1: three units in Spring 1942, two in Summer, none in Fall, and every rule holds", () => {
     expect(SIBERIAN_TAKE_ALL).toBe(true);
     const { seen, result } = play("1942", 1);
     expect(result.anomalies).toEqual([]);
     expect(result.final.phase).toBe("game-over");
     const a = audit(SCENARIOS["1942"], 1, result.actions);
     expectRules(SCENARIOS["1942"], a);
-    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 1, armor: 1 } });
+    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 } });
     expect(seen.at8a, "the game waited at 8a in Spring and Summer, and after the quota").toBeGreaterThanOrEqual(2);
     expect(result.final.siberian).toMatchObject({ used: true, taken: { "1942-spring": 3, "1942-summer": 2 } });
     expect(result.final.result!.siberian).toBe(true);
     expect(seen.sides.has("allies") && seen.sides.has("axis")).toBe(true);
   }, 240_000);
 
-  it("the Campaign: the pool is empty in Winter 1941 (the computer built it all), the dated counters of Spring 1942 are taken", () => {
+  // Spec 17 (ticket 17-1): the scenario's Russian builds are all built by Winter 1941, as before, but lost Russian units are back in the pool, so Winter 1941 now has
+  // four to take (TODO(verify) RB12; it answers V58).
+  it("the Campaign: in Winter 1941 the units taken are Russian losses back in the pool (the scenario's builds are all built), and Spring 1942 takes three more", () => {
     const { result } = play("campaign", 1);
     expect(result.anomalies).toEqual([]);
     const a = audit(SCENARIOS.campaign, 1, result.actions);
     expectRules(SCENARIOS.campaign, a);
-    expect(a.perTurn["1941-winter"]).toBeUndefined();
+    expect(a.perTurn["1941-winter"]).toEqual({ infantry: 4, armor: 0 });
+    for (const t of a.taken.filter((x) => x.turn === "1941-winter")) expect(takenEntry(t)?.returned, `${t.turn}: a counter that came back`).toBe(true);
     expect(a.perTurn["1942-spring"]).toEqual({ infantry: 3, armor: 0 });
     expect(result.final.siberian?.used).toBe(true);
     expect(result.final.result!.siberian).toBe(true);
   }, 240_000);
 
-  it("1939 seed 1: nothing to take (the Russian Allowable Builds are all built by Winter 1941), the game is what it was, no 8a stop, no flag", () => {
+  // Spec 17 (ticket 17-1) answers V58: before it, this game had nothing to take (the Russian Allowable Builds are all built by Winter 1941, and a lost unit did not come
+  // back), so the Transfer was never used in a 1939 game of the computer. Now the Russian losses are back in the pool and are taken (TODO(verify) RB12).
+  it("1939 seed 1: the Russian Allowable Builds are all built by Winter 1941, so every unit taken is a Russian loss back in the pool; every rule holds and the flag is set", () => {
     const { seen, result } = play("1939", 1);
     expect(result.anomalies).toEqual([]);
-    expect(result.actions.some((x) => x.type === "SIBERIAN_TRANSFER")).toBe(false);
-    expect(seen.at8a).toBe(0);
-    expect(result.final.siberian).toBeUndefined();
-    expect(result.final.result!.siberian).toBe(false);
-    expect(result.actions).toHaveLength(554);
+    const a = audit(SCENARIOS["1939"], 1, result.actions);
+    expectRules(SCENARIOS["1939"], a);
+    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 4, armor: 0 }, "1942-spring": { infantry: 1, armor: 0 } });
+    for (const t of a.taken) {
+      expect(availableBuilds(t.before, "ussr").filter((e) => !e.returned && (e.type === "infantry" || e.type === "armor")), "the scenario's builds are used up").toEqual([]);
+      expect(takenEntry(t)?.returned).toBe(true);
+    }
+    expect(seen.at8a).toBeGreaterThanOrEqual(2);
+    expect(result.final.siberian).toMatchObject({ used: true });
+    expect(result.final.result!.siberian).toBe(true);
   }, 240_000);
 
   it("the 1944 scenario is exempt: no unit, no stop", () => {
