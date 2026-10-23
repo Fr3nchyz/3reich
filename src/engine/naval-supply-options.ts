@@ -4,7 +4,7 @@ import type { HexId } from "./hex";
 import { useOf, type SeaSupplyDesignation } from "./naval-record";
 import { isPort, portFronts, portsOf } from "./naval-ports";
 import { ONE_HEX_ISLANDS } from "./naval-rules";
-import { checkDesignations, designationProblem, freeCapacity, placeFronts, portReached } from "./naval-supply";
+import { checkDesignations, designationProblem, freeCapacity, placeFronts, portReached, sameSupplySea, supplyChainLink } from "./naval-supply";
 import { byId, supplyNetwork, supplyStatus, type SupplyLine } from "./supply";
 import type { ForceOwner, GameState, Side, Unit } from "./types";
 
@@ -54,9 +54,11 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
   const room = freeCapacity(state, standing);
   // Fleets that could carry, by port and group, in id order.
   const crews = new Map<string, Unit[]>();
+  const usable: Unit[] = [];
   for (const f of Object.values(state.units).sort((a, b) => byId(a.id, b.id))) {
     const use = useOf(state, f.id);
     if (f.type !== "fleet" || sideInWar(state, f.owner) !== side || !isPort(ctx, f.at) || (use !== undefined && use !== "supply") || room(f.id) <= 0) continue;
+    usable.push(f);
     if (!portReached(network, f.at, f.owner)) continue;
     const key = `${f.at}|${network.groupOf(f.owner)}`;
     crews.set(key, [...(crews.get(key) ?? []), f]);
@@ -66,7 +68,7 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
   for (const [key, crew] of crews) {
     const from = key.split("|")[0]!;
     for (const to of places) {
-      if (!portFronts(ctx, from).some((f) => placeFronts(ctx, to).includes(f))) continue; // one Front in common (Ref 19.31)
+      if (!portFronts(ctx, from).some((f) => placeFronts(ctx, to).includes(f) && sameSupplySea(ctx, from, to, f))) continue; // one Front in common (Ref 19.31)
       const land = network.reachFrom([to]);
       const group = network.groupOf(crew[0]!.owner);
       const savable = cut.filter((id) => land.has(state.units[id]!.at) && network.groupOf(state.units[id]!.owner) === group);
@@ -82,7 +84,26 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
       if (designationProblem(ctx, state, network, d, standing) === null) out.push({ ...d, saves: units.length });
     }
   }
-  return out.sort((a, b) => b.saves - a.saves || byHex(a.from, b.from) || byHex(a.to, b.to));
+  const order = (a: SeaSupplyOption, b: SeaSupplyOption): number => b.saves - a.saves || byHex(a.from, b.from) || byHex(a.to, b.to)
+    || byHex(a.fleets.join("|"), b.fleets.join("|"));
+  // Serial legs are proposed only when no ordinary designation serves this place/group (spec 12 R7, ticket 12-8).
+  const chains: SeaSupplyOption[] = [];
+  for (const first of usable) {
+    if (!portReached(network, first.at, first.owner)) continue;
+    const group = network.groupOf(first.owner);
+    for (const second of usable) {
+      if (first.at === second.at || network.groupOf(second.owner) !== group) continue;
+      for (const to of places) {
+        if (out.some((o) => o.to === to && network.groupOf(state.units[o.fleets[0]!]!.owner) === group)) continue;
+        const land = network.reachFrom([to]);
+        const units = cut.filter((id) => land.has(state.units[id]!.at) && network.groupOf(state.units[id]!.owner) === group)
+          .slice(0, Math.min(room(first.id), room(second.id)));
+        const d: SeaSupplyDesignation = { fleets: [first.id, second.id], from: first.at, to, units };
+        if (units.length > 0 && supplyChainLink(ctx, state, d) && designationProblem(ctx, state, network, d, standing) === null) chains.push({ ...d, saves: units.length });
+      }
+    }
+  }
+  return [...out.sort(order), ...chains.sort(order)];
 }
 
 /**
