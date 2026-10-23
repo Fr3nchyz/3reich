@@ -2,8 +2,9 @@ import { airOf, gameTurnKey } from "./air-record";
 import { turnKey } from "./combat-record";
 import type { GameContext } from "./context";
 import { controllingSide } from "./control";
+import { turnIndex } from "./game";
 import type { HexId } from "./hex";
-import type { GameState, Side } from "./types";
+import type { GameState, GameTurn, Side } from "./types";
 
 /**
  * What the fleet rules have recorded (spec 12 part C1, R1 and R5). It lives in `GameState.naval`, in the pattern of `AirState` and
@@ -90,3 +91,32 @@ export function markUsed(state: GameState, ids: readonly string[], kind: NavalUs
 export function heldAtStart(ctx: GameContext, state: GameState, side: Side, hex: HexId): boolean {
   return controllingSide(ctx, { ...state, control: airOf(state).controlAtStart }, hex) === side;
 }
+
+/**
+ * The state with this fleet gray (spec 17 R5, RB6; Ref 11.62): bought back from the pool, it may first act four Game Turns after the one it was
+ * built in (a fleet rebuilt in Fall 1940 acts in Fall 1941). TODO(verify) (RB6): "a year" is four Game Turns.
+ */
+export const markGray = (state: GameState, id: string): GameState => ({ ...state, grayFleets: { ...state.grayFleets, [id]: { year: state.year + 1, season: state.season } } });
+
+/**
+ * The first Game Turn this fleet may act, if it is gray now (RB6, RB7), else undefined. An id no longer in `state.units` (the fleet was sunk,
+ * captured out of the game) is ignored, so a dead fleet's entry does nothing.
+ */
+export function grayUntil(state: GameState, id: string): GameTurn | undefined {
+  const until = state.grayFleets && Object.hasOwn(state.grayFleets, id) ? state.grayFleets[id] : undefined;
+  if (!until || !state.units[id] || turnIndex(until) <= turnIndex(state)) return undefined;
+  return until;
+}
+
+/** "Fall 1941": the Game Turn in words. */
+export const turnWords = (t: GameTurn): string => `${t.season.charAt(0).toUpperCase()}${t.season.slice(1)} ${t.year}`;
+
+/**
+ * Whether the fleet may act now: not gray (RB7) and not used or new this Game Turn (Ref 21.3). A fleet that already did one thing may still do
+ * the same thing again where the rule says so (sea supply, which asks `hasUsed` itself). TODO(12-5, 12-6, 12-8): missions, intercept, escort and
+ * change of base are not built; each must call `grayUntil` (a gray fleet does none of them).
+ */
+export const fleetMayAct = (state: GameState, id: string): boolean => grayUntil(state, id) === undefined && !hasUsed(state, id);
+
+/** The refusal for a gray fleet, in one sentence (Ref 11.62). */
+export const grayProblem = (id: string, until: GameTurn): string => `${id} was rebuilt and is a gray fleet: it cannot act until ${turnWords(until)} (Ref 11.62).`;

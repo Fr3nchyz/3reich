@@ -9,6 +9,7 @@ import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
+import { lossLine, builtLine } from "./lossText";
 import { actorSide, eventSide, logLine } from "./logSide";
 import type { AirbasePick, AirMoveChoice } from "./airMoveTap";
 import type { AirDraft } from "./airTap";
@@ -139,7 +140,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
 }
 
 /** `before` is the position the action was made in, where the counters it removes or moves are still found by id (names.ts). */
-function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>, before: GameState): string | null {
+export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>, routed: ReadonlyMap<string, boolean>, before: GameState): string | null {
   switch (e.type) {
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
@@ -157,7 +158,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "STEPS_PASSED":
       return null;
     case "UNIT_BUILT":
-      return `${POWER_NAMES[e.owner]} builds a ${e.strength}-factor ${e.unitType} at ${e.at} (${e.cost} BRPs).`;
+      return builtLine(e, POWER_NAMES[e.owner]);
     case "FRONT_OPTION_SELECTED":
       return `${sideName(e.side)} choose the ${cap(e.option)} Option on the ${cap(e.front)} Front${e.cost > 0 ? ` (${e.cost} BRPs)` : ""}.`;
     case "BRPS_GRANTED":
@@ -172,11 +173,11 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       if (e.sweep) return null; // the line of the sweep says it
       return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
-      if (swept.has(e.unitId)) return null;
+      if (swept.has(e.unitId) || routed.has(e.unitId)) return null; // the line of its fate says it (lossText.ts); a game saved before spec 17 has none, so keeps this one
       return `Eliminated${e.reason === "unsupplied" ? " (out of supply)" : ""}: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
     case "UNIT_RETURNED_TO_POOL":
     case "UNIT_LOST_FOR_GOOD":
-      return null; // where a lost unit went (spec 17): its log line is ticket 17-4's
+      return swept.has(e.unitId) ? null : lossLine(ctx, before, e, routed.get(e.unitId));
     case "LOSSES_CHOSEN":
       return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
@@ -243,8 +244,9 @@ export function run(s: Session, ...actions: Action[]): boolean {
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const actor = actorSide(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
+    const routed = new Map(result.events.flatMap((e, i, all) => (e.type === "UNIT_ELIMINATED" && all.some((r) => (r.type === "UNIT_RETURNED_TO_POOL" || r.type === "UNIT_LOST_FOR_GOOD") && r.unitId === e.unitId) ? [[e.unitId, e.reason === "unsupplied"] as const] : [])));
     for (const e of result.events) {
-      const line = describeEvent(e, s.ctx, swept, before);
+      const line = describeEvent(e, s.ctx, swept, routed, before);
       if (line) logLine(s, line, eventSide(e, actor, before));
     }
   }

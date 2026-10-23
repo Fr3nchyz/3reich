@@ -1,6 +1,6 @@
 import type { Action } from "../engine/actions";
-import { buildCost } from "../engine/construction";
-import { POWER_NAMES } from "../engine/nations";
+import { buildCost, buildSources } from "../engine/construction";
+import { OWNER_NAMES, POWER_NAMES } from "../engine/nations";
 import type { ForceOwner, PowerId, UnitType } from "../engine/types";
 import { counterNumber } from "./mapStyle";
 import { counterIcon } from "./mapSymbols";
@@ -40,16 +40,26 @@ export function buildOptions(actions: readonly Action[]): BuildOption[] {
     if (a.type !== "BUILD") continue;
     const pick = pickOf(a);
     const option = options.get(buildKey(pick)) ?? { ...pick, cost: buildCost(pick.type, pick.strength) ?? 0, places: [] };
-    option.places.push(a.at);
+    if (!option.places.includes(a.at)) option.places.push(a.at); // two returned counters that differ only in movement give the same BUILD twice: one chip, each place once
     options.set(buildKey(pick), option);
   }
   return [...options.values()];
 }
 
-/** The numbers printed on the counter this build makes ("3-4"), from the nation's Allowable Builds. */
+/**
+ * The numbers printed on the counter this build makes ("3-4"). The entry is the one `applyBuild` takes: the first of the pool's buildable entries
+ * with this type, factors and returned mark (so two returned counters that differ only in movement show one chip, with the first one's numbers).
+ */
 function numbers(s: Session, o: BuildPick): string {
-  const entry = s.state.pools[o.pool ?? o.owner]?.allowableBuilds.find((e) => e.type === o.type && e.strength === o.strength && (e.returned === true) === (o.returned === true));
+  const source = buildSources(s.state, o.owner).find((p) => p.pool === (o.pool ?? o.owner));
+  const entry = source?.entries.find((e) => e.type === o.type && e.strength === o.strength && (e.returned === true) === (o.returned === true));
   return counterNumber({ strength: o.strength, ...(entry?.movement !== undefined ? { movement: entry.movement } : {}) });
+}
+
+/** The small line under a chip: who pays (and whose counter it is, for the Free French Britain builds), the price, and the "rebuild" mark of a returned counter. */
+function caption(o: BuildOption): string {
+  const who = o.pool && o.pool !== o.owner ? `${OWNER_NAMES[o.pool]}, built by ${POWER_NAMES[o.owner]}` : POWER_NAMES[o.owner];
+  return `${who} &middot; ${o.cost} BRPs${o.returned ? ` &middot; <em class="rebuild">rebuild</em>` : ""}`;
 }
 
 export function buildPanel(s: Session, actions: readonly Action[]): string {
@@ -58,7 +68,7 @@ export function buildPanel(s: Session, actions: readonly Action[]): string {
   const warning = surrenderWarningHtml(s); // the note of spec 14 D5, under the build list
   const chosen = options.find((o) => s.build && buildKey(o) === buildKey(s.build));
   const chip = (o: BuildOption) =>
-    `<button data-build="${buildKey(o)}" aria-pressed="${o === chosen}">${counterIcon(o.type)} ${numbers(s, o)}<br><small>${POWER_NAMES[o.owner]} &middot; ${o.cost} BRPs</small></button>`;
+    `<button data-build="${buildKey(o)}" aria-pressed="${o === chosen}">${counterIcon(o.type)} ${numbers(s, o)}<br><small>${caption(o)}</small></button>`;
   const boxes = chosen ? chosen.places.filter((p) => !s.ctx.map.hexes[p]) : [];
   const hint = !chosen
     ? "Pick a counter to build (Ref 11.6). It costs its factors times the price per factor, within this turn's spending limit."
