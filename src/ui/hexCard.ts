@@ -3,6 +3,7 @@ import { combatOf } from "../engine/combat-record";
 import type { GameContext } from "../engine/context";
 import { controllerOf } from "../engine/control";
 import { GROUND_COMBAT_TYPES } from "../engine/attack-rules";
+import { grayUntil, turnWords } from "../engine/naval-record";
 import { movesOf } from "../engine/move-record";
 import { OWNER_NAMES } from "../engine/nations";
 import type { ForceOwner, GameState, Unit, UnitType } from "../engine/types";
@@ -84,6 +85,8 @@ function counter(ctx: GameContext, state: GameState, u: Unit): CardCounter {
   const notes = [defends(u.type) ? "defends" : "does not defend"];
   if (movesOf(state).moved.includes(u.id)) notes.push("moved");
   if (u.type === "air" && airOf(state).staged.includes(u.id)) notes.push("changed base this turn");
+  const gray = u.type === "fleet" ? grayUntil(state, u.id) : undefined; // spec 17 R5, RB7
+  if (gray) notes.push(`Rebuilt: cannot act until ${turnWords(gray)}.`);
   const combat = combatOf(state);
   if (combat.attacked.includes(u.id)) notes.push("has attacked");
   for (const a of combat.advances) if (a.units.includes(u.id)) notes.push(`can advance into ${placeName(ctx.map, a.to)}`);
