@@ -10,6 +10,7 @@ import { normaliseAir, tapToAir } from "./airTap";
 import { normaliseAttack, tapToAttack } from "./attackTap";
 import { normaliseChoice } from "./choiceTap";
 import { normaliseMove, tapToMove } from "./moveTap";
+import { normaliseRedeploy, tapToRedeploy } from "./redeployTap";
 import { buildAction, buildKey, parseBuildKey, pickOf } from "./buildView";
 import { parseSiberianKey } from "./siberianCard";
 import { computerSetup, currentSpec, placeTheRest, run, type Session, type TapMode } from "./session";
@@ -34,6 +35,7 @@ export function normaliseMode(s: Session): void {
   normaliseAirMove(s);
   normaliseChoice(s);
   normaliseMove(s);
+  normaliseRedeploy(s);
 }
 
 type Build = Extract<Action, { type: "BUILD" }>;
@@ -91,7 +93,7 @@ export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
   lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
-    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) { if (s.siberian) takeSiberian(s, h.id); else tapToBuild(s, h); }
+    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToRedeploy(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) { if (s.siberian) takeSiberian(s, h.id); else tapToBuild(s, h); }
     return;
   }
   const owner = currentSetupOwner(s.state);
