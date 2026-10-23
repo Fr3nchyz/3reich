@@ -3,7 +3,9 @@ import { angloFrenchStopProblem } from "./anglo-french";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
 import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
+import { breakthroughAfter, legalPlacements, openBreakthrough } from "./breakthrough";
 import { combatOf } from "./combat-record";
+import { exploiterIds } from "./exploit-record";
 import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -18,7 +20,9 @@ import type { GameState, Unit } from "./types";
  * applied at once. An Exchange the owner must allocate waits for ALLOCATE_LOSSES. Survivors may
  * then ADVANCE into a hex the defenders left empty (TODO(verify), attack-rules.ts).
  *
- * Not built yet (TODO(verify)): air and naval support, seaborne invasions, exploitation (7j-7o),
+ * A won attack with armor in it, advanced into, makes a Breakthrough hex (breakthrough.ts, spec 16 R10, R11).
+ *
+ * Not built yet (TODO(verify)): air and naval support, seaborne invasions, exploitation movement and combat (7j-7o),
  * Zones of Control, supply (hooks in attack-rules.ts), control of hexes taken, the loss of
  * fortress status on occupation, and rebuilding eliminated units.
  */
@@ -30,7 +34,7 @@ type AdvanceAction = Extract<Action, { type: "ADVANCE" }>;
 export function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
   const rec = combatOf(state);
   const out = new Map<HexId, Unit[]>();
-  const pool = attackerPool(ctx, state, state.activeSide, rec.attacked);
+  const pool = attackerPool(ctx, state, state.activeSide, [...rec.attacked, ...exploiterIds(state)]); // exploiting armor takes no part in ordinary combat (spec 16 AER13)
   const targets = new Set(pool.flatMap((u) => neighborIds(ctx, u.at)));
   for (const t of [...targets].sort()) {
     if (ONE_ATTACK_PER_HEX && rec.targets.includes(t)) continue;
@@ -110,7 +114,7 @@ function legalAdvances(ctx: GameContext, state: GameState): Action[] {
 
 /** The step's actions: the losses to choose while an Exchange waits, otherwise attacks and advances. */
 export function legalCombatActions(ctx: GameContext, state: GameState): Action[] {
-  return combatOf(state).pending ? legalAllocations(state) : [...legalAttacks(ctx, state), ...legalAdvances(ctx, state)];
+  return combatOf(state).pending ? legalAllocations(state) : [...legalAttacks(ctx, state), ...legalAdvances(ctx, state), ...legalPlacements(ctx, state)];
 }
 
 export function applyAttack(ctx: GameContext, state: GameState, action: AttackAction): ActionResult {
@@ -123,6 +127,8 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   const units = ids.map((id) => state.units[id]!);
   const target = typeof action.target === "string" && Object.hasOwn(ctx.map.hexes, action.target) ? ctx.map.hexes[action.target] : undefined;
   if (!target) return { ok: false, error: `${action.target} is not a hex on the map.` };
+  const exploiting = units.find((u) => exploiterIds(state).includes(u.id));
+  if (exploiting) return { ok: false, error: `${exploiting.id} moved into a Breakthrough hex: it exploits, and takes no part in ordinary combat (spec 16 AER13).` };
   const pool = attackerPool(ctx, state, state.activeSide, rec.attacked);
   const bad = units.find((u) => !pool.includes(u));
   if (bad) return { ok: false, error: `${bad.id} cannot attack: it must be a ground unit of the ${state.activeSide} side in play that has not attacked this turn.` };
@@ -171,6 +177,12 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
     const entered = enterHexes(ctx, next, next.units[id]!, [action.to]);
     next = entered.state;
     events.push(...entered.events);
+  }
+  // A won attack with armor in it, advanced into: the hex is a Breakthrough hex (Ref 12.31; spec 16 R10).
+  if (breakthroughAfter(chance)) {
+    const opened = openBreakthrough(ctx, next, chance);
+    next = opened.state;
+    events.push(...opened.events);
   }
   return { ok: true, state: next, events };
 }

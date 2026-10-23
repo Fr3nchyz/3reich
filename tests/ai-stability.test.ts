@@ -52,6 +52,9 @@ const fnv = (text: string): number => {
 // action list gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds
 // 1, 5 and 2, 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the
 // first difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
+// Hash of 2026-10-23 (ticket 16-9): the 7h list hash of seed 5 changed on purpose (4106130461 before): a won attack with armor in it that is advanced into now makes a
+// Breakthrough, and the lists at 7h gain the PLACE_EXPLOITERS actions (25 of them over the 21 lists). Checked then: with those actions taken out of each list the hash is
+// 4106130461 again, so no attack, advance or loss listed changed. The computer does not place exploiters yet (ticket 16-13), so the action-list hashes are unchanged.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
@@ -135,6 +138,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(4106130461);
+    expect(h).toBe(3846847444);
   });
 });
