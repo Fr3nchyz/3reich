@@ -1,3 +1,5 @@
+import type { GameEvent } from "./action-types";
+import { afterHexTaken } from "./capture";
 import { CONTROL_CHANGING_TYPES, controlMap, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -113,4 +115,21 @@ export function passControl(ctx: GameContext, state: GameState, rule: PassRule):
   }
   passed.toConqueror.sort(byId);
   return { state: { ...state, control }, passed };
+}
+
+/** Enemy counters of the conqueror still standing alone (no ground unit can be there, or the hex would not have passed) in the hexes that passed: fleets move away, the rest is destroyed (capture.ts). Used at a fall and when a kept hex passes on later (conquest-kept.ts). */
+export function sweepPassed(ctx: GameContext, state: GameState, hexes: readonly string[], conquerorSide: Side): { state: GameState; events: GameEvent[] } {
+  let next = state;
+  const events: GameEvent[] = [];
+  for (const hex of hexes) {
+    const loners = Object.values(next.units).filter((u) => u.at === hex && sideInWar(next, u.owner) !== null && sideInWar(next, u.owner) !== conquerorSide);
+    if (loners.length === 0) continue;
+    const taken = afterHexTaken(ctx, next, hex, loners);
+    const out = removeUnits(taken.state, taken.destroy.map((u) => u.id));
+    next = out.state;
+    const swept: RemovedUnit[] = out.removed;
+    if (swept.length > 0) events.push({ type: "UNITS_SWEPT", hex, units: swept }, ...swept.map((u): GameEvent => ({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: hex })));
+    events.push(...taken.events);
+  }
+  return { state: next, events };
 }

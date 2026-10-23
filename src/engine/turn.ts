@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
+import { releaseKept } from "./conquest-kept";
 import { refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
@@ -139,15 +140,18 @@ function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
 
 /** Both Player Turns are done: the Campaign's checkpoint is read, then the scenario ends with its result (Ref 2.0), or the next Game Turn begins at its first part. */
 function endGameTurn(ctx: GameContext, from: GameState): Transition {
-  const state = recordCheckpoint(ctx, from);
+  // Kept hexes whose hostile unit left during the Game Turn pass on before the checkpoint and the result read control (ticket 14-25, TODO(verify) V62).
+  const freed = releaseKept(ctx, from);
+  const state = recordCheckpoint(ctx, freed.state);
   if (turnIndex(state) >= turnIndex(state.lastTurn)) {
     const result = evaluateVictory(ctx, state, "end-of-play");
-    return { state: { ...state, phase: "game-over", result }, events: [{ type: "GAME_OVER", year: state.year, season: state.season, result }] };
+    return { state: { ...state, phase: "game-over", result }, events: [...freed.events, { type: "GAME_OVER", year: state.year, season: state.season, result }] };
   }
   const turn = nextTurn(state);
   // A Spring turn begins with the Year Start Sequence; any other begins at II.A, where a Winter turn looks at the Russian winter (and may roll and ask).
-  if (turn.season === "spring") return { state: { ...state, ...turn, position: { part: "year-start" } }, events: [] };
-  return enterWinter(ctx, { ...state, ...turn });
+  if (turn.season === "spring") return { state: { ...state, ...turn, position: { part: "year-start" } }, events: freed.events };
+  const winter = enterWinter(ctx, { ...state, ...turn });
+  return { state: winter.state, events: [...freed.events, ...winter.events] };
 }
 
 /** Whether the side to move has anything to do at a step whose rules are built. */
