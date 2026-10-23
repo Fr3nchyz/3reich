@@ -1,4 +1,5 @@
 import type { GameEvent, LostReason } from "./action-types";
+import { AIR_COMBAT_RULES } from "./air-combat";
 import { buildCost } from "./construction";
 import { isGone } from "./nations";
 import type { ForceEntry, ForceOwner, GameState, PowerId, Unit } from "./types";
@@ -100,4 +101,42 @@ export function eliminateUnits(state: GameState, ids: readonly string[], reason?
     events.push({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: u.at, ...(reason ? { reason } : {}) }, ...routed.events);
   }
   return { state: next, events, removed };
+}
+
+/**
+ * The counters that `factors` lost air factors come back as (spec 17 R3; TODO(verify) RB17): the counter sizes of spec 09 (`AIR_COMBAT_RULES.counterSizes`),
+ * largest first, so 4 factors come back as a 3 and a 1; a 2 is a single 2 when the size exists. Nothing for fewer than 1 factor.
+ */
+export function airCounterParts(factors: number, sizes: readonly number[] = AIR_COMBAT_RULES.counterSizes): number[] {
+  const bySize = [...sizes].filter((s) => s >= 1).sort((a, b) => b - a);
+  const parts: number[] = [];
+  let left = Math.max(0, Math.floor(factors));
+  for (const size of bySize) {
+    while (left >= size) {
+      parts.push(size);
+      left -= size;
+    }
+  }
+  return parts;
+}
+
+/**
+ * The air factors an air unit lost without being destroyed (it broke down to a smaller counter, spec 09 R6) go back to the pool as buildable air factors, in
+ * the sizes of `airCounterParts`, marked returned like a lost unit (spec 17 R3, RB4; TODO(verify) RB17), under the same R4 cases as `lossFate`: out of the game,
+ * a minor that is not active, no pool: lost for good, one UNIT_LOST_FOR_GOOD for all the factors. `unit` is the counter as it stood before the loss (its id,
+ * owner, nationality, movement and place); the caller has already reduced or kept it on the map. A unit lost whole is `routeLosses`, not this: no factor is counted twice.
+ * Fleets never come here: the factors a fleet loses in a break-down stay lost for good (RB5; the break-down itself, ticket 12-9, is not built).
+ */
+export function routeLostAirFactors(state: GameState, unit: Unit, factors: number): { state: GameState; events: GameEvent[] } {
+  if (unit.type !== "air" || factors < 1) return { state, events: [] };
+  const what = { unitId: unit.id, owner: unit.owner, unitType: unit.type, at: unit.at };
+  const fate = lossFate(state, { ...unit, strength: factors });
+  if (!("pool" in fate)) return { state, events: [{ type: "UNIT_LOST_FOR_GOOD", ...what, strength: factors, reason: fate.lost }] };
+  let next = state;
+  const events: GameEvent[] = [];
+  for (const part of airCounterParts(factors)) {
+    next = addToPool(next, fate.pool, { ...unit, strength: part });
+    events.push({ type: "UNIT_RETURNED_TO_POOL", ...what, strength: part, pool: fate.pool });
+  }
+  return { state: next, events };
 }
