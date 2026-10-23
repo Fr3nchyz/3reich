@@ -276,6 +276,27 @@ Added 2026-10-17 from `docs/specs/16-attrition-exploitation-redeployment.md` (ro
 | AER44 | spec 16 R20 | Future enemy; interception of redeployed units | A future enemy not yet at war is not an enemy for the adjacency test (Ref 4.5); redeployed units cannot be intercepted (Ref 11.72); nothing in the engine intercepts ground units. | Listed ("Attrition, exploitation, redeployment and fortress open items"). |
 | AER45 | spec 16 R2 | Libyan cap and Attrition totals | German units unsupplied only because of the Libyan cap count in Attrition totals (Ref 31.0); the cap itself is not built. | Listed ("Attrition, exploitation, redeployment and fortress open items"). |
 
+### Lost units come back (spec 17, draft; not in `src/` yet, so not counted in the summary above)
+
+Added 2026-10-23 from `docs/specs/17-rebuild-eliminated-units.md` (rows RB1 to RB14; no id collides, and "RB" is not a hex name). The rule numbers are the spec's (R1 to R6). The manuals could not be downloaded when the spec was written; the rule text is what earlier specs recorded from the PC Reference Manual 11.6 to 11.64, 14.0, 17.1, 17.3, 20.6, 21.3, 23.1 and 35.0 and the Operations Manual 5.47, paraphrased; ticket 17-0 re-reads it. Each row has a matching bullet in `docs/RULES.md` ("Lost units come back open items"). Related existing rows: V10 (conquered Powers), V16 (Italian naval factors), V58 (the Russian Force Pool), MC18 (Minor-Ally losses), O6 (placement of builds).
+
+| ID | Where | Name | What is assumed | In RULES.md open questions? |
+|---|---|---|---|---|
+| RB1 | spec 17 R1 | Which losses send a unit back | Every kind of loss alike (battle, Attrition, air combat, ground support not used, the sweep of units left alone, unsupplied, overstack, British units in Vichy territory); only the list of R4 makes a loss permanent. | Listed ("Lost units come back open items"). |
+| RB2 | spec 17 R2 | When it can be bought back | At the next step 8b after the loss, even in the Player Turn it was lost. | Listed ("Lost units come back open items"). |
+| RB3 | spec 17 R1 | What goes back, and where | The counter as it was (type, factors, movement), to the pool of its own nationality, with no "in or after" date. | Listed ("Lost units come back open items"). |
+| RB4 | spec 17 R3 | Air factors lost without the unit being destroyed | They go back to the pool as buildable air factors (Ref 20.6, 11.61), offered in the counter sizes of spec 09 (`AIR_COUNTER_SIZES`). | Listed ("Lost units come back open items"). |
+| RB5 | spec 17 R3 | Fleets that break down | Only a whole 9-factor fleet that is sunk goes back; a partial fleet sunk, and the factors lost in a break-down, are lost for good (Ref 11.62). | Listed ("Lost units come back open items"). |
+| RB6 | spec 17 R5 | How long a gray fleet waits | "A year" is four Game Turns: rebuilt in Fall 1940, it can first act in Fall 1941 (Ref 11.62). | Listed ("Lost units come back open items"). |
+| RB7 | spec 17 R5 | What a gray fleet is | It does nothing a fleet can do (supply, intercept, missions, escort, change base) but stands in its port, counts for the port's capacity and can be attacked or captured. | Listed ("Lost units come back open items"). |
+| RB8 | spec 17 R5 | Which fleets are gray | Only fleets bought back from the pool; fleets from the scenario's Allowable Builds only wait out the Game Turn they are built in (Ref 21.3). | Listed ("Lost units come back open items"). |
+| RB9 | spec 17 R4 | Active Minor-Allies' losses | They go back to the minor's own pool and wait there for ticket 15-19 (Ref 17.1, 17.3); a loss while the minor is not active is for good. Answers MC18. | Listed ("Lost units come back open items"). |
+| RB10 | spec 17 R4 | Free French losses | Rebuilt by Britain, at its cost, in Britain (Ref 35.0); never their fleets (Ref 11.62). | Listed ("Lost units come back open items"). |
+| RB11 | spec 17 R4 | Vichy losses | Ground and air losses go to the Vichy pool and follow RB9; never its fleets (Ref 11.62). | Listed ("Lost units come back open items"). |
+| RB12 | spec 17 R6 | The Siberian Transfer and returned units | The Transfer takes returned Russian infantry and armor like any other entry of the pool (Ref 11.63; Ops 5.47b). Answers V58. | Listed ("Lost units come back open items"). |
+| RB13 | spec 17 R2 | Limits on rebuilding | None beyond the money, the spending limit and the counters that exist; a nation never has more counters of a kind than its scenario lists. | Listed ("Lost units come back open items"). |
+| RB14 | spec 17 R4 | A unit with no pool to go back to | A unit whose nation is out of the game or has no pool when it is destroyed is lost for good. | Listed ("Lost units come back open items"). |
+
 ### Air units (spec 09)
 
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
