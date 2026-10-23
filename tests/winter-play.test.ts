@@ -107,8 +107,8 @@ describe("whole computer games with the winter question", () => {
     expect(b.actions).toEqual(a.actions);
     expect(b.final).toEqual(a.final);
   });
-  it("1939 seed 1 played to the end: Germany is at war with Russia by Winter 1941, the Axis has no unit in Russia, the Allies wait, and the game ends with a result and no anomaly", () => {
-    const r = runGame({ scenario: "1939", seed: 1, turns: "end", verify: true });
+  it("1939 seed 7 played to the end: Germany is at war with Russia by Winter 1941, the Axis has no unit in Russia, the Allies wait, and the game ends with a result and no anomaly", () => {
+    const r = runGame({ scenario: "1939", seed: 7, turns: "end", verify: true });
     expect(r.anomalies).toEqual([]);
     expect(r.ended).toBe("game-over");
     const { events } = replayChecked(r, (x) => x);

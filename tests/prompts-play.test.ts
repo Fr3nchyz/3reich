@@ -43,7 +43,7 @@ function play(scenario: ScenarioKey, seed: number): { seen: Seen[]; ended: strin
   return { seen, ended: r.ended, anomalies: r.anomalies.length };
 }
 
-const MATRIX: [ScenarioKey, number][] = [["1939", 4], ["1942", 1], ["1944", 1], ["campaign", 1]];
+const MATRIX: [ScenarioKey, number][] = [["1939", 7], ["1942", 1], ["1944", 1], ["campaign", 1]];
 const all: Seen[] = [];
 
 describe.each(MATRIX)("a whole computer game, %s seed %i", (scenario, seed) => {

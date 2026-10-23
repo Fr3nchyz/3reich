@@ -93,6 +93,16 @@ export function resultText(r: GameResult): string {
   return v ? `${verdictName(v)} (Objectives: Axis ${v.objectives.axis}, Allies ${v.objectives.allies}, nobody ${v.objectives.nobody}${v.siberian ? ", Free Siberian Transfer tables" : ""})` : "none";
 }
 
+/** "Options chosen per Front" (spec 16 Part E): for each Front, how many times each Option was chosen over the game ("western: offensive 3, attrition 9, defensive 20"). */
+export function optionsPerFront(turns: readonly { frontOptions: string[] }[]): string {
+  const count = new Map<string, number>();
+  for (const e of turns.flatMap((t) => t.frontOptions)) {
+    const key = e.split(" ").slice(1).join(" "); // drop the side
+    count.set(key, (count.get(key) ?? 0) + 1);
+  }
+  return ["western", "eastern", "mediterranean"].map((f) => `${f}: ${["offensive", "attrition", "defensive"].map((o) => `${o} ${count.get(`${f} ${o}`) ?? 0}`).join(", ")}`).join("; ");
+}
+
 /** The Markdown report of one game. It holds nothing that varies between runs of the same seed (the runtime is left out). */
 export function gameReport(r: GameResult): string {
   const o = r.options;
@@ -110,6 +120,7 @@ export function gameReport(r: GameResult): string {
     `- Ended: **${r.ended}** (${r.ended === "game-over" ? "the scenario's last Game Turn was played" : r.ended === "turn-limit" ? `the limit of ${o.turns} Game Turns was reached` : "stopped by an anomaly"}); ${t.turnsPlayed} complete Game Turns, ${first} to ${last}; ${r.actions.length} actions (${r.setupActions} of them setup).`,
     `- Result: ${resultText(r)}`,
     `- Conquests (${r.final.conquests?.length ?? 0}): ${conquestList(r.final).join("; ") || "none"}.`,
+    `- Options chosen per Front (${r.turns.reduce((n, x) => n + x.frontOptions.length, 0)}): ${optionsPerFront(r.turns)}.`,
     `- Wars declared (${t.wars.length}): ${t.wars.join("; ") || "none"}.`,
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (of them out of supply ${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}; factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,

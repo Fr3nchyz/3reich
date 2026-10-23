@@ -137,7 +137,7 @@ describe("whole computer games", () => {
     expect(seen.at8a).toBe(0);
     expect(result.final.siberian).toBeUndefined();
     expect(result.final.result!.siberian).toBe(false);
-    expect(result.actions).toHaveLength(554);
+    expect(result.actions).toHaveLength(708);
   }, 240_000);
 
   it("the 1944 scenario is exempt: no unit, no stop", () => {

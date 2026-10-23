@@ -45,8 +45,9 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
   return { positions, hash };
 }
 
+// Both snapshots changed on purpose in ticket 16-1 (the computer chooses Front Options and pays for the Offensive Option, so its games differ; see tests/ai-stability.test.ts): 97 positions and hash 3938214651 for 1939 seed 2, 110 and 1455442234 for 1942 seed 1.
 // The 1942 snapshot changed on purpose in ticket 14-18: the computer takes three units in the Free Siberian Transfer in Spring 1942 (see tests/ai-stability.test.ts); with its policy off the hash is the old one.
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 108, hash: 1416377456 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 111, hash: 872140485 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 97, hash: 3938214651 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 1455442234 }), 120_000);
 });
