@@ -92,7 +92,10 @@ describe("eliminating overstacked units (steps 6g and 9j)", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(Object.keys(r.state.units)).toEqual(["u1", "u3"]);
-    expect(r.events).toEqual([{ type: "OVERSTACK_ELIMINATED", unitId: "u2", owner: "germany", at: "M33" }]);
+    expect(r.events).toEqual([
+      { type: "OVERSTACK_ELIMINATED", unitId: "u2", owner: "germany", at: "M33" },
+      { type: "UNIT_RETURNED_TO_POOL", unitId: "u2", owner: "germany", unitType: "infantry", strength: 5, at: "M33", pool: "germany" }, // spec 17 R1
+    ]);
     expect(overstacks(CTX, r.state)).toEqual([]);
   });
 

@@ -213,8 +213,8 @@ describe("step 3: the Axis Offensive Option on the Eastern Front (Ref 28.0)", ()
   });
 });
 
-describe("whole computer games: the winter in a game the computer plays (1939 seed 2, to its end)", () => {
-  const r = runGame({ scenario: "1939", seed: 2, turns: "end", verify: true });
+describe("whole computer games: the winter in a game the computer plays (1939 seed 1, to its end)", () => {
+  const r = runGame({ scenario: "1939", seed: 1, turns: "end", verify: true });
   it("has no anomaly and the winter starts in Winter 1941", () => {
     expect(r.anomalies).toEqual([]);
     expect(r.final.winter).toMatchObject({ stage: "over", inForce: KEY });

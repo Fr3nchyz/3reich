@@ -1,7 +1,7 @@
 import type { Action } from "../engine/actions";
 import { buildCost } from "../engine/construction";
 import { POWER_NAMES } from "../engine/nations";
-import type { PowerId, UnitType } from "../engine/types";
+import type { ForceOwner, PowerId, UnitType } from "../engine/types";
 import { counterNumber } from "./mapStyle";
 import { counterIcon } from "./mapSymbols";
 import { surrenderWarningHtml } from "./surrenderCard";
@@ -16,19 +16,29 @@ export interface BuildOption extends BuildPick {
   places: string[];
 }
 
-export const buildKey = (p: BuildPick) => `${p.owner}:${p.type}:${p.strength}`;
+/** "owner:type:strength", then ":returned" for a counter back in the pool and ":pool=<owner>" for another pool's counter (spec 17 R2). */
+export const buildKey = (p: BuildPick) => `${p.owner}:${p.type}:${p.strength}${p.returned ? ":returned" : ""}${p.pool ? `:pool=${p.pool}` : ""}`;
 
 export function parseBuildKey(key: string): BuildPick {
-  const [owner, type, strength] = key.split(":");
-  return { owner: owner as PowerId, type: type as UnitType, strength: Number(strength) };
+  const [owner, type, strength, ...marks] = key.split(":");
+  const pool = marks.find((m) => m.startsWith("pool="))?.slice("pool=".length);
+  return { owner: owner as PowerId, type: type as UnitType, strength: Number(strength), ...(marks.includes("returned") ? { returned: true as const } : {}), ...(pool ? { pool: pool as ForceOwner } : {}) };
 }
+
+/** The pick a BUILD action makes. */
+export const pickOf = (a: Extract<Action, { type: "BUILD" }>): BuildPick => ({ owner: a.owner, type: a.unit.type, strength: a.unit.strength, ...(a.unit.returned ? { returned: true as const } : {}), ...(a.pool ? { pool: a.pool } : {}) });
+
+/** The BUILD action that puts this pick at `at`. */
+export const buildAction = (p: BuildPick, at: string): Extract<Action, { type: "BUILD" }> => ({
+  type: "BUILD", owner: p.owner, ...(p.pool ? { pool: p.pool } : {}), unit: { type: p.type, strength: p.strength, ...(p.returned ? { returned: true as const } : {}) }, at,
+});
 
 /** The distinct builds among the legal actions, in the order they come, with their places. */
 export function buildOptions(actions: readonly Action[]): BuildOption[] {
   const options = new Map<string, BuildOption>();
   for (const a of actions) {
     if (a.type !== "BUILD") continue;
-    const pick: BuildPick = { owner: a.owner, type: a.unit.type, strength: a.unit.strength };
+    const pick = pickOf(a);
     const option = options.get(buildKey(pick)) ?? { ...pick, cost: buildCost(pick.type, pick.strength) ?? 0, places: [] };
     option.places.push(a.at);
     options.set(buildKey(pick), option);
@@ -38,7 +48,7 @@ export function buildOptions(actions: readonly Action[]): BuildOption[] {
 
 /** The numbers printed on the counter this build makes ("3-4"), from the nation's Allowable Builds. */
 function numbers(s: Session, o: BuildPick): string {
-  const entry = s.state.pools[o.owner]?.allowableBuilds.find((e) => e.type === o.type && e.strength === o.strength);
+  const entry = s.state.pools[o.pool ?? o.owner]?.allowableBuilds.find((e) => e.type === o.type && e.strength === o.strength && (e.returned === true) === (o.returned === true));
   return counterNumber({ strength: o.strength, ...(entry?.movement !== undefined ? { movement: entry.movement } : {}) });
 }
 

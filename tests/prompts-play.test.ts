@@ -14,6 +14,7 @@ import { runGame, type Chooser } from "../scripts/selfplay/runner";
 import { SCENARIOS, type ScenarioKey } from "../scripts/selfplay/scenarios";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { createSession } from "../src/ui/session";
+import { withoutRussianRebuilds } from "./helpers-surrender";
 
 // Spec 14 ticket 14-19: the computer answers every new prompt (II.A, 8a, 10a), in every scenario, whoever is human, and the three policies are constants in one place.
 
@@ -30,12 +31,15 @@ function promptOf(ctx: GameContext, state: GameState): Kind | null {
 const ANSWER: Record<Kind, Action["type"]> = { winter: "CHOOSE_WINTER", transfer: "SIBERIAN_TRANSFER", surrender: "SURRENDER_ANSWER" };
 const EXPECTED_SIDE: Record<Kind, Side> = { winter: "allies", transfer: "allies", surrender: "axis" };
 
-/** A whole computer game; every prompt state is recorded with the computer's answer, and the game must never be left without a legal action. */
-function play(scenario: ScenarioKey, seed: number): { seen: Seen[]; ended: string; anomalies: number } {
+/**
+ * A whole computer game; every prompt state is recorded with the computer's answer, and the game must never be left without a legal action. `view` is what the
+ * computer sees: the position itself, or (`withoutRussianRebuilds`) the position without the Russian losses back in the pool, so that they are never built nor taken again.
+ */
+function play(scenario: ScenarioKey, seed: number, view: (s: GameState) => GameState = (s) => s): { seen: Seen[]; ended: string; anomalies: number } {
   const seen: Seen[] = [];
   const choose: Chooser = (ctx, state, cfg) => {
-    const d = chooseAction(ctx, state, cfg); // null (no legal action) is the runner's "stuck" anomaly, counted below
-    const kind = promptOf(ctx, state);
+    const d = chooseAction(ctx, view(state), cfg); // null (no legal action) is the runner's "stuck" anomaly, counted below
+    const kind = promptOf(ctx, view(state)); // the prompt the computer is shown: with Russia's losses left out, an 8a that offers only those is no prompt
     if (kind && d) seen.push({ kind, state, side: sideToAct(state), action: d.action });
     return d;
   };
@@ -43,11 +47,13 @@ function play(scenario: ScenarioKey, seed: number): { seen: Seen[]; ended: strin
   return { seen, ended: r.ended, anomalies: r.anomalies.length };
 }
 
-const MATRIX: [ScenarioKey, number][] = [["1939", 7], ["1942", 1], ["1944", 1], ["campaign", 1]];
+// The last row since spec 17 (ticket 17-1): with lost units rebuilt no plain game reaches Russia's offer to surrender (tests/helpers-surrender.ts), so one game is
+// played with a computer that never rebuilds a Russian loss nor takes one in the Transfer (legal choices); 1939 seed 1 then reaches the offer.
+const MATRIX: [ScenarioKey, number, string][] = [["1939", 4, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["1939", 1, " (Russian losses not used again)"]];
 const all: Seen[] = [];
 
-describe.each(MATRIX)("a whole computer game, %s seed %i", (scenario, seed) => {
-  const g = play(scenario, seed);
+describe.each(MATRIX)("a whole computer game, %s seed %i%s", (scenario, seed, variant) => {
+  const g = play(scenario, seed, variant ? withoutRussianRebuilds : undefined);
   all.push(...g.seen);
   it("runs to the end with no anomaly and never has an empty legal list (the runner reports a state with no action as stuck)", () => {
     expect(g.anomalies).toBe(0);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { chooseAction } from "../src/ai";
 import { createMemory } from "../src/ai/memory";
-import { applyAction, legalActions } from "../src/engine/actions";
+import { applyAction, legalActions, replay } from "../src/engine/actions";
 import { autoSetup } from "../src/engine/autosetup";
 import { newGame, turnIndex } from "../src/engine/game";
 import { MAP } from "../src/data/map";
@@ -39,20 +39,26 @@ const fnv = (text: string): number => {
 // Turn the game now waits at step 8a and the computer takes three units (and ends the step): the action list gains SIBERIAN_TRANSFER and END_STEP actions at action 273 (counting
 // the setup actions) and everything after differs. With the computer's policy off (`SIBERIAN_TAKE_ALL = false`) the list differs only by the END_STEP at 8a. The other hashes
 // are unchanged: four Game Turns of the 1939 scenario end before Winter 1941, the first Game Turn with a Transfer (spec 14, "As built (ticket 14-18)").
-// Hashes of 2026-10-23 (ticket 16-1): the computer now chooses the Front Options at step 3 (src/ai/options.ts), paying 15 BRPs for each Offensive Option it takes, so the action
-// list gains SELECT_FRONT_OPTION actions from the first Axis step 3 (action 117 in 1939, 190 in 1942) and the BRPs it has for builds fall; every hash below changed on purpose: 1939 seeds 1, 5
-// and 2, 1942 seed 1, the 7h list hash of 1939 seed 5, and the two snapshots of tests/supply-snapshot.test.ts. Checked then with npm run compare-games: the first difference of every one of the 22
-// games is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3, and nothing before it differs.
+// Hashes of 2026-10-23 (ticket 17-1, spec 17): a lost unit now goes back to its pool and the computer rebuilds it at step 8b, so every hash changed on purpose: 1939
+// seed 1 (3772813808 before), 1942 seed 1 (3620992269), 1939 seed 5 (2925722605), 1939 seed 2 (4061975126) and the 7h list hash of seed 5 (1192667303). Checked
+// then, by playing the same games on the old and the new engine and comparing every recorded action: in each the first action to differ is a BUILD of a returned
+// counter (counting the setup actions: 1939 seed 1 at 241, a French 1-factor replacement where the old game ended step 8b; 1942 seed 1 at 366; 1939 seed 5 at 216
+// and seed 2 at 236), and nothing before it differs; the first 12 lists at 7h are the same, and the 13th comes after the build of seed 5. The same holds for the 22 games of
+// `npm run compare-games` (1939 seeds 1 to 10, Campaign, 1942 and 1944 seeds 1 to 4): every first difference is a BUILD of a returned counter.
+// Hashes of 2026-10-23 (ticket 16-1, on top of 17-1 above): the computer chooses the Front Options at step 3 (src/ai/options.ts) and pays 15 BRPs for each Offensive Option, so the action list
+// gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds 1, 5 and 2,
+// 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the first
+// difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(4208581170));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(540301765));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2816231999));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(2795409320));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(2526981697);
-    expect(hashOf("1939", 2, 4)).toBe(2053279314);
+    expect(hashOf("1939", 5, 4)).toBe(4168194497);
+    expect(hashOf("1939", 2, 4)).toBe(1927182665);
   });
-  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(4208581170));
+  it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(2816231999));
 });
 
 // Seeds 5, 12 and 13: on the computer before the waiting at the border (git history: main at 410b830) the Axis made no move and no attack in
@@ -65,7 +71,12 @@ describe("the Axis does not sit idle from Fall 1940 to Summer 1941 (1939 scenari
       expect(r.ended).toBe("game-over");
       // Ticket 14-7: when France has fallen before Fall 1940 (seeds 5 and 13 now) the Axis has no enemy on the Western Front left to move against and the
       // computer does nothing in Fall 1940 (the march to the border starts in Winter 1940, as in the other seeds); that Game Turn is not asked to be busy.
-      const franceFell = r.final.conquests?.some((c) => c.country === "france" && (c.at.year === 1939 || (c.at.year === 1940 && (c.at.season === "spring" || c.at.season === "summer")))) ?? false;
+      // Ticket 17-1: in seed 5 France now falls in Fall 1940 itself, in the Allied Player Turn that comes first (the Allies hold the Initiative), so the test asks
+      // whether France fell before the Axis Player Turn of Fall 1940 began, read from the game's events.
+      const events = replay({ map: MAP, scenario: SCENARIOS["1939"] }, r.initial, r.actions).events;
+      const axisFall1940 = events.findIndex((e) => e.type === "PLAYER_TURN_STARTED" && e.year === 1940 && e.season === "fall" && e.side === "axis");
+      const fallOfFrance = events.findIndex((e) => e.type === "COUNTRY_CONQUERED" && e.country === "france");
+      const franceFell = fallOfFrance >= 0 && fallOfFrance < axisFall1940;
       const asked = franceFell ? ["Winter 1940", "Spring 1941", "Summer 1941"] : ["Fall 1940", "Winter 1940", "Spring 1941", "Summer 1941"];
       const stretch = r.turns.filter((t) => asked.includes(t.label));
       expect(stretch).toHaveLength(asked.length);
@@ -121,6 +132,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(2577164483);
+    expect(h).toBe(4106130461);
   });
 });

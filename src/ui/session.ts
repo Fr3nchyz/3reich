@@ -36,11 +36,13 @@ const MAX_SETUP_OWNERS = 20;
 /** What a tap on the map does during your setup: put the chosen counter down, or pick one up. */
 export type TapMode = "place" | "remove";
 
-/** A build chosen at step 8b: who builds which counter. */
+/** A build chosen at step 8b: who builds which counter; `returned` and `pool` as in the BUILD action (a counter back in the pool, spec 17 R2; Britain building Free French losses). */
 export interface BuildPick {
   owner: PowerId;
   type: UnitType;
   strength: number;
+  returned?: true;
+  pool?: ForceOwner;
 }
 
 /** A counter in a setup pool, with how many are left. */
@@ -172,6 +174,9 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "UNIT_ELIMINATED":
       if (swept.has(e.unitId)) return null;
       return `Eliminated${e.reason === "unsupplied" ? " (out of supply)" : ""}: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
+    case "UNIT_RETURNED_TO_POOL":
+    case "UNIT_LOST_FOR_GOOD":
+      return null; // where a lost unit went (spec 17): its log line is ticket 17-4's
     case "LOSSES_CHOSEN":
       return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":

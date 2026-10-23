@@ -45,9 +45,12 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
   return { positions, hash };
 }
 
-// Both snapshots changed on purpose in ticket 16-1 (the computer chooses Front Options and pays for the Offensive Option, so its games differ; see tests/ai-stability.test.ts): 97 positions and hash 3938214651 for 1939 seed 2, 110 and 1455442234 for 1942 seed 1.
 // The 1942 snapshot changed on purpose in ticket 14-18: the computer takes three units in the Free Siberian Transfer in Spring 1942 (see tests/ai-stability.test.ts); with its policy off the hash is the old one.
+// Both snapshots changed on purpose in ticket 17-1 (spec 17): lost units come back to the pool and the computer rebuilds them. 1939 seed 2 was 108 positions and hash
+// 1416377456, 1942 seed 1 hash 872140485. Checked then on the old and the new engine: the first action to differ is a BUILD of a returned counter (1939: the 118th
+// action of play, 1942: the 179th) and the first 32 positions of 1939 and 85 of 1942 are the same; the first that differs comes after that build.
+// Both snapshots changed again on purpose in ticket 16-1 (the computer chooses Front Options and pays for the Offensive Option; see tests/ai-stability.test.ts): 1939 seed 2 was 114 positions, hash 1723459913; 1942 seed 1 was 111 positions, hash 1231100402.
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 97, hash: 3938214651 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 1455442234 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 97, hash: 913067668 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2332416509 }), 120_000);
 });
