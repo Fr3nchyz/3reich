@@ -1,12 +1,12 @@
 // PreToolUse hook: before any `git push`, run the repo's checks and block the push if they fail.
 import { execSync } from 'node:child_process'
-import { pushDir, unsignedCommits } from './trailer-check.mjs'
+import { isPush, pushDir, unsignedCommits } from './trailer-check.mjs'
 
 let raw = ''
 for await (const chunk of process.stdin) raw += chunk
 const command = JSON.parse(raw || '{}').tool_input?.command ?? ''
 
-if (/\bgit\s+push\b/.test(command)) {
+if (isPush(command)) {
   const unsigned = unsignedCommits(pushDir(command))
   if (unsigned.length > 0) {
     console.error(`Blocked: these commits lack the Claude-Session trailer line (CLAUDE.md, Commits): ${unsigned.join(' | ')}. Add a new commit or redo the merge with the trailer lines in its message; never amend a pushed commit.`)

@@ -1,6 +1,9 @@
 // Every commit a session pushes must end with its Claude-Session trailer (CLAUDE.md, "Commits"). A merge made with `--no-edit` is the usual way to lose it.
 import { execFileSync } from 'node:child_process'
 
+/** Whether the command pushes: `git push` or `git -C <dir> push`. */
+export const isPush = (command) => /\bgit\s+(?:-C\s+(?:"[^"]+"|'[^']+'|\S+)\s+)?push\b/.test(command)
+
 /** The directory a push command runs in: the last `cd <dir>` before it, or `git -C <dir> push`, else the current one. */
 export function pushDir(command) {
   const c = /\bgit\s+-C\s+("[^"]+"|'[^']+'|\S+)\s+push\b/.exec(command)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { missingTrailer, pushDir } from "../scripts/claude/trailer-check.mjs";
+import { isPush, missingTrailer, pushDir } from "../scripts/claude/trailer-check.mjs";
 
 // CLAUDE.md "Commits": every commit ends with the Co-Authored-By and Claude-Session lines; the push gate refuses a push that would publish one without.
 const rec = (subject: string, body: string) => `abc\x00${subject}\x00${body}\x01`;
@@ -16,6 +16,13 @@ describe("push gate: Claude-Session trailer", () => {
   });
   it("is empty for an empty range", () => {
     expect(missingTrailer("")).toEqual([]);
+  });
+  it("sees a push in both forms, and nothing else", () => {
+    expect(isPush("cd /x && git push -u origin a")).toBe(true);
+    expect(isPush("git -C '/home/user/3reich-wt/b' push origin b")).toBe(true);
+    expect(isPush("git -C /x push")).toBe(true);
+    expect(isPush("git status && git log")).toBe(false);
+    expect(isPush("git -C /x pull")).toBe(false);
   });
   it("finds the directory the push runs in", () => {
     expect(pushDir("cd /home/user/3reich-wt/a && git push -u origin a")).toBe("/home/user/3reich-wt/a");
