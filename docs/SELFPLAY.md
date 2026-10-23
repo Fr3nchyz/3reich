@@ -36,6 +36,14 @@ Measurements made with it, effects off against on and the computer's supply rule
 
 The report's summary also lists the *idle* Player Turns: those in which a side with 10 or more ground units on the map neither moved a unit nor attacked (the comparison table counts them). It counts every ground unit, including ones that can reach nothing (a garrison on an island), so a few idle Allied turns are normal; a long run of idle turns for a side with units on the main front is what to look into. The summary also lists *churn*: a side that moves 5 or more units without a single attack for 3 or more Game Turns in a row, which is what a computer that marches without fighting looks like (a march to a border before a declaration of war shows up here too).
 
+## Old against new: `npm run compare-games`
+
+```sh
+npm run compare-games [-- --base <git ref>] [--quick]
+```
+
+Plays the standard 22 games to their end (1939 seeds 1 to 10; Campaign, 1942 and 1944 seeds 1 to 4) on the base (default `origin/main`, checked out in a temporary worktree that is removed afterwards) and on the current checkout, uncommitted changes included, both at once. It then compares every recorded action of each pair. One line per game: `identical`, or the index of the first action that differs with the old and the new action, and the result of each side. `--quick` plays six games (1939 seeds 1 to 3, seed 1 of the others). It takes about a minute (`--quick`: 10 to 25 s). Exit code 1 when a game of the checkout has an anomaly its base game did not have (anomalies already on the base are listed but do not fail), 2 for a bad command line; differences are reported, not failures. Builders paste its summary in the pull request and the reviewer re-runs it (CLAUDE.md).
+
 ## Anomalies
 
 A run never loops and never throws. It stops the game and lists the problem when it sees:

@@ -94,7 +94,7 @@ test("random play at phone size: every scenario, both sides, new games between",
           if (await toast()) problems.push(`${tag}: toast after a build tap: ${await toast()}`);
           if ((await page.locator("g.units > g").count()) > before) builds++;
         }
-        const last = page.locator(".actions button[data-action]").last();
+        const last = page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last(); // step 8a: the Free Siberian Transfer card's closing button
         if (!(await last.count())) { problems.push(`${tag}: no move-on button at "${turn}"`); break; }
         const label = (await last.innerText()).trim();
         await last.click();
