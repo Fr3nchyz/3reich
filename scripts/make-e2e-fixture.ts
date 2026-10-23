@@ -18,6 +18,8 @@ import { setupView } from "../src/ui/session";
  * Writes tests/e2e/fixtures/axis-at-7h.json (and the other fixtures below): the actions of a 1939 game from the first setup action to step 7h of the first Axis Player Turn, with
  * attacks on offer (the computer plays the Axis moves). The browser tests load it with the `?e2e` test hook (src/ui/e2eLoad.ts) so they do not
  * click through a dozen steps to reach the fighting. Run: npx vite-node scripts/make-e2e-fixture.ts
+ * Since spec 17 (lost units come back) the computer plays different games, so a run rewrites every fixture with other games than the committed ones (made before
+ * spec 17). Regenerate only when a fixture must change, and run the browser specs that read the regenerated files.
  */
 const SEED = 4;
 const s = newSession(SCENARIO_1939, "allies", SEED);
@@ -81,7 +83,7 @@ console.log("surrender fixture: seed", offerSeed, ",", offer.length, "actions");
 writeFileSync("tests/e2e/fixtures/surrender-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: offerSeed, actions: offer }));
 
 // tests/e2e/fixtures/surrender-build.json (spec 14, ticket 14-16): a whole game of the computer (1939, seed 5, no change to the scenario) cut at the first time the Allied
-// Player Turn stands at step 8b with the offer to surrender on its way (Summer 1941: 13 more Russian factors would stop it). Loaded with the `?e2e` hook for the Allies, who
+// Player Turn stands at step 8b with the offer to surrender on its way (the shortfall depends on the game found; the committed fixture, made before spec 17, shows 13). Loaded with the `?e2e` hook for the Allies, who
 // read the construction warning, build a Russian unit and watch the number fall. `shortfall` is the number the warning must show at first.
 const warnCtx = { map: MAP, scenario: SCENARIO_1939 };
 let shortfall = 0;
