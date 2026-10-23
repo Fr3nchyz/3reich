@@ -211,6 +211,10 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
     }
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
+    case "BREAKTHROUGH":
+      return `Breakthrough at ${placeName(ctx.map, e.hex)}${e.placeable.length > 0 ? `: ${e.placeable.length} armor unit${e.placeable.length === 1 ? "" : "s"} can move in free` : ""}.`;
+    case "EXPLOITERS_PLACED":
+      return `${stackSummary(unitsWithIds(before, e.units))} move into the Breakthrough at ${placeName(ctx.map, e.hex)}.`;
     case "HEX_CONTROL_CHANGED":
       return `${nameOf(e.to)} takes control of ${e.hex}.`;
     case "OVERSTACK_ELIMINATED":

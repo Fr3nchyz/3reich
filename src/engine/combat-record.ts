@@ -26,6 +26,13 @@ export interface PendingLosses {
 export interface AdvanceChance {
   to: HexId;
   units: string[];
+  /**
+   * The battle's attackers included at least one armor unit, alive or not (Ref 12.31; spec 16 R10, AER12): an advance into `to` makes it a Breakthrough hex.
+   * Absent in a chance recorded before ticket 16-9, after a sweep (the vacant-hex case, R16) and when no armor attacked.
+   */
+  armor?: true;
+  /** The hexes the attackers stood in when they attacked (AER12), set with `armor`. */
+  from?: HexId[];
 }
 
 export interface CombatRecord {
