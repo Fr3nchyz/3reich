@@ -3,6 +3,7 @@ import { airMoveAnnouncement } from "./airMoveView";
 import { announcement } from "./attackText";
 import { draftPreview } from "./attackView";
 import { moveAnnouncement } from "./moveView";
+import { redeployAnnouncement } from "./redeployView";
 import type { Session } from "./session";
 
 /**
@@ -11,6 +12,6 @@ import type { Session } from "./session";
  */
 export function announceAttack(live: HTMLElement, s: Session): void {
   const p = draftPreview(s);
-  const text = p ? `${p.targetName}. ${announcement(p)}` : airAnnouncement(s) || airMoveAnnouncement(s) || moveAnnouncement(s);
+  const text = p ? `${p.targetName}. ${announcement(p)}` : airAnnouncement(s) || airMoveAnnouncement(s) || moveAnnouncement(s) || redeployAnnouncement(s);
   if (live.textContent !== text) live.textContent = text;
 }

@@ -7,6 +7,8 @@ import { atStep7b } from "./airView";
 import { atStep7h, attacking } from "./attackTap";
 import { openOffers } from "./choiceTap";
 import { atStep6f, selectionNow } from "./moveTap";
+import { atStep9e, selectionNow as redeployNow } from "./redeployTap";
+import * as R from "./redeployText";
 import * as T from "./moveText";
 import { ownPending } from "./lossOptions";
 import { placeName } from "./names";
@@ -19,7 +21,7 @@ import type { Session } from "./session";
  */
 
 /** Whether the bar and the cards lead the status column: the player may attack now, a battle result is still shown (step 7h), the player moves (step 6f, spec 10) or commits air (step 7b, spec 09). */
-export const leadsStatus = (s: Session): boolean => attacking(s) || (atStep7h(s) && !!s.battle) || atStep6f(s) || atStep7b(s);
+export const leadsStatus = (s: Session): boolean => attacking(s) || (atStep7h(s) && !!s.battle) || atStep6f(s) || atStep7b(s) || atStep9e(s);
 
 /** The bar's sentence at step 6f: choose a stack, or tick the units and tap a yellow hex. */
 function moveNext(s: Session, actions: readonly Action[]): string {
@@ -36,6 +38,10 @@ function moveNext(s: Session, actions: readonly Action[]): string {
 /** What the game waits for, in one sentence. */
 export function nextText(s: Session, actions: readonly Action[]): string {
   if (atStep6f(s)) return moveNext(s, actions);
+  if (atStep9e(s)) {
+    const sel = redeployNow(s);
+    return !sel ? R.NEXT_CHOOSE : s.redeploy?.to ? R.NEXT_CONFIRM : R.NEXT_TICK(sel.ticked.length);
+  }
   if (atStep7b(s)) return s.airDraft ? "Next: check the planes, then commit them." : actions.some((a) => a.type === "DESIGNATE_AIR") ? "Next: choose planes for a hex you will attack, or finish step 7b." : "Next: finish step 7b.";
   if (!attacking(s)) return "Waiting for the computer to choose its losses.";
   if (ownPending(s.state, s.humanSide)) return "Next: choose your losses.";

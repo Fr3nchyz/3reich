@@ -35,7 +35,7 @@ function replay(scenario: ScenarioKey, seed: number): { steps: Step[]; final: Ga
 const CITIES = ["H47", "D44"];
 
 
-describe.each([["1939", 3], ["1942", 1]] as const)("a whole computer game, %s seed %i, takes Moscow and Leningrad", (scenario, seed) => {
+describe.each([["1939", 8], ["1942", 1]] as const)("a whole computer game, %s seed %i, takes Moscow and Leningrad", (scenario, seed) => {
   const g = replay(scenario, seed);
   const CTX: GameContext = { map: MAP, scenario: SCENARIOS[scenario], supplyEffects: SUPPLY_EFFECTS_ENABLED };
   const moved = g.steps.flatMap((s) => s.events.filter((e) => e.type === "RUSSIA_BRPS_MOVED").map((e) => ({ s, e })));

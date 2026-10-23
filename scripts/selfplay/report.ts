@@ -2,6 +2,7 @@ import { verdictName } from "../../src/engine/victory-record";
 import type { PowerId } from "../../src/engine/types";
 import { conquestList } from "./audit";
 import { holdings, turnLabel } from "./stats";
+import type { RebuildStats } from "./rebuild";
 import type { GameResult, TurnStats } from "./types";
 
 const POWERS: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
@@ -94,6 +95,34 @@ export function resultText(r: GameResult): string {
   return v ? `${verdictName(v)} (Objectives: Axis ${v.objectives.axis}, Allies ${v.objectives.allies}, nobody ${v.objectives.nobody}${v.siberian ? ", Free Siberian Transfer tables" : ""})` : "none";
 }
 
+/** "Options chosen per Front" (spec 16 Part E): for each Front, how many times each Option was chosen over the game ("western: offensive 3, attrition 9, defensive 20"). */
+export function optionsPerFront(turns: readonly { frontOptions: string[] }[]): string {
+  const count = new Map<string, number>();
+  for (const e of turns.flatMap((t) => t.frontOptions)) {
+    const key = e.split(" ").slice(1).join(" "); // drop the side
+    count.set(key, (count.get(key) ?? 0) + 1);
+  }
+  return ["western", "eastern", "mediterranean"].map((f) => `${f}: ${["offensive", "attrition", "defensive"].map((o) => `${o} ${count.get(`${f} ${o}`) ?? 0}`).join(", ")}`).join("; ");
+}
+
+/** The lost-units section (spec 17 Part E): per nation, units returned to the pool, rebuilt, lost for good by reason, BRPs paid for rebuilds, Siberian units taken; then the BRPs left unspent at each Year Start. */
+export function rebuildReport(s: RebuildStats): string {
+  const rows = Object.entries(s.nations).map(([id, n]) => [id, n.returned, n.rebuilt, Object.entries(n.lostForGood).map(([why, c]) => `${why} ${c}`).join(", ") || "-", Object.values(n.lostForGood).reduce((a, b) => a + b, 0), n.brps, n.siberian]);
+  const years = s.yearStarts.map((y) => [y.year, ...POWERS.map((p) => y.unspent[p] ?? "-")]);
+  return [
+    "## Lost units and rebuilds",
+    "",
+    rows.length ? table(["Nation (pool)", "Returned to the pool", "Rebuilt", "Lost for good, by reason", "Lost for good", "BRPs spent on rebuilds", "Siberian units taken"], rows) : "No unit was lost or taken.",
+    "",
+    `Russia's offer to surrender was made ${s.surrenderOffers} time(s).`,
+    "",
+    "BRPs left unspent when each year ended (before the Year Start Sequence):",
+    "",
+    years.length ? table(["Year started", ...POWERS.map((p) => SHORT[p])], years) : "No Year Start was reached.",
+    "",
+  ].join("\n");
+}
+
 /** The Markdown report of one game. It holds nothing that varies between runs of the same seed (the runtime is left out). */
 export function gameReport(r: GameResult): string {
   const o = r.options;
@@ -111,6 +140,7 @@ export function gameReport(r: GameResult): string {
     `- Ended: **${r.ended}** (${r.ended === "game-over" ? "the scenario's last Game Turn was played" : r.ended === "turn-limit" ? `the limit of ${o.turns} Game Turns was reached` : "stopped by an anomaly"}); ${t.turnsPlayed} complete Game Turns, ${first} to ${last}; ${r.actions.length} actions (${r.setupActions} of them setup).`,
     `- Result: ${resultText(r)}`,
     `- Conquests (${r.final.conquests?.length ?? 0}): ${conquestList(r.final).join("; ") || "none"}.`,
+    `- Options chosen per Front (${r.turns.reduce((n, x) => n + x.frontOptions.length, 0)}): ${optionsPerFront(r.turns)}.`,
     `- Wars declared (${t.wars.length}): ${t.wars.join("; ") || "none"}.`,
     `- Units built: ${t.built}; BRPs spent: ${t.spent}; grants: ${t.grants}.`,
     `- Ground combats: ${t.combats} (attacks Axis / Allies: ${t.attacksAxis} / ${t.attacksAllies}); units lost Axis / Allies: ${t.lostAxis} / ${t.lostAllies} (of them out of supply ${t.lostUnsuppliedAxis} / ${t.lostUnsuppliedAllies}; factors ${t.lostFactorsAxis} / ${t.lostFactorsAllies}); units moved: ${t.unitsMoved}; hexes changed hands: ${t.hexChanges}.`,
@@ -126,6 +156,7 @@ export function gameReport(r: GameResult): string {
     "",
     r.anomalies.length === 0 ? "None." : table(["Kind", "Where", "Detail"], r.anomalies.map((a) => [a.kind, a.at, a.detail])),
     "",
+    rebuildReport(r.rebuild),
     "## Game Turns",
     "",
     turnTables(r.turns),

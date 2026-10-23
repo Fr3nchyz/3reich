@@ -6,6 +6,7 @@ import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
+import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
 import { chooseMove } from "./move";
@@ -33,6 +34,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
+    : step === "3" ? chooseOptions(ctx, state, legal, cfg) // 3: the Front Options, per Front by the policy constants in options.ts (ticket 16-1)
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "9e" ? chooseRedeploy(ctx, state, cfg) // 9e: Strategic Redeployment (ticket 16-20); the list is not enumerated, only the way on is
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
@@ -56,7 +58,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   if (!action) return null;
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
-    "3": "The computer does not choose Front Options yet: every Front stays on the default (defensive) Option.",
+    "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",

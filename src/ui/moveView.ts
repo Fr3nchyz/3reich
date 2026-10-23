@@ -132,11 +132,11 @@ function showBelowBar(card: HTMLElement): void {
  * When step 6f begins for the player: the status column goes back to its top, so the turn line, the Next bar and the list "Stacks that can move"
  * are in view together (the page stays where the last press left it otherwise). A short screen: the bar and the list matter more than the turn line.
  */
-export function revealMoveStep(root: HTMLElement): void {
+export function revealMoveStep(root: HTMLElement, listId = "#stacks-title"): void {
   const top = root.querySelector(".turn");
   if (!(top instanceof HTMLElement)) return;
   top.scrollIntoView({ block: "start" });
-  const list = root.querySelector("#stacks-title");
+  const list = root.querySelector(listId);
   const bar = root.querySelector(".nextbar");
   if (list instanceof HTMLElement && bar instanceof HTMLElement && list.getBoundingClientRect().bottom + 56 > window.innerHeight) bar.scrollIntoView({ block: "start" });
 }

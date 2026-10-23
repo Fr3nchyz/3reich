@@ -1,6 +1,7 @@
 import type { Action } from "../../src/engine/actions";
 import type { GameContext } from "../../src/engine/context";
 import type { GameState, PowerId } from "../../src/engine/types";
+import type { RebuildStats } from "./rebuild";
 import type { ScenarioKey } from "./scenarios";
 
 export interface RunOptions {
@@ -18,7 +19,7 @@ export interface RunOptions {
   supplyEffects?: boolean;
 }
 
-export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack" | "no-result" | "conquered-unit" | "conquered-hex" | "winter-length" | "surrender-twice" | "objective-count" | "redeploy-near-enemy";
+export type AnomalyKind = "setup" | "stuck" | "refused" | "illegal-choice" | "exception" | "no-progress" | "turn-budget" | "negative-brp" | "overstack" | "no-result" | "conquered-unit" | "conquered-hex" | "winter-length" | "surrender-twice" | "objective-count" | "counter-excess" | "redeploy-near-enemy";
 
 export interface Anomaly {
   kind: AnomalyKind;
@@ -77,6 +78,8 @@ export interface GameResult {
   final: GameState;
   turns: TurnStats[];
   anomalies: Anomaly[];
+  /** Units returned to the pool, rebuilt and lost for good, per nation; the Year Start leftovers (spec 17 Part E). */
+  rebuild: RebuildStats;
   ended: "game-over" | "turn-limit" | "stopped";
   runtimeMs: number;
 }
