@@ -1,8 +1,7 @@
 import type { GameEvent } from "./action-types";
-import { afterHexTaken } from "./capture";
 import type { GameContext } from "./context";
-import { sideInWar } from "./control";
-import { hostileGroundHexes, passControl, removePools, removeUnits, type PassRule, type RemovedUnit } from "./conquest-forces";
+import { hostileGroundHexes, passControl, removePools, removeUnits, sweepPassed, type PassRule } from "./conquest-forces";
+import { keptAtFall } from "./conquest-kept";
 import type { Conquest } from "./conquest-record";
 import type { HexId } from "./hex";
 import { sideOfOwner } from "./setup";
@@ -71,27 +70,11 @@ function leaving(state: GameState, who: string, owners: readonly ForceOwner[]): 
   return { ids, returned };
 }
 
-/** Enemy counters of the conqueror still standing alone (no ground unit can be there, or the hex would not have passed) in the hexes that passed: fleets move away, the rest is destroyed (capture.ts). */
-function sweepPassed(ctx: GameContext, state: GameState, hexes: readonly string[], conquerorSide: Side): { state: GameState; events: GameEvent[] } {
-  let next = state;
-  const events: GameEvent[] = [];
-  for (const hex of hexes) {
-    const loners = Object.values(next.units).filter((u) => u.at === hex && sideInWar(next, u.owner) !== null && sideInWar(next, u.owner) !== conquerorSide);
-    if (loners.length === 0) continue;
-    const taken = afterHexTaken(ctx, next, hex, loners);
-    const out = removeUnits(taken.state, taken.destroy.map((u) => u.id));
-    next = out.state;
-    const swept: RemovedUnit[] = out.removed;
-    if (swept.length > 0) events.push({ type: "UNITS_SWEPT", hex, units: swept }, ...swept.map((u): GameEvent => ({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: hex })));
-    events.push(...taken.events);
-  }
-  return { state: next, events };
-}
-
 /**
  * A country falls to its conqueror (the owner of the unit that holds its capital). C8 steps 1 to 7:
  *  1. its units, and those of its active Minor-Allies, and their pools leave the game for good (TODO(verify) V10);
- *  2. the land it holds in its own country passes to the conqueror, the rest it held becomes nobody's (V11), except the hexes under hostile ground units (V12);
+ *  2. the land it holds in its own country passes to the conqueror, the rest it held becomes nobody's (V11), except the hexes under hostile ground units (V12),
+ *     which are recorded and pass on the same way once no hostile ground unit stands there (`releaseKept`, conquest-kept.ts, V62);
  *  3. the nation's records are marked (`plan.mark`: "conquered" and 0 BRPs for a Major Power);
  *  4. the Conquest is recorded, with the Game Turn (V4) and, for a Major Power, the BRPs it began the scenario with (V9);
  *  5. the events are written;
@@ -111,10 +94,10 @@ export function conquer(ctx: GameContext, state: GameState, plan: FallPlan): { s
   let next: GameState = removePools({ ...gone.state, units }, plan.owners);
   // 2. land
   const conquerorSide = sideOfOwner(plan.conqueror);
-  const passed = plan.stays
-    ? { state: next, passed: { toConqueror: [], toNobody: [] } }
-    : passControl(ctx, next, { from: plan.owners, to: plan.conqueror, keep: hostileGroundHexes(next, conquerorSide), isHome: plan.isHome, ...(plan.land ? { land: plan.land } : {}) });
-  next = passed.state;
+  const rule: PassRule = { from: plan.owners, to: plan.conqueror, keep: hostileGroundHexes(next, conquerorSide), isHome: plan.isHome, ...(plan.land ? { land: plan.land } : {}) };
+  const passed = plan.stays ? { state: next, passed: { toConqueror: [], toNobody: [] } } : passControl(ctx, next, rule);
+  // The hexes kept under hostile ground units are recorded with what would have become of them: they pass on once no such unit stands there (ticket 14-25, V62).
+  next = plan.stays ? passed.state : keptAtFall(ctx, next, passed.state, rule, conquerorSide, plan.country);
   // 3. and 4. status and record
   const record: Conquest = { country: plan.country, by: plan.conqueror, side: plan.side, how: plan.how, at: { year: state.year, season: state.season }, ...(plan.startingBrps !== undefined ? { startingBrps: plan.startingBrps } : {}) };
   next = { ...plan.mark(next), conquests: [...(state.conquests ?? []), record] };

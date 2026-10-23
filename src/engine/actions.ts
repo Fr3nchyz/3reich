@@ -19,6 +19,7 @@ import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
+import { releaseKept } from "./conquest-kept";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
 
@@ -70,8 +71,18 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   return combatOf(state).pending && step === "7h" ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
-/** Apply one action. Pure: returns a new state, or an error if the action is illegal. */
+/**
+ * Apply one action. Pure: returns a new state, or an error if the action is illegal. After every action that leaves the game on, the hexes a fall kept under
+ * hostile ground units pass on if no such unit stands there any more (`releaseKept`, ticket 14-25, TODO(verify) V62).
+ */
 export function applyAction(ctx: GameContext, state: GameState, action: Action): ActionResult {
+  const done = applyOne(ctx, state, action);
+  if (!done.ok || done.state.phase === "game-over") return done;
+  const freed = releaseKept(ctx, done.state);
+  return freed.state === done.state ? done : { ok: true, state: freed.state, events: [...done.events, ...freed.events] };
+}
+
+function applyOne(ctx: GameContext, state: GameState, action: Action): ActionResult {
   if (state.phase === "game-over") return { ok: false, error: "The game is over." };
   if (typeof action !== "object" || action === null) return { ok: false, error: "An action is an object with a type." };
   if (surrenderAsking(state) && action.type !== "SURRENDER_ANSWER") return { ok: false, error: SURRENDER_WAITS };
