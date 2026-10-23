@@ -44,10 +44,10 @@ If the spec and the issue do not settle a behaviour, or the work needs a change 
 
 ## Commits and the pull request
 
-- One branch and one pull request per issue. Base it on `main`. Title: `<ticket id>: <what it does>` (e.g. `16-0: spec 16 facts and constants`).
+- One branch and one pull request per issue. Usually you are started by an `@codex` comment on a starter pull request that Claude opened for the issue (its description holds the issue text): then push your commits to **that PR's branch** and post the report below as a PR comment. Otherwise branch from `main` and open a PR titled `<ticket id>: <what it does>` (e.g. `16-0: spec 16 facts and constants`).
 - Commit author: `Fr3nchyz <37098628+Fr3nchyz@users.noreply.github.com>`. Never force-push; answer review comments with new commits.
 - Never merge, never push to `main`, never change secrets, deploys or repository settings.
-- The PR body starts with `Closes #<issue>` and has these sections, in this order:
+- The report (PR body, or a PR comment on a starter PR) references the issue (`Closes #<issue>`) and has these sections, in this order:
 
 ```markdown
 ## What it does
