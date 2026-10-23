@@ -1,8 +1,10 @@
 # 17. Lost units come back: eliminated units return to the Force Pool and can be rebuilt
 
-Status: **draft, waiting for owner review, 2026-10-23. Beta milestone (decided by the owner on 2026-10-23). Nothing is built until you say "let's go".** Words only; the build plan is part G. Builds on spec 02 (construction), and touches spec 09 (airborne units that dropped), spec 12 (rebuilt "gray" fleets), spec 14 (conquered Powers, the Free Siberian Transfer) and spec 15 (Minor-Allies). The spec that spec 16 calls "a separate spec 17" (Strategic Warfare) will take the next free number.
+Status: **approved by the owner on 2026-10-23 (Q1 to Q4 answered yes). Beta milestone, built after group 1 (spec 14). Tickets 17-1 to 17-6 may start; 17-0 waits for network access to the manuals or for Frank.** Words only; the build plan is part G. Builds on spec 02 (construction), and touches spec 09 (airborne units that dropped), spec 12 (rebuilt "gray" fleets), spec 14 (conquered Powers, the Free Siberian Transfer) and spec 15 (Minor-Allies). The spec that spec 16 calls "a separate spec 17" (Strategic Warfare) will take the next free number.
 
 ## Decisions needed
+
+**Answered by the owner on 2026-10-23: yes to Q1, Q2, Q3 and Q4.**
 
 Four questions, each answerable with yes or no. My recommendation comes first; if you have no view, the recommendation stands.
 
