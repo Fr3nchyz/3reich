@@ -8,8 +8,8 @@ import { SIBERIAN_TAKE_ALL } from "./policies";
 
 export { SIBERIAN_TAKE_ALL };
 /**
- * The computer's answer at step 8a, the Free Siberian Transfer (spec 14 part E; ticket 14-18 gives only this minimal, constant answer, so the Allied computer does not
- * leave the free units on the table; the full policy set is ticket 14-19). The Allies take everything on offer: infantry first (the engine lists armor only once the infantry
+ * The computer's answer at step 8a, the Free Siberian Transfer (spec 14 part E; tickets 14-18 and 14-19). The policy is the constant `SIBERIAN_TAKE_ALL` in
+ * `policies.ts`, so the Allied computer does not leave the free units on the table. The Allies take everything on offer: infantry first (the engine lists armor only once the infantry
  * taken at least equal it), the biggest counter, in the Russian city nearest an Axis ground unit. A policy of the computer, not a rule: it does not weigh that the first unit
  * taken raises the Allied target by one Objective.
  */

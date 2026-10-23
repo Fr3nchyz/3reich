@@ -28,7 +28,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
-    : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (ticket 14-18); the minimal policy of ticket 14-18, the full set is 14-19
+    : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6f" ? chooseMove(ctx, state, cfg)
