@@ -146,7 +146,7 @@ describe("whole computer games", () => {
     expect(result.anomalies).toEqual([]);
     const a = audit(SCENARIOS["1939"], 1, result.actions);
     expectRules(SCENARIOS["1939"], a);
-    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 4, armor: 0 }, "1942-spring": { infantry: 1, armor: 0 } });
+    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 4, armor: 0 }, "1942-spring": { infantry: 3, armor: 0 } }); // Spring 1942 took 1 before ticket 16-1; with the Front Options paid for the computer has the units to take the whole quota of three (no seed of 1 to 12 gives 1 now)
     for (const t of a.taken) {
       expect(availableBuilds(t.before, "ussr").filter((e) => !e.returned && (e.type === "infantry" || e.type === "armor")), "the scenario's builds are used up").toEqual([]);
       expect(takenEntry(t)?.returned).toBe(true);
