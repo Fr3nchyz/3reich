@@ -9,6 +9,7 @@ import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
 import type { GameState, Scenario } from "../../src/engine/types";
 import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
 import { MAP } from "../../src/data/map";
+import { auditCounters, RebuildTally } from "./rebuild";
 import { SCENARIOS } from "./scenarios";
 import { turnLabel, TurnTally } from "./stats";
 import type { Anomaly, GameResult, RunOptions, TurnStats } from "./types";
@@ -85,6 +86,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
 
   const stop = opt.turns === "end" ? Infinity : turnIndex(state) + opt.turns;
   const sequence = new SequenceAudit();
+  const rebuild = new RebuildTally();
   let tally = new TurnTally(turnLabel(state));
   let place = "";
   let stepCount = 0;
@@ -111,6 +113,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     }
     actions.push(action);
     tally.add(events, state);
+    rebuild.add(events, state, next);
     for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
     for (const p of sequence.step(events, next)) note(p.kind, next, p.detail);
     const conquered = events.some((e) => e.type === "COUNTRY_CONQUERED");
@@ -127,9 +130,9 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   }
   // The run stopped inside a Game Turn (an anomaly): report what it did so far.
   if (tally.count > 0) turns.push(tally.close(ctx, state, true));
-  for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state)]) note(p.kind, state, p.detail);
+  for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state), ...auditCounters(initial, state)]) note(p.kind, state, p.detail);
   const ended = state.phase === "game-over" ? "game-over" : turnIndex(state) >= stop ? "turn-limit" : "stopped";
   // A game played "to the end" that did not stop on another anomaly must have ended with a result.
   if (endedWithoutResult(opt.turns, ended, anomalies.length)) note("no-result", state, `the game did not reach its end (phase "${state.phase}")`);
-  return { options: opt, ctx, initial, actions, setupActions, final: state, turns, anomalies, ended, runtimeMs: performance.now() - started };
+  return { options: opt, ctx, initial, actions, setupActions, final: state, turns, anomalies, rebuild: rebuild.result(), ended, runtimeMs: performance.now() - started };
 }
