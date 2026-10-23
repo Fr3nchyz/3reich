@@ -141,6 +141,18 @@ describe("the owner a kept hex was to go to has fallen since (V62)", () => {
     expect(r.state.control.M36).toBeNull();
     expect(passedEvents(r.events)).toEqual([{ type: "CONTROL_PASSED", country: "poland", to: null, hexes: ["M36"] }]);
   });
+  it("the destination changed down the chain: lone counters are swept as by the new owner's side (a German hex France held, kept at France's fall for Germany; Germany then falls to Britain)", () => {
+    // Germany falls to Britain with J29 (German land) French-held; the record is the one France's fall would have left (France's conqueror Germany, Axis side)
+    const s0 = at7p("axis", [british("b1", BERLIN), counter("ia", "italy", "air", 2, "J29", 4), counter("ba", "britain", "air", 2, "J29", 4)], { control: { [BERLIN]: "britain", J29: "france" }, nations: AXIS_ITALY });
+    const g = fall(CTX, s0, "germany", "britain").state;
+    expect(controllerOf(CTX, g, "J29")).toBe("france");
+    const s = { ...g, keptHexes: { J29: { country: "france" as const, side: "axis" as const, to: "germany" as ForceOwner, was: "france" as ForceOwner } } };
+    const r = releaseKept(CTX, s);
+    expect(controllerOf(CTX, r.state, "J29")).toBe("britain");
+    expect(passedEvents(r.events)).toEqual([{ type: "CONTROL_PASSED", country: "france", to: "britain", hexes: ["J29"] }]);
+    expect(r.state.units.ia).toBeUndefined(); // the Axis air unit, an enemy of Britain, is swept
+    expect(r.state.units.ba).toBeDefined(); // the British one stays
+  });
   it("keptDestination follows that owner's own fall: its home land to its conqueror, other land to nobody, France's everything to its conqueror, Russia after a surrender keeps it, an owner that stands keeps it", () => {
     const at = { year: 1941, season: "spring" as const };
     const conquests: Conquest[] = [
