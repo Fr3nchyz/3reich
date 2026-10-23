@@ -36,10 +36,24 @@ print('Run the required checks and self-review the diff. Restore every mutation.
 print('If blocked by scope or an unsettled rule, report the exact blocker rather than guessing.')
 print('\nPull request task:\n'+pr['body'])
 PY
-# Subscription login only; API-key variables are removed for this child process.
-env -u CODEX_API_KEY -u OPENAI_API_KEY codex exec \
+# The manager chooses supported model IDs explicitly; prose in the PR cannot select the running model.
+worker_flags=()
+if [[ -n ${WORKER_MODEL:-} ]]; then worker_flags+=(--model "$WORKER_MODEL"); fi
+if [[ -n ${WORKER_EFFORT:-} ]]; then
+  [[ $WORKER_EFFORT =~ ^(low|medium|high)$ ]] || fail 'WORKER_EFFORT must be low, medium or high.'
+  worker_flags+=(-c "model_reasoning_effort=\"$WORKER_EFFORT\"")
+fi
+log=$(mktemp /tmp/cloud-worker-log.XXXXXX.log)
+# Subscription login only. Keep the worker transcript out of the manager's context; it reads the final report.
+if env -u CODEX_API_KEY -u OPENAI_API_KEY codex exec \
   -c 'forced_login_method="chatgpt"' -c 'model_provider="openai"' \
-  --sandbox workspace-write -C "$checkout" \
-  --output-last-message "$report" - < "$scratch/prompt.txt"
+  --sandbox workspace-write -C "$checkout" "${worker_flags[@]}" \
+  --output-last-message "$report" - < "$scratch/prompt.txt" > "$log" 2>&1; then
+  printf 'Worker log: %s\n' "$log"
+else
+  worker_exit=$?
+  printf 'Worker failed with exit %s. Diagnostic log: %s\n' "$worker_exit" "$log" >&2
+  exit "$worker_exit"
+fi
 printf '\nWorker report: %s\n' "$report"
 printf '%s\n' 'Manager: review the diff and report, then commit/push and post the PR report through your existing GitHub connection.'
