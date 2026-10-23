@@ -33,5 +33,6 @@ Template:
 | 14 | [Victory, surrender, conquest and the Russian winter](14-victory-surrender-winter.md) (draft for review; Beta milestone) |
 | 15 | [Minor countries: an attacked minor's army, Intervention, Minor-Allies, BRPs from territory](15-minor-countries.md) (draft for review; Beta milestone) |
 | 16 | [Attrition, Exploitation, Strategic Redeployment and the Fortress changes](16-attrition-exploitation-redeployment.md) (draft for review; Beta milestone) |
+| 17 | [Lost units come back: eliminated units return to the Force Pool and can be rebuilt](17-rebuild-eliminated-units.md) (draft, waiting for owner review; Beta milestone) |
 
 Status lives at the top of each file; the build order and sizes are in [../PLAN.md](../PLAN.md).
