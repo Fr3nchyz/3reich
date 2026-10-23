@@ -1,3 +1,4 @@
+import { noOffensiveText } from "../engine/frontoptions";
 import { ADVANCE_AFTER_COMBAT, ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, isEnemy, isGroundCombatUnit, lonersAt, neighborIds } from "../engine/attack-rules";
 import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import { combatOf } from "../engine/combat-record";
@@ -223,7 +224,7 @@ function hexProblems(ctx: GameContext, state: GameState, target: string, cands: 
   if (rec.pending) return ["An Exchange is waiting for its losses to be chosen first."];
   if (ONE_ATTACK_PER_HEX && rec.targets.includes(target)) return ["This hex has already been attacked this turn."];
   const front = ctx.map.hexes[target]?.front;
-  if (front && !frontAllowsAttack(ctx, state, state.activeSide, front)) return [`Your side may not attack on the ${front} front now.`];
+  if (front && !frontAllowsAttack(ctx, state, state.activeSide, front)) return [noOffensiveText(front)];
   if (cands.length === 0) return ["None of your units that have not attacked is next to this hex."];
   const here = Object.values(state.units).filter((u) => u.at === target);
   if (here.length > 0 && !here.some((h) => cands.some((c) => isEnemy(state, c.unit.owner, h.owner)))) return [`You are not at war with ${OWNER_NAMES[here[0]!.owner]}.`];

@@ -4,7 +4,7 @@ import { ATTACK_MAX_PER_TURN } from "../src/ai/assault";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { combatOf, turnKey } from "../src/engine/combat-record";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 // The computer's attacks at step 7h are POLICY (spec 05, docs/RULES.md "Computer opponent policy"), not rules.
@@ -12,7 +12,7 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 const u = (id: string, owner: ForceOwner, strength: number, at: string, type: UnitType = "infantry"): Unit => ({ id, owner, type, strength, at });
 const at7h = (units: Unit[], seed = 1): GameState => ({
-  ...atStart(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
+  ...atStartOffensive(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries(units.map((x) => [x.id, x])), rngState: seed,
 });
 const decide = (s: GameState) => chooseAction(CTX, s, { seed: 1 })!;

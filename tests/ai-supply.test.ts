@@ -10,7 +10,7 @@ import type { GameState } from "../src/engine/types";
 import { reachableHexes } from "../src/engine/movement";
 import { enemyZocFor } from "../src/engine/zoc";
 import { CTX } from "./helpers";
-import { at6f, inf, move, okOf } from "./helpers-move";
+import { ALL_OFFENSIVE, at6f, inf, move, okOf } from "./helpers-move";
 import { combatOf, turnKey } from "../src/engine/combat-record";
 import { legalActions } from "../src/engine/actions";
 
@@ -37,7 +37,7 @@ describe("the switch", () => {
 });
 
 describe("suppliedAfterMove: whether a line reaches the hex once the move is made", () => {
-  const s = at6f([inf("g1", "germany", "L32", 3, 3)]);
+  const s = at6f([inf("g1", "germany", "L32", 3, 3)], "axis", undefined, { frontOptions: ALL_OFFENSIVE });
   const net = networkOf(ON, s, "axis");
   const after = (to: string) => suppliedAfterMove(ON, s, net, [s.units.g1!], to);
   it("a hex next to the side's supplied land is supplied once entered; a Polish hex surrounded by Polish land is not", () => {
@@ -182,7 +182,7 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
   });
   it("step 7h: two units cut off in a pocket next to Warsaw attack at 1-1 an Exchange could cost them 15 factors of; supplied, they would not", () => {
     // M34 and N34 held by Germany but ringed by Polish land: no line. 18 factors against 5, tripled in Warsaw: an Exchange costs 15, the limit is 8.
-    const base = at6f([inf("g1", "germany", "M34", 9, 3), inf("g2", "germany", "N34", 9, 3), inf("p1", "poland", "M35", 3, 3), inf("p2", "poland", "M35", 2, 3)], "axis", undefined, { control: { M34: "germany", N34: "germany" }, position: { part: "player-turn", turn: 1, step: "7h" } });
+    const base = at6f([inf("g1", "germany", "M34", 9, 3), inf("g2", "germany", "N34", 9, 3), inf("p1", "poland", "M35", 3, 3), inf("p2", "poland", "M35", 2, 3)], "axis", undefined, { frontOptions: ALL_OFFENSIVE, control: { M34: "germany", N34: "germany" }, position: { part: "player-turn", turn: 1, step: "7h" } });
     const doomed: GameState = { ...base, unsuppliedAtStart: ["g1", "g2"] };
     expect(chooseAction(ON, doomed, { seed: 1 })!.action).toEqual({ type: "ATTACK", side: "axis", units: ["g1", "g2"], target: "M35" });
     expect(chooseAction(ON, base, { seed: 1 })!.action.type).toBe("END_STEP");

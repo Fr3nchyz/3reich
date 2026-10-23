@@ -4,7 +4,7 @@ import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
 import { createSession, run, type Session } from "../src/ui/session";
 import { statusHtml } from "../src/ui/statusView";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 
 /** The Attack, Lose and Advance buttons and the battle log lines name places and counters; no unit id ("u94") is left (spec 07, part B). */
 
@@ -17,7 +17,7 @@ const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, m
   ...(movement === undefined ? {} : { movement }),
 });
 const at7h = (units: Unit[], seed = 1): GameState => ({
-  ...atStart(SCENARIO_1939, 1),
+  ...atStartOffensive(SCENARIO_1939, 1),
   activeSide: "axis",
   position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries(units.map((u) => [u.id, u])),

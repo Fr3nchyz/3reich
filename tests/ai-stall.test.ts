@@ -4,7 +4,7 @@ import { ATTACK_MAX_EXCHANGE_FACTORS, ATTACK_STALL_MAX_EXCHANGE_FACTORS, ATTACK_
 import { createMemory, type AiMemory } from "../src/ai/memory";
 import { turnIndex } from "../src/engine/game";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 // The stall rule is computer POLICY (spec 05, "What staging does not fix"), not a rule of the game: a side that has made no real
@@ -13,7 +13,7 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 const u = (id: string, owner: ForceOwner, strength: number, at: string, type: UnitType = "infantry"): Unit => ({ id, owner, type, strength, at });
 const position = (year: number): GameState => ({
-  ...atStart(SCENARIO_1939, 1), year, activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
+  ...atStartOffensive(SCENARIO_1939, 1), year, activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries([u("g1", "germany", 25, "M32"), u("p1", "poland", 5, "M33")].map((x) => [x.id, x])),
 });
 /** The same position `n` Game Turns later. */

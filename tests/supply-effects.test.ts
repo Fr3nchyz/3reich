@@ -5,7 +5,7 @@ import { movableProblem } from "../src/engine/movement";
 import { SUPPLY_EFFECTS_ENABLED, eliminateUnsupplied, recordUnsupplied, wasCutOff } from "../src/engine/supply-effects";
 import { LAST_STEP } from "../src/engine/sequence";
 import type { GameState } from "../src/engine/types";
-import { CTX } from "./helpers";
+import { ALL_OFFENSIVE, CTX } from "./helpers";
 import { at6f, errorOf, inf, move, okOf } from "./helpers-move";
 
 // What being out of supply does (Ref 19.4, 11.74, 12.21). Positions on the real 1939 map: S30 is neutral Hungarian land nobody controls,
@@ -56,7 +56,7 @@ describe("cut off at the start: cannot advance after combat (Ref 12.21), but may
   });
 
   it("a cut-off unit is still in the pool of attackers (Ref 19.4: unsupplied units keep their full combat factor)", () => {
-    const s: GameState = { ...at6f([inf("g1", "germany", "M32", 6, 3), inf("p1", "poland", "M33", 1, 3)]), position: { part: "player-turn", turn: 1, step: "7h" }, unsuppliedAtStart: ["g1"] };
+    const s: GameState = { ...at6f([inf("g1", "germany", "M32", 6, 3), inf("p1", "poland", "M33", 1, 3)]), position: { part: "player-turn", turn: 1, step: "7h" }, frontOptions: ALL_OFFENSIVE, unsuppliedAtStart: ["g1"] };
     expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(true);
   });
 });

@@ -1,6 +1,7 @@
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { ForceOwner, GameState, Scenario, Unit } from "../src/engine/types";
 import { board, counter } from "./board";
+import { ALL_OFFENSIVE } from "./helpers";
 
 /** Positions of the Russian winter (spec 14 tickets 14-12 and 14-13): Winter 1941, Germany and the U.S.S.R. at war, the winter in force. */
 
@@ -25,6 +26,7 @@ export function allied7h(units: Unit[], tweak: Partial<GameState> = {}, winter: 
     firstSide: "axis",
     activeSide: "allies",
     position: { part: "player-turn", turn: 2, step: "7h" },
+    frontOptions: ALL_OFFENSIVE, // attacks need the Offensive Option (spec 16 Q1)
     wars: [...base.wars, ["germany", "ussr"]],
     nations: { ...base.nations, ussr: { ...base.nations.ussr, status: "allied" } },
     ...(winter ? { winter } : {}),
@@ -38,6 +40,6 @@ export const rus = (id: string, at: string, strength = 4): Unit => counter(id, "
 
 /** The Axis turn of Winter 1941 at step 3, the war with Russia on, Germany with BRPs to pay for an Option. */
 export function axis3(winter: GameState["winter"] | null = WINTER, tweak: Partial<GameState> = {}): GameState {
-  const s = allied7h([], { activeSide: "axis", position: { part: "player-turn", turn: 1, step: "3" }, ...tweak }, winter);
+  const s = allied7h([], { activeSide: "axis", frontOptions: {}, position: { part: "player-turn", turn: 1, step: "3" }, ...tweak }, winter);
   return { ...s, nations: { ...s.nations, germany: { ...s.nations.germany, brpTotal: 100, spent: 0 } } };
 }

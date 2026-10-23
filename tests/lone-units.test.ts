@@ -7,7 +7,7 @@ import { sweepLine } from "../src/ui/format";
 import { run, type Session } from "../src/ui/session";
 import type { GameState, Unit, UnitType, ForceOwner } from "../src/engine/types";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 
 /**
  * Air units, fleets and airbases left alone in a hex (the Warsaw case of docs/FEEDBACK.md, 2 (2026-10-14)): they cannot defend on
@@ -18,7 +18,7 @@ import { CTX, atStart } from "./helpers";
 
 const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, at: string): Unit => ({ id, owner, type, strength, at });
 const at7h = (units: Unit[], seed = 1): GameState => ({
-  ...atStart(SCENARIO_1939, 1),
+  ...atStartOffensive(SCENARIO_1939, 1),
   activeSide: "axis",
   position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries(units.map((u) => [u.id, u])),

@@ -72,6 +72,9 @@ function playAsAxis(scenario: Scenario, seed: number): Trace {
     const endStep = legal.find((a) => a.type === "END_STEP" || a.type === "END_PLAYER_TURN")!;
     if (step === "1") {
       apply(legal.find((a) => a.type === "DECLARE_WAR" && a.by === "germany" && a.on === "poland") ?? endStep);
+    } else if (step === "3") {
+      // Spec 16 Q1: attacks need the Offensive Option, chosen here (the Eastern one is free in Fall 1939).
+      apply(legal.find((a) => a.type === "SELECT_FRONT_OPTION" && a.option === "offensive" && a.front === "eastern") ?? endStep);
     } else if (step === "6f") {
       const dist = groundDistances(ctx, state, "germany", [WARSAW]);
       let best: { score: number; move: Move } | null = null;

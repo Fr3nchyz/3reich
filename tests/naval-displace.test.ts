@@ -13,7 +13,7 @@ import type * as Rules from "../src/engine/naval-rules";
 import { stackingProblem } from "../src/engine/placement";
 import type { GameState, Scenario, Unit } from "../src/engine/types";
 import { board, counter } from "./board";
-import { CTX, ctxFor } from "./helpers";
+import { ALL_OFFENSIVE, CTX, ctxFor } from "./helpers";
 
 // Spec 12 ticket 12-4 (R2, R9; Ref 21.1, 12.4, 5.0, 33.0; decision D1 of spec 09): a fleet left alone in a taken port is displaced to the nearest friendly port
 // on its Front with room, or eliminated; a port bases 36 naval factors and Malta, Suda Bay and Famagusta 9. Named hexes: K28 Wilhelmshaven, K29 Bremen, J30 Kiel,
@@ -118,7 +118,7 @@ describe("displaceFleets: one event each, in unit-id order, room counted as it f
 });
 
 describe("a taken port in play: the sweep and the battle (decision D1)", () => {
-  const at7h = (units: Unit[], extra: Partial<GameState> = {}): GameState => place({ ...board([], undefined, { activeSide: "allies", position: { part: "player-turn", turn: 1, step: "7h" }, ...extra }) }, ...units);
+  const at7h = (units: Unit[], extra: Partial<GameState> = {}): GameState => place({ ...board([], undefined, { activeSide: "allies", frontOptions: ALL_OFFENSIVE, position: { part: "player-turn", turn: 1, step: "7h" }, ...extra }) }, ...units);
   const brit = (id: string, at: string, strength = 3): Unit => ({ ...counter(id, "britain", "infantry", strength, at, 3) });
   const ok = (r: ReturnType<typeof applyAction>) => {
     if (!r.ok) throw new Error(r.error);

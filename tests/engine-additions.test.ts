@@ -6,7 +6,7 @@ import { exchangeCost } from "../src/engine/attack-losses";
 import { combatOf } from "../src/engine/combat-record";
 import { defenseBasis, defenseMultiplier, type DefenseSituation } from "../src/engine/terrain";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 
 /**
  * Spec 07 ticket 07-2: the two engine pieces the odds preview reads, with no change of behaviour.
@@ -17,7 +17,7 @@ const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, a
 const GER = (id: string, at: string, strength = 3) => unit(id, "germany", "infantry", strength, at);
 const POL = (id: string, at: string, strength = 1) => unit(id, "poland", "infantry", strength, at);
 function at7h(units: Unit[], seed = 1, extra: Partial<GameState> = {}): GameState {
-  return { ...atStart(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), rngState: seed, ...extra };
+  return { ...atStartOffensive(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), rngState: seed, ...extra };
 }
 const numbers = (units: Unit[], attackers: string[], target: string, extra: Partial<GameState> = {}) => {
   const s = at7h(units, 1, extra);

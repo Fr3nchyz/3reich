@@ -4,6 +4,7 @@ import type { GameContext } from "../src/engine/context";
 import { newGame } from "../src/engine/game";
 import { applyAction, type ActionResult } from "../src/engine/actions";
 import { surrenderAsking } from "../src/engine/soviet-record";
+import { FRONTS, withOffensive } from "../src/engine/frontoptions";
 import { beginPlay } from "../src/engine/turn";
 import type { GameState, Scenario } from "../src/engine/types";
 
@@ -45,3 +46,9 @@ export function endTurn(ctx: GameContext, s: GameState): ActionResult {
   const here = toEndOfTurn(ctx, s);
   return applyAction(ctx, here, { type: "END_PLAYER_TURN", side: here.activeSide });
 }
+
+/** `atStart` with the Offensive Option chosen on every Front for the side to move: attacks need it (spec 16 Q1, ticket 16-2). */
+export const atStartOffensive = (scenario: Scenario, seed: number): GameState => withOffensive(atStart(scenario, seed), ...FRONTS);
+
+/** The Offensive Option on every Front, for positions that attack (spec 16 Q1, ticket 16-2). */
+export const ALL_OFFENSIVE: GameState["frontOptions"] = { western: { option: "offensive" }, eastern: { option: "offensive" }, mediterranean: { option: "offensive" } };

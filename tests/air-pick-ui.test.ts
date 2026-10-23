@@ -14,14 +14,14 @@ import type { Session } from "../src/ui/session";
 import { normaliseMode, tapHex } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import { atMovement } from "./helpers-move-session";
-import { at6f, inf } from "./helpers-move";
+import { ALL_OFFENSIVE, at6f, inf } from "./helpers-move";
 
 // Spec 09, ticket 09-14 (rest): choosing individual planes at step 7b. Poznan (M33) holds Polish infantry; German infantry at M32 can attack it; the
 // planes are at J32 (a 3-4 and a 2-4). Ground that could attack: 4 + 2 = 6 factors, so up to 18 air factors.
 
 const air = (id: string, at: string, strength: number): Unit => inf(id, "germany", at, strength, 4, "air");
 const UNITS = (): Unit[] => [inf("u1", "germany", "M32", 4, 3), inf("u2", "germany", "M32", 2, 3), inf("p1", "poland", "M33", 2, 3), air("a1", "J32", 3), air("a2", "J32", 2)];
-const board = (units: Unit[], step: "7b" | "7h"): GameState => at6f(units, "axis", SCENARIO_1939, { nextUnitId: 100, position: { part: "player-turn", turn: 1, step } });
+const board = (units: Unit[], step: "7b" | "7h"): GameState => at6f(units, "axis", SCENARIO_1939, { nextUnitId: 100, frontOptions: ALL_OFFENSIVE, position: { part: "player-turn", turn: 1, step } });
 const session = (units: Unit[] = UNITS(), step: "7b" | "7h" = "7b"): Session => {
   const s = atMovement();
   s.state = board(units, step);

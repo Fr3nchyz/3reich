@@ -11,14 +11,14 @@ import { combatOf } from "../src/engine/combat-record";
 import { legalBuilds } from "../src/engine/construction";
 import type { GameState, Unit } from "../src/engine/types";
 import { CTX, atStart } from "./helpers";
-import { at6f, errorOf, inf, okOf } from "./helpers-move";
+import { ALL_OFFENSIVE, at6f, errorOf, inf, okOf } from "./helpers-move";
 
 // Spec 09, ticket 09-7: Ground Support (R8; Ref 20.41, 20.3). The real 1939 map: German infantry at M32 can attack Poznan (M33), where Polish infantry stand;
 // J32 is within 4 hexes of M33, Q27 is not.
 
 const air = (id: string, at: string, strength: number, owner: Unit["owner"] = "germany"): Unit => inf(id, owner, at, strength, 4, "air");
 const at7b = (units: Unit[], tweak: Partial<GameState> = {}): GameState =>
-  at6f(units, "axis", SCENARIO_1939, { nextUnitId: 100, position: { part: "player-turn", turn: 1, step: "7b" }, ...tweak });
+  at6f(units, "axis", SCENARIO_1939, { nextUnitId: 100, frontOptions: ALL_OFFENSIVE, position: { part: "player-turn", turn: 1, step: "7b" }, ...tweak });
 const at7h = (s: GameState): GameState => ({ ...s, position: { part: "player-turn", turn: 1, step: "7h" } });
 const commit = (units: string[], target = "M33"): Extract<Action, { type: "DESIGNATE_AIR" }> => ({ type: "DESIGNATE_AIR", side: "axis", mission: "ground-support", units, target });
 const attack = (units: string[], target = "M33"): Action => ({ type: "ATTACK", side: "axis", units, target });

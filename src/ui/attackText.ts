@@ -72,3 +72,4 @@ export function roundWords(r: CombatRound): string {
   };
   return `${mine ? "Your attack" : "Their counterattack"}, ${column}, roll ${r.roll}: ${what[r.result] ?? r.result}.`;
 }
+export { noOffensiveText } from "../engine/frontoptions";

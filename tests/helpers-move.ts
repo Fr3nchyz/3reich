@@ -9,6 +9,8 @@ import { CTX } from "./helpers";
 export const inf = (id: string, owner: ForceOwner, at: string, strength = 3, movement = 3, type: UnitType = "infantry"): Unit => ({ id, owner, type, strength, movement, at });
 
 /** A game at step 6f of the first Player Turn with exactly these counters; `side` is to move. */
+export { ALL_OFFENSIVE } from "./helpers";
+
 export function at6f(units: Unit[], side: "axis" | "allies" = "axis", scenario: Scenario = SCENARIO_1939, tweak: Partial<GameState> = {}): GameState {
   return board(units, scenario, { activeSide: side, firstSide: side, position: { part: "player-turn", turn: 1, step: "6f" }, ...tweak });
 }

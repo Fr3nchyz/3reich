@@ -4,6 +4,7 @@ import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
 import type { Front } from "./map";
 import { sideOfOwner } from "./setup";
 import { countedAir } from "./air-support";
+import { frontOptionOf } from "./frontoptions";
 import { oddsColumn, type OddsColumn } from "./combat";
 import type { ForceOwner, GameState, PowerId, Side, Unit, UnitType } from "./types";
 import { atWar, isMajorPower } from "./war";
@@ -58,8 +59,14 @@ export const ALONE_NONGROUND_DESTROYED = true;
  */
 export const isSupplied = (_ctx: GameContext, _state: GameState, _unit: Unit): boolean => true;
 
-/** Hook for front options: whether the side may attack on that Front. TODO(verify): Ref 11.2 Offensive Option, built elsewhere; every Front allows it. */
-export const frontAllowsAttack = (_ctx: GameContext, _state: GameState, _side: Side, _front: Front): boolean => true;
+/**
+ * Whether the side may attack on that Front: only under the Offensive Option it chose at step 3 this Player Turn (Ref 11.2, 11.21, spec 16 Q1,
+ * R1). The Attrition Option fights no battles (it is one die roll, ticket 16-7) and the Defensive one passes; a Front with no choice is
+ * Defensive (TODO(verify) E8, `DEFAULT_FRONT_OPTION`). Options belong to the side to move, so another side may not attack.
+ * Air and naval missions read the same hook (specs 09, 12).
+ */
+export const frontAllowsAttack = (_ctx: GameContext, state: GameState, side: Side, front: Front): boolean =>
+  side === state.activeSide && frontOptionOf(state, front) === "offensive";
 
 const POWERS: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
 

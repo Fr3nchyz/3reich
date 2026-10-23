@@ -7,6 +7,7 @@ import { resultRows } from "../src/ui/attackResults";
 import { resultCardHtml } from "../src/ui/resultView";
 import { run, type Session } from "../src/ui/session";
 import { eventSide } from "../src/ui/logSide";
+import { ALL_OFFENSIVE } from "./helpers";
 import { atMovement } from "./helpers-move-session";
 import { counter } from "./board";
 
@@ -15,7 +16,7 @@ import { counter } from "./board";
 const at7h = (units: Unit[]): Session => {
   const s = atMovement();
   s.humanSide = "allies";
-  const state: GameState = { ...s.state, activeSide: "allies", position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), combat: undefined, unsuppliedAtStart: undefined };
+  const state: GameState = { ...s.state, activeSide: "allies", frontOptions: ALL_OFFENSIVE, position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), combat: undefined, unsuppliedAtStart: undefined };
   s.state = state;
   s.log = [];
   s.battle = null;

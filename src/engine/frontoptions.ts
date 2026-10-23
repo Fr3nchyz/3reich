@@ -35,6 +35,16 @@ export const WINTER_BAN_TEXT = "The Russian winter is on: the Axis may not take 
 /** The Option the side to move has on a Front this Player Turn (Ref 11.21). */
 export const frontOptionOf = (state: GameState, front: Front): FrontOption => state.frontOptions[front]?.option ?? DEFAULT_FRONT_OPTION;
 
+/** Why an attack on `front` is refused when the side has no Offensive Option there (Ref 11.21, spec 16 Q1, D1); the screens say the same. */
+export const noOffensiveText = (front: Front): string =>
+  `You did not choose the Offensive Option on the ${front[0]!.toUpperCase()}${front.slice(1)} Front. It can be chosen only at step 3.`;
+
+/** Test helper: the Offensive Option on `fronts` for the side to move, as if chosen and paid at step 3 (no BRPs spent). */
+export const withOffensive = (state: GameState, ...fronts: Front[]): GameState => ({
+  ...state,
+  frontOptions: { ...state.frontOptions, ...Object.fromEntries(fronts.map((f) => [f, { option: "offensive" as const }])) },
+});
+
 /** A new Player Turn begins: last turn's Options lapse. */
 export const resetFrontOptions = (state: GameState): GameState => (Object.keys(state.frontOptions).length === 0 ? state : { ...state, frontOptions: {} });
 

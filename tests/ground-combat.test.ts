@@ -8,7 +8,7 @@ import { resolveOffensiveCombat } from "../src/engine/combat";
 import { rollD6 } from "../src/engine/rng";
 import { settle } from "../src/engine/turn";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 
 /**
  * Spec 04: ground combat at step 7h (Ref 12.1-12.2, 4.5; PC README 14.23). Positions are on the real
@@ -22,7 +22,7 @@ const POL = (id: string, at: string, strength = 1) => unit(id, "poland", "infant
 
 /** Axis to move at step 7h with these units on the map and the dice at `seed`. */
 function at7h(units: Unit[], seed = 1, extra: Partial<GameState> = {}): GameState {
-  return { ...atStart(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), rngState: seed, ...extra };
+  return { ...atStartOffensive(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" }, units: Object.fromEntries(units.map((u) => [u.id, u])), rngState: seed, ...extra };
 }
 const ok = (r: ReturnType<typeof applyAction>) => {
   if (!r.ok) throw new Error(r.error);

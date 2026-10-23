@@ -1,5 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
+import { noOffensiveText } from "./frontoptions";
 import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { combatOf } from "./combat-record";
@@ -128,7 +129,7 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   const far = units.find((u) => !crossable(ctx, u.at, action.target));
   if (far) return { ok: false, error: `${far.id} at ${far.at} is not next to ${action.target} across a hexside ground units may attack over.` };
   if (ONE_ATTACK_PER_HEX && rec.targets.includes(action.target)) return { ok: false, error: `${action.target} has already been attacked this turn.` };
-  if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
+  if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: noOffensiveText(target.front) };
   const defenders = defendersAt(state, units, action.target);
   if (defenders.length === 0) {
     // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll; air and the like are destroyed, fleets are driven out to a friendly port (capture.ts).

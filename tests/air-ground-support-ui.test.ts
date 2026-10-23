@@ -12,13 +12,13 @@ import { takeAction } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 import { CTX } from "./helpers";
 import { atMovement } from "./helpers-move-session";
-import { at6f, inf, okOf } from "./helpers-move";
+import { ALL_OFFENSIVE, at6f, inf, okOf } from "./helpers-move";
 
 // Spec 09, ticket 09-14: the screen side of ground support. Poznan (M33) holds Polish infantry; German infantry at M32 can attack it; the planes are at J32.
 
 const air = (id: string, at: string, strength: number): Unit => inf(id, "germany", at, strength, 4, "air");
 const units = (): Unit[] => [inf("u1", "germany", "M32", 4, 3), inf("u2", "germany", "M32", 2, 3), inf("p1", "poland", "M33", 2, 3), air("a1", "J32", 3), air("a2", "J32", 2)];
-const board = (step: "7b" | "7h"): GameState => at6f(units(), "axis", SCENARIO_1939, { nextUnitId: 100, position: { part: "player-turn", turn: 1, step } });
+const board = (step: "7b" | "7h"): GameState => at6f(units(), "axis", SCENARIO_1939, { nextUnitId: 100, frontOptions: ALL_OFFENSIVE, position: { part: "player-turn", turn: 1, step } });
 const session = (step: "7b" | "7h"): Session => {
   const s = atMovement();
   s.state = board(step);

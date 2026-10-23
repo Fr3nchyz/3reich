@@ -4,14 +4,14 @@ import { isEnemy } from "../src/engine/attack-rules";
 import { combatOf } from "../src/engine/combat-record";
 import { rollD6 } from "../src/engine/rng";
 import type { ForceOwner, GameState, Unit, UnitType } from "../src/engine/types";
-import { CTX, atStart } from "./helpers";
+import { ALL_OFFENSIVE, CTX, atStart, atStartOffensive } from "./helpers";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 
 /** Spec 04 ground combat: stacking on advance (Ref 5.0, 26.0), malformed actions, minor forces, Replacement counters, turn progression. */
 
 const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, at: string): Unit => ({ id, owner, type, strength, at });
 const at7h = (units: Unit[], seed = 1, extra: Partial<GameState> = {}): GameState => ({
-  ...atStart(SCENARIO_1939, 1),
+  ...atStartOffensive(SCENARIO_1939, 1),
   activeSide: "axis",
   position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries(units.map((u) => [u.id, u])),
@@ -134,7 +134,7 @@ describe("the combat record across real turns", () => {
     expect(s.combat?.turn).not.toBe(`${s.year}-${s.season}-${s.activeSide}`); // the stored record is stale...
     expect(combatOf(s)).toMatchObject({ attacked: [], targets: [], pending: null, advances: [] }); // ...and not used
     // A Polish unit appears again at M33; g1 (if it is still at M32) can attack it, which a stale record would forbid.
-    const again = { ...s, units: { ...s.units, p2: unit("p2", "poland", "infantry", 1, "M33"), g1: { ...s.units.g1!, at: "M32" } }, position: { part: "player-turn" as const, turn: 1 as const, step: "7h" } };
+    const again = { ...s, frontOptions: ALL_OFFENSIVE, units: { ...s.units, p2: unit("p2", "poland", "infantry", 1, "M33"), g1: { ...s.units.g1!, at: "M32" } }, position: { part: "player-turn" as const, turn: 1 as const, step: "7h" } };
     expect(legalActions(CTX, again).filter((a) => a.type === "ATTACK")).toEqual([{ type: "ATTACK", side: "axis", units: ["g1"], target: "M33" }]);
   });
 });

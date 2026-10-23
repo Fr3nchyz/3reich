@@ -13,13 +13,13 @@ import { newGame, turnIndex } from "../src/engine/game";
 import type { GameState, Scenario, Unit } from "../src/engine/types";
 import { computerTick, computerToMove } from "../src/ui/computerPlay";
 import { createSession } from "../src/ui/session";
-import { CTX, atStart } from "./helpers";
+import { CTX, atStart, atStartOffensive } from "./helpers";
 
 /** The computer at step 7h (spec 04/05): it attacks only at good odds (ai-assault.test.ts) and never gets stuck there. */
 
 const u = (id: string, owner: Unit["owner"], strength: number, at: string): Unit => ({ id, owner, type: "infantry", strength, at });
 const at7h = (units: Unit[], seed: number, extra: Partial<GameState> = {}): GameState => ({
-  ...atStart(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
+  ...atStartOffensive(SCENARIO_1939, 1), activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7h" },
   units: Object.fromEntries(units.map((x) => [x.id, x])), rngState: seed, ...extra,
 });
 const ok = (r: ReturnType<typeof applyAction>) => { if (!r.ok) throw new Error(r.error); return r.state; };

@@ -15,7 +15,7 @@ import { angloFrenchHexes } from "../src/engine/stacking";
 import { applyDeclaration, declarationTargets } from "../src/engine/war";
 import type { GameState, Unit } from "../src/engine/types";
 import { board, counter } from "./board";
-import { CTX, atStart, ctxFor } from "./helpers";
+import { CTX, atStart, atStartOffensive, ctxFor } from "./helpers";
 
 /**
  * Tests added after the mutation run in docs/MUTATION.md: each pins a rule that a deliberate edit of the
@@ -146,7 +146,7 @@ describe("an Exchange with equal totals takes everything (Ref 12.2)", () => {
   it("6 attacking factors against 3 doubled on plain (6): both stacks are eliminated and nobody chooses", () => {
     const units: Unit[] = [counter("g1", "germany", "infantry", 6, "M32"), counter("p1", "poland", "infantry", 3, "M33")];
     const s: GameState = {
-      ...atStart(SCENARIO_1939, 1),
+      ...atStartOffensive(SCENARIO_1939, 1),
       activeSide: "axis",
       position: { part: "player-turn", turn: 1, step: "7h" },
       units: Object.fromEntries(units.map((u) => [u.id, u])),
