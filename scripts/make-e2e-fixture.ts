@@ -4,6 +4,8 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions } from "../src/engine/actions";
 import type { GameState } from "../src/engine/types";
 import { surrenderAsking } from "../src/engine/soviet-record";
+import { surrenderShortfall } from "../src/engine/soviet-surrender";
+import { MAP } from "../src/data/map";
 import { winterAsking, winterInForce } from "../src/engine/winter-record";
 import { computerAct } from "../src/ui/computerPlay";
 import { newSession, computerSetup } from "../src/ui/session";
@@ -65,3 +67,16 @@ writeFileSync("tests/e2e/fixtures/winter-started.json", JSON.stringify({ scenari
 const offer = cutAt(4, (st) => surrenderAsking(st));
 console.log("surrender fixture:", offer.length, "actions");
 writeFileSync("tests/e2e/fixtures/surrender-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 4, actions: offer }));
+
+// tests/e2e/fixtures/surrender-build.json (spec 14, ticket 14-16): a whole game of the computer (1939, seed 5, no change to the scenario) cut at the first time the Allied
+// Player Turn stands at step 8b with the offer to surrender on its way (Summer 1941: 13 more Russian factors would stop it). Loaded with the `?e2e` hook for the Allies, who
+// read the construction warning, build a Russian unit and watch the number fall. `shortfall` is the number the warning must show at first.
+const warnCtx = { map: MAP, scenario: SCENARIO_1939 };
+let shortfall = 0;
+const build = cutAt(5, (st) => {
+  const n = st.position?.part === "player-turn" && st.position.step === "8b" && st.activeSide === "allies" ? surrenderShortfall(warnCtx, st) : null;
+  if (n !== null) shortfall = n;
+  return n !== null;
+});
+console.log("surrender build fixture:", build.length, "actions, shortfall", shortfall);
+writeFileSync("tests/e2e/fixtures/surrender-build.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 5, shortfall, actions: build }));
