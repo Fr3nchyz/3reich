@@ -1,0 +1,39 @@
+name: Codex task
+description: A bounded implementation task to hand off to Codex Cloud
+title: "[codex] "
+labels: ["codex-task"]
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: One or two sentences — what should exist when this is done.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / out of scope
+      description: Files or areas Codex should touch, and anything it must leave alone.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: How to verify this is done — specific commands, pages, or behaviors to check.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Reminder of standing guardrails.
+      value: |
+        - No direct push to main; open a PR from a branch.
+        - No merges, production deploys, or Porkbun DNS changes.
+        - Do not modify secrets or environment variables.
+        - Do not weaken, skip, or delete tests to make CI pass.
+        - Only touch files relevant to this task.
+    validations:
+      required: true
