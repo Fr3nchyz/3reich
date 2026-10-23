@@ -16,7 +16,8 @@
     "lint": "eslint --max-warnings 0 .",
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
-    "selfplay": "vite-node scripts/selfplay/cli.ts"
+    "selfplay": "vite-node scripts/selfplay/cli.ts",
+    "compare-games": "node scripts/compare-games.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
