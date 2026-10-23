@@ -104,6 +104,8 @@ export interface Session {
   siberian?: { type: UnitType; strength: number } | null;
   /** The Game Turn ("1941-winter") whose Free Siberian Transfer card has taken the keyboard focus once. Screen state, never saved. */
   siberianFocused?: string;
+  /** The card of Russia's offer to surrender has taken the keyboard focus once for this offer (spec 14, ticket 14-16). Screen state, never saved. */
+  surrenderFocused?: boolean;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
   /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */

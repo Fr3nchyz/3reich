@@ -188,6 +188,21 @@ describe("the counters and the cities", () => {
     expect(m.chips.every((c) => !c.allowed)).toBe(true);
   });
 
+  it("two pool entries of one kind (an undated and a dated 3-3 infantry) give one chip, one action for each city and one button for each city", () => {
+    const pool = [{ type: "infantry" as const, strength: 3, movement: 3, count: 2 }, { type: "infantry" as const, strength: 3, movement: 3, count: 4, from: { year: 1941, season: "winter" as const } }];
+    const s = sessionAt(withPool(at8a(), pool));
+    const offered = siberianOffers(s);
+    const keys = offered.map((a) => `${a.unit.type}:${a.unit.strength}:${a.at}`);
+    expect(new Set(keys).size).toBe(keys.length);
+    pickSiberian(s, "infantry:3");
+    const c = card(s);
+    expect((c.match(/data-siberian="infantry:3"/g) ?? []).length).toBe(1);
+    expect(text(c)).toContain("6 in the pool");
+    const cities = [...c.matchAll(/data-siberian-city="([A-Z]\d+)"/g)].map((m) => m[1]);
+    expect(new Set(cities).size).toBe(cities.length);
+    expect(cities.length).toBe(offered.length);
+  });
+
   it("in Spring 1942 the line says three", () => {
     const s = sessionAt(at8a([], {}, SCENARIO_1939, SPRING_42));
     expect(text(card(s))).toContain("You may take 3 units this turn (Spring 1942).");
