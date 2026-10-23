@@ -17,6 +17,8 @@ import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
 import type { MoveChoice } from "./moveDraft";
 import type { MoveUndo } from "./moveUndo";
+import type { SrChoice } from "./redeployTap";
+import type { SrUndo } from "./redeployUndo";
 import { trackBattle, type BattleResult } from "./resultModel";
 import { plural } from "./attackText";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
@@ -77,6 +79,10 @@ export interface Session {
   moveChosen?: MoveChoice | null;
   /** The player's moves of the current step 6f, for "Take back last move" (spec 10, 10-6; moveUndo.ts). Screen state, never saved; it holds only while the game is still where the last move left it. */
   undo?: MoveUndo | null;
+  /** The stack chosen to redeploy at step 9e and the units ticked in it (spec 16 D4; the yellow hexes are where they can go together), or null. Screen state, never saved. */
+  redeploy?: SrChoice | null;
+  /** The player's redeployments of the current step 9e, for "Take back last redeployment" (redeployUndo.ts). Screen state, never saved; it holds only while the game is still where the last one left it. */
+  srUndo?: SrUndo | null;
   /** The hex last tapped to look at (spec 07, part A): the hex card shows it. Screen state only, never saved; closing the card clears it. */
   lookedAt?: string | null;
   /** The attack being put together at step 7h (spec 07, part B): the hex and the chosen units. Screen state, never saved. */
