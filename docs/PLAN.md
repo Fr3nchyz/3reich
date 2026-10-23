@@ -25,6 +25,7 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 | Group | What the player gets | Tickets |
 |---|---|---|
 | 1. The game can end (spec 14) | a result at the end ("Axis wins on objectives"), countries that fall when their capital is taken, the Russian winter, Russia's surrender | 17 |
+| 1b. Lost units come back (spec 17) | a destroyed unit goes back to its nation's pool and can be bought again; a rebuilt fleet waits a year; the Siberian Transfer finds Russian units. Draft, waiting for owner review | 7 |
 | 2. Minor countries (spec 15) | Poland, Norway, the Low Countries and the Balkans exist as countries that can be attacked, join a side, and give or cost money | 17 |
 | 3. Ground rules still missing (spec 16) | attrition, exploitation (breakthrough), redeploying units by rail, fortress changes, the Offensive Option | 24 |
 | 4. Fleets Release I (spec 12) | supply by sea, so units on islands and cut-off coasts are not abandoned (see below) | 4 left (12-5, 12-6, 12-7, 12-8) |
@@ -40,7 +41,7 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 
 **None of these four is visible to Frank until the switch is turned on, and the switch also needs the computer to defend Berlin.** They are rule fidelity, not game feel.
 
-**Recommended order (changed from before).** Do group 1 first, starting with the end-of-game result (14-1 to 14-4: four tickets), because a game that can end is the biggest step toward something Frank can really play. Then groups 3 and 2 (the rules that change how a ground war plays), then the computer fixes, then the rest of fleets and the supply switch, then save and load once you have played.
+**Recommended order (changed from before).** Do group 1 first, starting with the end-of-game result (14-1 to 14-4: four tickets), because a game that can end is the biggest step toward something Frank can really play. Then group 1b (spec 17, lost units come back; added 2026-10-23, once you have reviewed the spec), then groups 3 and 2 (the rules that change how a ground war plays), then the computer fixes, then the rest of fleets and the supply switch, then save and load once you have played.
 
 **How the cost comes down.** Small tickets go to the cheap model (`grunt`) with the automatic gates as the check; a review round is spent only on medium and large engine changes; the browser tests run nightly, not on every change (see the CI file).
 
@@ -156,6 +157,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-19 Computer answers every new prompt (II.A, 8a, 10a): the three policies are constants in `src/ai/policies.ts`; whole games of all four scenarios and either side human prove no prompt stalls | | S: **Done** (2026-10-23). No policy and no recording changed |
 | 14-20, 14-24 Self-play gate, docs | | S, S (Beta) |
 | 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
+| **Lost units come back: spec written** ([17](specs/17-rebuild-eliminated-units.md), Approved 2026-10-23 (Q1 to Q4 yes); 7 Beta tickets, 4 S and 3 M; comes after group 1 (spec 14) and before group 3 (spec 16)) | 4.5 | 17-0 read the manual pages (S, needs network access to the manual's host or Frank), 17-1 the return to the pool (M), 17-2 air and fleet factors (S), 17-3 gray fleets (M), 17-4 screens (S), 17-5 Siberian Transfer and self-play (M), 17-6 docs (S) |
 | Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
 | **Attrition, Exploitation, Strategic Redeployment, Fortress changes: spec written** ([16](specs/16-attrition-exploitation-redeployment.md), draft for review, 28 tickets; sizes below are the spec's, not guesses; who owns what is in part H of spec 16) | 6.2, 6.3, 5.6, 5.7 | 24 Beta tickets (5 S, 13 M, 6 L), of which 12 are Beta-critical (1 S, 8 M, 3 L); 4 Release 1 tickets (3 M, 1 L); not in the 47 counted above |
 | 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). |
@@ -167,7 +169,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-22, 16-23 Air units and airbases, fleets and escort chains, by redeployment | | M, L (Release 1) |
 | 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta) |
 | 16-27 Gate and docs | | M (Beta-critical) |
-| Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec 17, owner's Q6) |
+| Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
 | Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
