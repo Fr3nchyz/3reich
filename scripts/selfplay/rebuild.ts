@@ -78,7 +78,7 @@ function holdings(state: GameState): Map<string, number> {
   return out;
 }
 
-/** RB13: at the end, no nation holds more counters of a kind (map plus pool) than its scenario lists. `initial` is the state before setup. Each excess is an anomaly. */
+/** RB13: at the end, no nation holds more counters of a kind (map plus pool) than its scenario lists. `initial` is the state before setup (or the position play began from). Each excess is an anomaly. */
 export function auditCounters(initial: GameState, final: GameState): Finding[] {
   const start = holdings(initial);
   const end = holdings(final);

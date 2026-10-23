@@ -70,6 +70,8 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
 
   let state = initial;
   let setupActions = 0;
+  /** The position play began from (after any `prepare`): RB13 counts against it, so a test that plants a counter does not trip the check. */
+  let played = initial;
   try {
     for (const a of (hooks.setup ?? autoSetup)(ctx, state)) {
       const r = applyAction(ctx, state, a);
@@ -79,6 +81,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     }
     setupActions = actions.length;
     if (hooks.prepare) state = hooks.prepare(state);
+    played = state;
     if (state.phase !== "player-turn") note("setup", state, `setup finished but the game is in phase "${state.phase}", not in play`);
   } catch (e) {
     note("exception", state, `setup failed: ${(e as Error).message}`);
@@ -130,7 +133,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
   }
   // The run stopped inside a Game Turn (an anomaly): report what it did so far.
   if (tally.count > 0) turns.push(tally.close(ctx, state, true));
-  for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state), ...auditCounters(initial, state)]) note(p.kind, state, p.detail);
+  for (const p of [...sequence.finish(), ...auditConquered(ctx, state), ...auditObjectives(ctx, state), ...auditEnd(ctx, state), ...auditCounters(played, state)]) note(p.kind, state, p.detail);
   const ended = state.phase === "game-over" ? "game-over" : turnIndex(state) >= stop ? "turn-limit" : "stopped";
   // A game played "to the end" that did not stop on another anomaly must have ended with a result.
   if (endedWithoutResult(opt.turns, ended, anomalies.length)) note("no-result", state, `the game did not reach its end (phase "${state.phase}")`);
