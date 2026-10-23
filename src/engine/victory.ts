@@ -77,7 +77,7 @@ function axisConqueredAt(state: GameState): GameTurn | null {
   return turnIndex(g.at) >= turnIndex(i.at) ? g.at : i.at;
 }
 
-const alliedPowersConquered = (state: GameState): number => ALLIED_MAJOR_POWERS.filter((p) => conquestOf(state, p) !== undefined).length;
+export const alliedPowersConquered = (state: GameState): number => ALLIED_MAJOR_POWERS.filter((p) => conquestOf(state, p) !== undefined).length;
 
 /**
  * The result of a conquest scenario, or null if the conquests so far decide nothing yet. `last`: whether

@@ -3,11 +3,13 @@ import { conquestHalf } from "../engine/conquest-income";
 import { creditedObjectives, sovietOffer, SURRENDER_FACTOR_LIMIT, SURRENDER_RATIO, surrenderShortfall } from "../engine/soviet-surrender";
 import { surrenderAsking } from "../engine/soviet-record";
 import type { GameState } from "../engine/types";
+import { alliedPowersConquered } from "../engine/victory";
 import { computerToMove } from "./computerPlay";
 import {
   SURRENDER_TEXT,
   surrenderAxisLine,
   surrenderCreditedLine,
+  surrenderEndsGameLine,
   surrenderIncomeLine,
   surrenderRussianLine,
   surrenderWarning,
@@ -36,12 +38,15 @@ export function surrenderCard(ctx: GameContext, state: GameState): SurrenderCard
   if (!surrenderAsking(state)) return null;
   const test = sovietOffer(ctx, state);
   const start = ctx.scenario.nations.ussr.brpTotal;
+  const rules = ctx.scenario.victory;
+  // Ref 2.4: only the Campaign ends on the third Allied Major Power; Russia is that third one when the others are down (V3: at once).
+  const ends = rules.kind === "campaign" ? [surrenderEndsGameLine(alliedPowersConquered(state) + 1 >= rules.axis.decisivePowers)] : [];
   return {
     title: SURRENDER_TEXT.title,
     facts: [surrenderRussianLine(test.russian), surrenderAxisLine(test.axis), surrenderWhyLine(SURRENDER_FACTOR_LIMIT, SURRENDER_RATIO.axis, SURRENDER_RATIO.russian)],
     accept: {
       title: SURRENDER_TEXT.ifAccept,
-      lines: [SURRENDER_TEXT.leavesWar, surrenderCreditedLine(creditedObjectives(ctx, state).length), surrenderIncomeLine(conquestHalf(start), start)],
+      lines: [SURRENDER_TEXT.leavesWar, ...ends, surrenderCreditedLine(creditedObjectives(ctx, state).length), surrenderIncomeLine(conquestHalf(start), start)],
     },
     refuse: { title: SURRENDER_TEXT.ifRefuse, lines: [SURRENDER_TEXT.refuseGoesOn, SURRENDER_TEXT.refuseOnce] },
   };

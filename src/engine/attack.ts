@@ -1,4 +1,5 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
+import { angloFrenchStopProblem } from "./anglo-french";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
 import { noOffensiveText } from "./frontoptions";
 import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
@@ -72,7 +73,7 @@ function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string
   let s = state;
   for (const id of ids) {
     const u = s.units[id]!;
-    const problem = stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, to);
+    const problem = angloFrenchStopProblem(ctx, state, u.owner, to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, to);
     if (problem) return problem;
     s = { ...s, units: { ...s.units, [id]: { ...u, at: to } } };
   }
@@ -95,7 +96,7 @@ function legalAdvances(ctx: GameContext, state: GameState): Action[] {
       for (let i = from; i < ids.length; i++) {
         const id = ids[i]!;
         const u = s.units[id]!;
-        if (stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to)) continue;
+        if (angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to)) continue;
         const next = mask | (1 << i);
         found.push({ mask: next, action: { type: "ADVANCE", side: state.activeSide, units: ids.filter((_, k) => next & (1 << k)), to: chance.to } });
         walk({ ...s, units: { ...s.units, [id]: { ...u, at: chance.to } } }, i + 1, next);
