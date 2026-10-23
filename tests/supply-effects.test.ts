@@ -68,7 +68,10 @@ describe("the Player Turn ends: cut-off units are eliminated (Ref 19.4, 11.74)",
     expect(r.state.units.g1).toBeUndefined();
     expect(r.state.units.g2).toBeDefined();
     expect(r.state.unsuppliedAtStart).toBeUndefined();
-    expect(r.events).toEqual([{ type: "UNIT_ELIMINATED", unitId: "g1", owner: "germany", at: "S30", reason: "unsupplied" }]);
+    expect(r.events).toEqual([
+      { type: "UNIT_ELIMINATED", unitId: "g1", owner: "germany", at: "S30", reason: "unsupplied" },
+      { type: "UNIT_RETURNED_TO_POOL", unitId: "g1", owner: "germany", unitType: "infantry", strength: 3, at: "S30", pool: "germany" }, // spec 17 R1 (Ref 11.74)
+    ]);
   });
 
   it("spares a unit that got back into supply during the turn (it was cut off at the start only)", () => {
