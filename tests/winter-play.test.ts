@@ -78,8 +78,7 @@ describe("the computer at II.A", () => {
 describe("whole computer games with the winter question", () => {
   it("1939, postponing: Winter 1939 asks, the Allies wait, Winter 1940 starts with no question, and the winter is never rolled again; six Game Turns, no anomaly", () => {
     const r = runGame({ scenario: "1939", seed: 1, turns: 6, verify: true }, { prepare: warWithRussia });
-    // The planted war puts Russian units in Poland; Poland's hexes kept under them at the fall stay Polish when they leave (V12): the ticket 14-20 check "conquered-hex" reports that, and it is not what this test is about.
-    expect(r.anomalies.filter((a) => a.kind !== "conquered-hex")).toEqual([]);
+    expect(r.anomalies).toEqual([]);
     const { events, asked } = replayChecked(r);
     const w = events.filter((e) => e.type.startsWith("WINTER"));
     expect(w.map((e) => e.type)).toEqual(["WINTER_ROLLED", "WINTER_POSTPONED", "WINTER_STARTED"]);
@@ -95,8 +94,7 @@ describe("whole computer games with the winter question", () => {
       return d && d.action.type === "CHOOSE_WINTER" ? { action: { ...d.action, postpone: false }, why: "test" } : d;
     };
     const r = runGame({ scenario: "1939", seed: 1, turns: 6, verify: true }, { prepare: warWithRussia, choose: now });
-    // The planted war puts Russian units in Poland; Poland's hexes kept under them at the fall stay Polish when they leave (V12): the ticket 14-20 check "conquered-hex" reports that, and it is not what this test is about.
-    expect(r.anomalies.filter((a) => a.kind !== "conquered-hex")).toEqual([]);
+    expect(r.anomalies).toEqual([]);
     const { events } = replayChecked(r);
     expect(events.filter((e) => e.type.startsWith("WINTER")).map((e) => e.type)).toEqual(["WINTER_ROLLED", "WINTER_STARTED"]);
     expect(r.final.winter).toMatchObject({ stage: "over", inForce: "1939-winter" });

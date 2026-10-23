@@ -4,7 +4,7 @@ import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
-import type { Conquest } from "./conquest-record";
+import type { Conquest, KeptHex } from "./conquest-record";
 import type { SiberianRecord, SovietRecord } from "./soviet-record";
 import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
 import type { RussianWinter } from "./winter-record";
@@ -321,6 +321,8 @@ export interface GameState {
   moves?: MoveRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
+  /** Hexes kept at a fall under hostile ground units (V12) that have not passed on yet (ticket 14-25, V62). Absent: none (and in an older saved game). */
+  keptHexes?: Record<HexId, KeptHex>;
   /** The Russian Winter (spec 14 R10): the roll made at II.A, whether the Allies are asked, the Game Turn it is in force in. Absent in an older saved game: no winter yet (or already past, where the scenario says so). */
   winter?: RussianWinter;
   /** The Free Siberian Transfer so far (spec 14 R11); `used` switches the victory tables. Absent: not used. */
