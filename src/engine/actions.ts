@@ -14,6 +14,7 @@ import { applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
+import { applyEliminateOverstack, hasOverstackWork, legalOverstack, OVERSTACK_STEPS } from "./overstack-action";
 import { applyMove, legalMoves } from "./move-action";
 import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
@@ -39,6 +40,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
+  if (OVERSTACK_STEPS.includes(step)) return legalOverstack(ctx, state);
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
@@ -68,6 +70,8 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
+  // An overstack at 6g or 9j holds the step too: it is eliminated before the game moves on (R15).
+  if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return stepActions(ctx, state, step);
   return combatOf(state).pending && step === "7h" ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
@@ -125,6 +129,14 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     }
     case "MOVE":
       return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));
+    case "ELIMINATE_OVERSTACK": {
+      const at = waitingStep(state);
+      if (at === undefined || !OVERSTACK_STEPS.includes(at)) return { ok: false, error: `Overstacked units are eliminated in step ${describeStep("6g")} or ${describeStep("9j")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
+      const done = applyEliminateOverstack(ctx, state, action);
+      if (!done.ok) return done;
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
+    }
     case "PLACE_AIRBASE":
       return applyPlaceAirbase(ctx, state, action);
     case "STAGE_AIR":
@@ -176,6 +188,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (step === "7h" && combatOf(state).pending) return { ok: false, error: "An Exchange in step 7h is waiting for its losses to be chosen." };
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
