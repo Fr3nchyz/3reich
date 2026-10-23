@@ -64,6 +64,8 @@ writeFileSync("tests/e2e/fixtures/winter-started.json", JSON.stringify({ scenari
 // tests/e2e/fixtures/surrender-question.json (spec 14, ticket 14-15): a whole game of the computer (1939, seed 4, no change to the scenario) cut where Russia offers to
 // surrender (Summer 1942, the end of an Allied Player Turn): the game stands at step 10a and the Axis are asked. Loaded with the `?e2e` hook for the Axis (the two
 // answers are buttons) and for the Allies (the computer, playing the Axis, answers).
+// Since spec 17 (ticket 17-1) no game of the plain computer reaches the offer (its Russia rebuilds its losses), so this part and the next throw; the committed
+// surrender-question.json is the old seed-4 game with the END_STEP actions the engine now needs (`replayRecord`), and surrender-build.json is the old record itself.
 const offer = cutAt(4, (st) => surrenderAsking(st));
 console.log("surrender fixture:", offer.length, "actions");
 writeFileSync("tests/e2e/fixtures/surrender-question.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: 4, actions: offer }));

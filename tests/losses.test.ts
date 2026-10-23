@@ -15,6 +15,7 @@ import { MAP } from "../src/data/map";
 import { runGame } from "../scripts/selfplay/runner";
 import { CTX, atStart, ctxFor } from "./helpers";
 import { at6f, inf } from "./helpers-move";
+import { at8a, withPool } from "./helpers-siberian";
 
 // Spec 17, ticket 17-1: a lost unit goes back to its nation's Force Pool and is built again at step 8b (R1, R2), unless the loss is for good (R4); old records
 // still replay (R7). The readings are TODO(verify) RB1 to RB3, RB5, RB9 to RB11, RB13 to RB15 (docs/TODO-VERIFY.md); the tests pin them.
@@ -238,7 +239,9 @@ describe("RB10: Britain builds the Free French losses, in Britain, and they stay
 });
 
 describe("R7: a record made before ticket 17-1 still replays to its end", () => {
-  const fixtures = ["axis-at-7h", "ended-1939", "siberian-card", "surrender-build", "surrender-question", "winter-question", "winter-started"];
+  // surrender-question.json was rewritten by this ticket with the END_STEP actions `replayRecord` puts in (the browser test cuts it one action before its end);
+  // the six others are the records made on the old engine.
+  const fixtures = ["axis-at-7h", "ended-1939", "siberian-card", "surrender-build", "winter-question", "winter-started"];
   const scenarios = { "1939": SCENARIO_1939, "1942": SCENARIO_1942 } as Record<string, typeof SCENARIO_1939>;
   for (const name of fixtures) {
     it(`${name}.json (recorded on the old engine): every recorded action is applied, in order; a step is ended only at 8a or 8b`, () => {
@@ -276,6 +279,41 @@ describe("R7: a record made before ticket 17-1 still replays to its end", () => 
     const s = at("8b", []);
     expect(Object.values(s.pools).every((p) => p.allowableBuilds.every((e) => e.returned === undefined))).toBe(true);
     expect(legalActions(CTX, s).length).toBeGreaterThan(0);
+  });
+});
+
+describe("case by case (the checks the mutation run asked for)", () => {
+  const emptyGermanPool = (s: GameState): GameState => ({ ...s, pools: { ...s.pools, germany: { ...s.pools.germany!, allowableBuilds: [] } } });
+  it("a returned counter adds to an entry only of the same type, factors and movement, the first entry of the pool included", () => {
+    const r = routeLosses(emptyGermanPool(at("7h", [])), [inf("a", "germany", "M32", 3, 3), inf("b", "germany", "M32", 3, 3), inf("c", "germany", "M32", 2, 3), inf("d", "germany", "M32", 3, 3, "armor")]);
+    expect(r.state.pools.germany!.allowableBuilds).toEqual([
+      { type: "infantry", strength: 3, movement: 3, count: 2, returned: true },
+      { type: "infantry", strength: 2, movement: 3, count: 1, returned: true },
+      { type: "armor", strength: 3, movement: 3, count: 1, returned: true },
+    ]);
+  });
+  it("Britain is offered no Free French counter that did not come back, even one it could afford now", () => {
+    const ctx = ctxFor(SCENARIO_1942);
+    const s0 = s1942();
+    const ff = s0.pools["free-france"]!;
+    const fresh: ForceEntry = { type: "infantry", strength: 2, movement: 3, count: 1 };
+    const s: GameState = { ...s0, activeSide: "allies", position: { part: "player-turn", turn: 2, step: "8b" }, pools: { ...s0.pools, "free-france": { ...ff, allowableBuilds: [fresh] } } };
+    expect(legalBuilds(ctx, s).some((a) => a.pool === "free-france")).toBe(false);
+    const where = buildPlaces(ctx, s, "britain", { type: "infantry", strength: 2 })[0]!;
+    expect(applyAction(ctx, s, { type: "BUILD", owner: "britain", pool: "free-france", unit: { type: "infantry", strength: 2, returned: true }, at: where })).toMatchObject({ ok: false, error: expect.stringMatching(/returned 2-factor infantry of the free-france pool/) });
+    expect(applyAction(CTX, lost8b(), { type: "BUILD", owner: "germany", unit: { type: "infantry", strength: 2, returned: true }, at: "M32" })).toMatchObject({ ok: false, error: expect.not.stringMatching(/pool/) });
+  });
+  it("step 8b with nothing to build, or 8a with nothing to take, does not wait: no step is ended for it", () => {
+    const s = lost8b();
+    const noPools = { ...s, pools: { ...s.pools, germany: { ...s.pools.germany!, allowableBuilds: [] }, italy: { ...s.pools.italy!, allowableBuilds: [] } } };
+    expect(legalBuilds(CTX, noPools)).toEqual([]);
+    expect(waitsOnlyForReturned(CTX, noPools)).toBeNull();
+    const back: ForceEntry = { type: "infantry", strength: 3, movement: 3, count: 1, returned: true };
+    const fresh: ForceEntry = { type: "infantry", strength: 2, movement: 3, count: 1 };
+    expect(waitsOnlyForReturned(CTX, withPool(at8a(), [back]))).toBe("8a");
+    expect(waitsOnlyForReturned(CTX, withPool(at8a(), [back, fresh]))).toBeNull();
+    expect(waitsOnlyForReturned(CTX, withPool(at8a(), []))).toBeNull();
+    expect(waitsOnlyForReturned(CTX, withPool(at8a([], { position: { part: "player-turn", turn: 2, step: "9a" } }), [back]))).toBeNull();
   });
 });
 
