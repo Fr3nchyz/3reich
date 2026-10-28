@@ -90,8 +90,9 @@ describe("when Sevastopol loses and regains fortress status (spec 16 R28; AER35/
     expect(refreshFortresses(CTX, { ...s, control: { ...s.control, V38: "germany" } }).fortresses.V38).not.toBe(true);
   });
 
-  it("initializes the first Axis turn from ownership, before an Allied result exists", () => {
-    expect(status(position([], { activeSide: "axis" }))).toBe(true);
+  it("reads the conditions on an Axis turn when no Allied result is kept yet (R28)", () => {
+    expect(status(position([], { activeSide: "axis" }))).toBe(false);
+    expect(status(position(odessa, { activeSide: "axis" }))).toBe(true);
   });
 
   it("returns the same state when the recorded result is unchanged", () => {

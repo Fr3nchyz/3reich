@@ -35,7 +35,10 @@ export function refreshFortresses(ctx: GameContext, state: GameState): GameState
       else if (state.activeSide === "allies") {
         const { port, supplyLine } = sevastopolConditions(ctx, state);
         next[id] = port !== null || supplyLine; // AER35: can lose and regain on every Allied turn
-      } else next[id] = next[id] ?? true; // only control is re-read; initial Axis turn has no previous Allied result
+      } else if (next[id] === undefined) {
+        const { port, supplyLine } = sevastopolConditions(ctx, state); // no Allied result kept yet: read the conditions now (R28)
+        next[id] = port !== null || supplyLine;
+      }
       continue;
     }
     if (next[id] === false) continue; // lost for good
