@@ -24,6 +24,8 @@ import { hexCardHtml } from "./hexCardView";
 import { attackHtml } from "./attackView";
 import { leadsStatus, nextBarHtml } from "./nextBar";
 import { moveHtml } from "./moveView";
+import { redeployHtml } from "./redeployView";
+import { DONE_BUTTON } from "./redeployText";
 import { airHtml } from "./airCardView";
 import { airMoveHtml } from "./airMoveView";
 import { endHtml, statusText } from "./endCard";
@@ -64,6 +66,7 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
     case "END_PLAYER_TURN":
       return `End ${sideName(a.side)} turn`;
     case "END_STEP":
+      if (a.step === "9e") return DONE_BUTTON; // the Redeploy panel's closing button (spec 16 D4, ticket 16-19)
       return a.step === "8a" ? siberianEndLabel(state) : `Done with step ${a.step}`; // the Free Siberian Transfer card's closing button (ticket 14-18)
     case "DECLARE_WAR":
       return `${POWER_NAMES[a.by]} declares war on ${nameOf(a.on)} (${isMajorPower(a.on) ? BRP_COSTS.declareWarOnMajorPower : BRP_COSTS.declareWarOnMinorCountry} BRPs)`;
@@ -73,6 +76,8 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return a.postpone ? WINTER_TEXT.wait : WINTER_TEXT.start; // the buttons of the winter card (winterCard.ts)
     case "SURRENDER_ANSWER":
       return a.accept ? SURRENDER_TEXT.accept : SURRENDER_TEXT.refuse;
+    case "ELIMINATE_OVERSTACK":
+      return "Choose for me: eliminate the fewest and weakest units that bring each hex within its limit";
     case "GRANT_BRPS":
       return `${POWER_NAMES[a.from]} grants ${a.amount} BRPs to ${POWER_NAMES[a.to]}`;
     default:
@@ -80,9 +85,9 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
   }
 }
 
-/** The buttons of a list of legal actions with their words, as shown: builds and moves have their own panels (so does the Free Siberian Transfer: its card), identical actions appear once, and no two read alike. */
+/** The buttons of a list of legal actions with their words, as shown: builds, moves and redeployments have their own panels (so does the Free Siberian Transfer: its card), identical actions appear once, and no two read alike. */
 export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
-  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
+  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SR_UNITS" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**
@@ -131,7 +136,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       <p class="turn">${turnLine(s)}</p>
       ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
       ${scoreHtml(s)}
-      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${airMoveHtml(s)}` : ""}
+      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${redeployHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       ${lead ? "" : toast}

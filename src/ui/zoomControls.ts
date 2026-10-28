@@ -65,7 +65,7 @@ export function canChooseStack(s: Session): boolean {
   if (s.state.phase === "setup") return !s.watch && setupView(s) !== null; // the human's own placing, not a watched game or the computer's
   // No other step chooses a stack: step 7h and 7b pick hexes and units through their cards and buttons, and the rest have no map choice.
   const at = s.state.position;
-  return s.state.phase === "player-turn" && !s.watch && !computerToMove(s) && at?.part === "player-turn" && at.step === "6f";
+  return s.state.phase === "player-turn" && !s.watch && !computerToMove(s) && at?.part === "player-turn" && (at.step === "6f" || at.step === "9e");
 }
 
 /** How long the message for "nothing is selected" stays on the map before it goes by itself. */

@@ -9,6 +9,7 @@ import { currentSetupOwner, poolSpecs, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, GameState, PowerId, Scenario, Side, UnitType } from "../engine/types";
 import { cap, nameOf, sideName, sweepLine } from "./format";
 import { unitsWhere } from "./actionLabels";
+import { lossLine, builtLine } from "./lossText";
 import { actorSide, eventSide, logLine } from "./logSide";
 import type { AirbasePick, AirMoveChoice } from "./airMoveTap";
 import type { AirDraft } from "./airTap";
@@ -16,6 +17,8 @@ import type { AttackDraft } from "./attackDraft";
 import type { ChoiceDraft } from "./choiceTap";
 import type { MoveChoice } from "./moveDraft";
 import type { MoveUndo } from "./moveUndo";
+import type { SrChoice } from "./redeployTap";
+import type { SrUndo } from "./redeployUndo";
 import { trackBattle, type BattleResult } from "./resultModel";
 import { plural } from "./attackText";
 import { placeName, stackSummary, unitName, unitsWithIds } from "./names";
@@ -36,11 +39,13 @@ const MAX_SETUP_OWNERS = 20;
 /** What a tap on the map does during your setup: put the chosen counter down, or pick one up. */
 export type TapMode = "place" | "remove";
 
-/** A build chosen at step 8b: who builds which counter. */
+/** A build chosen at step 8b: who builds which counter; `returned` and `pool` as in the BUILD action (a counter back in the pool, spec 17 R2; Britain building Free French losses). */
 export interface BuildPick {
   owner: PowerId;
   type: UnitType;
   strength: number;
+  returned?: true;
+  pool?: ForceOwner;
 }
 
 /** A counter in a setup pool, with how many are left. */
@@ -74,6 +79,10 @@ export interface Session {
   moveChosen?: MoveChoice | null;
   /** The player's moves of the current step 6f, for "Take back last move" (spec 10, 10-6; moveUndo.ts). Screen state, never saved; it holds only while the game is still where the last move left it. */
   undo?: MoveUndo | null;
+  /** The stack chosen to redeploy at step 9e and the units ticked in it (spec 16 D4; the yellow hexes are where they can go together), or null. Screen state, never saved. */
+  redeploy?: SrChoice | null;
+  /** The player's redeployments of the current step 9e, for "Take back last redeployment" (redeployUndo.ts). Screen state, never saved; it holds only while the game is still where the last one left it. */
+  srUndo?: SrUndo | null;
   /** The hex last tapped to look at (spec 07, part A): the hex card shows it. Screen state only, never saved; closing the card clears it. */
   lookedAt?: string | null;
   /** The attack being put together at step 7h (spec 07, part B): the hex and the chosen units. Screen state, never saved. */
@@ -137,7 +146,7 @@ export function createSession(scenario: Scenario, side: Side, seed: number): Ses
 }
 
 /** `before` is the position the action was made in, where the counters it removes or moves are still found by id (names.ts). */
-function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>, before: GameState): string | null {
+export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string>, routed: ReadonlyMap<string, boolean>, before: GameState): string | null {
   switch (e.type) {
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
@@ -155,7 +164,7 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     case "STEPS_PASSED":
       return null;
     case "UNIT_BUILT":
-      return `${POWER_NAMES[e.owner]} builds a ${e.strength}-factor ${e.unitType} at ${e.at} (${e.cost} BRPs).`;
+      return builtLine(e, POWER_NAMES[e.owner]);
     case "FRONT_OPTION_SELECTED":
       return `${sideName(e.side)} choose the ${cap(e.option)} Option on the ${cap(e.front)} Front${e.cost > 0 ? ` (${e.cost} BRPs)` : ""}.`;
     case "BRPS_GRANTED":
@@ -170,12 +179,17 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
       if (e.sweep) return null; // the line of the sweep says it
       return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
-      if (swept.has(e.unitId)) return null;
+      if (swept.has(e.unitId) || routed.has(e.unitId)) return null; // the line of its fate says it (lossText.ts); a game saved before spec 17 has none, so keeps this one
       return `Eliminated${e.reason === "unsupplied" ? " (out of supply)" : ""}: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
+    case "UNIT_RETURNED_TO_POOL":
+    case "UNIT_LOST_FOR_GOOD":
+      return swept.has(e.unitId) ? null : lossLine(ctx, before, e, routed.get(e.unitId));
     case "LOSSES_CHOSEN":
       return `${sideName(e.side)} chooses losses: ${unitsWhere(ctx, before, e.units)}.`;
     case "UNITS_MOVED":
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "UNITS_REDEPLOYED":
+      return `${stackSummary(unitsWithIds(before, e.units))} redeployed from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} (${POWER_NAMES[e.nation]} has ${e.left} left).`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_MISSION_DESIGNATED":
@@ -197,6 +211,10 @@ function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet<string
     }
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
+    case "BREAKTHROUGH":
+      return `Breakthrough at ${placeName(ctx.map, e.hex)}${e.placeable.length > 0 ? `: ${e.placeable.length} armor unit${e.placeable.length === 1 ? "" : "s"} can move in free` : ""}.`;
+    case "EXPLOITERS_PLACED":
+      return `${stackSummary(unitsWithIds(before, e.units))} move into the Breakthrough at ${placeName(ctx.map, e.hex)}.`;
     case "HEX_CONTROL_CHANGED":
       return `${nameOf(e.to)} takes control of ${e.hex}.`;
     case "OVERSTACK_ELIMINATED":
@@ -238,8 +256,9 @@ export function run(s: Session, ...actions: Action[]): boolean {
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const actor = actorSide(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
+    const routed = new Map(result.events.flatMap((e, i, all) => (e.type === "UNIT_ELIMINATED" && all.some((r) => (r.type === "UNIT_RETURNED_TO_POOL" || r.type === "UNIT_LOST_FOR_GOOD") && r.unitId === e.unitId) ? [[e.unitId, e.reason === "unsupplied"] as const] : [])));
     for (const e of result.events) {
-      const line = describeEvent(e, s.ctx, swept, before);
+      const line = describeEvent(e, s.ctx, swept, routed, before);
       if (line) logLine(s, line, eventSide(e, actor, before));
     }
   }

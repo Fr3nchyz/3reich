@@ -112,7 +112,10 @@ describe("displaceFleets: one event each, in unit-id order, room counted as it f
   it("a fleet with nowhere to go is removed, and the event says so", () => {
     const f = fleet("f1", "germany", "M35");
     const r = displaceFleets(CTX, place(board([]), f), "M35", [f]);
-    expect(r.events).toEqual([{ type: "FLEET_DISPLACED", unitId: "f1", owner: "germany", from: "M35", to: null }]);
+    expect(r.events).toEqual([
+      { type: "FLEET_DISPLACED", unitId: "f1", owner: "germany", from: "M35", to: null },
+      { type: "UNIT_RETURNED_TO_POOL", unitId: "f1", owner: "germany", unitType: "fleet", strength: 9, at: "M35", pool: "germany" }, // spec 17 R1: a whole fleet goes back
+    ]);
     expect(r.state.units.f1).toBeUndefined();
   });
 });

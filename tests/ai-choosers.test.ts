@@ -151,16 +151,26 @@ describe("step 9a: BRP grants only when allowed (Ref 11.71)", () => {
 });
 
 describe("step 3: Front Options (Ref 11.21)", () => {
-  it("ends the step with an accurate reason, the Options being listed next to the move-on action", () => {
+  it("chooses an Option for each Front (ticket 16-1), then ends the step with an accurate reason", () => {
+    const ctx = ctxFor(SCENARIO_1942);
     const s0 = atStart(SCENARIO_1942, 1);
-    const r = applyAction(ctxFor(SCENARIO_1942), s0, { type: "END_STEP", side: s0.activeSide, step: "1" });
+    const r = applyAction(ctx, s0, { type: "END_STEP", side: s0.activeSide, step: "1" });
     if (!r.ok) throw new Error(r.error);
     expect(r.state.position).toMatchObject({ step: "3" });
-    const legal = legalActions(ctxFor(SCENARIO_1942), r.state);
-    expect(legal.some((a) => a.type === "SELECT_FRONT_OPTION")).toBe(true);
-    const d = chooseAction(ctxFor(SCENARIO_1942), r.state, cfg)!;
-    expect(d.action).toEqual({ type: "END_STEP", side: r.state.activeSide, step: "3" });
-    expect(d.why).toContain("Front Option");
+    expect(legalActions(ctx, r.state).some((a) => a.type === "SELECT_FRONT_OPTION")).toBe(true);
+    let s = r.state;
+    for (let i = 0; i < 3; i++) {
+      const d = chooseAction(ctx, s, cfg)!;
+      expect(d.action.type).toBe("SELECT_FRONT_OPTION");
+      expect(d.why).toContain("Option");
+      const n = applyAction(ctx, s, d.action);
+      if (!n.ok) throw new Error(n.error);
+      s = n.state;
+    }
+    expect(Object.keys(s.frontOptions)).toHaveLength(3);
+    const end = chooseAction(ctx, s, cfg)!;
+    expect(end.action).toEqual({ type: "END_STEP", side: s.activeSide, step: "3" });
+    expect(end.why).toContain("Option");
   });
 });
 

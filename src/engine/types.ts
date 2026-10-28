@@ -2,9 +2,11 @@ import type { HexId } from "./hex";
 import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
+import type { SrRecord } from "./sr-record";
+import type { ExploitRecord } from "./exploit-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
-import type { Conquest } from "./conquest-record";
+import type { Conquest, KeptHex } from "./conquest-record";
 import type { SiberianRecord, SovietRecord } from "./soviet-record";
 import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
 import type { RussianWinter } from "./winter-record";
@@ -137,6 +139,11 @@ export interface ForceEntry {
   from?: { year: number; season?: Season };
   /** Set when the counter belongs to another nation than the pool's owner (the Italian fleet Germany holds in 1944). */
   nationality?: ForceOwner;
+  /**
+   * Allowable builds only: a counter that was lost and came back to the pool (spec 17 R1; losses.ts). It has no "in or after" date (RB3) and is offered
+   * at step 8b apart from the scenario's builds of the same kind (BUILD's `unit.returned`). Absent in a game saved before spec 17: nothing came back yet.
+   */
+  returned?: true;
 }
 
 /** What a nation may still bring into play: units in its pool and units it may yet build. */
@@ -317,10 +324,18 @@ export interface GameState {
   airFlown?: AirFlown;
   /** What the fleet rules have recorded (spec 12): fleets used this Game Turn, and this Player Turn's lists; absent in an older saved game. */
   naval?: NavalState;
+  /** Fleets bought back from the pool (spec 17 R5, RB6): the first Game Turn each may act (four Game Turns after the build). Kept apart from `naval`, which restarts each Game Turn. Absent in an older saved game: no fleet is gray. */
+  grayFleets?: Record<string, GameTurn>;
   /** Units that have moved in the current Player Turn (step 6f); absent until the first move. */
   moves?: MoveRecord;
+  /** Strategic Redeployment so far in the current Player Turn (step 9e, spec 16 C1); absent until the first one, and in an older saved game. */
+  sr?: SrRecord;
+  /** Breakthroughs and their exploiting armor in the current Player Turn (spec 16 C1, R10, R11); absent until the first Breakthrough, and in an older saved game. */
+  exploit?: ExploitRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
+  /** Hexes kept at a fall under hostile ground units (V12) that have not passed on yet (ticket 14-25, V62). Absent: none (and in an older saved game). */
+  keptHexes?: Record<HexId, KeptHex>;
   /** The Russian Winter (spec 14 R10): the roll made at II.A, whether the Allies are asked, the Game Turn it is in force in. Absent in an older saved game: no winter yet (or already past, where the scenario says so). */
   winter?: RussianWinter;
   /** The Free Siberian Transfer so far (spec 14 R11); `used` switches the victory tables. Absent: not used. */
