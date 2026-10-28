@@ -44,3 +44,6 @@ export const SEA_SUPPLY_UNITS_PER_FACTOR = 1;
  * rule is the product owner's decision of 2026-10-15; the manual's text (Ref 21.1, 12.4) and the PC game are not yet checked (N15 to N18, N36, N37).
  */
 export const FLEETS_DISPLACED_ON_CAPTURE = true;
+
+/** Spec 12 R10, Ref 21.2: one base change per Player Turn. TODO(verify): N19, confirm the limit in the program. */
+export const ONE_BASE_CHANGE_PER_TURN = true;
