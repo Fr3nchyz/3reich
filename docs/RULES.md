@@ -166,7 +166,7 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
   - Each Minor-Ally's own BRP value: `minorAllyBrps` adds the scenario's summed figure (Germany's 45) only while every Minor-Ally active at the start is still active, otherwise nothing. Only Bulgaria's 10 is known (PC README).
   - Which Major Power pays for an Offensive Option (built: the action names a payer from the side).
   - Whether that cost counts towards the spending limit (built: yes).
-  - Whether a Front Option can be changed within step 3 (built: no, one choice per Front, no refunds).
+  - Front Options may be changed until step 3 is left (Ops 5.42, spec 15 R14; built in ticket 15-13): the replacement becomes the current choice; a paid Offensive Option refunds its recorded payer's total and spending before charging any replacement; selecting the current Option is a no-op. Winter restrictions still apply. The refund reading remains MC15.
   - The Option for a Front with no choice (built: Defensive).
   - Whether Germany's free Eastern Front Offensive Option (Ref 29.0) is for the first turn only (built: Fall 1939 only).
 - **Vichy and Free French naval nationality DRM.** The printed rule is settled: the Reference Manual's chart in 21.51 has the row "French (including Vichy & Free French)" at 0 (see "Web research" below). What is still open is only whether the PC program does the same: its naval routine gives 0 only to France's nation number; a fleet carrying Vichy's or Free France's own number (40, 41 in `FORMAT.TXT`) would get -2. The engine keeps the chart's 0 (`TODO(verify)` on `navalNationalityDrm`). A naval battle with a Vichy or Free French fleet in the original would settle it.

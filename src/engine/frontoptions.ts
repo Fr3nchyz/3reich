@@ -17,8 +17,10 @@ import { winterBansOffensive } from "./winter-effects";
  * the map (Ref 4.4), Germany's opening Eastern Front Offensive Option is free (Ref 29.0, a scenario rule).
  * TODO(verify): which Major Power pays for an Offensive Option (any Major Power of the side with enough
  * to spend is offered); whether the cost counts towards the spending limit (taken as yes, like every
- * other BRP expense); whether a choice may be changed within step 3 (taken as no, so no refunds); what
+ * other BRP expense); what
  * a Front with no choice made means (taken as the Defensive Option: no attacks).
+ * Spec 15 R14, Ops 5.42: choices may be replaced until step 3 is left. A paid Offensive Option is refunded to its recorded payer,
+ * reversing both total and spending, before the replacement is charged. Selecting the current Option is a no-op.
  */
 
 export const FRONTS: readonly Front[] = ["western", "eastern", "mediterranean"];
@@ -55,12 +57,16 @@ export const payersFor = (state: GameState, cost: number): PowerId[] =>
 export const atWarNow = (state: GameState): boolean =>
   state.wars.some(([a, b]) => [a, b].some((x) => isMajorPower(x) && sideOfPower(state.nations[x]) === state.activeSide));
 
-/** Every choice the side to move may make now: each Front without a choice yet, each Option, and for a paid one each possible payer. */
+/** Ops 5.42 / spec 15 R14: changing an Option ends when the Options step is left. */
+const optionsOpen = (state: GameState): boolean => state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "3";
+
+/** Every choice the side to move may make now: each alternative Option while step 3 is open, and for a paid one each possible payer (spec 15 R14). */
 export function legalFrontOptions(ctx: GameContext, state: GameState): Action[] {
+  if (!optionsOpen(state)) return [];
   const out: Action[] = [];
   for (const front of FRONTS) {
-    if (state.frontOptions[front]) continue;
     for (const option of FRONT_OPTIONS) {
+      if (state.frontOptions[front]?.option === option) continue;
       if (winterBansOffensive(state, state.activeSide, front, option)) continue; // Ref 28.0: not offered while the Russian winter is on
       const cost = optionCost(ctx, state, front, option);
       if (cost === 0) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option });
@@ -71,22 +77,30 @@ export function legalFrontOptions(ctx: GameContext, state: GameState): Action[] 
 }
 
 export function applyFrontOption(ctx: GameContext, state: GameState, action: Select): ActionResult {
+  if (!optionsOpen(state)) return { ok: false, error: "Front Options may be changed only while step 3 is open (Ops 5.42)." };
   const { front, option, payer } = action;
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (!FRONTS.includes(front)) return { ok: false, error: `${String(front)} is not a Front.` };
   if (!FRONT_OPTIONS.includes(option)) return { ok: false, error: `${String(option)} is not a Front Option.` };
-  if (state.frontOptions[front]) return { ok: false, error: `The ${front} Front already has the ${state.frontOptions[front].option} Option this turn.` };
+  if (state.frontOptions[front]?.option === option) return { ok: true, state, events: [] };
   if (winterBansOffensive(state, state.activeSide, front, option)) return { ok: false, error: WINTER_BAN_TEXT };
   const cost = optionCost(ctx, state, front, option);
   let next = state;
   const events: Extract<ActionResult, { ok: true }>["events"] = [];
   let choice: FrontChoice = { option };
+  const old = state.frontOptions[front];
+  if (old?.option === "offensive" && old.paidBy !== undefined) {
+    // R14: paidBy is recorded only for a paid Option; every paid Option costs BRP_COSTS.offensiveOption.
+    const refund = BRP_COSTS.offensiveOption, previous = state.nations[old.paidBy];
+    next = { ...state, nations: { ...state.nations, [old.paidBy]: { ...previous, brpTotal: previous.brpTotal + refund, spent: previous.spent - refund } } };
+    events.push({ type: "BRPS_CHANGED", nation: old.paidBy, delta: refund, total: previous.brpTotal + refund, reason: `refund of the offensive Option on the ${front} Front` });
+  }
   if (cost > 0) {
-    const nation = payer ? state.nations[payer] : undefined;
+    const nation = payer ? next.nations[payer] : undefined;
     if (!payer || !nation || sideOfPower(nation) !== state.activeSide) {
       return { ok: false, error: `The ${option} Option on the ${front} Front costs ${cost} BRPs: name a Major Power of the ${state.activeSide} side to pay.` };
     }
-    const paid = spend(state, payer, cost, `the ${option} Option on the ${front} Front`);
+    const paid = spend(next, payer, cost, `the ${option} Option on the ${front} Front`);
     if (!paid.ok) return paid;
     next = paid.state;
     events.push(paid.event);
