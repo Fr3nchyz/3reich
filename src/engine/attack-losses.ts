@@ -5,6 +5,7 @@ import { afterHexTaken } from "./capture";
 import { combatOf, type CombatRecord, type PendingLosses } from "./combat-record";
 import type { HexId } from "./hex";
 import { clearGroundSupport } from "./air-support";
+import { eliminateUnits } from "./losses";
 import { ADVANCE_AFTER_COMBAT, lonersAt } from "./attack-rules";
 import type { GameState, Side, Unit } from "./types";
 
@@ -36,18 +37,8 @@ export function minimalSets(ids: readonly string[], values: Readonly<Record<stri
   return out;
 }
 
-/** Removes the units from the game, one UNIT_ELIMINATED event each. */
-function eliminate(state: GameState, ids: readonly string[]): { state: GameState; events: GameEvent[] } {
-  const units = { ...state.units };
-  const events: GameEvent[] = [];
-  for (const id of ids) {
-    const u = units[id];
-    if (!u) continue;
-    delete units[id];
-    events.push({ type: "UNIT_ELIMINATED", unitId: id, owner: u.owner, at: u.at });
-  }
-  return { state: { ...state, units }, events };
-}
+/** Removes the units from the game, one UNIT_ELIMINATED event each, and sends each back to its pool or out of the game for good (losses.ts, spec 17 R1). */
+const eliminate = (state: GameState, ids: readonly string[]): { state: GameState; events: GameEvent[] } => eliminateUnits(state, ids);
 
 const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState => ({ ...state, combat: { ...combatOf(state), ...patch } });
 
@@ -56,24 +47,32 @@ const withRecord = (state: GameState, patch: Partial<CombatRecord>): GameState =
  * friendly port (`afterHexTaken`), and the survivors of the attack
  * may advance if the defenders' hex is empty (TODO(verify), attack-rules.ts). `by` are the attackers as they stood before the battle.
  */
-function finishBattle(ctx: GameContext, state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): { state: GameState; events: GameEvent[] } {
+function finishBattle(ctx: GameContext, state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[], battle = true): { state: GameState; events: GameEvent[] } {
   const loners = lonersAt(state, by, target);
   const taken = afterHexTaken(ctx, state, target, loners); // fleets move to a friendly port; the rest is destroyed
   const swept = eliminate(taken.state, taken.destroy.map((u) => u.id));
-  const done = finishWithRecord(clearGroundSupport(swept.state, target), attackers, target);
+  const done = finishWithRecord(clearGroundSupport(swept.state, target), attackers, target, battle ? by : []);
   const note: GameEvent[] = taken.destroy.length > 0 ? [{ type: "UNITS_SWEPT", hex: target, units: taken.destroy.map((u) => ({ id: u.id, owner: u.owner, type: u.type, strength: u.strength })) }] : [];
   return { state: done, events: [...note, ...swept.events, ...taken.events] };
 }
 
-/** An attack on a hex that holds only counters that cannot defend on the ground: they are destroyed, and the attackers may advance. */
+/**
+ * An attack on a hex that holds only counters that cannot defend on the ground: they are destroyed, and the attackers may advance. Its advance makes no
+ * Breakthrough: an "attack" on a hex with no enemy ground unit is the vacant-hex attack of Ref 12.32 (spec 16 R16, TODO(verify) AER20), ticket 16-14.
+ */
 export const applySweep = (ctx: GameContext, state: GameState, attackers: readonly Unit[], target: HexId): { state: GameState; events: GameEvent[] } =>
-  finishBattle(ctx, state, attackers.map((u) => u.id), target, attackers);
+  finishBattle(ctx, state, attackers.map((u) => u.id), target, attackers, false);
 
-function finishWithRecord(state: GameState, attackers: readonly string[], target: HexId): GameState {
+/**
+ * The battle's record: the survivors may advance into the hex if it is empty. `by` are the attackers as they stood before the battle (none for a sweep):
+ * when one of them was armor, alive or not, the chance carries it and the hexes they attacked from, so an advance makes a Breakthrough (Ref 12.31; spec 16 R10, AER12).
+ */
+function finishWithRecord(state: GameState, attackers: readonly string[], target: HexId, by: readonly Unit[]): GameState {
   const survivors = attackers.filter((id) => state.units[id] !== undefined);
   const empty = !Object.values(state.units).some((u) => u.at === target);
   const rec = combatOf(state);
-  const advances = ADVANCE_AFTER_COMBAT && empty && survivors.length > 0 ? [...rec.advances, { to: target, units: survivors }] : rec.advances;
+  const armor = by.some((u) => u.type === "armor") ? { armor: true as const, from: [...new Set(by.map((u) => u.at))].sort() } : {};
+  const advances = ADVANCE_AFTER_COMBAT && empty && survivors.length > 0 ? [...rec.advances, { to: target, units: survivors, ...armor }] : rec.advances;
   return withRecord(state, { pending: null, advances });
 }
 

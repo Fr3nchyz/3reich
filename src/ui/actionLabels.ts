@@ -50,6 +50,8 @@ export function combatLabel(a: Action, ctx: GameContext, state: GameState): stri
       return `Lose ${unitsWhere(ctx, state, a.units)}`;
     case "ADVANCE":
       return `Advance ${unitsWhere(ctx, state, a.units)} into ${placeName(ctx.map, a.to)}`;
+    case "PLACE_EXPLOITERS": // the plain button until the Breakthrough card of ticket 16-12
+      return `Move ${unitsWhere(ctx, state, a.units)} into the Breakthrough at ${placeName(ctx.map, a.hex)}`;
     case "DESIGNATE_AIR": {
       const factors = unitsWithIds(state, a.units).reduce((n, u) => n + u.strength, 0);
       return `Air support for ${placeName(ctx.map, a.target)}: ${unitsWhere(ctx, state, a.units)} (${factors} air factor${factors === 1 ? "" : "s"})`;

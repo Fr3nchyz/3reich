@@ -20,8 +20,12 @@ export type Action =
   | { type: "DECLARE_WAR"; by: PowerId; on: Combatant }
   /** Step 3: the side to move chooses its Option on one Front (Ref 11.21); `payer` is the Major Power that pays for an Offensive Option, left out when it is free. */
   | { type: "SELECT_FRONT_OPTION"; side: Side; front: Front; option: FrontOption; payer?: PowerId }
-  /** Step 8b: build one counter from the nation's Allowable Builds, paying for it, and place it. */
-  | { type: "BUILD"; owner: PowerId; unit: { type: UnitType; strength: number }; at: HexId | OffMapBox }
+  /**
+   * Step 8b: build one counter from the nation's Allowable Builds, paying for it, and place it. `unit.returned` picks a counter that came back to the pool
+   * after it was lost (spec 17 R2), rather than one of the scenario's builds of the same kind; `pool` names the pool it comes from when that is not the
+   * builder's own (Britain builds the Free French losses, TODO(verify) RB10), and the counter built is that pool's.
+   */
+  | { type: "BUILD"; owner: PowerId; pool?: ForceOwner; unit: { type: UnitType; strength: number; returned?: true }; at: HexId | OffMapBox }
   /** Step 9a: grant BRPs to an allied Major Power. */
   | { type: "GRANT_BRPS"; from: PowerId; to: PowerId; amount: number }
   /** Step II.A: the Allies decide whether the Russian winter waits for next year (`postpone`) or starts now; legal only when the dice allowed it (spec 14 R10; Ref 28.0). */
@@ -36,6 +40,11 @@ export type Action =
   | { type: "ALLOCATE_LOSSES"; side: Side; units: string[] }
   /** Step 7h: attackers advance into the hex the defenders left (TODO(verify) in attack.ts). */
   | { type: "ADVANCE"; side: Side; units: string[]; to: HexId }
+  /**
+   * Step 7h: armor units of the side to move enter a Breakthrough hex free, with no stacking limit there, and become its exploiting units (Ref 12.31; spec 16 R11).
+   * Placement is optional; leaving the step lapses what was not placed.
+   */
+  | { type: "PLACE_EXPLOITERS"; side: Side; hex: HexId; units: string[] }
   /** Step 6f: a unit, or units standing together, move along a path of adjacent hexes (start excluded; Ref 5.45f). */
   | { type: "MOVE"; side: Side; units: string[]; path: HexId[] }
   /** Step 6f or opening setup: a Major Power sets one of its three movable airbases down in a hex its side controls and supplies (Ref 20.1, 11.3). */
@@ -50,6 +59,10 @@ export type Action =
   | { type: "DESIGNATE_SEA_SUPPLY"; side: Side; fleets: string[]; to: HexId; units: string[] }
   /** Step 7b: air units are committed to ground support of a hex that will be attacked (Ref 20.41). */
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support"; units: string[]; target: HexId }
+  /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
+  | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
+  /** Step 9e: ground units and Replacements are redeployed to a hex of their region, one use of their nation's allowance each (Ref 11.72; spec 16 R18 to R20). `escort` (a Sea Escort fleet) is ticket 16-21 and is refused until then. */
+  | { type: "SR_UNITS"; side: Side; units: string[]; to: HexId; escort?: string }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -90,17 +103,28 @@ export type GameEvent =
   | { type: "BRPS_CHANGED"; nation: PowerId; delta: number; total: number; reason: string }
   | { type: "FRONT_OPTION_SELECTED"; side: Side; front: Front; option: FrontOption; cost: number }
   | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
-  | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number }
+  /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
+  | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
   /** One ground attack resolved: the odds, every die roll and how it ended (Ref 12.1-12.2). */
   | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number }
   /** Counters that cannot defend on the ground (air units, airbases...) were destroyed alone in a hex (ALONE_NONGROUND_DESTROYED, attack-rules.ts). Each also has a UNIT_ELIMINATED event. Fleets alone in the hex are not in this list: they are displaced (FLEET_DISPLACED), unless FLEETS_DISPLACED_ON_CAPTURE is off. */
   | { type: "UNITS_SWEPT"; hex: HexId; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
   | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId; reason?: "unsupplied" }
+  /** A unit just eliminated (the UNIT_ELIMINATED, OVERSTACK_ELIMINATED or FLEET_DISPLACED event before it) went back to the Force Pool `pool`, to be built again (spec 17 R1; losses.ts). */
+  | { type: "UNIT_RETURNED_TO_POOL"; unitId: string; owner: ForceOwner; unitType: UnitType; strength: number; at: HexId | OffMapBox; pool: ForceOwner }
+  /** A unit just eliminated is out of the game for good, and why (spec 17 R4; losses.ts). Units removed by a conquest have UNITS_REMOVED_BY_CONQUEST instead. */
+  | { type: "UNIT_LOST_FOR_GOOD"; unitId: string; owner: ForceOwner; unitType: UnitType; strength: number; at: HexId | OffMapBox; reason: LostReason }
   | { type: "LOSSES_CHOSEN"; side: Side; units: string[] }
   /** Step 6f: units moved along a path (the hexes entered, in order). */
   | { type: "UNITS_MOVED"; units: string[]; from: HexId; to: HexId; path: HexId[] }
+  /** Step 9e: units of one nation left one hex for another by Strategic Redeployment; `left` is what the nation's allowance has left (spec 16 C4). */
+  | { type: "UNITS_REDEPLOYED"; units: string[]; from: HexId; to: HexId; nation: PowerId; left: number; escort?: string }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
+  /** Step 7h: an advance after a won attack with armor in it made `hex` a Breakthrough hex (Ref 12.31; spec 16 R10); `placeable` is the armor that may move in now. */
+  | { type: "BREAKTHROUGH"; side: Side; hex: HexId; placeable: string[] }
+  /** Step 7h: armor units moved into the Breakthrough hex `hex` from the hexes `from`, free; they are its exploiting units (spec 16 R11). */
+  | { type: "EXPLOITERS_PLACED"; side: Side; units: string[]; from: HexId[]; hex: HexId }
   /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
   | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }
   /** The Axis took Moscow or Leningrad for the first time (spec 14 R7a): Germany gains `amount` BRPs and the U.S.S.R. loses `lost` (less than `amount` when it had less). */
@@ -137,6 +161,13 @@ export type GameEvent =
   | { type: "SIBERIAN_TRANSFER_USED"; unitId: string; unitType: UnitType; strength: number; at: HexId; left: number; firstUse: boolean }
   /** The game is over: the scenario has ended after this Game Turn, or (`result.early`) a conquest decided it at once; `result` is who won (spec 14 R3). */
   | { type: "GAME_OVER"; year: number; season: Season; result: GameResult };
+
+/**
+ * Why a lost unit does not go back to a pool (spec 17 R4; losses.ts): its nation is out of the game or has no pool (RB14); it belongs to a minor country that is
+ * not an active Minor-Ally (RB9); it is a counter no pool holds, an airbase or a bridgehead (RB15); its nation's fleets are never rebuilt (Ref 11.62); it is a
+ * partial fleet (RB5).
+ */
+export type LostReason = "out-of-game" | "minor-country" | "not-in-pool" | "fleet-never-rebuilt" | "partial-fleet";
 
 export type ActionResult =
   | { ok: true; state: GameState; events: GameEvent[] }

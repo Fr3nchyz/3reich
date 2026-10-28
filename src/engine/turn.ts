@@ -2,12 +2,14 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
+import { releaseKept } from "./conquest-kept";
 import { refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
+import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
 import { legalBuilds } from "./construction";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
@@ -16,6 +18,8 @@ import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
+import { hasOverstackWork } from "./overstack-action";
+import { hasSrWork } from "./sr-action";
 import { hasMoveWork } from "./move-action";
 import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
 import { recordCheckpoint, evaluateVictory } from "./victory";
@@ -100,8 +104,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");
       const step = nextStepId(pos.step);
       if (step) {
-        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
-        const lost = pos.step === "7h" ? loseUnusedGroundSupport(state) : { state, events: [] };
+        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
+        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : { state, events: [] };
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
@@ -139,15 +143,18 @@ function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
 
 /** Both Player Turns are done: the Campaign's checkpoint is read, then the scenario ends with its result (Ref 2.0), or the next Game Turn begins at its first part. */
 function endGameTurn(ctx: GameContext, from: GameState): Transition {
-  const state = recordCheckpoint(ctx, from);
+  // Kept hexes whose hostile unit left during the Game Turn pass on before the checkpoint and the result read control (ticket 14-25, TODO(verify) V62).
+  const freed = releaseKept(ctx, from);
+  const state = recordCheckpoint(ctx, freed.state);
   if (turnIndex(state) >= turnIndex(state.lastTurn)) {
     const result = evaluateVictory(ctx, state, "end-of-play");
-    return { state: { ...state, phase: "game-over", result }, events: [{ type: "GAME_OVER", year: state.year, season: state.season, result }] };
+    return { state: { ...state, phase: "game-over", result }, events: [...freed.events, { type: "GAME_OVER", year: state.year, season: state.season, result }] };
   }
   const turn = nextTurn(state);
   // A Spring turn begins with the Year Start Sequence; any other begins at II.A, where a Winter turn looks at the Russian winter (and may roll and ask).
-  if (turn.season === "spring") return { state: { ...state, ...turn, position: { part: "year-start" } }, events: [] };
-  return enterWinter(ctx, { ...state, ...turn });
+  if (turn.season === "spring") return { state: { ...state, ...turn, position: { part: "year-start" } }, events: freed.events };
+  const winter = enterWinter(ctx, { ...state, ...turn });
+  return { state: winter.state, events: [...freed.events, ...winter.events] };
 }
 
 /** Whether the side to move has anything to do at a step whose rules are built. */
@@ -160,10 +167,15 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "6e":
     case "9f":
       return hasSeaSupplyWork(ctx, state);
+    case "6g":
+    case "9j":
+      return hasOverstackWork(ctx, state);
+    case "9e":
+      return hasSrWork(ctx, state);
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
-      return hasCombatWork(ctx, state);
+      return hasCombatWork(ctx, state) || hasPlaceWork(ctx, state);
     case "3":
       return atWarNow(state);
     case "8a":

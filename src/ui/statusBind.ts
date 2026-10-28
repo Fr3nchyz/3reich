@@ -6,6 +6,7 @@ import { bindAirMove } from "./airMoveBind";
 import { bindAttack } from "./attackBind";
 import { bindChoice } from "./choiceBind";
 import { bindMove } from "./moveBind";
+import { bindRedeploy } from "./redeployBind";
 import type { Session, SetupView, TapMode } from "./session";
 import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSiberian, pickSpec, placeInBox, setMode, takeAction, takeSiberian, undoLast } from "./sessionActions";
 import { turnKey } from "../engine/victory";
@@ -44,6 +45,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   bindAirMove(root, s, redraw);
   bindChoice(root, s, redraw);
   bindMove(root, s, redraw);
+  bindRedeploy(root, s, redraw);
   on("#hexcard-close", () => closeLook(s));
   root.querySelector(".hexcard")?.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Escape") { closeLook(s); redraw(); }

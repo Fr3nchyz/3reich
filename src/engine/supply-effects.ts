@@ -1,5 +1,6 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
+import { eliminateUnits } from "./losses";
 import { unsuppliedUnits } from "./supply";
 import type { GameState } from "./types";
 import { ZOC_UNIT_TYPES } from "./zoc";
@@ -53,12 +54,6 @@ export function eliminateUnsupplied(ctx: GameContext, state: GameState): { state
   const start = state.unsuppliedAtStart ?? [];
   if (ELIMINATE_ONLY_IF_CUT_OFF_AT_START && start.length === 0) return { state: state.unsuppliedAtStart === undefined ? state : withoutRecord(state), events: [] }; // nobody was cut off at the start: no supply search needed
   const doomed = cutOff(ctx, state).filter((id) => !ELIMINATE_ONLY_IF_CUT_OFF_AT_START || start.includes(id));
-  const units = { ...state.units };
-  const events: GameEvent[] = [];
-  for (const id of doomed) {
-    const u = units[id]!;
-    delete units[id];
-    events.push({ type: "UNIT_ELIMINATED", unitId: id, owner: u.owner, at: u.at, reason: "unsupplied" });
-  }
-  return { state: { ...withoutRecord(state), units }, events };
+  const gone = eliminateUnits(withoutRecord(state), doomed, "unsupplied"); // back to the pool, or lost for good (spec 17 R1)
+  return { state: gone.state, events: gone.events };
 }
