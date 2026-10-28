@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { chooseAction } from "../src/ai/choose";
+import { networkOf, suppliedAfterMove } from "../src/ai/lines";
 import { chooseSeaSupply } from "../src/ai/naval";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { navalOf } from "../src/engine/naval-record";
@@ -113,4 +114,14 @@ describe("the computer saves cut-off units by sea (spec 12 Part E)", () => {
     const wasteTally = new TurnTally("Fall 1939"); wasteTally.add(waste.events, s, ON);
     expect(wasteTally.close(ON, waste.state, true).savedBySea).toBe(0);
   });
+});
+
+
+it("predicts sea supply only for the named units when a stack moves (spec 12 R7)", () => {
+  const base = position([infantry("i1", "AA19"), infantry("i2", "AA19")]);
+  const s = { ...base, naval: { ...navalOf(base), supply: [{ fleets: ["fleet"], from: "U22", to: "AA19", units: ["i1"] }] } };
+  const net = networkOf(ON, s, "axis");
+  expect(suppliedAfterMove(ON, s, net, [s.units.i1!], "AA19")).toBe(true);
+  expect(suppliedAfterMove(ON, s, net, [s.units.i2!], "AA19")).toBe(false);
+  expect(suppliedAfterMove(ON, s, net, [s.units.i1!, s.units.i2!], "AA19")).toBe(false);
 });
