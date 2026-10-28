@@ -55,6 +55,10 @@ In hand-off order. Tier as in the section above.
 |---|---|---|---|
 | #130 | 16-0 spec 16 facts and constants | Light | Done (#134) |
 | #131 | 16-26 Anglo-French stop ban | Standard | Done (#135) |
-| #132 | 12-9 naval combat resolver (Release 1) | Standard, high effort | Ready, lower priority |
+| #132 | 12-9 naval combat resolver (Release 1) | Standard, high effort | In progress |
+| #174 | T-0 rehash helper | Light | In progress |
+| #175 | 16-25 fortress news, outlines, supply detail | Standard | Ready |
+| #176 | 12-10 fleet base-change rules (Release 1) | Heavy | Ready |
+| #177 | 09-5 air displaced on capture | Heavy | Ready, waits for a gap in the whole-game queue |
 
 Next candidates, written once the ones above are in review: 16-24 (Sevastopol's two conditions, after 16-0), 16-3 (Attrition rules, pure, after 16-0), and the pure rule queries of spec 15.
