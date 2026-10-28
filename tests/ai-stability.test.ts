@@ -55,14 +55,15 @@ const fnv = (text: string): number => {
 // Hash of 2026-10-23 (ticket 16-9): the 7h list hash of seed 5 changed on purpose (4106130461 before): a won attack with armor in it that is advanced into now makes a
 // Breakthrough, and the lists at 7h gain the PLACE_EXPLOITERS actions (25 of them over the 21 lists). Checked then: with those actions taken out of each list the hash is
 // 4106130461 again, so no attack, advance or loss listed changed. The computer does not place exploiters yet (ticket 16-13), so the action-list hashes are unchanged.
+// Ticket 16-18: 1939 seeds 5 and 2 skip empty grant steps after the grant restrictions; action-list hashes change from 1755472541 to 3614890892 and 119043983 to 675559916.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(278484573));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(958665354));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1755472541);
-    expect(hashOf("1939", 2, 4)).toBe(119043983);
+    expect(hashOf("1939", 5, 4)).toBe(3614890892);
+    expect(hashOf("1939", 2, 4)).toBe(675559916);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(278484573));
 });

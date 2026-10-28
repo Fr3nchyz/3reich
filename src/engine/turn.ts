@@ -185,7 +185,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "10a":
       return surrenderAsking(state);
     case "9a":
-      return legalGrants(state).length > 0;
+      return legalGrants(ctx, state).length > 0;
     default:
       return true;
   }
