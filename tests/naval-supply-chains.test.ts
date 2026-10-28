@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { neighborIds } from "../src/engine/attack-rules";
 import { applyAction } from "../src/engine/actions";
-import { navalOf, markUsed, type SeaSupplyDesignation } from "../src/engine/naval-record";
+import { navalOf, markGray, markUsed, type SeaSupplyDesignation } from "../src/engine/naval-record";
 import { freeCapacity, supplyChainLink } from "../src/engine/naval-supply";
 import { seaSupplyOptions, seaSupplyProblem } from "../src/engine/naval-supply-options";
 import { supplyStatus } from "../src/engine/supply";
@@ -101,6 +101,15 @@ describe("sea supply through two-Front ports (spec 12 R7; Ref 19.31)", () => {
     const allied = { ...s, nations: { ...s.nations, ussr: { ...s.nations.ussr, status: "allied" as const } } };
     expect(problem({ ...allied, units: { ...s.units, f2: fleet("f2", "AA7", 9, "ussr") } }, d)).toMatch(/same group/);
     expect(problem({ ...s, units: { ...s.units, f2: fleet("f2", "AA7", 9, "france") } }, d)).toBeNull();
+  });
+
+  it("rejects a gray fleet on either chain leg (spec 17 R5, RB7)", () => {
+    const s = position(), d = designation("K24", "AA19");
+    for (const id of ["f1", "f2"]) {
+      const gray = markGray(s, id);
+      expect(problem(gray, d)).toMatch(/gray/i);
+      expect(seaSupplyOptions(CTX, gray, "allies").some((o) => o.fleets.includes(id))).toBe(false);
+    }
   });
 
   it("the existing action records and marks both fleets used; no new action or record shape", () => {
