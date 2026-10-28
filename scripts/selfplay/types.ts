@@ -54,6 +54,8 @@ export interface TurnStats {
   /** Of the units lost, those eliminated for being out of supply at the end of their Player Turn (Ref 19.4, 11.74). */
   lostUnsupplied: { axis: number; allies: number };
   lostFactors: { axis: number; allies: number };
+  /** Cut-off units newly fed by sea designations, counted per Player Turn (spec 12 Part E). */
+  savedBySea: number;
   hexChanges: number;
   hexes: { axis: number; allies: number; neutral: number };
   objectives: { axis: number; allies: number; neutral: number };

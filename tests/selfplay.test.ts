@@ -43,8 +43,8 @@ describe("self-play runner: a short game per scenario", () => {
     const again = replay(recordingContext(saved), newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions);
     expect(JSON.stringify(again.state)).toBe(JSON.stringify(r.final));
     // The setting matters: in a context with the effects off the same actions cannot be replayed. The game waited at step 6e or 9f for a fleet to be named (ticket 12-3),
-    // which it does not do with the effects off, so the recorded "done with step 6e" is refused there.
-    expect(() => replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions)).toThrow(/Action \d+ is illegal: Step (6e|9f)/);
+    // which it does not do with the effects off, so the recorded sea-supply designation is refused there.
+    expect(() => replay({ ...recordingContext(saved), supplyEffects: false }, newGame(SCENARIOS[saved.scenario], saved.seed), saved.actions)).toThrow(/Action \d+ is illegal: Fleets are named to carry supply in step 6e or 9f/);
   }, 60_000);
 
   it("a recording with the effects off (or an older one) has no such field and replays with them off", () => {
@@ -251,7 +251,8 @@ describe("self-play command line", () => {
     expect(r.ctx.supplyEffects).toBe(true);
     expect(r.options.supplyEffects).toBe(true);
     expect(gameReport(r)).toContain("--supply-effects on");
-    expect(r.turns[0]!.lostUnsupplied.axis).toBeGreaterThan(0); // Sardinia and Norway: sea supply is not built
+    expect(r.turns[0]!.lostUnsupplied.axis).toBe(0); // Sardinia and Norway are saved by sea (spec 12 Part E).
+    expect(r.turns[0]!.savedBySea).toBeGreaterThanOrEqual(4);
     expect(comparison([r])).toContain("Unsupplied lost ax / al");
     expect(runGame({ scenario: "1939", seed: 1, turns: 1, verify: false }).ctx.supplyEffects).toBe(SUPPLY_EFFECTS_ENABLED);
   }, 60_000);

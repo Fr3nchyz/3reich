@@ -112,7 +112,7 @@ describe("the Front Options prompt at step 3 (Ref 11.21)", () => {
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
     expect(html).toContain("Chosen so far &mdash; Western: attrition");
     expect(html).toMatch(/<details class="declarations" open>/);
-    expect(html).not.toContain("Western Front: Defensive Option");
+    expect(html).toContain("Western Front: Defensive Option"); // R14: the choice may still change during step 3.
   });
 
   it("is not shown at other steps", () => {

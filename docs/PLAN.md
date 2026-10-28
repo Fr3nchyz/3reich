@@ -93,7 +93,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Done |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Done |
 | 12-4 Fleets displaced on capture | the fleet in a captured port moves away; Malta holds 9 | M | Done |
-| 12-5 Computer: sea supply | the computer answers the prompts | S | Next |
+| 12-5 Computer: sea supply | the computer answers the prompts | S | In progress (Codex, #146) |
 | 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | In progress (Codex, #147) |
 | 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | In progress (Codex, #145) |
 | 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended |
@@ -166,7 +166,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 17-4 Screens: the "rebuild" mark on the Construction chip, and the log lines for returned and lost units (Part C) | | S: **Done** (2026-10-23). `ui/buildView.ts`, `ui/lossText.ts`, `ui/session.ts` |
 | 17-5 Siberian Transfer test with returned units (R6), and the self-play report of lost units, rebuilds and the RB13 check (Part E) | | M: **Done** (PR #161, 2026-10-23) |
 | 17-6 Docs: "As built" of spec 17 for 17-2 to 17-5, the RULES.md and TODO-VERIFY.md rows, and these PLAN rows | | S: **Done** (2026-10-23) |
-| Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
+| Minor countries (spec 15 approved 2026-10-23; 15-0 facts: Done (#169)): forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
 | **Attrition, Exploitation, Strategic Redeployment, Fortress changes: spec written** ([16](specs/16-attrition-exploitation-redeployment.md), Approved 2026-10-23 (Q1 to Q6 yes), building; 28 tickets; sizes below are the spec's, not guesses; who owns what is in part H of spec 16) | 6.2, 6.3, 5.6, 5.7 | 24 Beta tickets (5 S, 13 M, 6 L), of which 12 are Beta-critical (1 S, 8 M, 3 L); 4 Release 1 tickets (3 M, 1 L); not in the 47 counted above |
 | 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). 16-3: Done (#143). |
 | 16-2 Attacks need the Offensive Option (spec 16, owner's Q1) | | M (Beta) |
@@ -178,7 +178,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). 16-24: in progress (Codex, #138). |
 | 16-27 Gate and docs | | M (Beta-critical) |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
-| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
+| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S: in progress (Codex, #168)), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
 

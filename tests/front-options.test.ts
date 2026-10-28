@@ -101,11 +101,11 @@ describe("what an Option costs", () => {
 });
 
 describe("the choice is kept in the state", () => {
-  it("is one per Front: a Front with a choice is not offered again and cannot be changed", () => {
+  it("keeps one current choice per Front and offers replacements inside step 3 (spec 15 R14)", () => {
     const s = ok(select(at3(), "eastern", "attrition")).state;
     expect(frontOptionOf(s, "eastern")).toBe("attrition");
-    expect(legalFrontOptions(CTX, s).some((a) => a.type === "SELECT_FRONT_OPTION" && a.front === "eastern")).toBe(false);
-    expect(select(s, "eastern", "defensive")).toMatchObject({ ok: false });
+    expect(legalFrontOptions(CTX, s)).toContainEqual({ type: "SELECT_FRONT_OPTION", side: "axis", front: "eastern", option: "defensive" });
+    expect(ok(select(s, "eastern", "defensive")).state.frontOptions.eastern).toEqual({ option: "defensive" });
     expect(legalFrontOptions(CTX, s).length).toBeGreaterThan(0);
   });
 

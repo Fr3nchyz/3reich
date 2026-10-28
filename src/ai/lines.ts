@@ -21,7 +21,7 @@ import type { AiConfig } from "./types";
  * side stands there (Ref 4.8, 19.2), or when it is a Major Power's capital, which supplies whoever holds it (19.2).
  * Not foreseen, so a few supplied hexes are judged cut off (never the reverse; tests/ai-lines.test.ts checks this against the engine on
  * positions of real games): a captured port that opens a special net (Libyan, Egyptian, Tunis, Beirut), and a line-length limit
- * (`SUPPLY_POLICY.maxLength` is null). Sea supply is a stub in the engine, so it is not foreseen either.
+ * (`SUPPLY_POLICY.maxLength` is null). Sea reaches serve only the unit ids named in a valid designation (spec 12 R7).
  */
 
 const networks = new WeakMap<GameContext, WeakMap<GameState, Map<Side, SupplyNetwork>>>();
@@ -44,11 +44,12 @@ const isMajorCapital = (ctx: GameContext, state: GameState, hex: HexId): boolean
 };
 
 /** Whether a unit of `owner` standing on `to` would be supplied, once `units` (which include it) have moved there. */
-function ownerSupplied(ctx: GameContext, state: GameState, net: SupplyNetwork, owner: Unit["owner"], to: HexId): boolean {
+function unitSupplied(ctx: GameContext, state: GameState, net: SupplyNetwork, unit: Unit, to: HexId): boolean {
+  const owner = unit.owner;
   if (fortressSupplies(ctx, state, net.side, { at: to, owner })) return true;
   if (isMajorCapital(ctx, state, to)) return true;
   for (const r of net.reaches) {
-    if (!r.serves(owner)) continue;
+    if (r.kind === "sea" ? !r.units?.has(unit.id) : !r.serves(owner)) continue;
     if (r.next.has(to)) return true;
     for (const n of adjacentHexes(ctx, to)) {
       if (!r.next.has(n) || !canCross(ctx, n, to)) continue;
@@ -75,7 +76,7 @@ export function suppliedAfterMove(ctx: GameContext, state: GameState, net: Suppl
     return c !== null && sideInWar(state, c) === side;
   });
   if (!friendly) return false;
-  return [...new Set(checked.map((u) => u.owner))].every((o) => ownerSupplied(ctx, state, net, o, to));
+  return checked.every((u) => unitSupplied(ctx, state, net, u, to));
 }
 
 /**

@@ -9,6 +9,7 @@ import { chooseLosses } from "./doomed";
 import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
+import { chooseSeaSupply } from "./naval";
 import { chooseMove } from "./move";
 import { chooseOverstack } from "./overstack";
 import { chooseSurrender } from "./surrender";
@@ -33,6 +34,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
+    : step === "6e" || step === "9f" ? chooseSeaSupply(ctx, state, legal)
     : step === "3" ? chooseOptions(ctx, state, legal, cfg) // 3: the Front Options, per Front by the policy constants in options.ts (ticket 16-1)
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
