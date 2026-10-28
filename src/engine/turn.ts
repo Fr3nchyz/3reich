@@ -9,6 +9,7 @@ import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex }
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
+import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
 import { legalBuilds } from "./construction";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
@@ -103,8 +104,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");
       const step = nextStepId(pos.step);
       if (step) {
-        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
-        const lost = pos.step === "7h" ? loseUnusedGroundSupport(state) : { state, events: [] };
+        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
+        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : { state, events: [] };
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
@@ -174,7 +175,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
-      return hasCombatWork(ctx, state);
+      return hasCombatWork(ctx, state) || hasPlaceWork(ctx, state);
     case "3":
       return atWarNow(state);
     case "8a":

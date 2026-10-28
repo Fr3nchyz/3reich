@@ -40,6 +40,11 @@ export type Action =
   | { type: "ALLOCATE_LOSSES"; side: Side; units: string[] }
   /** Step 7h: attackers advance into the hex the defenders left (TODO(verify) in attack.ts). */
   | { type: "ADVANCE"; side: Side; units: string[]; to: HexId }
+  /**
+   * Step 7h: armor units of the side to move enter a Breakthrough hex free, with no stacking limit there, and become its exploiting units (Ref 12.31; spec 16 R11).
+   * Placement is optional; leaving the step lapses what was not placed.
+   */
+  | { type: "PLACE_EXPLOITERS"; side: Side; hex: HexId; units: string[] }
   /** Step 6f: a unit, or units standing together, move along a path of adjacent hexes (start excluded; Ref 5.45f). */
   | { type: "MOVE"; side: Side; units: string[]; path: HexId[] }
   /** Step 6f or opening setup: a Major Power sets one of its three movable airbases down in a hex its side controls and supplies (Ref 20.1, 11.3). */
@@ -116,6 +121,10 @@ export type GameEvent =
   /** Step 9e: units of one nation left one hex for another by Strategic Redeployment; `left` is what the nation's allowance has left (spec 16 C4). */
   | { type: "UNITS_REDEPLOYED"; units: string[]; from: HexId; to: HexId; nation: PowerId; left: number; escort?: string }
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
+  /** Step 7h: an advance after a won attack with armor in it made `hex` a Breakthrough hex (Ref 12.31; spec 16 R10); `placeable` is the armor that may move in now. */
+  | { type: "BREAKTHROUGH"; side: Side; hex: HexId; placeable: string[] }
+  /** Step 7h: armor units moved into the Breakthrough hex `hex` from the hexes `from`, free; they are its exploiting units (spec 16 R11). */
+  | { type: "EXPLOITERS_PLACED"; side: Side; units: string[]; from: HexId[]; hex: HexId }
   /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
   | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }
   /** The Axis took Moscow or Leningrad for the first time (spec 14 R7a): Germany gains `amount` BRPs and the U.S.S.R. loses `lost` (less than `amount` when it had less). */

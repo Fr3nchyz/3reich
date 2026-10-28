@@ -94,8 +94,8 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Done |
 | 12-4 Fleets displaced on capture | the fleet in a captured port moves away; Malta holds 9 | M | Done |
 | 12-5 Computer: sea supply | the computer answers the prompts | S | Next |
-| 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | Next |
-| 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | Next |
+| 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | In progress (Codex, #147) |
+| 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | In progress (Codex, #145) |
 | 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended |
 | **Release II: fleets move and fight** | | | |
 | 12-9 Naval combat resolver (pure) | every branch of the naval table | S | Next |
@@ -161,16 +161,21 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
 | **Lost units come back: spec written** ([17](specs/17-rebuild-eliminated-units.md), Approved 2026-10-23 (Q1 to Q4 yes); 7 Beta tickets, 4 S and 3 M; comes after group 1 (spec 14) and before group 3 (spec 16)) | 4.5 | 17-0 read the manual pages (S, needs network access to the manual's host or Frank), 17-1 the return to the pool (M), 17-2 air and fleet factors (S), 17-3 gray fleets (M), 17-4 screens (S), 17-5 Siberian Transfer and self-play (M), 17-6 docs (S) |
 | 17-1 The return to the pool: every loss goes back to its nation's pool or is lost for good (R1, R4), returned counters are built at step 8b (R2), the two log events, old records replay (R7) | | M: **Done** (2026-10-23). All 22 computer games differ from the first BUILD of a returned counter on, none with an anomaly; every 1939 and Campaign game now uses the Free Siberian Transfer, and no computer game reaches Russia's offer to surrender any more (the surrender tests play with Russia not rebuilding). New: RB15, RB16 |
+| 17-2 Air factors lost by a surviving air unit go back to the pool in the spec 09 sizes; a fleet's factors lost in a break-down stay lost (R3) | | S: **Done** (2026-10-23). `losses.ts` and `air-breakdown.ts`, with no caller until air combat (spec 09). New: RB17 |
+| 17-3 The gray fleet: a rebuilt fleet cannot act for four Game Turns, is refused in sea supply, and its hex card says until when (R5) | | M: **Done** (2026-10-23). `naval-record.ts`. The fleet missions (12-5, 12-6, 12-8) must check `fleetMayAct` when they are built |
+| 17-4 Screens: the "rebuild" mark on the Construction chip, and the log lines for returned and lost units (Part C) | | S: **Done** (2026-10-23). `ui/buildView.ts`, `ui/lossText.ts`, `ui/session.ts` |
+| 17-5 Siberian Transfer test with returned units (R6), and the self-play report of lost units, rebuilds and the RB13 check (Part E) | | M: **Done** (PR #161, 2026-10-23) |
+| 17-6 Docs: "As built" of spec 17 for 17-2 to 17-5, the RULES.md and TODO-VERIFY.md rows, and these PLAN rows | | S: **Done** (2026-10-23) |
 | Minor countries: forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
 | **Attrition, Exploitation, Strategic Redeployment, Fortress changes: spec written** ([16](specs/16-attrition-exploitation-redeployment.md), Approved 2026-10-23 (Q1 to Q6 yes), building; 28 tickets; sizes below are the spec's, not guesses; who owns what is in part H of spec 16) | 6.2, 6.3, 5.6, 5.7 | 24 Beta tickets (5 S, 13 M, 6 L), of which 12 are Beta-critical (1 S, 8 M, 3 L); 4 Release 1 tickets (3 M, 1 L); not in the 47 counted above |
-| 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). |
+| 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). 16-3: Done (#143). |
 | 16-2 Attacks need the Offensive Option (spec 16, owner's Q1) | | M (Beta) |
 | 16-9 to 16-13 Exploitation (owner's Q2): Breakthrough, movement, combat, screens, computer | 6.3 | M, L, M, L, M (Beta) |
 | 16-14, 16-15 The vacant-hex attack, air support in Exploitation | | M, M (Release 1) |
 | 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta). 16-18: in progress (Codex, #159). |
 | 16-21 Sea Escort for ground units (owner's Q3) | | L (Beta) |
 | 16-22, 16-23 Air units and airbases, fleets and escort chains, by redeployment | | M, L (Release 1) |
-| 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). |
+| 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). 16-24: in progress (Codex, #138). |
 | 16-27 Gate and docs | | M (Beta-critical) |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
 | Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |

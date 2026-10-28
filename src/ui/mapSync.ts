@@ -7,6 +7,7 @@ import { airMarks } from "./airMove";
 import { airMoveNow, airYellow } from "./airMoveTap";
 import { fromMarks, moveMarksOf } from "./moveMarks";
 import { moveFurther, moveTargets, selectionNow } from "./moveTap";
+import { redeployTargets, selectionNow as redeployNow } from "./redeployTap";
 import { shownOnMap } from "./attackSync";
 import { builds, siberianOffers } from "./sessionActions";
 import { buildKey, pickOf } from "./buildView";
@@ -20,6 +21,7 @@ function highlightedHexes(s: Session, setup: SetupView | null): string[] {
   if (!setup) {
     // Not setting up: where the stack chosen to move can go (step 6f), or the places a chosen build may go.
     if (s.moveChosen) return moveTargets(s);
+    if (s.redeploy) return redeployTargets(s);
     if (s.airMove || s.airbase) return airYellow(s);
     const taking = s.siberian;
     if (taking) return siberianOffers(s).filter((a) => a.unit.type === taking.type && a.unit.strength === taking.strength).map((a) => a.at);
@@ -58,6 +60,15 @@ function followChoice(view: MapView, s: Session, shown: (ids: readonly string[])
   if (!shown(ids)) view.focus(ids);
 }
 
+/** Once, when a stack is chosen from the redeploy list: the map moves only if the hex or the places it can go are out of sight. */
+function followRedeploy(view: MapView, s: Session, shown: (ids: readonly string[]) => boolean): void {
+  const c = s.redeploy;
+  if (!c?.focus) return;
+  c.focus = false;
+  const ids = [c.hex, ...redeployTargets(s)];
+  if (!shown(ids)) view.focus(ids);
+}
+
 /** Once, when planes are chosen from the list: the map moves only if the base or the bases they can go to are out of sight. */
 function followAir(view: MapView, s: Session, shown: (ids: readonly string[]) => boolean): void {
   const c = s.airMove;
@@ -69,12 +80,14 @@ function followAir(view: MapView, s: Session, shown: (ids: readonly string[]) =>
 
 export function syncMap(view: MapView, s: Session, setup: SetupView | null, actions?: readonly Action[]): void {
   const card = airMoveNow(s);
-  const marks = card ? airMarks(card) : moveMarksOf(selectionNow(s)); // spec 10, 10-5: rings on ticked counters, a dash on left-behind ones, the chosen hex outlined
+  const red = redeployNow(s);
+  const marks = card ? airMarks(card) : moveMarksOf(red ? { hex: red.hex, lines: red.lines.map((l) => ({ key: l.id, state: l.ticked ? "ticked" : l.can ? "free" : "greyed" })) } : selectionNow(s)); // spec 10, 10-5: rings on ticked counters, a dash on left-behind ones, the chosen hex outlined
   view.setUnits(Object.values(s.state.units), marks.units);
   followSetup(view, s, setup?.owner ?? null);
   view.setHighlights(highlightedHexes(s, setup), paleHexes(s));
   followChoice(view, s, shownOnMap);
   followAir(view, s, shownOnMap);
+  followRedeploy(view, s, shownOnMap);
   if (marks.from) view.setAttackMarks(fromMarks(marks)); // the one marks layer: at step 6f it holds the chosen hex, at step 7h the attack marks
   else if (actions) syncAttackMarks(view, s, actions);
 }
