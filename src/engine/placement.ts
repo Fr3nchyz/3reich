@@ -114,7 +114,11 @@ export function stackingProblem(ctx: GameContext, state: GameState, owner: Force
     const limit = capacity > 0 ? capacity : NAVAL_FACTOR_STACKING_LIMIT;
     if (naval + spec.strength > limit) return `${place} would hold ${naval + spec.strength} naval factors (limit ${limit}).`;
   }
-  // Ref 26.0: before 1942 British and French units may not stack together.
+  return angloFrenchSharingProblem(state, owner, here);
+}
+
+/** British/French sharing restriction, separate from capacity so a retreat may overstack (Ref 26.0; spec 16 R6). */
+export function angloFrenchSharingProblem(state: Pick<GameState, "year">, owner: ForceOwner, here: readonly Unit[]): string | null {
   if (state.year < 1942 && (owner === "britain" || owner === "france")) {
     const other = owner === "britain" ? "france" : "britain";
     if (here.some((u) => u.owner === other)) return `British and French units may not stack together before 1942.`;
