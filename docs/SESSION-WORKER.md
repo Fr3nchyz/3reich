@@ -35,3 +35,7 @@ No separate MCP server is necessary: task input and the returned report are the 
 ## Verification status
 
 The launcher can be checked in this workspace for installed CLI/authentication and tested with stubbed CLIs for the dispatch contract. An actual authenticated canary inside Claude's cloud runtime is still required before calling this connection operational.
+
+## Unattended login in a custom cloud environment
+
+For sessions that must not need a device-code approval: the cloud environment allows `api.openai.com`, `auth.openai.com` and `chatgpt.com`, its setup script runs `npm install -g @openai/codex`, and its secret `CODEX_AUTH_JSON` holds the contents of `~/.codex/auth.json` from a machine where the owner ran `codex login`. `scripts/claude/codex-auth.sh` (a SessionStart hook) writes that value to `~/.codex/auth.json` with owner-only permissions and never prints it. `.claude/settings.json` enables the `codex@openai-codex` plugin (`openai/codex-plugin-cc`). Without the variable the hook does nothing. If the token goes stale, copy the file again.
