@@ -6,10 +6,12 @@ import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
+import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
 import { chooseSeaSupply } from "./naval";
 import { chooseMove } from "./move";
+import { chooseOverstack } from "./overstack";
 import { chooseSurrender } from "./surrender";
 import { chooseWinter } from "./winter";
 import type { AiConfig, Decision } from "./types";
@@ -24,8 +26,8 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
-  // At 7b the computer commits no air yet, so the designations are not worked out either.
-  const legal = step === "6f" || step === "7b" ? moveOnAction(state) : legalActions(ctx, state);
+  // At 7b the computer commits no air yet, so the designations are not worked out either; nor are the redeployments at 9e (its policy is ticket 16-20).
+  const legal = step === "6f" || step === "7b" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
@@ -33,8 +35,10 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6e" || step === "9f" ? chooseSeaSupply(ctx, state, legal)
+    : step === "3" ? chooseOptions(ctx, state, legal, cfg) // 3: the Front Options, per Front by the policy constants in options.ts (ticket 16-1)
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
+    : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
@@ -54,12 +58,15 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   if (!action) return null;
   const why: Record<string, string> = {
     [FIRST_STEP]: "No declaration of war is planned for now.",
-    "3": "The computer does not choose Front Options yet: every Front stays on the default (defensive) Option.",
+    "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
+    "6g": "Nothing is overstacked.",
+    "9j": "Nothing is overstacked.",
     "8a": "Nothing more to take in the Free Siberian Transfer.",
     "8b": "Nothing more it wants to build within its limit and the BRPs it keeps for planned declarations.",
+    "9e": "The computer does not redeploy yet.",
     "9a": "No ally is short of BRPs.",
     [LAST_STEP]: "Nothing else to do this turn.",
   };

@@ -1,13 +1,14 @@
 import "./style.css";
 import "./attack.css";
 import "./move.css";
+import "./redeploy.css";
 import "./end.css";
 import { MAP } from "./data/map";
 import { SCENARIO_1939 } from "./data/scenario-1939";
 import { SCENARIO_1942 } from "./data/scenario-1942";
 import { SCENARIO_1944 } from "./data/scenario-1944";
 import { SCENARIO_CAMPAIGN } from "./data/scenario-campaign";
-import { legalActions } from "./engine/actions";
+import { legalActions, moveOnAction } from "./engine/actions";
 import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
 import { describeHex, describeUnits } from "./ui/format";
@@ -35,6 +36,9 @@ import { revealAir } from "./ui/airCardView";
 import { revealAirMove } from "./ui/airMoveView";
 import { bindMoveEscape } from "./ui/moveBind";
 import { atStep6f } from "./ui/moveTap";
+import { atStep9e } from "./ui/step9e";
+import { bindRedeployEscape } from "./ui/redeployBind";
+import { revealRedeploy } from "./ui/redeployView";
 import { attacking } from "./ui/attackTap";
 import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
@@ -50,6 +54,7 @@ let session: Session;
 let wasAttacking = false;
 /** Whether it was the player's step 6f at the last draw: the Next bar and the list of stacks are brought into view when it begins. */
 let wasMoving = false;
+let wasRedeploying = false;
 
 /** The hex info line: the hex, and the counters in it now (the map is redrawn after every action, which also fires a hover, so both use this). */
 const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.state, h.id)].filter(Boolean).join(" \u00b7 ");
@@ -59,13 +64,14 @@ const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (!session.moveChosen) revealCard(shell.status); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
 bindZoom(shell, view, () => lookedHex(session), undefined, undefined, () => nothingSelectedText(session), () => canChooseStack(session));
 const overlay = bindOverlay(shell, view, () => session);
 bindMoveEscape(document, () => session, () => render());
+bindRedeployEscape(document, () => session, () => render());
 
 /** The scenarios whose setup can be played now; the others wait for map data the printed card lacks. */
 shell.scenario.innerHTML = SCENARIOS.map((s) => {
@@ -127,7 +133,9 @@ function takeOverAs(side: Side): void {
 function render(): void {
   normaliseMode(session);
   const setup = setupView(session);
-  const actions = session.state.phase === "player-turn" && !computerToMove(session) ? legalActions(session.ctx, session.state) : [];
+  // Step 9e (spec 16, ticket 16-17): the engine lists every stack to every hex it can reach, 10,600 to 18,950 actions and 70 to 120 ms a position, so the human
+  // gets the move-on action alone, as the computer does; the Redeploy panel asks the engine one stack and one unit at a time (redeployModel.ts).
+  const actions = session.state.phase === "player-turn" && !computerToMove(session) ? (atStep9e(session) ? moveOnAction(session.state) : legalActions(session.ctx, session.state)) : [];
   const mark = captureLog(shell.status);
   const focus = captureFocus(shell.status);
   const watchPanel = shell.status.querySelector<HTMLElement>(".watch-panel");
@@ -148,6 +156,7 @@ function render(): void {
   revealSurrender(shell.status, session);
   revealFresh(shell.status, session, unseenChoice(session));
   revealMove(shell.status, session);
+  revealRedeploy(shell.status, session);
   revealAir(shell.status, session);
   revealAirMove(shell.status, session);
   announceAttack(shell.live, session);
@@ -157,6 +166,9 @@ function render(): void {
   const moving = atStep6f(session);
   if (moving && !wasMoving) revealMoveStep(shell.status);
   wasMoving = moving;
+  const redeploying = atStep9e(session);
+  if (redeploying && !wasRedeploying) revealMoveStep(shell.status, "#sr-title");
+  wasRedeploying = redeploying;
   if (session.watch) watcher.kick();
   else computer.kick();
 }

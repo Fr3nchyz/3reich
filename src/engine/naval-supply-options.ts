@@ -1,7 +1,7 @@
 import { controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import { useOf, type SeaSupplyDesignation } from "./naval-record";
+import { grayUntil, useOf, type SeaSupplyDesignation } from "./naval-record";
 import { isPort, portFronts, portsOf } from "./naval-ports";
 import { ONE_HEX_ISLANDS } from "./naval-rules";
 import { checkDesignations, designationProblem, freeCapacity, placeFronts, portReached } from "./naval-supply";
@@ -56,7 +56,7 @@ export function seaSupplyOptions(ctx: GameContext, state: GameState, side: Side)
   const crews = new Map<string, Unit[]>();
   for (const f of Object.values(state.units).sort((a, b) => byId(a.id, b.id))) {
     const use = useOf(state, f.id);
-    if (f.type !== "fleet" || sideInWar(state, f.owner) !== side || !isPort(ctx, f.at) || (use !== undefined && use !== "supply") || room(f.id) <= 0) continue;
+    if (f.type !== "fleet" || sideInWar(state, f.owner) !== side || !isPort(ctx, f.at) || (use !== undefined && use !== "supply") || grayUntil(state, f.id) !== undefined || room(f.id) <= 0) continue;
     if (!portReached(network, f.at, f.owner)) continue;
     const key = `${f.at}|${network.groupOf(f.owner)}`;
     crews.set(key, [...(crews.get(key) ?? []), f]);

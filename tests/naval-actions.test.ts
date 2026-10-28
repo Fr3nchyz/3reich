@@ -61,7 +61,7 @@ describe("the steps wait only when there is something to save", () => {
     const r = settle(OFF, s);
     expect(stepOf(r.state)).toBe("6f");
     expect(r.events).toEqual([{ type: "STEPS_PASSED", steps: ["6b", "6c", "6d", "6e"] }]);
-    expect(stepOf(settle(OFF, at("9e", [...pocket(), fleet("f1", "K28")])).state)).toBe("10b");
+    expect(stepOf(settle(OFF, at("9f", [...pocket(), fleet("f1", "K28")])).state)).toBe("10b");
     expect(stepOf(settle({ ...CTX }, s).state)).toBe("6f"); // and the shipped setting is off
   });
 

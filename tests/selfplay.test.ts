@@ -201,7 +201,9 @@ describe("self-play anomalies are detected, not looped on", () => {
   it("overstacks are looked for when a Player Turn ends, not before", () => {
     const plant = (st: GameState): GameState => {
       const units = { ...st.units };
+      // One for each side: since ticket 16-6 a side settles its own overstack at its step 6g, so only the other side's is still there when the first Player Turn ends.
       for (let i = 0; i < 8; i++) units[`x${i}`] = { id: `x${i}`, owner: "germany", type: "replacement", strength: 3, at: "L32" };
+      for (let i = 0; i < 8; i++) units[`y${i}`] = { id: `y${i}`, owner: "britain", type: "replacement", strength: 3, at: "K22" };
       return { ...st, units };
     };
     const r = runGame({ scenario: "1939", seed: 1, turns: 1 }, { prepare: plant });

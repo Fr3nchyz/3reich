@@ -1,0 +1,16 @@
+/* The Redeploy panel of step 9e (spec 16 D4, ticket 16-19). It reuses the cards and rows of the Move card (move.css); every button is at least 44 px. */
+.sr-row, .sr-dest { width: 100%; min-height: 56px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .1rem .75rem; text-align: left; line-height: 1.3; }
+.sr-row .row-name, .sr-dest .row-name { font-weight: 700; }
+.sr-row .row-count { font-weight: 400; font-size: .9rem; color: var(--ink-soft); }
+.sr-allow { font-weight: 700; }
+.srlist { border-left-color: #1f4e9c; }
+.srcard { border-left-color: #1f4e9c; }
+.srcard #sr-cancel, .srcard #sr-confirm, .srcard #sr-change { min-height: 44px; min-width: 44px; }
+.srconfirm { margin: .6rem 0; padding: .5rem .8rem; background: #fff7d6; border: 2px solid var(--gold); border-radius: 4px; }
+.srconfirm p { margin: .2rem 0; }
+.sr-question { font-weight: 700; }
+.sr-cannot { margin-top: .6rem; }
+.sr-cannot summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.sr-cannot summary:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.sr-cannot ul { margin: .2rem 0 0; padding-left: 1.2rem; font-size: .9rem; }
+.srpanel .moveundo .undo { min-height: 44px; }

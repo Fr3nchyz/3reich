@@ -237,7 +237,7 @@ describe("the entry point for colonies and Eastern Europe (the contract for spec
     expect(controllerOf(CTX, r.state, "NN32")).toBe("italy");
     expect(controllerOf(CTX, r.state, "MM29")).toBe("britain"); // the British unit stands there
     expect(r.state.units.be).toBeUndefined(); // an air unit alone in a hex that passed
-    expect(types(r.events)).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "UNITS_SWEPT", "UNIT_ELIMINATED"]);
+    expect(types(r.events)).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "UNITS_SWEPT", "UNIT_ELIMINATED", "UNIT_RETURNED_TO_POOL"]); // spec 17 R1: the swept unit goes back to its pool
     expect(r.events[0]).toMatchObject({ unitsRemoved: 0, hexesPassed: egypt.length - 1 });
   });
   it("Eastern Europe is a group of hexes, not a map country: pass them as `hexes`, or let the scenario's zone of that name say", () => {

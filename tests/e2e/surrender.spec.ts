@@ -9,6 +9,8 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
  * - the build: a 1939 game cut at step 8b of an Allied Player Turn of Summer 1941 with the offer on its way; a human Allied player reads the construction warning, builds a
  *   Russian unit and watches the number fall; a human Axis player sees no warning.
  * A watched game (two computers) shows neither the card nor the warning.
+ * Since spec 17 (ticket 17-1) lost units come back to the pool: surrender-question.json is the same game with the END_STEP actions the engine now needs at steps 8a and 8b
+ * (`replayRecord`, src/engine/old-records.ts), so that the game one action before the offer stands at 9a as it did; surrender-build.json is loaded as the old record it is.
  */
 
 type Fixture = { scenario: string; seed: number; actions: unknown[]; shortfall?: number };
@@ -29,8 +31,8 @@ async function load(page: Page, f: Fixture, side: "axis" | "allies", size?: Size
 /** A tap on a touch screen, a click with a mouse. */
 const press = (target: Locator, touch: boolean) => (touch ? target.tap() : target.click());
 
-/** The game one action before the offer: the computer, playing the Allies, ends step 9a itself and the offer arrives on the screen as it does in play (the card scrolls into view then, which a loaded position does not do). */
-const JUST_BEFORE: Fixture = { ...QUESTION, actions: QUESTION.actions.slice(0, -1) };
+/** The game two actions before the offer (the ends of 9a and 9e; ticket 16-17 made 9e wait): the computer, playing the Allies, ends step 9a itself and the offer arrives on the screen as it does in play (the card scrolls into view then, which a loaded position does not do). */
+const JUST_BEFORE: Fixture = { ...QUESTION, actions: QUESTION.actions.slice(0, -2) };
 
 for (const size of SIZES) {
   test(`${size[0]}x${size[1]}: a human Axis player is asked: the card shows the sums and both consequences, the heading has the focus, the answers are touch targets`, async ({ page }) => {
@@ -152,8 +154,10 @@ test("a human Axis player has no warning: the computer builds for the Allies", a
   expect(errors).toEqual([]);
 });
 
-test("a watched game (two computers) never draws the card or the warning, answers the offer, and goes on", async ({ page }) => {
-  test.setTimeout(180_000);
+// Since spec 17 (ticket 17-1) the computer's Russia rebuilds its losses and no computer game reaches the offer (tests/helpers-surrender.ts), so the watched game is followed
+// to Summer 1942, when seed 4 used to offer; the computer's answer in a watched game is tested in tests/surrender-play.test.ts ("two computers watching").
+test("a watched game (two computers) never draws the card or the warning, and goes on to Summer 1942", async ({ page }) => {
+  test.setTimeout(300_000);
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.addInitScript(() => {
@@ -166,12 +170,11 @@ test("a watched game (two computers) never draws the card or the warning, answer
   await page.goto("/");
   await page.locator("#scenario").selectOption("1939");
   await page.locator("#side").selectOption("watch");
-  await page.locator("#seed").fill("4"); // the game of the fixture: Russia offers in Summer 1942
+  await page.locator("#seed").fill("4"); // the game of the fixture, where Russia offered in Summer 1942 before spec 17
   await page.locator("#newgame").click();
   await expect(page.locator("#watchbar")).toBeVisible();
   await page.locator("#w-speed").selectOption("turbo");
-  await expect(page.locator("ol.log li", { hasText: /^Russia offers to surrender: it has \d+ ground and air factors/ })).toHaveCount(1, { timeout: 150_000 });
-  await expect(page.locator("ol.log li", { hasText: /^Computer \(Axis\): The Axis accept Russia's offer to surrender/ })).toHaveCount(1, { timeout: 30_000 });
+  await expect(page.locator("ol.log li", { hasText: /^Summer 1942: / })).toHaveCount(1, { timeout: 270_000 });
   expect(await page.evaluate(() => (window as unknown as { seen: string[] }).seen), "no card and no warning in a watched game").toEqual([]);
   expect(errors).toEqual([]);
 });

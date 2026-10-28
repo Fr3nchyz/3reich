@@ -3,6 +3,7 @@ import { afterHexTaken } from "./capture";
 import { CONTROL_CHANGING_TYPES, controlMap, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { eliminateUnits } from "./losses";
 import type { MapHex } from "./map";
 import type { ForceOwner, GameState, Side, UnitType } from "./types";
 
@@ -125,10 +126,10 @@ export function sweepPassed(ctx: GameContext, state: GameState, hexes: readonly 
     const loners = Object.values(next.units).filter((u) => u.at === hex && sideInWar(next, u.owner) !== null && sideInWar(next, u.owner) !== conquerorSide);
     if (loners.length === 0) continue;
     const taken = afterHexTaken(ctx, next, hex, loners);
-    const out = removeUnits(taken.state, taken.destroy.map((u) => u.id));
+    const out = eliminateUnits(taken.state, taken.destroy.map((u) => u.id)); // each back to its pool, or lost for good (losses.ts, spec 17 R1); not removeUnits, which is the conquered country's own forces (V10)
     next = out.state;
-    const swept: RemovedUnit[] = out.removed;
-    if (swept.length > 0) events.push({ type: "UNITS_SWEPT", hex, units: swept }, ...swept.map((u): GameEvent => ({ type: "UNIT_ELIMINATED", unitId: u.id, owner: u.owner, at: hex })));
+    const swept: RemovedUnit[] = out.removed.map((u) => ({ id: u.id, owner: u.owner, type: u.type, strength: u.strength }));
+    if (swept.length > 0) events.push({ type: "UNITS_SWEPT", hex, units: swept }, ...out.events);
     events.push(...taken.events);
   }
   return { state: next, events };
