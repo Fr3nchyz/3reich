@@ -99,7 +99,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended |
 | **Release II: fleets move and fight** | | | |
 | 12-9 Naval combat resolver (pure) | every branch of the naval table | S | In progress (Codex, #132) |
-| 12-10 Base-change rules (pure) | straits, Suez, which side of Italy | M | Waits for 12-0 |
+| 12-10 Base-change rules (pure) | straits, Suez, which side of Italy | M | In progress (Codex, #176) |
 | 12-11 Move a fleet (step 6b) | once a turn, to another port | M | Waits for 12-1, 12-10 |
 | 12-12 Interception (6c, 6d) | the other side's fleets try to catch yours | L | Waits for 12-9, 12-11 |
 | 12-13 Computer: base change and interception | | M | Waits for 12-12 |
