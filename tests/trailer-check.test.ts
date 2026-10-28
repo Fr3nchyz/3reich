@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { isPush, missingTrailer, pushDir, unsignedCommits } from "../scripts/claude/trailer-check.mjs";
 
 // CLAUDE.md "Commits": every commit ends with the Co-Authored-By and Claude-Session lines; the push gate refuses a push that would publish one without.
@@ -37,8 +37,11 @@ describe("push gate: Claude-Session trailer", () => {
 });
 
 describe("push gate: range of commits checked", () => {
+  const dirs: string[] = [];
+  afterEach(() => { for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true }); });
   it("checks only commits not yet on the remote branch, so an old pushed commit does not block later pushes", () => {
     const dir = mkdtempSync(join(tmpdir(), "trailer-"));
+    dirs.push(dir);
     const git = (...a: string[]) => execFileSync("git", ["-C", dir, "-c", "user.name=t", "-c", "user.email=t@t", ...a], { encoding: "utf8" });
     git("init", "-q", "-b", "main");
     git("commit", "-q", "--allow-empty", "-m", "base\n\nClaude-Session: s");
