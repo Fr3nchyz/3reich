@@ -45,7 +45,7 @@ if [[ -n ${WORKER_EFFORT:-} ]]; then
 fi
 log=$(mktemp /tmp/cloud-worker-log.XXXXXX.log)
 # Subscription login only. Keep the worker transcript out of the manager's context; it reads the final report.
-if env -u CODEX_API_KEY -u OPENAI_API_KEY codex exec \
+if env -u CODEX_API_KEY -u OPENAI_API_KEY -u CODEX_AUTH_JSON codex exec \
   -c 'forced_login_method="chatgpt"' -c 'model_provider="openai"' \
   --sandbox workspace-write -C "$checkout" "${worker_flags[@]}" \
   --output-last-message "$report" - < "$scratch/prompt.txt" > "$log" 2>&1; then
