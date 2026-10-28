@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { fnv } from "./stability-hash";
 import { chooseAction } from "../src/ai";
 import { createMemory } from "../src/ai/memory";
 import { applyAction, legalActions, replay } from "../src/engine/actions";
@@ -13,11 +14,6 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // Regression for the computer's play over a fixed seed (spec 05, "As built: idle play"). The hashes pin the recorded action lists of
 // short games: THEY CHANGE ON PURPOSE whenever the computer's policy (src/ai) changes; then take the new value from the failure
 // message after checking the play with `npm run selfplay` (docs/SELFPLAY.md). They guard against an accidental change, not against a change.
-const fnv = (text: string): number => {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619) >>> 0;
-  return h;
-};
 // Hashes of 2026-10-16 (ticket 09-14): step 7b now waits for a side with air in range of an attackable hex, so the computer's list gains one END_STEP at 7b
 // for each such turn. Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (1260916810, 3779823303,
 // 2114108264, 947755197), so nothing else in the computer's play changed.
