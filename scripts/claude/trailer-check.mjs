@@ -22,11 +22,19 @@ export function missingTrailer(log) {
   })
 }
 
-/** The commits not yet on origin/main in `dir` that lack the trailer; [] when the range cannot be read (no origin/main, not a repo). */
+/** The commits about to be pushed in `dir` that lack the trailer: those not yet on origin/<branch>, or on origin/main when the branch is new; [] when the range cannot be read (no origin/main, not a repo). */
 export function unsignedCommits(dir) {
+  const git = (...args) => execFileSync('git', ['-C', dir, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
   try {
-    const log = execFileSync('git', ['-C', dir, 'log', 'origin/main..HEAD', '--format=%H%x00%s%x00%B%x01'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
-    return missingTrailer(log)
+    let base = 'origin/main'
+    try {
+      const branch = git('rev-parse', '--abbrev-ref', 'HEAD').trim()
+      git('rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`)
+      base = `origin/${branch}`
+    } catch {
+      // a branch with no remote counterpart yet: everything beyond origin/main is new
+    }
+    return missingTrailer(git('log', `${base}..HEAD`, '--format=%H%x00%s%x00%B%x01'))
   } catch {
     return []
   }

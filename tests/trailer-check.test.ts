@@ -1,5 +1,9 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { isPush, missingTrailer, pushDir } from "../scripts/claude/trailer-check.mjs";
+import { isPush, missingTrailer, pushDir, unsignedCommits } from "../scripts/claude/trailer-check.mjs";
 
 // CLAUDE.md "Commits": every commit ends with the Co-Authored-By and Claude-Session lines; the push gate refuses a push that would publish one without.
 const rec = (subject: string, body: string) => `abc\x00${subject}\x00${body}\x01`;
@@ -29,5 +33,22 @@ describe("push gate: Claude-Session trailer", () => {
     expect(pushDir("cd /x && cd /y && git push")).toBe("/y");
     expect(pushDir("git -C '/home/user/3reich-wt/b' push -u origin b")).toBe("/home/user/3reich-wt/b");
     expect(pushDir("git push")).toBe(process.cwd());
+  });
+});
+
+describe("push gate: range of commits checked", () => {
+  it("checks only commits not yet on the remote branch, so an old pushed commit does not block later pushes", () => {
+    const dir = mkdtempSync(join(tmpdir(), "trailer-"));
+    const git = (...a: string[]) => execFileSync("git", ["-C", dir, "-c", "user.name=t", "-c", "user.email=t@t", ...a], { encoding: "utf8" });
+    git("init", "-q", "-b", "main");
+    git("commit", "-q", "--allow-empty", "-m", "base\n\nClaude-Session: s");
+    git("update-ref", "refs/remotes/origin/main", "HEAD");
+    git("checkout", "-q", "-b", "work");
+    git("commit", "-q", "--allow-empty", "-m", "old unsigned");
+    expect(unsignedCommits(dir)).toEqual(["old unsigned"]);
+    git("update-ref", "refs/remotes/origin/work", "HEAD");
+    expect(unsignedCommits(dir)).toEqual([]);
+    git("commit", "-q", "--allow-empty", "-m", "new unsigned");
+    expect(unsignedCommits(dir)).toEqual(["new unsigned"]);
   });
 });
