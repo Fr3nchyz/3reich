@@ -55,7 +55,7 @@ export function seaSupplyCardModel(ctx: GameContext, state: GameState, side: Sid
     const room = freeCapacity(state, standing);
     const places = [...new Set(option.units.map((id) => state.units[id]!.at))].sort();
     proposal = { fleets, destination, text: NAVAL_TEXT.supply, action, explanation: [
-      NAVAL_TEXT.carries(fleets, destination), ...places.map((p) => NAVAL_TEXT.joined(navalPlaceName(ctx, p), destination)),
+      NAVAL_TEXT.carries(fleets, destination), ...places.filter((p) => p !== option.to).map((p) => NAVAL_TEXT.joined(navalPlaceName(ctx, p), destination)),
       NAVAL_TEXT.capacity(option.fleets.map(room), option.units.length), option.fleets.length === 1 ? NAVAL_TEXT.after : NAVAL_TEXT.afterMany,
     ] };
   }

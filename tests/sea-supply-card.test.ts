@@ -39,7 +39,7 @@ describe("the sea-supply card's pure model (spec 12 D1/D5)", () => {
     expect(model.groups).toEqual([{ hex: "AA19", place: "Cagliari (AA19)", units: ["1-3 Italian infantry", "1-3 Italian infantry", "1 Italian airbase"], reason: "No land line to a supply source." }]);
     expect(model.proposal!.fleets).toEqual(["9 Italian fleet at Genoa (U22)"]);
     expect(model.proposal!.destination).toBe("Cagliari (AA19)");
-    expect(model.proposal!.explanation).toContain("Cagliari (AA19) is joined to Cagliari (AA19) by land.");
+    expect(model.proposal!.explanation.some((line) => line.includes("is joined to"))).toBe(false); // the unit already sits in the destination
     expect(model.proposal!.explanation).toContain("It can carry 9, needs 3.");
     expect(model.proposal!.explanation).toContain("Afterwards this fleet can do nothing else this Game Turn.");
     expect(legalActions(ON, s)).toContainEqual(model.proposal!.action);
