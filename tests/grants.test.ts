@@ -125,10 +125,10 @@ describe("a grant", () => {
 
   it("is offered in steps of 10 BRPs, plus the exact room, only at 9a", () => {
     let s = allied42();
-    const options = legalGrants(s).filter((g) => g.from === "britain" && g.to === "ussr").map((g) => g.amount);
+    const options = legalGrants(ctx42, s).filter((g) => g.from === "britain" && g.to === "ussr").map((g) => g.amount);
     expect(options).toEqual([10, 20, 30, 40]);
     const tight = { ...s, nations: { ...s.nations, britain: { ...s.nations.britain, spent: s.nations.britain.spendLimit - 25 } } };
-    expect(legalGrants(tight).filter((g) => g.from === "britain" && g.to === "ussr").map((g) => g.amount)).toEqual([10, 20, 25]);
+    expect(legalGrants(ctx42, tight).filter((g) => g.from === "britain" && g.to === "ussr").map((g) => g.amount)).toEqual([10, 20, 25]);
     expect(legalActions(ctx42, s).at(-1)).toMatchObject({ type: "END_STEP", step: "9a" });
     s = { ...s, position: { part: "player-turn", turn: 2, step: "10b" } };
     expect(legalActions(ctx42, s).some((a) => a.type === "GRANT_BRPS")).toBe(false);
