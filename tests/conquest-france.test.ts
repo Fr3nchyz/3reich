@@ -329,7 +329,7 @@ describe("the events and the log", () => {
   it("VICHY_CREATED comes after the fall's own events, then the control passed to Vichy and to the Free French, then the British lost", () => {
     const r = falls(paris([inf("france", "M24"), inf("france", SYRIA[0]!), unit("britain", "infantry", 3, "S19", 4)], { rngState: rngFor(false, true) }));
     const t = types(r.events);
-    expect(t).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "VICHY_CREATED", "CONTROL_PASSED", "CONTROL_PASSED", "UNIT_ELIMINATED"]);
+    expect(t).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "VICHY_CREATED", "CONTROL_PASSED", "CONTROL_PASSED", "UNIT_ELIMINATED", "UNIT_RETURNED_TO_POOL"]); // spec 17 R1: the British unit goes back to the British pool
     const to = r.events.filter((e) => e.type === "CONTROL_PASSED").map((e) => e.to);
     expect(to).toEqual(["germany", "vichy-france", "free-france"]);
   });

@@ -76,3 +76,14 @@ export const eventsOf = <T extends GameEvent["type"]>(events: readonly GameEvent
 
 /** An Objective hex outside Russia, to give to someone. */
 export const objectiveOutside = (): string => objectiveHexes(CTX).find((h) => CTX.map.hexes[h]!.country !== "ussr")!;
+
+/**
+ * The position as the computer sees it when the Allies never use a Russian loss again (spec 17, ticket 17-1): the Russian counters that came back to the pool are left
+ * out, so they are neither built at step 8b nor taken in the Free Siberian Transfer at 8a. Both are choices (each step may be ended), so every action chosen on this
+ * view is legal on the real position.
+ * Since lost units come back, the plain computer rebuilds Russia's losses at once and no game of 1939 seeds 1 to 70, Campaign 1 to 12 or 1942 1 to 12 reaches Russia's
+ * offer to surrender; the whole-game tests of the offer play with this view, so Russia wears down as it did before spec 17 (with the Transfer still taking them,
+ * only 1939 seed 8 of 1 to 12 reaches the offer).
+ */
+export const withoutRussianRebuilds = (s: GameState): GameState =>
+  s.pools.ussr ? { ...s, pools: { ...s.pools, ussr: { ...s.pools.ussr, allowableBuilds: s.pools.ussr.allowableBuilds.filter((e) => !e.returned) } } } : s;

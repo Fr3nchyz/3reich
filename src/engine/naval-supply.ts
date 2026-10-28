@@ -1,7 +1,7 @@
 import { controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import { navalOf, useOf, type SeaSupplyDesignation } from "./naval-record";
+import { grayProblem, grayUntil, navalOf, useOf, type SeaSupplyDesignation } from "./naval-record";
 import { hexOf, isOneHexIsland, isPort, portFronts, portsOf } from "./naval-ports";
 import { seaRoute } from "./naval-routes";
 import { SEA_SUPPLY_UNITS_PER_FACTOR } from "./naval-rules";
@@ -118,6 +118,8 @@ export function designationProblem(ctx: GameContext, state: GameState, network: 
     if (sideInWar(state, f.owner) !== side) return `${id} is not a fleet of the ${side} side.`;
     if ((!chain || i === 0) && f.at !== d.from) return `${id} is at ${where(ctx, f.at)}, not at ${where(ctx, d.from)}: the fleets of one supply sail from one port.`;
     if (!isPort(ctx, f.at)) return `${where(ctx, f.at)} is not a port: fleets are based in ports (Ref 4.7).`;
+    const gray = grayUntil(state, id); // spec 17 R5, RB7: sea supply is a thing a fleet does
+    if (gray) return grayProblem(id, gray);
     const use = useOf(state, id);
     if (use !== undefined && use !== "supply") return use === "new" ? `${id} was built this Game Turn and does nothing until the next (Ref 21.3).` : `${id} has already been used this Game Turn (${use}): a fleet does one thing in a Game Turn (Ref 21.3).`;
   }

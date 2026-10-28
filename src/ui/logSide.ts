@@ -70,6 +70,8 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "FLEET_DISPLACED":
     case "UNIT_ELIMINATED": // the side that owns the unit lost, not the side that attacked
     case "OVERSTACK_ELIMINATED":
+    case "UNIT_RETURNED_TO_POOL": // where a lost unit went: the side that lost it
+    case "UNIT_LOST_FOR_GOOD":
     case "SETUP_OWNER_DONE": return sideOfOwner(e.owner);
     case "HEX_CONTROL_CHANGED": return sideOfOwner(e.to);
     case "CAPITAL_LOST":
@@ -93,7 +95,10 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     }
     case "AIR_STAGED":
     case "UNITS_MOVED":
+    case "UNITS_REDEPLOYED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
+    case "BREAKTHROUGH":
+    case "EXPLOITERS_PLACED": return e.side;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
     case "SEA_SUPPLY_LAPSED": return sideOfUnits(e.fleets, before) ?? actor;

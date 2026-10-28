@@ -1,6 +1,7 @@
 import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { routeLosses } from "./losses";
 import { baseSuits, GROUND_FOR_STACKING, stackingProblem } from "./placement";
 import { sideOfOwner } from "./setup";
 import type { GameState, Side, Unit } from "./types";
@@ -14,7 +15,7 @@ import type { GameState, Side, Unit } from "./types";
  * TODO(verify, Ref 26.0): the Anglo-French ban on sharing a hex before 1942 is a movement restriction,
  * not a limit to eliminate down to, so it is reported by `angloFrenchHexes` and left out of the
  * overstack here. TODO(verify): the manual's wording on whether the owner may eliminate more than needed;
- * this reading allows only what brings the hex within its limit. Eliminated units go to no pool yet.
+ * this reading allows only what brings the hex within its limit. Eliminated units go back to their pool, or out of the game for good (losses.ts, spec 17 R1).
  */
 
 export type StackKind = "ground" | "air" | "naval";
@@ -149,6 +150,14 @@ export function eliminateOverstack(
   }
   const unknown = Object.values(choices).flat().find((id) => !removed.includes(id));
   if (unknown) return { ok: false, error: `${unknown} is not part of an overstack.` };
-  const events = removed.map((id): GameEvent => ({ type: "OVERSTACK_ELIMINATED", unitId: id, owner: state.units[id]!.owner, at: state.units[id]!.at }));
-  return { ok: true, state: without(state, removed), events };
+  // Each unit goes back to its pool or is lost for good (losses.ts, spec 17 R1), its routing event right after its own.
+  let next = without(state, removed);
+  const events: GameEvent[] = [];
+  for (const id of removed) {
+    const u = state.units[id]!;
+    const routed = routeLosses(next, [u]);
+    next = routed.state;
+    events.push({ type: "OVERSTACK_ELIMINATED", unitId: id, owner: u.owner, at: u.at }, ...routed.events);
+  }
+  return { ok: true, state: next, events };
 }

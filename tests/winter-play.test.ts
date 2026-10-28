@@ -105,8 +105,10 @@ describe("whole computer games with the winter question", () => {
     expect(b.actions).toEqual(a.actions);
     expect(b.final).toEqual(a.final);
   });
-  it("1939 seed 1 played to the end: Germany is at war with Russia by Winter 1941, the Axis has no unit in Russia, the Allies wait, and the game ends with a result and no anomaly", () => {
-    const r = runGame({ scenario: "1939", seed: 1, turns: "end", verify: true });
+  // Seed 4 since ticket 16-1 (seed 2 since spec 17, ticket 17-1; seeds 4, 7, 9, 11, 12 tell the story on the combined code): with lost units rebuilt, the Axis of seed 1 now stands in Russia with 18 ground units when Winter 1941 comes (the dice make 8),
+  // so the Allies may not wait there; seed 2 is the game this test had in seed 1 (no Axis unit in Russia, dice 9).
+  it("1939 seed 4 played to the end: Germany is at war with Russia by Winter 1941, the Axis has no unit in Russia, the Allies wait, and the game ends with a result and no anomaly", () => {
+    const r = runGame({ scenario: "1939", seed: 4, turns: "end", verify: true });
     expect(r.anomalies).toEqual([]);
     expect(r.ended).toBe("game-over");
     const { events } = replayChecked(r, (x) => x);

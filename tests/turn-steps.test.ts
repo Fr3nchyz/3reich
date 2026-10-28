@@ -117,7 +117,7 @@ describe("steps without rules are passed, and the passing is recorded", () => {
     expect(passed).toEqual([...without(["3", "6f", "8b"]), ...without(["3", "6f", "8b", "9a"]), "II.A"]);
     // Nobody has a counter on the map here, so ground movement (6f) found nothing to do; only the airbases still to place kept the step open.
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
-    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "6e", "6f", "7b", "7h", "8a", "8b", "9a", "9f", "10a"].includes(id)).toBe(true);
+    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "3", "6e", "6f", "6g", "7b", "7h", "8a", "8b", "9a", "9e", "9f", "9j", "10a"].includes(id)).toBe(true);
   });
 
   it("records step 1 as passed when a side has nothing to declare", () => {

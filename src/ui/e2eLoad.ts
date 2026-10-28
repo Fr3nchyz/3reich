@@ -1,4 +1,5 @@
 import type { Action } from "../engine/actions";
+import { replayRecord } from "../engine/old-records";
 import type { GameTurn, Scenario, Side } from "../engine/types";
 import { newSession, run, type Session } from "./session";
 
@@ -21,7 +22,14 @@ export interface E2eLoad {
 /** A session of `scenario` for the player on `side` after these actions, from a new game with this seed. */
 export function sessionFromRecord(scenario: Scenario, side: Side, seed: number, actions: readonly Action[]): Session {
   const s = newSession(scenario, side, seed);
-  if (!run(s, ...actions)) throw new Error(`The recorded actions were refused: ${s.toast}`);
+  // A record made before lost units came back to the pool passed steps 8a and 8b that may now wait for them: those steps are ended for it (spec 17 R7).
+  let played: readonly Action[];
+  try {
+    played = replayRecord(s.ctx, s.state, actions).actions;
+  } catch {
+    played = actions; // refused: `run` below names the action in the error
+  }
+  if (!run(s, ...played)) throw new Error(`The recorded actions were refused: ${s.toast}`);
   s.log.push("(Loaded from a recorded game for a browser test.)");
   return s;
 }

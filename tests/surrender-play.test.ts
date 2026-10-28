@@ -27,11 +27,13 @@ import { buttonLabels, statusHtml } from "../src/ui/statusView";
 import { statusLine } from "../src/ui/watchBar";
 import { createWatchInfo } from "../src/ui/watchController";
 import { whereText } from "../src/ui/watchPlay";
-import { asked } from "./helpers-surrender";
+import { asked, withoutRussianRebuilds } from "./helpers-surrender";
 import { CTX } from "./helpers";
 
 // Spec 14 ticket 14-15 (hazards 1 and 3 of the brief): whole computer games that reach Russia's offer to surrender and accept or refuse it. At every state of each game the legal
 // list is not empty and exactly the right side acts; the computer never stalls at the new prompt; the recorded actions replay to the same state.
+// Since spec 17 (ticket 17-1) the computer here never uses a Russian loss again, neither rebuilding it nor taking it in the Free Siberian Transfer (`withoutRussianRebuilds`, legal choices): with Russia rebuilding, no game reaches the offer.
+// The seeds are those that reach it so (1939 seeds 1, 3, 5, 7, 8 and 12 of 1 to 12); before spec 17 they were 4, 5, 8 and 10 with the plain computer.
 
 type Choose = NonNullable<Hooks["choose"]>;
 
@@ -54,7 +56,7 @@ function probing(policy: "accept" | "refuse", seen: { states: number; asked: num
     }
     expect(winterAsking(state) ? sideToAct(state) === "allies" : legal.some((a) => a.type === "SURRENDER_ANSWER")).toBe(winterAsking(state));
     seen.sides.add(sideToAct(state));
-    return chooseAction(ctx, state, cfg);
+    return chooseAction(ctx, withoutRussianRebuilds(state), cfg);
   };
 }
 
@@ -85,7 +87,7 @@ function playNow(scenario: ScenarioKey, seed: number, policy: "accept" | "refuse
   return { run, ctx, events, state, seen, at };
 }
 
-describe.each([4, 5, 8, 10])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
+describe.each([1, 3, 5, 8])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
   const accepted = play("1939", seed, "accept");
   it("ends normally with no anomaly, and the replay equals the final state", () => {
     expect(accepted.run.ended).toBe("game-over");
@@ -123,7 +125,7 @@ describe.each([4, 5, 8, 10])("a whole computer game, 1939 seed %i, in which Russ
 });
 
 describe("the same games with the Axis refusing", () => {
-  for (const seed of [4, 10]) {
+  for (const seed of [1, 5]) {
     it(`1939 seed ${seed}: the offer is refused once, nothing is removed, no second offer, the game ends with no anomaly and replays`, () => {
       const g = play("1939", seed, "refuse");
       expect(g.run.anomalies).toEqual([]);
@@ -136,8 +138,8 @@ describe("the same games with the Axis refusing", () => {
     });
   }
   it("the refused game differs from the accepted one at the answer and not before", () => {
-    const a = play("1939", 4, "accept");
-    const r = play("1939", 4, "refuse");
+    const a = play("1939", 1, "accept");
+    const r = play("1939", 1, "refuse");
     const i = a.run.actions.findIndex((x, k) => JSON.stringify(x) !== JSON.stringify(r.run.actions[k]));
     expect(i).toBe(a.at.answer);
   });
@@ -148,14 +150,14 @@ describe("a refused game in which Russia is then wiped out (hazard 1, R7d)", () 
     const ctx = ctxOf("1939");
     const memory = createMemory();
     const seen: Action[] = [];
-    let state = newGame(SCENARIOS["1939"], 4);
+    let state = newGame(SCENARIOS["1939"], 1);
     for (const a of autoSetup(ctx, state)) state = (applyAction(ctx, state, a) as { state: GameState }).state;
     let wiped = false;
     let conquered: GameEvent | undefined;
     for (let i = 0; i < 3000 && state.phase === "player-turn"; i++) {
       const legal = legalActions(ctx, state);
       expect(legal.length).toBeGreaterThan(0);
-      const decision = chooseAction(ctx, state, { seed: 4, memory });
+      const decision = chooseAction(ctx, withoutRussianRebuilds(state), { seed: 1, memory });
       expect(decision).not.toBeNull();
       const refuse = surrenderAsking(state) ? legal.find((x) => x.type === "SURRENDER_ANSWER" && !x.accept)! : null;
       const action = refuse ?? decision!.action;

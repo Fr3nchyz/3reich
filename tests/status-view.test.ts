@@ -74,6 +74,12 @@ describe("the status area in play", () => {
   it("shows only the move-on button once the steps with something to do are done", () => {
     const s = inPlay();
     for (const step of ["1", "3", "6f", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
+    // Step 9e waits while a unit can be redeployed (ticket 16-17); its redeployments are not buttons (the panel is ticket 16-19) but the move-on button is there.
+    expect(s.state.position).toMatchObject({ step: "9e" });
+    const at9e = statusHtml(s, null, legalActions(s.ctx, s.state));
+    expect(at9e).toMatch(/<button data-action="\d+">[^<]*<\/button>/);
+    expect(at9e).not.toContain("SR_UNITS");
+    takeAction(s, { type: "END_STEP", side: "axis", step: "9e" });
     const html = statusHtml(s, null, legalActions(s.ctx, s.state));
     expect(html).toContain("step 10b (Save-Game prompt)");
     expect(html).not.toContain("Declare war");

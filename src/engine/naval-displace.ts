@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { controllerOf, controllingSide, sideInWar } from "./control";
 import type { HexId } from "./hex";
+import { routeLosses } from "./losses";
 import { portFronts, portsOf } from "./naval-ports";
 import { seaDistances } from "./naval-routes";
 import { stackingProblem } from "./placement";
@@ -40,13 +41,15 @@ export function displaceFleets(ctx: GameContext, state: GameState, from: HexId, 
   const events: GameEvent[] = [];
   for (const f of [...fleets].sort((a, b) => Number(a.id.replace(/\D/g, "")) - Number(b.id.replace(/\D/g, "")) || (a.id < b.id ? -1 : 1))) {
     const to = displacementPort(ctx, current, f, from);
+    events.push({ type: "FLEET_DISPLACED", unitId: f.id, owner: f.owner, from, to });
     if (to === null) {
       const { [f.id]: _gone, ...units } = current.units;
-      current = { ...current, units };
+      const routed = routeLosses({ ...current, units }, [f]); // eliminated: back to the pool, or lost for good (losses.ts, spec 17 R1)
+      current = routed.state;
+      events.push(...routed.events);
     } else {
       current = { ...current, units: { ...current.units, [f.id]: { ...f, at: to } } };
     }
-    events.push({ type: "FLEET_DISPLACED", unitId: f.id, owner: f.owner, from, to });
   }
   return { state: current, events };
 }
