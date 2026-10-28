@@ -61,10 +61,10 @@ export function winterCardHtml(s: Session, buttons: string): string {
     </section>`;
 }
 
-/** The step-3 Offensive button the winter greys out: the text and the reason, or null when it is not in play (the winter off, not the Axis' step 3, or the Eastern Front already chosen). */
+/** The step-3 Offensive button the winter greys out: the text and the reason, or null when it is not in play (the winter off, not the Axis' step 3, or the Eastern Front already on Offensive; a choice of another Option can still be changed, spec 15 R14). */
 export function greyedOffensive(state: GameState): { text: string; reason: string } | null {
   const step3 = state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "3";
-  return step3 && !state.frontOptions.eastern && winterBansOffensive(state, state.activeSide, "eastern", "offensive") ? { text: WINTER_TEXT.greyedOption, reason: WINTER_TEXT.greyedReason } : null;
+  return step3 && state.frontOptions.eastern?.option !== "offensive" && winterBansOffensive(state, state.activeSide, "eastern", "offensive") ? { text: WINTER_TEXT.greyedOption, reason: WINTER_TEXT.greyedReason } : null;
 }
 
 /**
