@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { applyAction } from "../src/engine/actions";
 import { airCapacity } from "../src/engine/air-bases";
-import { airbaseCapital, displaceAir, displacementBase } from "../src/engine/air-displace";
+import { AIRBASE_CAPTURE_RULES, airbaseCapital, displaceAir, displacementBase } from "../src/engine/air-displace";
 import { airOf, markFlown } from "../src/engine/air-record";
 import type * as AirRules from "../src/engine/air-rules";
 import { AIR_DISPLACED_ON_CAPTURE } from "../src/engine/air-rules";
@@ -145,14 +145,14 @@ describe("captured airbases (spec 09 R2; manager clarification A2-A4)", () => {
     expect(displaceAir(ctx, s, b.at, [b]).state.units.b1!.at).toBe("H47");
   });
 
-  it("eliminates a U.S. airbase with no on-map Capital while its planes still displace (TODO(verify) A3)", () => {
+  it("sends a U.S. airbase to the Box while planes displace on the map (ruling Q2; A3)", () => {
     const ctx = ctxFor(SCENARIO_1942), b = base("b1", "L23", "usa"), u = plane("a1", "L23", 3, "usa");
     const s = board([b, u], SCENARIO_1942);
     const out = displaceAir(ctx, s, b.at, [u, b]);
-    expect(out.state.units.b1).toBeUndefined();
+    expect(out.state.units.b1!.at).toBe("us-box");
     expect(out.state.units.a1).toBeDefined();
     expect(out.state.units.a1!.at).not.toBe(b.at);
-    expect(out.events).toContainEqual({ type: "AIR_DISPLACED", unitId: "b1", owner: "usa", from: "L23", to: null });
+    expect(out.events).toContainEqual({ type: "AIR_DISPLACED", unitId: "b1", owner: "usa", from: "L23", to: "us-box" });
   });
 
   it("eliminates an airbase if its Capital is enemy-held or is this capture, and still moves the planes (TODO(verify) A4)", () => {
@@ -165,6 +165,62 @@ describe("captured airbases (spec 09 R2; manager clarification A2-A4)", () => {
     expect(out.state.units.a1!.at).not.toBe("L31");
     const occupied = board([b, counter("enemy", "britain", "infantry", 3, "L31")]);
     expect(airbaseCapital(CTX, occupied, b, b.at)).toBeNull();
+  });
+});
+
+// Ref 20.1, Ops 5.48h; owner ruling 2026-10-29 Q2. A2/A3 defaults are intentionally provisional.
+describe("Q2 airbase fallbacks", () => {
+  const ctx = ctxFor(SCENARIO_1942);
+  const russian = base("b1", "V38", "ussr");
+  const lostMoscow = () => board([russian], SCENARIO_1942, { control: { H47: "germany" } });
+
+  it("moves a Soviet airbase to the lowest-id Russian east-edge hex after Moscow falls (A2)", () => {
+    const s = lostMoscow();
+    expect(AIRBASE_CAPTURE_RULES.sovietEastEdge).toBe("lowest-hex-id");
+    expect(airbaseCapital(ctx, s, russian, russian.at)).toBe("A66");
+    expect(displaceAir(ctx, s, russian.at, [russian]).state.units.b1!.at).toBe("A66");
+    const reversed = { ...ctx, map: { ...ctx.map, hexes: Object.fromEntries(Object.entries(ctx.map.hexes).reverse()) } };
+    expect(airbaseCapital(reversed, s, russian, russian.at)).toBe("A66");
+  });
+
+  it("skips enemy-held east-edge hexes (A2)", () => {
+    const s = lostMoscow();
+    expect(airbaseCapital(ctx, { ...s, control: { ...s.control, A66: "germany" } }, russian, russian.at)).toBe("B65");
+  });
+
+  it("skips enemy-occupied east-edge hexes (A2)", () => {
+    const s = lostMoscow();
+    const occupied = { ...s, units: { ...s.units, enemy: counter("enemy", "germany", "infantry", 3, "A66") } };
+    expect(airbaseCapital(ctx, occupied, russian, russian.at)).toBe("B65");
+  });
+
+  it("does not return to the hex being captured when Moscow itself falls (A2)", () => {
+    const b = { ...russian, at: "H47" };
+    expect(airbaseCapital(ctx, board([b], SCENARIO_1942), b, b.at)).toBe("A66");
+  });
+
+  it("never leaves a Soviet airbase on the captured east-edge hex (A2)", () => {
+    expect(airbaseCapital(ctx, lostMoscow(), russian, "A66")).toBe("B65");
+  });
+
+  it("keeps a full Capital's airbase and sends incoming planes to the nearest base (Q2; A4)", () => {
+    const b = base("b1", "L30"), u = plane("a1", "L30", 3, "germany");
+    const s = board([b, u, plane("full", "L31", 10, "germany")], undefined, { control: { L30: "britain", K31: "germany" } });
+    const out = displaceAir(CTX, s, "L30", [u, b]);
+    expect(out.state.units.b1!.at).toBe("L31");
+    expect(out.state.units.full!.at).toBe("L31");
+    expect(out.state.units.a1!.at).toBe("J30");
+  });
+
+  it("defaults to no displaced planes in the U.S. Box, without returning the airbase to reserve (A3)", () => {
+    const b = base("b1", "L23", "usa"), u = plane("a1", "L23", 3, "usa");
+    const s = { ...board([b, u], SCENARIO_1942), airbasesPlaced: { usa: 3 } };
+    const out = displaceAir(onlyBases(), s, b.at, [u, b]);
+    expect(AIRBASE_CAPTURE_RULES.usBoxHoldsAir).toBe(false);
+    expect(out.state.units.b1!.at).toBe("us-box");
+    expect(out.state.units.a1).toBeUndefined();
+    expect(out.state.airbasesPlaced).toEqual(s.airbasesPlaced);
+    expect(out.events.some((e) => e.type === "UNIT_ELIMINATED" && e.unitId === b.id)).toBe(false);
   });
 });
 
