@@ -63,11 +63,13 @@ describe("suppliedAfterMove: whether a line reaches the hex once the move is mad
     const r = at6f([inf("r1", "germany", "L32", 1, 0, "replacement")]);
     expect(suppliedAfterMove(ON, r, networkOf(ON, r, "axis"), [r.units.r1!], "M34")).toBe(true);
   });
-  it("a Fortress of the side supplies the units inside it (Ref 4.8, 19.2): a German unit cut off at Q23 is supplied once in a German-held Maginot hex", () => {
+  it("a moved-in unit stays cut off until its next turn in a friendly fortress (spec 16 R30 / AER38; Ref 4.8, 19.2)", () => {
     const f = at6f([inf("g1", "germany", "Q23", 3, 3)], "axis", undefined, { control: { Q23: "germany", P24: "germany" }, fortresses: { P24: true } });
     expect(isUnitSupplied(ON, f, "g1")).toBe(false);
-    expect(suppliedAfterMove(ON, f, networkOf(ON, f, "axis"), [f.units.g1!], "P24")).toBe(true);
-    expect(isUnitSupplied(ON, okOf(move(f, ["g1"], ["P24"], ON)).state, "g1")).toBe(true);
+    expect(suppliedAfterMove(ON, f, networkOf(ON, f, "axis"), [f.units.g1!], "P24")).toBe(false);
+    const arrived = okOf(move(f, ["g1"], ["P24"], ON)).state;
+    expect(isUnitSupplied(ON, arrived, "g1")).toBe(false);
+    expect(isUnitSupplied(ON, { ...arrived, season: "winter" }, "g1")).toBe(true);
     const lost = { ...f, fortresses: { P24: false } };
     expect(suppliedAfterMove(ON, lost, networkOf(ON, lost, "axis"), [lost.units.g1!], "P24")).toBe(false);
   });

@@ -3,7 +3,7 @@ import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
 import { releaseKept } from "./conquest-kept";
-import { refreshFortresses } from "./fortress";
+import { fortressChanges, refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
@@ -70,7 +70,10 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
 
 /** A Player Turn begins: spending starts again from nothing, the air record is started (it keeps the control the turn began with, Ref 20.2), Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })))));
+  const refreshed = refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })));
+  const declared = scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshed));
+  // Spec 16 R31: report the refresh once, at the Player Turn boundary.
+  return { state: declared.state, events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
