@@ -140,10 +140,11 @@ describe("a taken port in play: the sweep and the battle (decision D1)", () => {
     expect(combatOf(r.state).advances).toEqual([{ to: "K28", units: ["b1"] }]);
   });
 
-  it("the fleet leaves with the planes destroyed: air alone goes as before, the fleet is displaced", () => {
+  it("the fleet and the planes each leave by their shared capture hook (spec 09 R9)", () => {
     const s = at7h([brit("b1", "K27"), fleet("f1", "germany", "K28"), counter("a1", "germany", "air", 3, "K28", 4)]);
     const r = ok(applyAction(CTX, s, attack(s, ["b1"], "K28")));
-    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId)).toEqual(["a1"]);
+    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId)).toEqual([]);
+    expect(r.state.units.a1!.at).toBe("K29");
     expect(r.state.units.f1!.at).toBe("J30");
   });
 

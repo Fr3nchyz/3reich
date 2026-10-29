@@ -33,7 +33,7 @@ import { CTX } from "./helpers";
 // Spec 14 ticket 14-15 (hazards 1 and 3 of the brief): whole computer games that reach Russia's offer to surrender and accept or refuse it. At every state of each game the legal
 // list is not empty and exactly the right side acts; the computer never stalls at the new prompt; the recorded actions replay to the same state.
 // Since spec 17 (ticket 17-1) the computer here never uses a Russian loss again, neither rebuilding it nor taking it in the Free Siberian Transfer (`withoutRussianRebuilds`, legal choices): with Russia rebuilding, no game reaches the offer.
-// The seeds are those that reach it so (1939 seeds 1, 3, 5, 7, 8 and 12 of 1 to 12); before spec 17 they were 4, 5, 8 and 10 with the plain computer.
+// Spec 09 R9 keeps displaced planes alive: seeds 3 and 5 no longer offer surrender. Acceptance/refusal coverage uses other surrendering games; those two seeds are checked separately below.
 
 type Choose = NonNullable<Hooks["choose"]>;
 
@@ -87,7 +87,7 @@ function playNow(scenario: ScenarioKey, seed: number, policy: "accept" | "refuse
   return { run, ctx, events, state, seen, at };
 }
 
-describe.each([1, 3, 5, 8])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
+describe.each([1, 8, 10, 13])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
   const accepted = play("1939", seed, "accept");
   it("ends normally with no anomaly, and the replay equals the final state", () => {
     expect(accepted.run.ended).toBe("game-over");
@@ -124,8 +124,22 @@ describe.each([1, 3, 5, 8])("a whole computer game, 1939 seed %i, in which Russi
   });
 });
 
+describe("displaced planes change whole-game surrender outcomes (spec 09 R9)", () => {
+  for (const seed of [3, 5]) {
+    it(`1939 seed ${seed}: survives without a surrender offer, ends normally and replays`, () => {
+      const g = play("1939", seed, "accept");
+      expect(g.run.ended).toBe("game-over");
+      expect(g.run.anomalies).toEqual([]);
+      expect(g.events.filter((e) => e.type === "RUSSIA_OFFERS_SURRENDER")).toEqual([]);
+      expect(g.state.nations.ussr.status).toBe("allied");
+      expect(g.events.some((e) => e.type === "AIR_DISPLACED" && e.to !== null)).toBe(true);
+      expect(replay(g.ctx, g.run.initial, g.run.actions).state).toEqual(g.run.final);
+    });
+  }
+});
+
 describe("the same games with the Axis refusing", () => {
-  for (const seed of [1, 5]) {
+  for (const seed of [1, 8]) {
     it(`1939 seed ${seed}: the offer is refused once, nothing is removed, no second offer, the game ends with no anomaly and replays`, () => {
       const g = play("1939", seed, "refuse");
       expect(g.run.anomalies).toEqual([]);

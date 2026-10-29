@@ -25,18 +25,18 @@ const UNITS = (): Unit[] => [counter("b1", "britain", "infantry", 3, "K27", 3), 
 const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
 
 describe("the attack card on a port with a fleet in it", () => {
-  it("says the fleet is driven out, not destroyed, and the air alone is destroyed", () => {
+  it("says both the fleet and air are displaced (spec 09 R9)", () => {
     const s = at7h(UNITS());
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
-    expect(p.sweep?.text).toBe("No roll. This counter is destroyed: 3-4 German air. This fleet must leave and move to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
-    expect(p.button.text).toBe("Destroy 3-4 German air in Wilhelmshaven (K28) and drive 9 German fleet out");
+    expect(p.sweep?.text).toBe("No roll. 3-4 German air must leave for the nearest usable friendly base within 8 hexes with room, or be lost if there is none. 9 German fleet must leave for the nearest friendly port with room, or be lost if there is none.");
+    expect(p.button.text).toBe("Drive 9 German fleet, 3-4 German air out of Wilhelmshaven (K28)");
   });
 
   it("a hex with only a fleet: the button drives it out, and nothing is said to be destroyed", () => {
     const s = at7h(UNITS().slice(0, 2));
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
     expect(p.button.text).toBe("Drive 9 German fleet out of Wilhelmshaven (K28)");
-    expect(p.sweep?.text).toBe("No roll. This fleet must leave and move to the nearest friendly port with room, or is lost if there is none: 9 German fleet.");
+    expect(p.sweep?.text).toBe("No roll. 9 German fleet must leave for the nearest friendly port with room, or be lost if there is none.");
     expect(p.sweep?.text).not.toMatch(/destroyed/);
   });
 
@@ -45,20 +45,20 @@ describe("the attack card on a port with a fleet in it", () => {
     const p = attackPreview(s.ctx, s.state, "K28", ["b1"]);
     expect(p.alsoDestroyed).toEqual([]);
     expect(p.alsoMoved).toEqual(["9 German fleet"]);
-    expect(p.results.some((r) => /This enemy fleet moves to a friendly port \(or is lost if none has room\): 9 German fleet\./.test(r.text))).toBe(true);
+    expect(p.results.some((r) => /9 German fleet must leave for the nearest friendly port with room, or be lost if there is none\./.test(r.text))).toBe(true);
     expect(p.results.every((r) => !/go too, with no roll: 9 German fleet/.test(r.text))).toBe(true);
   });
 });
 
 describe("the row of the list of attacks, and the lines of the card", () => {
-  it("a hex with only a fleet reads as driven out, a mix reads as both, and air alone reads as before", () => {
+  it("fleets, air and mixed stacks read as displaced (spec 09 R9)", () => {
     const row = (units: Unit[]) => {
       const s = at7h(units);
       return rowLines(attackPreview(s.ctx, s.state, "K28", ["b1"])).defence;
     };
-    expect(row(UNITS().slice(0, 2))).toBe("9 German fleet: no ground defender, driven out to a friendly port with no roll");
-    expect(row(UNITS())).toBe("3-4 German air: no ground defender, destroyed with no roll; 9 German fleet: driven out to a friendly port");
-    expect(row([UNITS()[0]!, UNITS()[2]!])).toBe("3-4 German air: no ground defender, destroyed with no roll");
+    expect(row(UNITS().slice(0, 2))).toBe("9 German fleet: no ground defender, displaced with no roll");
+    expect(row(UNITS())).toBe("9 German fleet, 3-4 German air: no ground defender, displaced with no roll");
+    expect(row([UNITS()[0]!, UNITS()[2]!])).toBe("3-4 German air: no ground defender, displaced with no roll");
   });
 
   it("the fleet is not listed again as a counter that does not defend", () => {
@@ -80,7 +80,7 @@ describe("the result card and the log", () => {
     expect(run(s, attack)).toBe(true);
     expect(s.log.some((l) => l === "9 German fleet moved from Wilhelmshaven (K28) to Kiel (J30): Wilhelmshaven (K28) was taken.")).toBe(true);
     const card = text(resultCardHtml(s));
-    expect(card).toContain("Fleets driven out: 9 German fleet moved to Kiel (J30).");
+    expect(card).toContain("Counters displaced: 9 German fleet moved to Kiel (J30).");
     expect(resultCardHtml(s)).toContain("<p>No roll.</p>"); // no trailing space
     expect(card).not.toContain("Nothing was left to destroy");
     expect(card).not.toContain("Destroyed");

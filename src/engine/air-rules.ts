@@ -32,6 +32,9 @@ export const CAPITAL_AIR_MAX = 10;
 /** Staging (rebasing) range in the Movement Phase, in hexes (Ref 20.2, Ops 5.45f). Same number as the ocean-crossing limit in terrain.ts. */
 export const STAGING_RANGE = MAX_OCEAN_AIR_STAGE_HEXES;
 
+/** Spec 09 D1 / R9 (Ref 20.2, 20.51): captured planes displace and airbases return to their Capital; false restores the old destruction. */
+export const AIR_DISPLACED_ON_CAPTURE = true;
+
 /**
  * An air unit stages (changes base) at most once in a Player Turn (spec 09 R4, option a; like `ONE_MOVE_PER_TURN`).
  * TODO(verify): Ref 20.2 gives the 8-hex range for the Movement Phase as a whole; whether several shorter hops are allowed is not settled.

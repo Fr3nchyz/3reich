@@ -89,6 +89,8 @@ export type GameEvent =
   | { type: "SEA_SUPPLY_LAPSED"; fleets: string[]; from: HexId; to: HexId; units: string[]; reason: string }
   /** A fleet left alone in a port that was taken moved to the nearest friendly port with room (`to`), or was eliminated because there was none (`to` null) (spec 12 R9). */
   | { type: "FLEET_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
+  /** Spec 09 R9 / R2: a plane moved to a friendly base or an airbase to its Capital; null means eliminated for lack of a destination. */
+  | { type: "AIR_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */
@@ -108,7 +110,7 @@ export type GameEvent =
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
   /** One ground attack resolved: the odds, every die roll and how it ended (Ref 12.1-12.2). */
   | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number }
-  /** Counters that cannot defend on the ground (air units, airbases...) were destroyed alone in a hex (ALONE_NONGROUND_DESTROYED, attack-rules.ts). Each also has a UNIT_ELIMINATED event. Fleets alone in the hex are not in this list: they are displaced (FLEET_DISPLACED), unless FLEETS_DISPLACED_ON_CAPTURE is off. */
+  /** Counters left alone were destroyed by the legacy sweep (ALONE_NONGROUND_DESTROYED). Each also has UNIT_ELIMINATED. Air, airbases and fleets instead have displacement events while their capture switches are on (spec 09 R9 / R2, spec 12 R9). */
   | { type: "UNITS_SWEPT"; hex: HexId; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
   | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId; reason?: "unsupplied" }
   /** A unit just eliminated (the UNIT_ELIMINATED, OVERSTACK_ELIMINATED or FLEET_DISPLACED event before it) went back to the Force Pool `pool`, to be built again (spec 17 R1; losses.ts). */

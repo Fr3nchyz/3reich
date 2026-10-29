@@ -30,6 +30,8 @@ interface Trace {
   /** Enemy hexes next to an unspent German ground unit when the human reached (or skipped) 7h, and whether each had an ATTACK listed. */
   checks: { turn: string; hex: string; offered: boolean; at7h: boolean }[];
   warsawAttacks: string[];
+  /** Spec 09 D1 / R9: planes leave for another base when Warsaw loses its infantry. */
+  warsawAirDisplaced: string[];
   warsawGermanAt: string[];
   moved: number;
 }
@@ -53,10 +55,11 @@ function playAsAxis(scenario: Scenario, seed: number): Trace {
     state = r.state;
   }
   const memory = createMemory();
-  const trace: Trace = { checks: [], warsawAttacks: [], warsawGermanAt: [], moved: 0 };
+  const trace: Trace = { checks: [], warsawAttacks: [], warsawAirDisplaced: [], warsawGermanAt: [], moved: 0 };
   const apply = (a: Action) => {
     const r = applyAction(ctx, state, a);
     if (!r.ok) throw new Error(`${JSON.stringify(a)}: ${r.error}`);
+    for (const e of r.events) if (e.type === "AIR_DISPLACED" && e.from === WARSAW && e.to !== null) trace.warsawAirDisplaced.push(e.unitId);
     state = r.state;
   };
   const stop = turnIndex(state) + GAME_TURNS;
@@ -104,6 +107,7 @@ describe("a human-like Axis game: Warsaw can be attacked in every later Player T
         const t = playAsAxis(scenario, seed);
         expect(t.moved).toBeGreaterThan(0);
         expect(t.warsawAttacks.length).toBeGreaterThan(0);
+        expect(t.warsawAirDisplaced.length, "spec 09 R9: Warsaw planes displace to a friendly base").toBeGreaterThan(0);
         const missed = t.checks.filter((c) => !c.offered);
         expect(missed, `hexes next to German units with no attack offered: ${JSON.stringify(missed)}`).toEqual([]);
         expect(t.warsawGermanAt.length, "Germany took Warsaw").toBeGreaterThan(0);

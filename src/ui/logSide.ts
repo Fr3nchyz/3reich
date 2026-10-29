@@ -68,6 +68,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
     case "FLEET_DISPLACED":
+    case "AIR_DISPLACED":
     case "UNIT_ELIMINATED": // the side that owns the unit lost, not the side that attacked
     case "OVERSTACK_ELIMINATED":
     case "UNIT_RETURNED_TO_POOL": // where a lost unit went: the side that lost it
