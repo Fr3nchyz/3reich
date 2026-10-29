@@ -1,5 +1,6 @@
 import { hex } from "../engine/hex";
 import type { MapData, MapHex } from "../engine/map";
+import type { GameState } from "../engine/types";
 import type { ObjectiveStandings } from "../engine/objectives";
 import { FORTRESS_INSET, escape, fmt, hexCenter, hexCorners, points, type Point } from "./mapGeometry";
 
@@ -28,7 +29,7 @@ function star(cx: number, cy: number, r: number): string {
 }
 
 /** The dashed outline of a fortress: the hex pulled in toward its centre. */
-function fortressOutline(cx: number, cy: number): string {
+export function fortressOutline(cx: number, cy: number): string {
   const inset = hexCorners(cx, cy).map(([x, y]) => [cx + (x - cx) * FORTRESS_INSET, cy + (y - cy) * FORTRESS_INSET] as Point);
   return `<polygon points="${points(inset)}" fill="none" stroke="#333" stroke-width="0.9" stroke-dasharray="1.2 1"/>`;
 }
@@ -47,7 +48,6 @@ export function citySymbol(h: MapHex, cx: number, cy: number): string {
   } else if (f.includes("city") || objective) {
     out += `<circle ${at} r="${CITY_RADIUS}" fill="${colour}"/>`;
   }
-  if (h.fortress) out += fortressOutline(cx, cy);
   if (h.name) out += `<text x="${fmt(cx)}" y="${fmt(cy + NAME_OFFSET)}" class="city${objective ? " objective" : ""}">${escape(h.name)}</text>`;
   return out;
 }
@@ -82,4 +82,16 @@ export function objectiveMarksMarkup(map: MapData, standings: ObjectiveStandings
     return `<circle class="obj-mark ${shape}" ${label} cx="${fmt(x)}" cy="${fmt(y)}" r="${fmt(radius)}"/>`;
   };
   return standings.axis.map((id) => mark(id, "axis")).join("") + standings.allies.map((id) => mark(id, "allies")).join("") + standings.nobody.map((id) => mark(id, "nobody")).join("");
+}
+
+/** Active outlines follow state rather than printed fortress kinds (spec 16 R31 / Q5). */
+export function fortressOutlineHexes(state: Pick<GameState, "fortresses">): string[] {
+  return Object.keys(state.fortresses).filter((id) => state.fortresses[id] === true).sort();
+}
+
+export function fortressMarkup(map: MapData, fortresses: GameState["fortresses"]): string {
+  return fortressOutlineHexes({ fortresses }).filter((id) => map.hexes[id]).map((id) => {
+    const [cx, cy] = hexCenter(hex(id));
+    return `<g data-fortress="${escape(id)}">${fortressOutline(cx, cy)}</g>`;
+  }).join("");
 }

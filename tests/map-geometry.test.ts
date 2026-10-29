@@ -3,7 +3,7 @@ import { MAP } from "../src/data/map";
 import { hex } from "../src/engine/hex";
 import { BAY_DEPTH, FORTRESS_INSET, SIZE, baysBetweenLand, cornersOf, hexCenter, hexCorners, midpoint, sideSegment } from "../src/ui/mapGeometry";
 import { highlightsMarkup, unitsMarkup } from "../src/ui/mapCounters";
-import { citySymbol } from "../src/ui/mapCities";
+import { citySymbol, fortressOutline } from "../src/ui/mapCities";
 import { buildBays, buildHexLayers, buildSideLayers } from "../src/ui/mapLayers";
 import type { Unit } from "../src/engine/types";
 
@@ -59,7 +59,7 @@ describe("city symbols", () => {
   const fortress = { id: "L23", land: "plain", sea: false, features: [], fortress: "permanent", front: "western" } as const;
 
   it("draws a fortress outline 78 percent of the way to the corners", () => {
-    const out = citySymbol(fortress, 100, 100);
+    const out = fortressOutline(100, 100);
     // The first corner is straight above the centre: 10 * 0.78 = 7.8 above it.
     expect(out).toContain('points="100.0,92.2 ');
     expect(out).toContain('stroke-dasharray="1.2 1"');

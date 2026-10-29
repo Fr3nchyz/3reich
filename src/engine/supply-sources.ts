@@ -1,5 +1,7 @@
 import { controllerOf, controllingSide } from "./control";
 import type { GameContext } from "./context";
+import { hasMoved } from "./move-record";
+import { srOf } from "./sr-record";
 import type { HexId } from "./hex";
 import type { ForceOwner, GameState, Side, Unit } from "./types";
 
@@ -72,7 +74,10 @@ export function specialNets(ctx: GameContext, state: GameState, side: Side): Sup
 }
 
 /** Whether a unit standing in a Fortress hex of its own side is supplied by that Fortress alone (Ref 19.2, 4.8). */
-export function fortressSupplies(ctx: GameContext, state: GameState, side: Side, u: Pick<Unit, "at" | "owner">): boolean {
+export function fortressSupplies(ctx: GameContext, state: GameState, side: Side, u: Pick<Unit, "at" | "owner"> & Partial<Pick<Unit, "id">>): boolean {
+  // Spec 16 R30, TODO(verify) AER38: only identified units that began this Player Turn here count.
+  // A hypothetical destination without a unit id cannot establish that qualification.
+  if (!u.id || hasMoved(state, u.id) || srOf(state).moved.includes(u.id)) return false;
   if (state.fortresses[u.at] !== true || controllingSide(ctx, state, u.at) !== side) return false;
   const name = ctx.map.hexes[u.at]?.name;
   if (name === "Malta") return ["Gibraltar", "Alexandria", "Suez"].every((n) => { const hex = named(ctx, n); return hex !== undefined && controllingSide(ctx, state, hex) === "allies"; });

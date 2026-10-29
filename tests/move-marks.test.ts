@@ -137,8 +137,9 @@ describe("where the badges go (geometry)", () => {
 
 /** A map view that only records what it is told. */
 function fakeView() {
-  const seen = { units: null as null | { ticked: string[]; left: string[] }, marks: [] as unknown[] };
+  const seen = { units: null as null | { ticked: string[]; left: string[] }, marks: [] as unknown[], fortresses: {} as Record<string, boolean> };
   const view = {
+    setFortresses: (fortresses: Record<string, boolean>) => { seen.fortresses = { ...fortresses }; },
     setUnits: (_: unknown, m?: { ticked: ReadonlySet<string>; left: ReadonlySet<string> }) => { seen.units = m ? { ticked: [...m.ticked], left: [...m.left] } : null; },
     setHighlights: () => undefined,
     focus: () => undefined,
@@ -180,4 +181,16 @@ describe("the map follows the ticks", () => {
     expect(seen.units?.ticked).toEqual([]);
     expect(seen.units?.left).toEqual([]);
   });
+});
+
+// Spec 16 R31/Q5: state changes reach the view even while the selection stays the same.
+it("syncs fortress loss and regain to the map", () => {
+  const s = crafted();
+  const { view, seen } = fakeView();
+  s.state = { ...s.state, fortresses: { P24: true, V38: false } };
+  syncMap(view, s, null, []);
+  expect(seen.fortresses).toEqual({ P24: true, V38: false });
+  s.state = { ...s.state, fortresses: { P24: false, V38: true } };
+  syncMap(view, s, null, []);
+  expect(seen.fortresses).toEqual({ P24: false, V38: true });
 });

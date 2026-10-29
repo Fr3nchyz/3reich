@@ -4,6 +4,7 @@ import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
 import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { breakthroughAfter, legalPlacements, openBreakthrough } from "./breakthrough";
+import { movesOf } from "./move-record";
 import { combatOf } from "./combat-record";
 import { exploiterIds } from "./exploit-record";
 import { enterHexes } from "./control";
@@ -171,7 +172,8 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
   const advances = rec.advances.filter((a) => a !== chance);
   // Entering the hex can change its control (Ref 7.0; control.ts). TODO(verify): the rules text on whether an
   // advance after combat takes control the way movement does is not in the repo; this applies the same rule.
-  let next: GameState = { ...state, units, combat: { ...rec, advances } };
+  const moves = movesOf(state); // spec 16 R30 / AER38: advancing counts as moving for fortress supply.
+  let next: GameState = { ...state, units, combat: { ...rec, advances }, moves: { ...moves, moved: [...new Set([...moves.moved, ...ids])] } };
   const events: GameEvent[] = [{ type: "UNITS_ADVANCED", units: [...ids], from, to: action.to }];
   for (const id of ids) {
     const entered = enterHexes(ctx, next, next.units[id]!, [action.to]);

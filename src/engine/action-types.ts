@@ -91,6 +91,8 @@ export type GameEvent =
   | { type: "FLEET_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
   /** Spec 09 R9 / R2: a plane moved to a friendly base or an airbase to its Capital; null means eliminated for lack of a destination. */
   | { type: "AIR_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
+  /** Fortress news (spec 16 R31, C3); scenario-start labels initial active fortresses. */
+  | { type: "FORTRESS_CHANGED"; hex: HexId; status: boolean; why: "enemy-entered" | "sevastopol" | "france-fell" | "west-wall" | "scenario-start" }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */
