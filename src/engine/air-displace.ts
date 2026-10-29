@@ -5,18 +5,18 @@ import { flightDistances } from "./air-range";
 import { STAGING_RANGE } from "./air-rules";
 import type { GameContext } from "./context";
 import { areEnemies, controllingSide, sideInWar } from "./control";
-import type { HexId } from "./hex";
+import { hex, type HexId } from "./hex";
 import { eliminateUnits } from "./losses";
 import { stackingProblem } from "./placement";
-import type { ForceOwner, GameState, Unit } from "./types";
+import type { GameState, Unit } from "./types";
 
-/**
- * Spec 09 R2; manager clarification for #177. TODO(verify): A2, A3, A4 in RULES.md / TODO-VERIFY.md.
- * One table keeps the three unresolved capital cases reviewable; the U.S. alternative is explicitly named.
- */
+/** Ref 20.1 / Ops 5.48h; ruling 2026-10-29 Q2. TODO(verify) A2-A4: see the two rule registers. */
 export const AIRBASE_CAPTURE_RULES = {
-  sovietCapital: "ussr" as ForceOwner,
-  usCapital: "eliminate" as "eliminate" | "london",
+  // A2: default to the lowest-id friendly, unoccupied Russian land hex at the east edge.
+  sovietEastEdge: "lowest-hex-id" as "lowest-hex-id" | "highest-hex-id",
+  // A3: airbases go to the Box; whether displaced air units may follow is unverified. Default: no.
+  usBoxHoldsAir: false as boolean,
+  // A4: enemy-held/occupied or missing Capitals eliminate; full Capitals retain the airbase.
   unavailableCapital: null as HexId | null,
 } as const;
 
@@ -26,15 +26,29 @@ export const AIRBASE_CAPTURE_RULES = {
  */
 export const AIR_DISPLACEMENT_ORDER = { airbasesFirst: true, numericUnitIds: true, lowestHexIdFirst: true } as const;
 
-/** Ref 20.1: airbases return to their owner's Capital. Read map facts directly: capitalOf deliberately excludes Moscow. */
+/** Ref 20.1, Ops 5.48h; ruling 2026-10-29 Q2: Russian fallback when Moscow is lost. */
+function sovietEastEdge(ctx: GameContext, state: GameState, base: Unit, from: HexId): HexId | null {
+  const lastColumn = new Map<number, number>();
+  for (const h of Object.values(ctx.map.hexes)) {
+    const { q, r } = hex(h.id);
+    lastColumn.set(r, Math.max(lastColumn.get(r) ?? 0, q));
+  }
+  const edge = Object.values(ctx.map.hexes).filter((h) => {
+    if (!h.land || h.country !== "ussr" || h.id === from || controllingSide(ctx, state, h.id) !== sideInWar(state, base.owner)) return false;
+    if (Object.values(state.units).some((u) => u.at === h.id && areEnemies(state, base.owner, u.owner))) return false;
+    return hex(h.id).q === lastColumn.get(hex(h.id).r);
+  }).map((h) => h.id).sort();
+  // TODO(verify) A2: deterministic destination choice, independent of map insertion order.
+  return (AIRBASE_CAPTURE_RULES.sovietEastEdge === "lowest-hex-id" ? edge[0] : edge.at(-1)) ?? AIRBASE_CAPTURE_RULES.unavailableCapital;
+}
+
+/** Ref 20.1, Ops 5.48h; ruling 2026-10-29 Q2: a full Capital still receives the airbase. */
 export function airbaseCapital(ctx: GameContext, state: GameState, base: Unit, from: HexId): HexId | null {
-  const country: ForceOwner = base.owner === "usa" && AIRBASE_CAPTURE_RULES.usCapital === "london" ? "britain" : base.owner === "ussr" ? AIRBASE_CAPTURE_RULES.sovietCapital : base.owner;
-  if (base.owner === "usa" && AIRBASE_CAPTURE_RULES.usCapital === "eliminate") return AIRBASE_CAPTURE_RULES.unavailableCapital; // A3
-  const capital = Object.values(ctx.map.hexes).find((h) => h.country === country && h.land && h.features.some((f) => f === "capital" || f === "capital-port"))?.id;
+  if (base.owner === "usa") return "us-box";
+  const capital = Object.values(ctx.map.hexes).find((h) => h.country === base.owner && h.land && h.features.some((f) => f === "capital" || f === "capital-port"))?.id;
   const side = sideInWar(state, base.owner);
-  // A2 uses Moscow from the map; A4 never leaves the counter in the captured hex or an enemy-held capital.
-  if (!capital || capital === from || side === null || controllingSide(ctx, state, capital) !== side) return AIRBASE_CAPTURE_RULES.unavailableCapital;
-  if (Object.values(state.units).some((u) => u.at === capital && areEnemies(state, base.owner, u.owner))) return AIRBASE_CAPTURE_RULES.unavailableCapital;
+  const unavailable = !capital || capital === from || side === null || controllingSide(ctx, state, capital) !== side || Object.values(state.units).some((u) => u.at === capital && areEnemies(state, base.owner, u.owner));
+  if (unavailable) return base.owner === "ussr" && side !== null ? sovietEastEdge(ctx, state, base, from) : AIRBASE_CAPTURE_RULES.unavailableCapital;
   return capital;
 }
 
@@ -53,7 +67,8 @@ export function displacementBase(ctx: GameContext, state: GameState, plane: Unit
     return stackingProblem(ctx, state, plane.owner, spec, hex) === null;
   });
   bases.sort((a, b) => distances.get(a)! - distances.get(b)! || ((a < b ? -1 : 1) * (AIR_DISPLACEMENT_ORDER.lowestHexIdFirst ? 1 : -1))); // A5: fixed tie order
-  return bases[0] ?? null;
+  // TODO(verify) A3: only U.S. air may follow a relocated U.S. airbase to the Box; default disabled.
+  return bases[0] ?? (AIRBASE_CAPTURE_RULES.usBoxHoldsAir && plane.owner === "usa" && Object.values(state.units).some((u) => u.type === "airbase" && u.owner === "usa" && u.at === "us-box") ? "us-box" : null);
 }
 
 /** Spec 09 D1 / R9 / R2: relocate airbases first, then displace planes, counting capacity as it fills. No mission or staging use is charged. */
