@@ -138,6 +138,8 @@ Added 2026-10-16 from `docs/specs/12-fleets-naval.md` (rows N1 to N37; the spec'
 
 Added 2026-10-17 from `docs/specs/15-minor-countries.md` (rows MC1 to MC22; no id collides). The rule numbers are the spec's rules (R1 to R16); the rule text is the PC Reference Manual 9.2, 13.0 to 17.4, 24.0, 29.0 and Peele's errata, paraphrased. Each row has a matching bullet in `docs/RULES.md` ("Minor countries open items"). Related existing rows: O4 and O5 (minor forces and alliances), E3 (each Minor-Ally's value, now MC12), M3 (neutral land closed), D3.
 
+Ticket 15-1a: `minors-record.ts` contains only spec C1 record types, fresh opening data for 1939/Campaign, owner names and a derived-control fallback; no callers or new assumptions. MC9/MC10/MC19 and other rule hooks remain deferred; no new verification ids.
+
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
 |---|---|---|---|---|
 | MC1 | spec 15 R3 | Placed minor army | Stacking limits (2 ground units a hex), air on a base and fleets in a port apply to a minor army set up at step 2; the manual says only: inside the borders, a unit in the capital. | Listed ("Minor countries open items"). |
