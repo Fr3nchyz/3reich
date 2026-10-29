@@ -21,7 +21,7 @@ Read `README.md` first: it holds the working rules (cite sources, never invent a
 
 ## Gates
 
-- `.claude/settings.json` blocks `git push` until `npm run lint && npm run typecheck && npm test && npm run build` passes (`scripts/claude/pre-push-gate.mjs`).
+- `.claude/settings.json` blocks `git push` until `npm run lint && npm run typecheck && npm run coverage && npm run build` passes (`scripts/claude/pre-push-gate.mjs`).
 - Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
 
 ## Conventions for agents (read before building)
