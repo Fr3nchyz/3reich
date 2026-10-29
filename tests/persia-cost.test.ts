@@ -5,8 +5,9 @@ import { BRP_COSTS } from "../src/engine/tables";
 import { declarationTargets } from "../src/engine/war";
 import { CTX, atStart } from "./helpers";
 
-/** Ruling Q21 (Ref 24.0; docs/RULINGS-2026-10-29.md): the 25 BRPs are the Lend-Lease route's price (spec 15 R11, not built yet); an ordinary declaration stays at 10. */
-describe("Persia's price (ruling Q21)", () => {
+/** Spec 15 R11, TODO(verify) MC14: preserve the ordinary declaration assumption.
+ * Q21 (Ref 24.0) specifies 25 for Lend-Lease, whose payment is not implemented. */
+describe("Persia's ordinary declaration price (MC14)", () => {
   it("an ordinary declaration on Persia costs the minor-country price, 10 BRPs, for either side", () => {
     expect(BRP_COSTS.declareWarOnMinorCountry).toBe(10);
     for (const side of ["axis", "allies"] as const) {
