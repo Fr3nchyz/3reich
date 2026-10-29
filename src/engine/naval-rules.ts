@@ -47,3 +47,11 @@ export const FLEETS_DISPLACED_ON_CAPTURE = true;
 
 /** Spec 12 R10, Ref 21.2: one base change per Player Turn. TODO(verify): N19, confirm the limit in the program. */
 export const ONE_BASE_CHANGE_PER_TURN = true;
+
+/**
+ * Q14/N22 (docs/RULINGS-2026-10-29.md; issue #188): Suez Canal damage is immediate. What "immediate" means for a fleet already in the canal is not
+ * stated. true (default): a base-change course is checked whole when it is declared and the move completes in the same action, so a fleet in
+ * the canal finishes its course; damage bars only courses declared afterwards. false would strand it (no engine support: needs canal state in types.ts).
+ * TODO(verify): N22b, the effect of immediate damage on a fleet already in the canal.
+ */
+export const SUEZ_FLEET_IN_CANAL_FINISHES_COURSE = true;

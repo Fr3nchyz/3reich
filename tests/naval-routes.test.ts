@@ -96,7 +96,7 @@ describe("sea neighbours: the sea hexsides, in the fixed order E, W, NE, NW, SE,
     expect(seaNeighbors(CTX, "I30")).not.toContain("I31"); // a Danish strait
   });
 
-  it("the Suez Canal is not a step (open only while the land beside it is friendly: N22)", () => {
+  it("the Suez Canal is not a plain step (the map-only route leaves it out; the state-aware base-change route always allows it: N22)", () => {
     expect(MAP.hexsides["LL31-MM30"]).toMatchObject({ sea: true, suezCanal: true });
     expect(seaNeighbors(CTX, PORT_SAID)).not.toContain(SUEZ);
     expect(seaNeighbors(CTX, SUEZ)).not.toContain(PORT_SAID);

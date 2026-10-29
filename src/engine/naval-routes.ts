@@ -102,11 +102,10 @@ export function baseChangeStepProblem(ctx: GameContext, state: GameState, side: 
     const openings = Object.hasOwn(PORT_OPENING_HEXSIDES, port) ? PORT_OPENING_HEXSIDES[port] : undefined;
     if (openings?.length && !openings.includes(next)) return `${port} does not open towards ${next} (Ref 4.7).`;
   }
-  if (edge.suezCanal) {
-    // Spec 12 R10, N22: all four hexes beside the canal, not merely the two ends of this step, must be friendly.
-    const banks = new Set(Object.values(ctx.map.hexsides).filter((s) => s.suezCanal).flatMap((s) => s.id.split("-")));
-    if ([...banks].some((h) => controllingSide(ctx, state, h) !== side)) return "The Suez Canal requires friendly control of all four adjacent hexes (N22).";
-  } else if (edge.river) return `${from} to ${to} crosses a river outside the Suez Canal (Ref 4.3).`;
+  // Q14/N22 (docs/RULINGS-2026-10-29.md, issue #188): canal damage is immediate, so no friendly-control condition applies here.
+  // The damage clock itself (Ref 34.0) is not built; until it is, the canal is always open to a course.
+  // A fleet already on a course through the canal: see SUEZ_FLEET_IN_CANAL_FINISHES_COURSE (courses are checked whole when declared).
+  if (!edge.suezCanal && edge.river) return `${from} to ${to} crosses a river outside the Suez Canal (Ref 4.3).`;
   if (edge.crossingArrow && [from, to].some((h) => controllingSide(ctx, state, h) !== side)) {
     return `${from} to ${to} is a crossing-arrow strait with enemy or neutral land (Ref 21.2).`;
   }

@@ -235,13 +235,13 @@ A base change is the only fleet movement of the Movement Phase (step 6b). It mov
 | Once | One change per Player Turn (`ONE_BASE_CHANGE_PER_TURN`, N19); no further change until Strategic Redeployment. |
 | Before the rest | It happens before any air or ground unit moves. |
 
-**Course.** Range on the Front is unlimited. Any hexside that is at least partly ocean may be crossed; hostile or neutral land and enemy units do not block. What does block: a strait with a crossing arrow when either land side is enemy- or neutral-held (a fleet may enter such a strait to act inside its hex, as long as it leaves by the way it came); the Front boundary at Gibraltar (SR only); rivers, except the Suez Canal while the hexes beside it are friendly (N22); and at Brindisi and Plymouth the one side from which the port opens (Ref 4.7). Armor zones of control do not affect fleets (Ref 11.41, spec 13).
+**Course.** Range on the Front is unlimited. Any hexside that is at least partly ocean may be crossed; hostile or neutral land and enemy units do not block. What does block: a strait with a crossing arrow when either land side is enemy- or neutral-held (a fleet may enter such a strait to act inside its hex, as long as it leaves by the way it came); the Front boundary at Gibraltar (SR only); rivers, except the Suez Canal, which is always open (N22, ruling Q14); and at Brindisi and Plymouth the one side from which the port opens (Ref 4.7). Armor zones of control do not affect fleets (Ref 11.41, spec 13).
 
 **Recording the course.** `MOVE_FLEET` carries a path, because interception may strike at the departure hex, the arrival hex or any hex between (R11) and because the Pass Option check looks at it. With no path given, the engine sails the shortest sea route (breadth-first, fixed neighbour order), like the "auto-move" of the PC game.
 
 **What counts as one force.** Each `MOVE_FLEET` action is one force for interception, so fleets that leave together form one target of their combined factors; fleets from different ports are separate forces even if they arrive in the same hex (Peele's PC difference for invasion fleets, applied by analogy; N21).
 
-**Suez.** The canal's damage and repair clock (Ref 34.0) and the PC differences for 47.3 and 47.4 in Peele's errata are out of scope; for now the canal can be used only while all four hexes beside it are friendly (N22).
+**Suez.** The canal's damage and repair clock (Ref 34.0) and the PC differences for 47.3 and 47.4 in Peele's errata are out of scope. Canal damage is immediate (ruling Q14, 2026-10-29, Peele errata), so there is no friendly-control-of-four-hexes condition (N22); until the damage clock exists the canal is always open to a course. A fleet already in the canal finishes its course by default (`SUEZ_FLEET_IN_CANAL_FINISHES_COURSE`, N22b).
 
 ### R11. Interception and counter-interception (Ref 21.5, 11.41; Ops 5.45c, 5.45d, 5.46d, 5.46e) Release II
 
@@ -519,7 +519,7 @@ The computer plays by `legalActions` only (spec 05). Its fleet policy is the com
 | Reading supply at 6e | R8 | A unit saved at 6e can move at 6f; a unit not saved cannot; at the end of the turn a lapsed designation cuts the unit again; 9f can designate again. |
 | Existing behaviour | C4 | With no designation, every existing supply, movement and self-play test passes unchanged and the fixed-seed recordings are identical. |
 | Displacement | R9 | The nearest port with room; equal distance goes to the lowest hex id; none gives elimination; Black Sea to Baltic refused; a two-Front port picks a Front; French fleets fall back across Fronts; Gibraltar escape; a Warsaw-style position ends with the fleet moved; the constant restores the sweep. |
-| Sea routes | R10, R11 | Breadth-first route is deterministic; a strait with a hostile side blocks; Brindisi and Plymouth by their one side; the Suez Canal needs friendly sides. |
+| Sea routes | R10, R11 | Breadth-first route is deterministic; a strait with a hostile side blocks; Brindisi and Plymouth by their one side; the Suez Canal is always open (N22, ruling Q14). |
 | Base change | R10 | A base change to a port held only after this turn's capture refused; a port full refused; Pass Option restrictions; once a turn. |
 | Interception table | R11 | Every distance band against the die; 30 versus 31; U.S. Box counts as 30+. |
 | Naval combat | R12 | Every branch with fixed dice: higher roll wins, tie to the interceptor, advantage and nationality DRMs, Italy north and south of row N, the 18-factor multiplier, winner loses half rounded down, break-off with halved losses and the "wins the roll" case, carried units lost with the capacity, fewest-counter break-down. 20,000-seed cross-check of mean losses. |

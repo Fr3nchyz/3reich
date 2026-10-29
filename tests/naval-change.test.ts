@@ -10,7 +10,7 @@ import {
 import { mayBasePort } from "../src/engine/naval-ports";
 import { markGray, markUsed, navalOf } from "../src/engine/naval-record";
 import { baseChangeCourseProblem, baseChangeRoute, baseChangeStepProblem, PORT_OPENING_HEXSIDES } from "../src/engine/naval-routes";
-import { ONE_BASE_CHANGE_PER_TURN } from "../src/engine/naval-rules";
+import { ONE_BASE_CHANGE_PER_TURN, SUEZ_FLEET_IN_CANAL_FINISHES_COURSE } from "../src/engine/naval-rules";
 import type { FrontOption, GameState, Unit } from "../src/engine/types";
 import { board, counter } from "./board";
 import { CTX } from "./helpers";
@@ -215,20 +215,23 @@ describe("R10 Course (Ref 4.3, 4.7, 11.41, 21.2, 34.0)", () => {
     expect(baseChangeRoute(CTX, s, "allies", "mediterranean", "AA7", "GG19")).not.toBeNull();
   });
 
-  it("rivers block even a sea-marked side; the Suez Canal is the exception with all four banks friendly (N22)", () => {
+  it("rivers block even a sea-marked side; the Suez Canal is always open, whoever holds the banks (Q14, N22, issue #188)", () => {
     expect(step(position(), "J29", "K29")).toMatch(/river/);
-    const control = Object.fromEntries(["LL30", "LL31", "MM30", "MM31"].map((h) => [h, "britain" as const]));
-    const s = position([], { control });
-    for (const [from, to] of [["LL30", "LL31"], ["LL31", "MM30"], ["MM30", "MM31"]] as const) {
-      expect(step(s, from, to, "mediterranean")).toBeNull();
-      expect(step(s, to, from, "mediterranean")).toBeNull();
+    const banks = ["LL30", "LL31", "MM30", "MM31"];
+    const holders = [["britain", "britain", "britain", "britain"], ["germany", "germany", "germany", "germany"], ["britain", null, "britain", "germany"]] as const;
+    for (const h of holders) {
+      const s = position([], { control: Object.fromEntries(banks.map((b, i) => [b, h[i] ?? null])) });
+      for (const [from, to] of [["LL30", "LL31"], ["LL31", "MM30"], ["MM30", "MM31"]] as const) {
+        expect(step(s, from, to, "mediterranean")).toBeNull();
+        expect(step(s, to, from, "mediterranean")).toBeNull();
+      }
+      expect(baseChangeRoute(CTX, s, "allies", "mediterranean", "LL31", "MM30")).toEqual(["LL31", "MM30"]);
+      expect(baseChangeCourseProblem(CTX, s, "allies", "mediterranean", "LL31", "MM30", ["LL31", "MM30"])).toBeNull();
     }
-    expect(baseChangeRoute(CTX, s, "allies", "mediterranean", "LL31", "MM30")).toEqual(["LL31", "MM30"]);
-    for (const bank of Object.keys(control)) for (const holder of ["germany", null] as const) {
-      const blocked = { ...s, control: { ...s.control, [bank]: holder } };
-      expect(step(blocked, "LL31", "MM30", "mediterranean")).toMatch(/all four/);
-      expect(baseChangeRoute(CTX, blocked, "allies", "mediterranean", "LL31", "MM30")).toBeNull();
-    }
+  });
+
+  it("a fleet already in the canal finishes its course by default (N22b)", () => {
+    expect(SUEZ_FLEET_IN_CANAL_FINISHES_COURSE).toBe(true);
   });
 
   it.each([["K21", "L20", "K20", "western"], ["AA25", "AA26", "Z25", "mediterranean"]] as const)("%s opening mechanism rejects wrong entry and exit sides (Ref 4.7, N38; test-only values)", (port, allowed, wrong, front) => {
