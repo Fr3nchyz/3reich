@@ -52,14 +52,17 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // Breakthrough, and the lists at 7h gain the PLACE_EXPLOITERS actions (25 of them over the 21 lists). Checked then: with those actions taken out of each list the hash is
 // 4106130461 again, so no attack, advance or loss listed changed. The computer does not place exploiters yet (ticket 16-13), so the action-list hashes are unchanged.
 // Ticket 16-18: 1939 seeds 5 and 2 skip empty grant steps after the grant restrictions; action-list hashes change from 1755472541 to 3614890892 and 119043983 to 675559916.
+// Ticket 09-5 (spec 09 D1 / R9): displaced planes survive captures, changing later actions and menus. The seed-5 action hash changes
+// 3614890892 -> 2654150903, seed 2 changes 675559916 -> 915112679, and seed-5 7h menus change 3846847444 -> 620107077.
+// npm run rehash confirms seed 1 of 1939 and 1942 remain unchanged; with AIR_DISPLACED_ON_CAPTURE false every original hash returns.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(278484573));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(958665354));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(3614890892);
-    expect(hashOf("1939", 2, 4)).toBe(675559916);
+    expect(hashOf("1939", 5, 4)).toBe(2654150903);
+    expect(hashOf("1939", 2, 4)).toBe(915112679);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(278484573));
 });
@@ -135,6 +138,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(3846847444);
+    expect(h).toBe(620107077);
   });
 });

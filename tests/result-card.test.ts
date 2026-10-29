@@ -89,13 +89,15 @@ describe("the result card", () => {
     expect(t).toMatch(/Their counterattack, column [^,]+, roll \d: /);
   });
 
-  it("the sweep of a hex with only air units: no roll, destroyed by name", () => {
+  it("the sweep of a hex with only air units: no roll, displacement named with destination (spec 09 R9)", () => {
     const s = session([GER("g1", "M34", 3), POL("a1", "M35", 1, "air"), POL("a2", "M35", 2, "air")], 3);
     openAttack(s, "M35");
     confirmAttack(s);
     const t = text(s);
     expect(s.battle).toMatchObject({ sweep: true });
-    expect(t).toContain("No roll. Destroyed: 1 Polish air, 2 Polish air.");
+    expect(t).toContain("No roll.");
+    expect(t).toContain("1 Polish air moved to Poznan (M33); 2 Polish air moved to Poznan (M33)");
+    expect(s.battle?.swept).toEqual([]);
     expect(t).toContain("Warsaw (M35) is empty");
   });
 

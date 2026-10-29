@@ -108,7 +108,9 @@ describe("releaseKept: the kept hex passes on once its hostile unit is gone", ()
     const r = releaseKept(CTX, s);
     expect(controllerOf(CTX, r.state, "J29")).toBe("britain");
     expect(r.state.units.ia).toBeUndefined();
-    expect(r.events.map((e) => e.type)).toContain("UNITS_SWEPT");
+    // Spec 09 R9: the captured plane has no usable base within eight hexes.
+    expect(r.events).toContainEqual({ type: "AIR_DISPLACED", unitId: "ia", owner: "italy", from: "J29", to: null });
+    expect(r.events.map((e) => e.type)).toContain("UNIT_ELIMINATED");
   });
   it("the constant is on (V62)", () => expect(KEPT_HEX_PASSES_WHEN_FREED).toBe(true));
 });

@@ -48,6 +48,8 @@ export interface ResultInput {
   alsoDestroyed: readonly string[];
   /** Names of the enemy fleets that move to a friendly port instead when the defenders are eliminated (spec 12 R9). Default none. */
   alsoMoved?: readonly string[];
+  /** Spec 09 R9 / R2 and spec 12 R9: destinations and loss conditions by counter kind. */
+  displacementText?: string;
   /** Whether the hex is left empty when the defenders go, so the survivors may advance. */
   emptyAfterWin: boolean;
 }
@@ -109,6 +111,7 @@ const TITLES: Readonly<Record<CrtResult, string>> = {
 
 /** The sentence about enemy fleets that leave the port with no roll when the defenders go: they move to the nearest friendly port with room, or are lost if there is none. */
 const movedWords = (i: ResultInput): string => {
+  if (i.displacementText !== undefined) return i.displacementText;
   const n = i.alsoMoved?.length ?? 0;
   return n === 0 ? "" : ` ${n === 1 ? "This enemy fleet moves" : "These enemy fleets move"} to a friendly port (or ${n === 1 ? "is" : "are"} lost if none has room): ${i.alsoMoved!.join(", ")}.`;
 };

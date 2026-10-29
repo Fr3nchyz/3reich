@@ -174,8 +174,9 @@ describe("a minor country that is not a force owner (Belgium) and the war it nee
   });
   it("an enemy counter alone (a fleet or air unit with no ground unit) in a hex that passed is dealt with as in any capture", () => {
     const r = leave7p(brussels([counter("ba", "britain", "air", 2, "N25", 4)]));
-    expect(r.state.units.ba).toBeUndefined();
-    expect(types(r.events)).toContain("UNITS_SWEPT");
+    // Spec 09 D1 / R9: conquest uses the shared displacement hook too.
+    expect(r.state.units.ba!.at).not.toBe("N25");
+    expect(r.events).toContainEqual({ type: "AIR_DISPLACED", unitId: "ba", owner: "britain", from: "N25", to: r.state.units.ba!.at });
   });
   it("it falls to the owner of the unit in the capital: Italy takes Brussels at war with Belgium, Italy is the conqueror, the record says so", () => {
     const s = { ...at7p("axis", [counter("i1", "italy", "infantry", 3, BRUSSELS, 3)], { control: { [BRUSSELS]: "italy" }, nations: { ...SCENARIO_1939.nations, italy: { ...SCENARIO_1939.nations.italy, status: "axis" } } }), wars: [["italy", "belgium"]] as GameState["wars"] };
@@ -236,8 +237,10 @@ describe("the entry point for colonies and Eastern Europe (the contract for spec
     expect(r.state.conquests).toEqual([{ country: "egypt", by: "italy", side: "allies", how: "all-cities", at: { year: 1940, season: "spring" } }]);
     expect(controllerOf(CTX, r.state, "NN32")).toBe("italy");
     expect(controllerOf(CTX, r.state, "MM29")).toBe("britain"); // the British unit stands there
-    expect(r.state.units.be).toBeUndefined(); // an air unit alone in a hex that passed
-    expect(types(r.events)).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "UNITS_SWEPT", "UNIT_ELIMINATED", "UNIT_RETURNED_TO_POOL"]); // spec 17 R1: the swept unit goes back to its pool
+    // Spec 09 R9: the plane leaves the captured colony for a friendly base.
+    expect(r.state.units.be!.at).not.toBe("MM30");
+    expect(types(r.events)).toEqual(["COUNTRY_CONQUERED", "CONTROL_PASSED", "AIR_DISPLACED"]);
+    expect(r.events[2]).toMatchObject({ from: "MM30", to: r.state.units.be!.at });
     expect(r.events[0]).toMatchObject({ unitsRemoved: 0, hexesPassed: egypt.length - 1 });
   });
   it("Eastern Europe is a group of hexes, not a map country: pass them as `hexes`, or let the scenario's zone of that name say", () => {

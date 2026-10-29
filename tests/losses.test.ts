@@ -78,10 +78,11 @@ describe("R1: a lost unit goes back to the pool of its own nation, as it was, wi
     expect(returnedOf(r.state, "germany")).toEqual([{ type: "infantry", strength: 1, movement: 3, count: 1, returned: true }]);
   });
 
-  it("the sweep of counters left alone in a hex: an air unit swept goes back", () => {
+  it("a captured plane with no friendly base is eliminated and goes back (spec 09 R9)", () => {
     const s = at("7h", [inf("g1", "germany", "M32", 3, 3), inf("a1", "britain", "M33", 3, 4, "air")]);
-    const r = applySweep(CTX, s, [s.units.g1!], "M33");
-    expect(kinds(r.events)).toEqual(expect.arrayContaining(["UNITS_SWEPT", "UNIT_ELIMINATED", "UNIT_RETURNED_TO_POOL"]));
+    const captured = { ...s, control: Object.fromEntries(Object.keys(CTX.map.hexes).map((h) => [h, "germany" as const])) };
+    const r = applySweep(CTX, captured, [s.units.g1!], "M33");
+    expect(kinds(r.events)).toEqual(expect.arrayContaining(["AIR_DISPLACED", "UNIT_ELIMINATED", "UNIT_RETURNED_TO_POOL"]));
     expect(returnedOf(r.state, "britain")).toEqual([{ type: "air", strength: 3, movement: 4, count: 1, returned: true }]);
   });
 });

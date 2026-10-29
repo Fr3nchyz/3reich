@@ -198,6 +198,10 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":
       return `The supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} no longer holds: ${e.reason}`;
+    case "AIR_DISPLACED": {
+      const name = stackSummary(unitsWithIds(before, [e.unitId]), true);
+      return `${name} displaced from ${placeName(ctx.map, e.from)}: ${e.to === null ? "eliminated because no legal destination was available" : `moved to ${placeName(ctx.map, e.to)}`}.`;
+    }
     case "FLEET_DISPLACED": {
       const fleet = before.units[e.unitId];
       const name = fleet ? unitName(fleet) : `${OWNER_NAMES[e.owner]} fleet`;
