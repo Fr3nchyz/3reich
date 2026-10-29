@@ -1,5 +1,7 @@
 # TODO(verify) audit
 
+> **2026-10-29:** the owner approved the rulings in [RULINGS-2026-10-29.md](RULINGS-2026-10-29.md). They settle (by agreement of sources, not a manual quotation) AER1, M4, G9, E1, N7, N22, V1, V17, AER22, AER35, A2-A5 and others; where a row below disagrees with that file, the rulings file wins and a ticket carries the change.
+
 Every place where the code marks a rule or a guess as unverified, what each one assumes, whether `docs/RULES.md` lists it as an open question, and which tests treat the guess as settled. Written for a reader who does not code. Status as of `main` 985f156.
 
 ## Summary
