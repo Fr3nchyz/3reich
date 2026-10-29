@@ -55,7 +55,8 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
   switch (e.type) {
     case "INITIATIVE_DETERMINED":
     case "SETUP_COMPLETE":
-    case "GAME_OVER": return null;
+    case "GAME_OVER":
+    case "FORTRESS_CHANGED": return null; // spec 16 R31: fortress status news
     case "PLAYER_TURN_STARTED":
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender

@@ -89,6 +89,8 @@ export type GameEvent =
   | { type: "SEA_SUPPLY_LAPSED"; fleets: string[]; from: HexId; to: HexId; units: string[]; reason: string }
   /** A fleet left alone in a port that was taken moved to the nearest friendly port with room (`to`), or was eliminated because there was none (`to` null) (spec 12 R9). */
   | { type: "FLEET_DISPLACED"; unitId: string; owner: ForceOwner; from: HexId; to: HexId | null }
+  /** Fortress news (spec 16 R31, C3); scenario-start labels initial active fortresses. */
+  | { type: "FORTRESS_CHANGED"; hex: HexId; status: boolean; why: "enemy-entered" | "sevastopol" | "france-fell" | "west-wall" | "scenario-start" }
   /** Ref 7.0: a hex changed hands because a ground unit entered it. */
   | { type: "HEX_CONTROL_CHANGED"; hex: HexId; from: ForceOwner | null; to: ForceOwner; unitId: string }
   /** Ops 5.45g, 5.48j: a unit the owner chose was eliminated because its hex was overstacked. */

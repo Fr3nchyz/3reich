@@ -284,7 +284,11 @@ describe("opening setup: finishing", () => {
     expect([state.activeSide, state.firstSide]).toEqual(["axis", "axis"]);
     expect(events.filter((e) => e.type === "SETUP_OWNER_DONE").map((e) => (e.type === "SETUP_OWNER_DONE" ? e.owner : ""))).toEqual(SCENARIO_1939.deploymentOrder);
     expect(events.filter((e) => e.type === "SETUP_COMPLETE")).toHaveLength(1);
-    expect(events.at(-1)).toEqual({ type: "PLAYER_TURN_STARTED", year: 1939, season: "fall", side: "axis" });
+    expect(events.filter((e) => e.type === "PLAYER_TURN_STARTED")).toEqual([{ type: "PLAYER_TURN_STARTED", year: 1939, season: "fall", side: "axis" }]);
+    // Spec 16 R31: initial fortress news follows the Player Turn announcement.
+    expect(events.slice(-8).map((e) => e.type)).toEqual(["PLAYER_TURN_STARTED", ...Array<string>(7).fill("FORTRESS_CHANGED")]);
+    expect(events.filter((e) => e.type === "FORTRESS_CHANGED").map((e) => ({ hex: e.hex, status: e.status, why: e.why })).sort((a, b) => a.hex.localeCompare(b.hex)))
+      .toEqual(["AA7", "D44", "GG19", "P24", "P25", "Q24", "V38"].map((hex) => ({ hex, status: true, why: hex === "V38" ? "sevastopol" : "scenario-start" })));
     // Play starts at step 1: the Axis has declarations of war it could make, so the game waits there.
     expect(state.position).toEqual({ part: "player-turn", turn: 1, step: "1" });
     // Every counter of every deploying owner is on the map; the USA, which sets up in 1942, has none.

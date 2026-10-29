@@ -1,3 +1,4 @@
+import type { GameEvent } from "./action-types";
 import { controllerOf, controllingSide, sideInWar, startingControl } from "./control";
 import type { GameContext } from "./context";
 import { MAGINOT_GONE_YEAR, WEST_WALL_YEAR, sevastopolConditions } from "./fortress-rules";
@@ -62,4 +63,20 @@ export function refreshFortresses(ctx: GameContext, state: GameState): GameState
   }
   const same = Object.keys(next).length === Object.keys(state.fortresses).length && Object.entries(next).every(([k, v]) => state.fortresses[k] === v);
   return same ? state : { ...state, fortresses: next };
+}
+
+/** One news item per change in active status, including Sevastopol's temporary loss (spec 16 R31). */
+export function fortressChanges(ctx: GameContext, before: GameState, after: GameState): GameEvent[] {
+  const events: GameEvent[] = [];
+  for (const hex of new Set([...Object.keys(before.fortresses), ...Object.keys(after.fortresses)])) {
+    const status = after.fortresses[hex] === true;
+    if ((before.fortresses[hex] === true) === status) continue;
+    const kind = ctx.map.hexes[hex]?.fortress;
+    const why = kind === "sevastopol" ? "sevastopol"
+      : kind === "west-wall" && status ? "west-wall"
+      : kind === "maginot" && (after.nations.france.status === "vichy" || isGone(after.nations.france)) ? "france-fell"
+      : status ? "scenario-start" : "enemy-entered";
+    events.push({ type: "FORTRESS_CHANGED", hex, status, why });
+  }
+  return events;
 }

@@ -135,6 +135,7 @@ export function enterHexes(ctx: GameContext, state: GameState, unit: Unit, hexes
     const owner = startingControl(ctx).get(hex);
     if (fortresses[hex] === true && (kind === "standard" || kind === "maginot" || kind === "west-wall") && owner !== undefined && areEnemies(state, to, owner)) {
       fortresses = { ...fortresses, [hex]: false };
+      events.push({ type: "FORTRESS_CHANGED", hex, status: false, why: "enemy-entered" }); // spec 16 R31
     }
   }
   return { state: events.length ? { ...state, control, fortresses, ...rest } : state, events };

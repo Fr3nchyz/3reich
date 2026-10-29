@@ -1,6 +1,6 @@
 import { hex } from "../engine/hex";
 import type { MapData, MapHex } from "../engine/map";
-import type { Unit } from "../engine/types";
+import type { GameState, Unit } from "../engine/types";
 import { attachGestures } from "./gestures";
 import { highlightsMarkup, unitsMarkup } from "./mapCounters";
 import { cornersOf, hexCenter, points } from "./mapGeometry";
@@ -10,7 +10,7 @@ import type { UnitMarks } from "./moveMarks";
 import { attackMarksMarkup } from "./mapMarks";
 import { unitMarksMarkup } from "./mapUnitMarks";
 import type { ObjectiveStandings } from "../engine/objectives";
-import { markRadius, objectiveMarksMarkup } from "./mapCities";
+import { fortressMarkup, markRadius, objectiveMarksMarkup } from "./mapCities";
 import type { OverlayCells } from "./overlayModel";
 import { buildHexLayers, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
@@ -34,6 +34,7 @@ export interface MapViewOptions {
 
 export interface MapView {
   setFronts(on: boolean): void;
+  setFortresses(fortresses: GameState["fortresses"]): void;
   /** Draw the counters; `marks` (spec 10, 10-5) puts a ringed badge under each ticked counter and a dash under each left-behind one of the hex chosen to move from (own group above the counters). */
   setUnits(units: readonly Unit[], marks?: UnitMarks): void;
   /** Outline these hexes (places where the selected counter may go); `further` are drawn in a second shade (spec 10: where a faster unit alone could go). */
@@ -72,6 +73,8 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   const highlightLayer = svg.querySelector<SVGGElement>("g.highlights")!;
   const marksLayer = svg.querySelector<SVGGElement>("g.attack-marks")!;
   const objectiveLayer = svg.querySelector<SVGGElement>("g.objective-marks")!;
+  const fortressLayer = svg.querySelector<SVGGElement>("g.fortresses")!;
+  let fortressesDrawn = "";
   let objectivesDrawn = "";
   let objectiveStandings: ObjectiveStandings | null = null;
   /** Screen pixels per map unit as drawn now (0 while the map has no size). */
@@ -108,6 +111,10 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
   });
 
   return {
+    setFortresses: (fortresses) => {
+      const markup = fortressMarkup(map, fortresses);
+      if (markup !== fortressesDrawn) { fortressesDrawn = markup; fortressLayer.innerHTML = markup; }
+    },
     setFronts: (on) => { tint.style.display = on ? "inline" : "none"; },
     setUnits: (units, marks) => { unitLayer.innerHTML = unitsMarkup(map, units); unitMarksLayer.innerHTML = marks ? unitMarksMarkup(map, units, marks) : ""; },
     setHighlights: (ids, further) => { outlined = [...ids]; highlightLayer.innerHTML = highlightsMarkup(map, outlined, further); },

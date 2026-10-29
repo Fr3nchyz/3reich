@@ -82,6 +82,7 @@ export function syncMap(view: MapView, s: Session, setup: SetupView | null, acti
   const card = airMoveNow(s);
   const red = redeployNow(s);
   const marks = card ? airMarks(card) : moveMarksOf(red ? { hex: red.hex, lines: red.lines.map((l) => ({ key: l.id, state: l.ticked ? "ticked" : l.can ? "free" : "greyed" })) } : selectionNow(s)); // spec 10, 10-5: rings on ticked counters, a dash on left-behind ones, the chosen hex outlined
+  view.setFortresses(s.state.fortresses); // spec 16 R31 / Q5
   view.setUnits(Object.values(s.state.units), marks.units);
   followSetup(view, s, setup?.owner ?? null);
   view.setHighlights(highlightedHexes(s, setup), paleHexes(s));
