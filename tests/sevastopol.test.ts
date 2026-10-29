@@ -71,11 +71,12 @@ describe("when Sevastopol loses fortress status for good (spec 16 R28; Q23, AER3
     expect(status({ ...lost, activeSide: "axis" })).toBe(false);
   });
 
-  it("never regains once lost, even when the conditions hold again (Q23; AER35)", () => {
+  it.each([odessa, edge, [...odessa, ...edge]].map((routes) => [routes]))("never regains once lost when supply returns via %j (Q23; AER35)", (routes) => {
     const lost = refreshFortresses(ctx, position([]));
     expect(lost.fortresses.V38).toBe(false);
-    const restored = position(odessa, { activeSide: "allies", fortresses: lost.fortresses });
-    expect(sevastopolConditions(ctx, restored).port).toBe("T37");
+    const restored = position(routes, { activeSide: "allies", fortresses: lost.fortresses });
+    const conditions = sevastopolConditions(ctx, restored);
+    expect(conditions.port !== null || conditions.supplyLine).toBe(true);
     expect(status(restored)).toBe(false);
     expect(status({ ...restored, activeSide: "axis" })).toBe(false);
   });
@@ -97,6 +98,11 @@ describe("when Sevastopol loses fortress status for good (spec 16 R28; Q23, AER3
     const s = board([], undefined, { control: position([]).control, activeSide: "allies" });
     expect(refreshFortresses(CTX, s).fortresses.V38).toBe(true);
     expect(refreshFortresses(CTX, { ...s, control: { ...s.control, V38: "germany" } }).fortresses.V38).not.toBe(true);
+  });
+
+  it("does not restore a lost fortress before Soviet entry into war (Q23; AER36)", () => {
+    const s = board([], undefined, { fortresses: { V38: false } });
+    expect(refreshFortresses(CTX, s).fortresses.V38).toBe(false);
   });
 
   it("reads the conditions on an Axis turn when no Allied result is kept yet (R28)", () => {

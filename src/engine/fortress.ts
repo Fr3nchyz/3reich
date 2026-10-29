@@ -42,7 +42,6 @@ export function refreshFortresses(ctx: GameContext, state: GameState): GameState
       }
       continue;
     }
-    if (next[id] === false) continue; // lost for good
     if (kind === "permanent") {
       next[id] = true;
       continue;
