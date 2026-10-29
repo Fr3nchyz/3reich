@@ -61,7 +61,7 @@ describe("Sevastopol's supply conditions (Ref 4.8, 19.2; spec 16 R28; AER37)", (
   });
 });
 
-describe("when Sevastopol loses and regains fortress status (spec 16 R28; AER35/AER36)", () => {
+describe("when Sevastopol loses fortress status for good (spec 16 R28; Q23, AER35/AER36)", () => {
   it("keeps its last Allied result through Axis turns, then loses on the next Allied turn", () => {
     const supplied = refreshFortresses(ctx, position(odessa));
     const cut = position([], { activeSide: "axis", fortresses: supplied.fortresses });
@@ -71,11 +71,20 @@ describe("when Sevastopol loses and regains fortress status (spec 16 R28; AER35/
     expect(status({ ...lost, activeSide: "axis" })).toBe(false);
   });
 
-  it("does not regain during an Axis turn, but regains when the next Allied turn begins", () => {
+  it("never regains once lost, even when the conditions hold again (Q23; AER35)", () => {
     const lost = refreshFortresses(ctx, position([]));
-    const restored = position(odessa, { activeSide: "axis", fortresses: lost.fortresses });
+    expect(lost.fortresses.V38).toBe(false);
+    const restored = position(odessa, { activeSide: "allies", fortresses: lost.fortresses });
+    expect(sevastopolConditions(ctx, restored).port).toBe("T37");
     expect(status(restored)).toBe(false);
-    expect(status({ ...restored, activeSide: "allies" })).toBe(true);
+    expect(status({ ...restored, activeSide: "axis" })).toBe(false);
+  });
+
+  it("stays lost after the Axis took the hex and the Soviets retook it (Q23)", () => {
+    const s = position(odessa, { fortresses: { V38: true } });
+    const taken = refreshFortresses(ctx, { ...s, control: { ...s.control, V38: "germany" } });
+    expect(taken.fortresses.V38).toBe(false);
+    expect(status({ ...taken, control: s.control })).toBe(false);
   });
 
   it.each(["axis", "allies"] as const)("loses immediately when the Axis controls V38 on an %s turn", (activeSide) => {
