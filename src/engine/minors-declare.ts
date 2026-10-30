@@ -37,7 +37,7 @@ export function minorDeclarationProblem(ctx: GameContext, state: GameState, by: 
 }
 
 /** TODO(verify) MC4, spec 15 R2: only explicit helpers and active allies imply automatic Major-Power war.
- * Sleeping allies do not; no legal Beta declaration triggers this price. Colonies/Vichy await their tickets.
+ * Sleeping allies do not; no legal Beta declaration triggers this price. Colonies and Vichy come with their own tickets.
  */
 export const MC4_EXPLICIT_PROTECTORS_ONLY = true;
 /** TODO(verify) MC14, spec 15 R1/R11: unopened Persia uses the ordinary minor price. */
