@@ -216,4 +216,4 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 
 These are in `docs/TODO-VERIFY.md`. The ones that matter most: whether supply and Berlin work as in the PC game (19.4 against 11.74), how the DOS game words the supply-by-sea prompt (spec 12, P1 to P7), and whether Germany gets another supply source after Berlin falls. What happens to planes and fleets in a captured city is decided (displace); Frank's answer would only confirm it.
 
-<!-- Codex #203: In progress (Codex) -->
+<!-- Codex #187: In progress (Codex) -->
