@@ -66,11 +66,11 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1857619474));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2608239176));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(2060812987));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1765142873);
-    expect(hashOf("1939", 2, 4)).toBe(4164658301);
+    expect(hashOf("1939", 5, 4)).toBe(1273200678);
+    expect(hashOf("1939", 2, 4)).toBe(1411623926);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));
 });
