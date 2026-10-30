@@ -20,7 +20,7 @@ flowchart LR
 3. **Codex works** on that branch and pushes its commits there, then writes its report (the `AGENTS.md` sections) as a PR comment or in the PR body.
 4. **Review by Claude**, the same bar as any builder's PR (CLAUDE.md):
    - read the PR's "Remaining concerns" first; a design question goes to the owner, not guessed;
-   - check out the branch, re-run `npm run lint && npm run typecheck && npm test && npm run build` and `npm run compare-games`, and compare with the PR's numbers;
+   - check out the branch, re-run `npm run lint && npm run typecheck && npm run coverage && npm run build` and `npm run compare-games`, and compare with the PR's numbers;
    - run the independent read-only `reviewer` agent (sonnet for engine-wide changes); it re-tries 3 to 5 of the PR's mutation checks;
    - run the browser specs that cover any `src/ui` change (Codex usually cannot);
    - findings go back in one `@codex` comment on the PR listing every FIX FIRST item. Small fixes (a doc row, a test name) Claude may push itself as new commits.

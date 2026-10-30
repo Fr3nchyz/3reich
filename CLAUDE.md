@@ -21,7 +21,7 @@ Read `README.md` first: it holds the working rules (cite sources, never invent a
 
 ## Gates
 
-- `.claude/settings.json` blocks `git push` until `npm run lint && npm run typecheck && npm test && npm run build` passes (`scripts/claude/pre-push-gate.mjs`).
+- `.claude/settings.json` blocks `git push` until `npm run lint && npm run typecheck && npm run coverage && npm run build` passes (`scripts/claude/pre-push-gate.mjs`).
 - Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
 
 CI posts the whole-game comparison summary as an updated PR comment for engine, computer-opponent or data changes; fork PRs receive the job summary only.
