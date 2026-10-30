@@ -219,7 +219,9 @@ describe("declarations of war (Ref 13.0)", () => {
     const { state } = replay(CTX, initial, actions);
     // The Allied Player Turn has begun, so nobody has spent anything in it.
     expect(state.nations.germany).toMatchObject({ brpTotal: 130, spent: 0 });
-    expect(state.wars.filter(([a]) => a === "germany")).toHaveLength(5);
+    // Nothing entered Norway or Denmark, so both declarations were revoked leaving 7p (spec 15 R4): the wars are gone, the BRPs stay spent (brpTotal above).
+    expect(state.wars.filter(([a]) => a === "germany")).toHaveLength(3);
+    expect(state.countries?.norway?.status).toBe("neutral");
     expect(replay(CTX, initial, actions).state).toEqual(state);
   });
 });

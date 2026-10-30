@@ -2,6 +2,7 @@ import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
 import type { AttritionEvent } from "./attrition-record";
+import type { CountryId } from "./minors-record";
 import type { Conquest } from "./conquest-record";
 import type { SovietCity } from "./soviet-record";
 import type { GameResult } from "./victory-record";
@@ -131,6 +132,8 @@ export type GameEvent =
   | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
   /** Step 2: the army of an attacked minor country was set up by `side` (spec 15 R3, C3); `units` are the new counters' ids in placement order. */
   | { type: "MINOR_FORCES_PLACED"; minor: MinorCountry; side: Side; units: string[] }
+  /** Spec 15 R4: the declarer neither entered nor attacked, so the declaration on `minor` is revoked: it is neutral again, `removed` (its army and foreign units inside) are gone, the BRPs stay spent. */
+  | { type: "MINOR_DECLARATION_REVOKED"; by: PowerId; minor: CountryId; brpsLost: number; removed: string[] }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

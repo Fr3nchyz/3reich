@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
+import { checkMinorDuties } from "./minors-duty";
 import { releaseKept } from "./conquest-kept";
 import { fortressChanges, refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
@@ -136,9 +137,10 @@ export function advance(ctx: GameContext, state: GameState): Transition {
 
 /** Leaving 7p: the Major Powers and minor countries that fall now (spec 14 R4, R9), then, after a refusal, Russia if its last factor inside Russia is gone (R7d). Stops as soon as a fall ends the game. */
 function endCombatPhase(ctx: GameContext, state: GameState): Transition {
-  const fell = settleConquests(ctx, state);
+  const duties = checkMinorDuties(ctx, state); // Spec 15 R4, R7: the duty of a declaration on a minor is checked first (it can remove a minor's army)
+  const fell = settleConquests(ctx, duties.state);
   const russia = settleSoviet(ctx, fell.state); // does nothing once a fall has ended the game
-  return { state: russia.state, events: [...fell.events, ...russia.events] };
+  return { state: russia.state, events: [...duties.events, ...fell.events, ...russia.events] };
 }
 
 function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
