@@ -25,6 +25,13 @@ export const MC5_ADVANCE_INTERVENES = true;
  */
 export const MC25_HOME_LIMIT_SPARES_MINOR_ALLIES = true;
 
+/**
+ * TODO(verify) MC26, spec 15 R8 / R15: Poland (attacked by Germany from the opening setup, no declaration, no step 2) is NOT held to the home limit while minors have no turn of their own
+ * (Release 1, 15-18). The Allied side plays the Polish counters as Major Power counters, as the recorded games and the computer do; holding them at home would change those games.
+ * Off: Poland's units too stay in Poland and may not advance over its border.
+ */
+export const MC26_POLAND_MOVES_FREELY = true;
+
 const isMinorOwner = (o: ForceOwner): o is MinorCountry => Object.hasOwn(MINOR_COUNTRY_FORCES, o);
 
 /** The record of a minor that is fighting now (attacked or helped) and not conquered (spec 14's record), else null. */
@@ -45,7 +52,7 @@ export function minorEntryProblem(ctx: GameContext, state: GameState, owners: re
   const h = ctx.map.hexes[hex];
   if (!h?.land) return null;
   for (const o of owners) {
-    if (isMinorOwner(o) && (MC25_HOME_LIMIT_SPARES_MINOR_ALLIES ? !(AXIS_MINOR_ALLIES as readonly string[]).includes(o) : true) && h.country !== o) {
+    if (isMinorOwner(o) && !(MC26_POLAND_MOVES_FREELY && o === "poland") && (MC25_HOME_LIMIT_SPARES_MINOR_ALLIES ? !(AXIS_MINOR_ALLIES as readonly string[]).includes(o) : true) && h.country !== o) {
       return `${hex} is outside ${o}: a minor's units stay in their country (R8).`;
     }
   }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { sideInWar } from "../src/engine/control";
-import { MC25_HOME_LIMIT_SPARES_MINOR_ALLIES, fightingRecord, minorEntryProblem, noteIntervention } from "../src/engine/minors-intervene";
+import { MC25_HOME_LIMIT_SPARES_MINOR_ALLIES, MC26_POLAND_MOVES_FREELY, fightingRecord, minorEntryProblem, noteIntervention } from "../src/engine/minors-intervene";
 import { entryProblem, neutralLandProblem } from "../src/engine/movement";
 import { supplyStatus } from "../src/engine/supply";
 import type { GameState, Unit } from "../src/engine/types";
@@ -41,7 +41,7 @@ describe("R5: who may enter an attacked minor's land", () => {
     expect(neutralLandProblem(CTX, ally, ["italy"], h)).toMatch(/R5/);
   });
   it("a neutral Major Power may not", () => expect(minorEntryProblem(CTX, s, ["ussr"], h)).toMatch(/R5/));
-  it("another minor's units may not", () => expect(minorEntryProblem(CTX, s, ["poland"], h)).toMatch(/stay in their country|R5/));
+  it("another minor's units may not", () => expect(minorEntryProblem(CTX, s, ["portugal"], h)).toMatch(/stay in their country|R5/));
   it("ground movement and air flight read the same test (entryProblem and neutralLandProblem)", () => {
     expect(entryProblem(CTX, s, ["britain"], h)).toBeNull();
     expect(neutralLandProblem(CTX, s, ["britain"], h)).toBeNull();
@@ -145,6 +145,10 @@ describe("R8: a minor's units stay home", () => {
     expect(r.ok === false && r.error).toMatch(/R8/);
     const ok = applyAction(CTX, { ...st, combat: { turn: "1939-fall-allies", attacked: [], targets: [], pending: null, advances: [{ to: BELGIUM.find((b) => b !== at && adjacentHexes(CTX, at).includes(b))!, units: ["m1"] }] } }, { type: "ADVANCE", side: "allies", units: ["m1"], to: BELGIUM.find((b) => b !== at && adjacentHexes(CTX, at).includes(b))! });
     expect(ok.ok).toBe(true);
+  });
+  it("MC26: Poland, played by the Allied side from the opening setup, is not held to the limit", () => {
+    expect(MC26_POLAND_MOVES_FREELY).toBe(true);
+    expect(minorEntryProblem(CTX, s, ["poland"], next(BELGIUM[0]!))).toBeNull();
   });
   it("MC25: the four Axis Minor-Allies are not held to the home limit", () => {
     expect(MC25_HOME_LIMIT_SPARES_MINOR_ALLIES).toBe(true);
