@@ -69,8 +69,14 @@ describe("spec 15 R11: opening Persia", () => {
     for (const side of ["axis", "allies"] as const) {
       const opened = openPersia(at6f([], side), "britain");
       for (const by of Object.keys(opened.nations) as (keyof typeof opened.nations)[]) {
-        expect(declarationTargets(CTX, opened, by)).not.toContain("persia");
-        expect(applyDeclaration(CTX, opened, { type: "DECLARE_WAR", by, on: "persia" }).ok).toBe(false);
+        // R11: activate each declarer so an empty neutral-power list cannot hide a regression.
+        const eligible = { ...opened, nations: { ...opened.nations, [by]: {
+          ...opened.nations[by], status: side === "axis" ? "axis" as const : "allied" as const,
+        } } };
+        const unopened = { ...eligible, countries: { ...eligible.countries, persia: { status: "neutral" as const } } };
+        expect(declarationTargets(CTX, unopened, by)).toContain("persia");
+        expect(declarationTargets(CTX, eligible, by)).not.toContain("persia");
+        expect(applyDeclaration(CTX, eligible, { type: "DECLARE_WAR", by, on: "persia" }).ok).toBe(false);
       }
       expect(legalDeclarations(CTX, opened).some((a) => a.type === "DECLARE_WAR" && a.on === "persia")).toBe(false);
     }
