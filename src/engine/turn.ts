@@ -19,6 +19,7 @@ import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
 import { hasOverstackWork } from "./overstack-action";
+import { hasAttritionWork } from "./attrition-step";
 import { hasSrWork } from "./sr-action";
 import { hasMoveWork } from "./move-action";
 import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
@@ -175,6 +176,9 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return hasOverstackWork(ctx, state);
     case "9e":
       return hasSrWork(ctx, state);
+    case "7a":
+    case "7p":
+      return hasAttritionWork(ctx, state);
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":

@@ -1,4 +1,5 @@
 import { applyAction, legalActions, type Action, type GameEvent } from "../../src/engine/actions";
+import { OPEN_SET_ACTIONS } from "../../src/engine/attrition-step";
 import { chooseAction } from "../../src/ai";
 import { createMemory } from "../../src/ai/memory";
 import { autoSetup } from "../../src/engine/autosetup";
@@ -6,7 +7,7 @@ import type { GameContext } from "../../src/engine/context";
 import { newGame, turnIndex } from "../../src/engine/game";
 import { overstacks } from "../../src/engine/stacking";
 import { SUPPLY_EFFECTS_ENABLED } from "../../src/engine/supply-effects";
-import type { GameState, Scenario } from "../../src/engine/types";
+import type { GameState, Scenario, Side } from "../../src/engine/types";
 import { auditConquered, auditEnd, endedWithoutResult, auditObjectives, SequenceAudit } from "./audit";
 import { MAP } from "../../src/data/map";
 import { auditCounters, RebuildTally } from "./rebuild";
@@ -22,11 +23,14 @@ const where = (s: GameState): string => `${turnLabel(s)}, ${s.activeSide}, ${s.p
 const placeOf = (s: GameState): string => `${s.year}-${s.season}-${s.activeSide}-${s.position?.part === "player-turn" ? `${s.position.turn}-${s.position.step}` : s.phase}`;
 const sameAction = (a: Action, b: Action): boolean => JSON.stringify(a) === JSON.stringify(b);
 
-/** Things that must never be true of a state: a nation below zero BRPs, and (checked when a Player Turn has ended) a hex over its stacking limit. */
-export function auditState(ctx: GameContext, state: GameState, turnEnded: boolean): { kind: "negative-brp" | "overstack"; detail: string }[] {
+/**
+ * Things that must never be true of a state: a nation below zero BRPs, and (checked when a Player Turn has ended) a hex over its stacking limit. When `side` is given
+ * (the side whose Player Turn ended), only that side's hexes count: the other side may be overstacked by an Attrition retreat until its own step 6g (spec 16 R6, R15).
+ */
+export function auditState(ctx: GameContext, state: GameState, turnEnded: boolean, side?: Side): { kind: "negative-brp" | "overstack"; detail: string }[] {
   const out: { kind: "negative-brp" | "overstack"; detail: string }[] = [];
   for (const n of Object.values(state.nations)) if (n.brpTotal < 0) out.push({ kind: "negative-brp", detail: `${n.id} has ${n.brpTotal} BRPs` });
-  if (turnEnded) for (const o of overstacks(ctx, state)) out.push({ kind: "overstack", detail: `${o.kind} stack of ${o.unitIds.length} (${o.side}) at ${o.hex}` });
+  if (turnEnded) for (const o of overstacks(ctx, state)) if (side === undefined || o.side === side) out.push({ kind: "overstack", detail: `${o.kind} stack of ${o.unitIds.length} (${o.side}) at ${o.hex}` });
   return out;
 }
 
@@ -105,7 +109,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
       const decision = choose(ctx, state, { seed: opt.seed, memory });
       if (!decision) { note("stuck", state, "the computer has no action to take"); break; }
       action = decision.action;
-      if (opt.verify && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);
+      if (opt.verify && !OPEN_SET_ACTIONS.includes(action.type) && !legalActions(ctx, state).some((l) => sameAction(l, action))) note("illegal-choice", state, `not on the legal list: ${JSON.stringify(action)}`);
       const r = applyAction(ctx, state, action);
       if (!r.ok) { note("refused", state, `${JSON.stringify(action)}: ${r.error}`); break; }
       next = r.state;
@@ -117,7 +121,7 @@ export function runGame(options: RunOptions, hooks: Hooks = {}): GameResult {
     actions.push(action);
     tally.add(events, state, ctx);
     rebuild.add(events, state, next);
-    for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN")) note(p.kind, next, p.detail);
+    for (const p of auditState(ctx, next, action.type === "END_PLAYER_TURN", state.activeSide)) note(p.kind, next, p.detail);
     for (const p of sequence.step(events, next)) note(p.kind, next, p.detail);
     const conquered = events.some((e) => e.type === "COUNTRY_CONQUERED");
     const gameTurnEnded = turnIndex(next) !== turnIndex(state) || next.phase !== "player-turn";

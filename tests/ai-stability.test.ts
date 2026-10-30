@@ -60,7 +60,7 @@ const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => f
 
 describe("fixed-seed play is stable", () => {
   it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2077938289));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(958665354));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(4089567146));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
     expect(hashOf("1939", 5, 4)).toBe(2772694060);
     expect(hashOf("1939", 2, 4)).toBe(4000575119);

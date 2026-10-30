@@ -4,6 +4,7 @@ import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
 import type { SrRecord } from "./sr-record";
 import type { ExploitRecord } from "./exploit-record";
+import type { AttritionRecord } from "./attrition-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
 import type { Conquest, KeptHex } from "./conquest-record";
@@ -334,6 +335,8 @@ export interface GameState {
   sr?: SrRecord;
   /** Breakthroughs and their exploiting armor in the current Player Turn (spec 16 C1, R10, R11); absent until the first Breakthrough, and in an older saved game. */
   exploit?: ExploitRecord;
+  /** Attrition so far in the current Player Turn (steps 7a and 7p, spec 16 C1, R8): the Fronts resolved and the run in progress; absent until the first roll, and in an older saved game. */
+  attrition?: AttritionRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
   /** Hexes kept at a fall under hostile ground units (V12) that have not passed on yet (ticket 14-25, V62). Absent: none (and in an older saved game). */

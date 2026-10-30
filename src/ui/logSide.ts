@@ -57,6 +57,11 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "SETUP_COMPLETE":
     case "GAME_OVER":
     case "FORTRESS_CHANGED": return null; // spec 16 R31: fortress status news
+    case "ATTRITION_RESOLVED": return e.side; // the roll is the Phasing side's
+    case "ATTRITION_LOSSES_CHOSEN": return sideOfUnits(e.units, before) ?? actor; // the defender's losses
+    case "ATTRITION_HEX_SELECTED":
+    case "ATTRITION_HEX_OCCUPIED": return actor; // the Phasing side's choice
+    case "UNIT_RETREATED": return sideOfUnits([e.unit], before) ?? actor;
     case "PLAYER_TURN_STARTED":
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender

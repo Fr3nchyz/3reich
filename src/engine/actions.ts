@@ -16,6 +16,7 @@ import { applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
 import { applyEliminateOverstack, hasOverstackWork, legalOverstack, OVERSTACK_STEPS } from "./overstack-action";
+import { applyAttrition, ATTRITION_STEPS, attritionRun, legalAttrition } from "./attrition-step";
 import { applyMove, legalMoves } from "./move-action";
 import { applySr, legalSr, SR_STEP } from "./sr-action";
 import { applyBuild, legalBuilds } from "./construction";
@@ -44,6 +45,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "6f") return legalMoves(ctx, state);
   if (OVERSTACK_STEPS.includes(step)) return legalOverstack(ctx, state);
   if (step === SR_STEP) return legalSr(ctx, state);
+  if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
@@ -75,6 +77,8 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
   // An overstack at 6g or 9j holds the step too: it is eliminated before the game moves on (R15).
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return stepActions(ctx, state, step);
+  // A running Attrition holds the step too, and is settled by the side its stage names (spec 16 C5, C6).
+  if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return stepActions(ctx, state, step);
   return combatOf(state).pending && step === "7h" ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
@@ -140,6 +144,20 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       const settled = settle(ctx, done.state);
       return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
     }
+    case "RESOLVE_ATTRITION":
+    case "CHOOSE_ATTRITION_LOSSES":
+    case "SELECT_ATTRITION_HEX":
+    case "END_ATTRITION":
+    case "RETREAT_UNIT":
+    case "OCCUPY_ATTRITION_HEX": {
+      const at = waitingStep(state);
+      if (at === undefined || !ATTRITION_STEPS.includes(at)) return { ok: false, error: `Attrition is resolved in step ${describeStep("7a")} or ${describeStep("7p")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
+      const done = applyAttrition(ctx, state, action);
+      if (!done.ok) return done;
+      // The step goes on by itself once no Front is left to resolve and no run is open, as after any action that used up a step's work.
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
+    }
     case "SR_UNITS": {
       const done = atStep(state, SR_STEP, "Units are redeployed", () => applySr(ctx, state, action));
       if (!done.ok) return done;
@@ -201,6 +219,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
+  if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };
   if (step === "7h" && combatOf(state).pending) return { ok: false, error: "An Exchange in step 7h is waiting for its losses to be chosen." };
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };

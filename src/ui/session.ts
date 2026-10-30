@@ -26,6 +26,7 @@ import type { WatchInfo } from "./watchController";
 import { gameOverLine } from "./victoryLine";
 import { conquestLine } from "./conquestText";
 import { winterLine } from "./winterText";
+import { attritionLine } from "./attritionText";
 import { siberianLogLine } from "./endText";
 
 /**
@@ -247,6 +248,12 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return siberianLogLine(e.strength, e.unitType, placeName(ctx.map, e.at), e.left, e.firstUse);
     case "GAME_OVER":
       return gameOverLine(e.season, e.year, e.result);
+    case "ATTRITION_RESOLVED":
+    case "ATTRITION_LOSSES_CHOSEN":
+    case "ATTRITION_HEX_SELECTED":
+    case "UNIT_RETREATED":
+    case "ATTRITION_HEX_OCCUPIED":
+      return attritionLine(e, ctx, before) ?? null;
   }
 }
 
