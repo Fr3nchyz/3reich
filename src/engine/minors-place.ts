@@ -19,7 +19,7 @@ export interface MinorPlacementChoices {
 type Result = { ok: true; state: GameState } | { ok: false; error: string };
 const ground = (type: UnitType) => type === "infantry" || type === "armor";
 const capital = (ctx: GameContext, at: HexId) =>
-  ctx.map.hexes[at].features.some((f) => f === "capital" || f === "capital-port");
+  ctx.map.hexes[at]?.features.some((f) => f === "capital" || f === "capital-port") ?? false;
 const pending = (state: GameState, country: MinorCountry) =>
   MINOR_COUNTRIES.includes(country) && !!state.countries?.[country]?.toPlace &&
   state.countries?.[country]?.status !== "neutral" && !state.conquests?.some((c) => c.country === country);
@@ -75,6 +75,9 @@ export function applyMinorPlacement(ctx: GameContext, state: GameState, country:
  */
 export function suggestMinorPlacement(ctx: GameContext, state: GameState, country: MinorCountry): MinorPlacement[] | null {
   if (!pending(state, country)) return null;
+  // Spec 15 R3: no complete army can fit without a legal ground destination in the capital.
+  const choices = legalMinorPlacements(ctx, state, country);
+  if (!choices.some((e) => ground(e.type) && e.hexes.some((at) => capital(ctx, at)))) return null;
   const counters = minorForceEntries(country).flatMap((e) => Array.from({ length: e.count }, () => e));
   const search = (next: GameState, placed: MinorPlacement[]): MinorPlacement[] | null => {
     if (placed.length === counters.length) return applyMinorPlacement(ctx, state, country, placed).ok ? placed : null;
