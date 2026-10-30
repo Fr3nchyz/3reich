@@ -33,8 +33,7 @@ function enemyNear(ctx: GameContext, state: GameState, side: Side, to: HexId): n
 }
 
 /** R4 / Part E: whole-Front losses, Replacements before strength, movement, distance and id. */
-export function chooseAttritionLosses(ctx: GameContext, state: GameState, front: Front, mustLose: number): string[] {
-  const participants = attritionParticipants(ctx, state, front).units;
+export function chooseAttritionLosses(ctx: GameContext, state: GameState, front: Front, mustLose: number, participants: readonly Unit[] = attritionParticipants(ctx, state, front).units): string[] {
   return lossCandidates(ctx, state, front, participants).sort((a, b) =>
     Number(b.type === "replacement") - Number(a.type === "replacement") || a.strength - b.strength
     || (a.movement ?? AI_ATTRITION_MISSING_MOVEMENT) - (b.movement ?? AI_ATTRITION_MISSING_MOVEMENT)

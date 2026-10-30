@@ -1,3 +1,4 @@
+import { attritionOf } from "./attrition-record";
 import { combatOf } from "./combat-record";
 import type { GameState, Side } from "./types";
 import { surrenderAsking } from "./soviet-record";
@@ -12,5 +13,5 @@ import { winterAsking } from "./winter-record";
 export function sideToAct(state: GameState): Side {
   if (winterAsking(state)) return "allies";
   if (surrenderAsking(state)) return "axis"; // step 10a: the Allied Player Turn is the active one, but the Axis answers Russia's offer to surrender (spec 14 R7b)
-  return combatOf(state).pending?.chooser ?? state.activeSide;
+  return combatOf(state).pending?.chooser ?? attritionOf(state, state.attrition).run?.chooser ?? state.activeSide; // an open Attrition run names its own chooser (spec 16 C6)
 }

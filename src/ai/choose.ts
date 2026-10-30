@@ -6,6 +6,7 @@ import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
+import { chooseAttrition } from "./attrition-play";
 import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
@@ -39,6 +40,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
     : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
+    : step === "7a" || step === "7p" ? chooseAttrition(ctx, state, legal, step) // 7p: resolves every Front with its participants; at either step, answers a run's stages (spec 16 Part E, ticket 16-8)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
@@ -62,6 +64,8 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
+    "7a": "The computer resolves its Attrition at step 7p.",
+    "7p": "No Attrition to resolve.",
     "6g": "Nothing is overstacked.",
     "9j": "Nothing is overstacked.",
     "8a": "Nothing more to take in the Free Siberian Transfer.",
