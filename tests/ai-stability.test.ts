@@ -55,14 +55,15 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // Ticket 09-5 (spec 09 D1 / R9): displaced planes survive captures, changing later actions and menus. The seed-5 action hash changes
 // 3614890892 -> 2654150903, seed 2 changes 675559916 -> 915112679, and seed-5 7h menus change 3846847444 -> 620107077.
 // npm run rehash confirms seed 1 of 1939 and 1942 remain unchanged; with AIR_DISPLACED_ON_CAPTURE false every original hash returns.
+// Ticket 15-5 (income from conquered countries): 1939 seed 1 278484573 -> 2077938289, seed 5 2654150903 -> 2772694060, seed 2 915112679 -> 4000575119, the 7h list hash 620107077 -> 794928805; 1942 seed 1 unchanged. Checked with npm run compare-games: 16 of 22 games differ from the first conquered-income Year Start on.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(278484573));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2077938289));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(4089567146));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(2654150903);
-    expect(hashOf("1939", 2, 4)).toBe(915112679);
+    expect(hashOf("1939", 5, 4)).toBe(2772694060);
+    expect(hashOf("1939", 2, 4)).toBe(4000575119);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(278484573));
 });
@@ -138,6 +139,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(620107077);
+    expect(h).toBe(794928805);
   });
 });

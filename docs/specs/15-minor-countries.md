@@ -582,6 +582,12 @@ Nothing built yet. Each ticket adds its own section here, as in spec 09 ("As bui
 9. No existing test changed except the ones the declaration, income and scenario changes touch on purpose; lint, typecheck, unit tests, build and the Playwright tests (mouse and touch) pass; every new button is at least 44 px.
 10. Mutation checks (F3) each make a test fail.
 
+### As built, 15-5
+
+R7/R13 item 3: `minors-income.ts` reads completed conquest records, the current capital holder and the existing value table. Year Start adds these payments and country lines alongside spec 14's separate Major Power payment. Same-side starting holdings are excluded; missing records and lost capitals do not pay. Colony and Eastern Europe payments require every city. `conquest-minor.ts` calls the all-cities settlement at its existing Combat Phase hook, delegating every fall effect to `fallCountry`.
+
+TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank values without replacing the table's null readings. TODO(verify) MC13: cities are map city features within country land (the scenario zone for Eastern Europe); `ALL_CITIES_REQUIRE_SINGLE_HOLDER = true` conservatively requires one owner to complete a fall. Mixed owners do not receive a split payment. MC7's existing one-hex Luxembourg capital is reused. No new verification ids.
+
 ## As built, 15-2
 
 - `minors-declare.ts` implements the Beta R2 neutral/fighting/active checks and the R12 date checks as pure functions. `war.ts` uses them and the R2 cost. Sleeping Axis allies are now targets; Major-Power declarations retain their existing gates. Eastern Europe creation and adding it to playable targets remain 15-11.
