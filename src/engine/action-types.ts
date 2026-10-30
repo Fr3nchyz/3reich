@@ -5,7 +5,7 @@ import type { AttritionEvent } from "./attrition-record";
 import type { Conquest } from "./conquest-record";
 import type { SovietCity } from "./soviet-record";
 import type { GameResult } from "./victory-record";
-import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
+import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCountry, OffMapBox, PowerId, Season, Side, UnitType } from "./types";
 
 /**
  * Everything a player (human or computer) can do is an Action. Actions are plain,
@@ -19,6 +19,11 @@ export type Action =
   | { type: "END_STEP"; side: Side; step: string }
   /** Step 1: a Major Power declares war on another Major Power (35 BRPs) or a minor country (10). */
   | { type: "DECLARE_WAR"; by: PowerId; on: Combatant }
+  /**
+   * Step 2: the side that did not declare sets up the whole army of an attacked minor country, every counter of the chart row at once, inside its borders with a ground unit in
+   * the capital (spec 15 R3; Ref 14.0, Ops 5.41a). `side` is the placing side (`CountryRecord.toPlace`), who is not the active side when the minor was attacked.
+   */
+  | { type: "PLACE_MINOR_FORCES"; side: Side; minor: MinorCountry; placements: { type: UnitType; strength: number; at: HexId }[] }
   /** Step 3: the side to move chooses its Option on one Front (Ref 11.21); `payer` is the Major Power that pays for an Offensive Option, left out when it is free. */
   | { type: "SELECT_FRONT_OPTION"; side: Side; front: Front; option: FrontOption; payer?: PowerId }
   /**
@@ -124,6 +129,8 @@ export type GameEvent =
   | { type: "BRPS_CHANGED"; nation: PowerId; delta: number; total: number; reason: string }
   | { type: "FRONT_OPTION_SELECTED"; side: Side; front: Front; option: FrontOption; cost: number }
   | { type: "WAR_DECLARED"; by: PowerId; on: Combatant; cost: number }
+  /** Step 2: the army of an attacked minor country was set up by `side` (spec 15 R3, C3); `units` are the new counters' ids in placement order. */
+  | { type: "MINOR_FORCES_PLACED"; minor: MinorCountry; side: Side; units: string[] }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

@@ -21,7 +21,7 @@ const ground = (type: UnitType) => type === "infantry" || type === "armor";
 const capital = (ctx: GameContext, at: HexId) =>
   ctx.map.hexes[at]?.features.some((f) => f === "capital" || f === "capital-port") ?? false;
 const objective = (ctx: GameContext, at: HexId) => ctx.map.hexes[at]?.features.includes("objective") ?? false;
-const pending = (state: GameState, country: MinorCountry) =>
+export const pending = (state: GameState, country: MinorCountry) =>
   MINOR_COUNTRIES.includes(country) && !!state.countries?.[country]?.toPlace &&
   state.countries?.[country]?.status !== "neutral" && !state.conquests?.some((c) => c.country === country);
 

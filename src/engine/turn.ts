@@ -10,6 +10,7 @@ import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
 import { hasExploitCombatWork, hasExploitMoveWork } from "./exploit-step";
+import { hasMinorPlaceWork } from "./minors-step";
 import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
 import { legalBuilds } from "./construction";
 import { legalSiberian } from "./victory-actions";
@@ -188,6 +189,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return hasExploitMoveWork(ctx, state);
     case "7o":
       return hasExploitCombatWork(ctx, state);
+    case "2":
+      return hasMinorPlaceWork(ctx, state);
     case "3":
       return atWarNow(state);
     case "8a":
