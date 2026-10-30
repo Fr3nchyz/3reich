@@ -1,6 +1,7 @@
 import type { GameEvent } from "./action-types";
 import { conquestIncome } from "./conquest-income";
 import type { GameContext } from "./context";
+import { conqueredIncome, conqueredIncomeLines } from "./minors-income";
 import { isGone } from "./nations";
 import { citiesNamedHeldByAxis, sovietCityIncome } from "./soviet-income";
 import type { GameState, Nation, PowerId } from "./types";
@@ -22,8 +23,8 @@ import type { GameState, Nation, PowerId } from "./types";
  * total never goes below 0.
  *
  * Not built (TODO(verify), spec 02): A (strategic warfare is resolved, the only thing that can lower
- * a Base), C (strategic-warfare factors are constructed), the BRPs of conquered minor countries and
- * colonies, of attacked minors the nation intervened in.
+ * a Base), C (strategic-warfare factors are constructed), the BRPs
+ * of attacked minors the nation intervened in.
  */
 
 /**
@@ -66,7 +67,8 @@ function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: 
   const unused = n.brpTotal;
   const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
   const brpBase = n.brpBase + growth;
-  const conquered = conquestIncome(ctx, state, n.id);
+  // Spec 15 R13 item 3: add minor/colony income beside spec 14's Major Power income.
+  const conquered = conquestIncome(ctx, state, n.id) + conqueredIncome(ctx, state, n.id);
   const minors = minorAllyBrps(ctx, state, n.id);
   const cities = sovietCityIncome(ctx, state, n.id);
   // TODO(verify) V46: the 15s of Moscow and Leningrad join the new initial total after the growth of the Base (they do not feed it, nor the next year's growth), so the spending
@@ -85,7 +87,8 @@ export function runYearStartSequence(ctx: GameContext, state: GameState): { stat
     const { nation, growth, minors, conquered, cities } = recalculated(ctx, state, old);
     nations[old.id] = nation;
     if (nation.brpTotal === old.brpTotal && growth === 0) continue;
-    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${minors} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}${cities === 0 ? "" : cities > 0 ? `, plus ${cities} for ${held} held by the Axis` : `, less ${-cities} for ${held} held by the Axis`}`;
+    const territory = conqueredIncomeLines(ctx, state, old.id).map((line) => `${line.country}: ${line.value}`).join(", ");
+    const reason = `Year Start Sequence ${state.year}: Base ${old.brpBase} + ${growth} growth = ${nation.brpBase}, plus ${minors} from Minor-Allies${conquered > 0 ? ` and ${conquered} from conquered countries` : ""}${territory ? ` (${territory})` : ""}${cities === 0 ? "" : cities > 0 ? `, plus ${cities} for ${held} held by the Axis` : `, less ${-cities} for ${held} held by the Axis`}`;
     events.push({ type: "BRPS_CHANGED", nation: old.id, delta: nation.brpTotal - old.brpTotal, total: nation.brpTotal, reason });
   }
   return { state: { ...state, nations }, events };

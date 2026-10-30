@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { chooseAction, placeOf } from "../src/ai";
+import { placeOf } from "../src/ai";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import * as policies from "../src/ai/policies";
 import { ACCEPT_SURRENDER } from "../src/ai/surrender";
 import { SIBERIAN_TAKE_ALL } from "../src/ai/siberian";
@@ -38,7 +39,7 @@ const EXPECTED_SIDE: Record<Kind, Side> = { winter: "allies", transfer: "allies"
 function play(scenario: ScenarioKey, seed: number, view: (s: GameState) => GameState = (s) => s): { seen: Seen[]; ended: string; anomalies: number } {
   const seen: Seen[] = [];
   const choose: Chooser = (ctx, state, cfg) => {
-    const d = chooseAction(ctx, view(state), cfg); // null (no legal action) is the runner's "stuck" anomaly, counted below
+    const d = chooseWithoutRedeploying(ctx, view(state), cfg); // null (no legal action) is the runner's "stuck" anomaly, counted below
     const kind = promptOf(ctx, view(state)); // the prompt the computer is shown: with Russia's losses left out, an 8a that offers only those is no prompt
     if (kind && d) seen.push({ kind, state, side: sideToAct(state), action: d.action });
     return d;
@@ -48,8 +49,8 @@ function play(scenario: ScenarioKey, seed: number, view: (s: GameState) => GameS
 }
 
 // The last row since spec 17 (ticket 17-1): with lost units rebuilt no plain game reaches Russia's offer to surrender (tests/helpers-surrender.ts), so one game is
-// played with a computer that never rebuilds a Russian loss nor takes one in the Transfer (legal choices); 1939 seed 5 then reaches the offer (seed 1 did until Attrition went live, ticket 16-4 wiring).
-const MATRIX: [ScenarioKey, number, string][] = [["1939", 4, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["1939", 5, " (Russian losses not used again)"]];
+// played with a computer that never rebuilds a Russian loss nor takes one in the Transfer (legal choices); 1939 seed 10 then reaches the offer (seed 1 did until Attrition went live, ticket 16-4 wiring; seed 5 until conquered income, ticket 15-5).
+const MATRIX: [ScenarioKey, number, string][] = [["1939", 4, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["1939", 10, " (Russian losses not used again)"]];
 const all: Seen[] = [];
 
 describe.each(MATRIX)("a whole computer game, %s seed %i%s", (scenario, seed, variant) => {

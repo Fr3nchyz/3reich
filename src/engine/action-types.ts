@@ -46,6 +46,8 @@ export type Action =
    * Placement is optional; leaving the step lapses what was not placed.
    */
   | { type: "PLACE_EXPLOITERS"; side: Side; hex: HexId; units: string[] }
+  /** Step 7j: one exploiting armor unit leaves its Breakthrough hex along `path` (the hexes entered, start excluded; an empty path stays), once, final (Ref 12.31; spec 16 R12). */
+  | { type: "EXPLOIT_MOVE"; side: Side; unit: string; path: HexId[] }
   /** Step 6f: a unit, or units standing together, move along a path of adjacent hexes (start excluded; Ref 5.45f). */
   | { type: "MOVE"; side: Side; units: string[]; path: HexId[] }
   /** Step 6f or opening setup: a Major Power sets one of its three movable airbases down in a hex its side controls and supplies (Ref 20.1, 11.3). */
@@ -126,7 +128,7 @@ export type GameEvent =
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
   /** One ground attack resolved: the odds, every die roll and how it ended (Ref 12.1-12.2). */
-  | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number }
+  | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** An Exploitation battle at step 7o (spec 16 C4, R13). */ exploitation?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number }
   /** Counters left alone were destroyed by the legacy sweep (ALONE_NONGROUND_DESTROYED). Each also has UNIT_ELIMINATED. Air, airbases and fleets instead have displacement events while their capture switches are on (spec 09 R9 / R2, spec 12 R9). */
   | { type: "UNITS_SWEPT"; hex: HexId; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
   | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId; reason?: "unsupplied" }
@@ -144,6 +146,8 @@ export type GameEvent =
   | { type: "BREAKTHROUGH"; side: Side; hex: HexId; placeable: string[] }
   /** Step 7h: armor units moved into the Breakthrough hex `hex` from the hexes `from`, free; they are its exploiting units (spec 16 R11). */
   | { type: "EXPLOITERS_PLACED"; side: Side; units: string[]; from: HexId[]; hex: HexId }
+  /** Step 7j: an exploiting unit left the Breakthrough hex `from` along `path` (empty: it stayed; spec 16 R12, C4). */
+  | { type: "EXPLOIT_MOVED"; side: Side; unit: string; from: HexId; path: HexId[] }
   /** Spec 14 R4: an enemy ground unit took a Major Power's capital. The Power falls at the end of its own next Combat Phase unless it takes the capital back. */
   | { type: "CAPITAL_LOST"; power: PowerId; capital: HexId; by: ForceOwner }
   /** The Axis took Moscow or Leningrad for the first time (spec 14 R7a): Germany gains `amount` BRPs and the U.S.S.R. loses `lost` (less than `amount` when it had less). */

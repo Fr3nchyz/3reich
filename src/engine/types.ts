@@ -335,6 +335,8 @@ export interface GameState {
   sr?: SrRecord;
   /** Breakthroughs and their exploiting armor in the current Player Turn (spec 16 C1, R10, R11); absent until the first Breakthrough, and in an older saved game. */
   exploit?: ExploitRecord;
+  /** Armor that exploited counts as supplied until this Game Turn index, inclusive (spec 16 R14, C1, AER15); absent until the first Exploitation move, and in an older saved game. */
+  exploited?: Record<string, number>;
   /** Attrition so far in the current Player Turn (steps 7a and 7p, spec 16 C1, R8): the Fronts resolved and the run in progress; absent until the first roll, and in an older saved game. */
   attrition?: AttritionRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */

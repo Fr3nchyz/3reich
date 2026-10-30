@@ -3,6 +3,7 @@ import type { GameContext } from "./context";
 import { areEnemies, controllerOf, sideInWar, startingControl } from "./control";
 import { conquer } from "./conquest-stages";
 import { isConquered, type Conquest, type FallenCountry } from "./conquest-record";
+import { settleAllCitiesConquests } from "./minors-income";
 import { otherSide } from "./game";
 import type { HexId } from "./hex";
 import { sideOfOwner } from "./setup";
@@ -137,5 +138,6 @@ export function settleMinorConquests(ctx: GameContext, state: GameState): { stat
     next = done.state;
     events.push(...done.events);
   }
-  return { state: next, events };
+  const cities = settleAllCitiesConquests(ctx, next); // spec 15 R7: all-cities falls use the same settlement.
+  return { state: cities.state, events: [...events, ...cities.events] };
 }

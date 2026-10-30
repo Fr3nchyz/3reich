@@ -9,6 +9,7 @@ import { applySiberian, applySurrenderAnswer, legalSiberian, legalSurrenderActio
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { applyPlaceExploiters } from "./breakthrough";
+import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalExploitMoves } from "./exploit-step";
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
 import { applySeaSupply, legalSeaSupply } from "./naval-actions";
@@ -48,6 +49,8 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
   if (step === "7b") return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
+  if (step === "7j") return legalExploitMoves(ctx, state);
+  if (step === "7o") return legalExploitCombat(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8a") return legalSiberian(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
@@ -79,7 +82,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return stepActions(ctx, state, step);
   // A running Attrition holds the step too, and is settled by the side its stage names (spec 16 C5, C6).
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return stepActions(ctx, state, step);
-  return combatOf(state).pending && step === "7h" ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
+  return combatOf(state).pending && (step === "7h" || step === "7o") ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
 /**
@@ -175,12 +178,19 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return applyCombineAir(state, action);
     case "DESIGNATE_AIR":
       return atStep(state, "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
-    case "ATTACK":
-      return atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
+    case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
+      return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":
-      return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
+      return waitingStep(state) === "7o" ? applyAllocation(ctx, state, action) : atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
     case "ADVANCE":
-      return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
+      return waitingStep(state) === "7o" ? applyAdvance(ctx, state, action) : atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
+    case "EXPLOIT_MOVE": {
+      const done = atStep(state, "7j", "Exploiting armor moves", () => applyExploitMoveAction(ctx, state, action));
+      if (!done.ok) return done;
+      // The step goes on by itself once every exploiter has moved (C5), as after any action that used up a step's work.
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
+    }
     case "PLACE_EXPLOITERS":
       return atStep(state, "7h", "Armor moves into a Breakthrough hex", () => applyPlaceExploiters(ctx, state, action));
     case "SELECT_FRONT_OPTION":
@@ -220,7 +230,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   }
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };
-  if (step === "7h" && combatOf(state).pending) return { ok: false, error: "An Exchange in step 7h is waiting for its losses to be chosen." };
+  if ((step === "7h" || step === "7o") && combatOf(state).pending) return { ok: false, error: `An Exchange in step ${step} is waiting for its losses to be chosen.` };
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
   }
