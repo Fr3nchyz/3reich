@@ -62,6 +62,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "ATTRITION_HEX_SELECTED":
     case "ATTRITION_HEX_OCCUPIED": return actor; // the Phasing side's choice
     case "UNIT_RETREATED": return sideOfUnits([e.unit], before) ?? actor;
+    case "MINOR_DECLARATION_REVOKED": return sideOfOwner(e.by); // the declarer's side
     case "PLAYER_TURN_STARTED":
     case "MINOR_FORCES_PLACED": // the side that set the army up
     case "FRONT_OPTION_SELECTED":

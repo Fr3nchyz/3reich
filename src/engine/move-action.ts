@@ -2,6 +2,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { noteMinorEntry } from "./minors-declare";
 import { movesOf } from "./move-record";
 import { endProblem, movableProblem, movableUnits, movePathProblem, reachableHexes } from "./movement";
 import type { GameState, Unit } from "./types";
@@ -118,5 +119,7 @@ export function applyMove(ctx: GameContext, state: GameState, action: MoveAction
     next = entered.state;
     events.push(...entered.events);
   }
+  // Spec 15 R4: a move into a minor's land meets the declarer's duty; a pass-through counts, whatever CONTROL_ON_PASS_THROUGH says about control.
+  next = noteMinorEntry(ctx, next, units, path);
   return { ok: true, state: next, events };
 }

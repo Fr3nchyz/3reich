@@ -9,6 +9,7 @@ import { combatOf } from "./combat-record";
 import { exploitOf, exploiterIds } from "./exploit-record";
 import { exploitAdvanceProblem, markExploitAttackers } from "./exploit-action";
 import { enterHexes } from "./control";
+import { noteMinorEntry } from "./minors-declare";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { stackingProblem } from "./placement";
@@ -157,9 +158,13 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
 export function fight(ctx: GameContext, state: GameState, units: readonly Unit[], target: HexId, exploit: boolean): ActionResult {
   const rec = combatOf(state);
   const ids = units.map((u) => u.id);
-  const stamp = (s: GameState): GameState => exploit
-    ? { ...s, combat: { ...rec, targets: [...rec.targets, target] }, exploit: markExploitAttackers(exploitOf(s), ids) }
-    : { ...s, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, target] } };
+  // Spec 15 R4: an attack on a hex of the minor meets the declarer's duty, whatever the roll (the attack is made).
+  const stamp = (s0: GameState): GameState => {
+    const s = noteMinorEntry(ctx, s0, units, [target]);
+    return exploit
+      ? { ...s, combat: { ...rec, targets: [...rec.targets, target] }, exploit: markExploitAttackers(exploitOf(s), ids) }
+      : { ...s, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, target] } };
+  };
   const tag = exploit ? { exploitation: true as const } : {};
   const defenders = defendersAt(state, units, target);
   if (defenders.length === 0) {
