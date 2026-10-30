@@ -1,6 +1,7 @@
 import type { Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
 import type { GameState, Unit } from "../engine/types";
+import { attritionLabel } from "./attritionText";
 import { nationAdjective, placeName, stackSummary, unitsWithIds } from "./names";
 
 /**
@@ -57,13 +58,13 @@ export function combatLabel(a: Action, ctx: GameContext, state: GameState): stri
       return `Air support for ${placeName(ctx.map, a.target)}: ${unitsWhere(ctx, state, a.units)} (${factors} air factor${factors === 1 ? "" : "s"})`;
     }
     default:
-      return null;
+      return attritionLabel(a, ctx, state); // the plain Attrition buttons of steps 7a and 7p (ticket 16-4 wiring; the cards are 16-7)
   }
 }
 
 /** What an action does, without the ids: two actions with the same key differ only in which of identical counters they name. */
 export function effectKey(a: Action, state: Pick<GameState, "units">): string {
-  if (!("units" in a)) return JSON.stringify(a);
+  if (!("units" in a) || !a.units) return JSON.stringify(a);
   const counters = unitsWithIds(state, a.units).map((u) => [u.at, u.owner, u.nationality ?? "", u.type, u.strength, u.movement ?? ""].join("|")).sort();
   return JSON.stringify({ ...a, units: counters });
 }

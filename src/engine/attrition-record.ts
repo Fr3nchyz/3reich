@@ -52,7 +52,7 @@ export type AttritionEvent =
   | { type: "ATTRITION_HEX_SELECTED"; hex: HexId }
   | { type: "UNIT_RETREATED"; unit: string; from: HexId; to: HexId }
   | { type: "ATTRITION_HEX_OCCUPIED"; hex: HexId; units: string[] };
-export interface AttritionResult { state: GameState; record: AttritionRecord; events: (GameEvent | AttritionEvent)[] }
+export interface AttritionResult { state: GameState; record: AttritionRecord; events: GameEvent[] }
 
 /** Missing and stale records read as empty (spec 16 C1). */
 export function attritionOf(state: GameState, record?: AttritionRecord): AttritionRecord {
@@ -110,7 +110,8 @@ export function chooseAttritionLosses(ctx: GameContext, state: GameState, record
   const rec = attritionOf(state, record);
   const run = rec.run!;
   const losses = eliminateUnits(state, ids); // spec 16 R4; spec 17 R1/R4: return to the owner's pool where eligible.
-  return { state: losses.state, record: { ...rec, run: run.hexesLeft ? { ...run, stage: "hex", chooser: state.activeSide } : null },
+  // R8, AER9: a run with no hex allowance closes here, and its Front is done.
+  return { state: losses.state, record: run.hexesLeft ? { ...rec, run: { ...run, stage: "hex", chooser: state.activeSide } } : closeAttritionRun(rec),
     events: [{ type: "ATTRITION_LOSSES_CHOSEN", units: [...ids] }, ...losses.events] };
 }
 

@@ -12,12 +12,14 @@ import type { GameState } from "./types";
  * is ended when the step offers anything but returned counters, or when the action is refused for another reason: then the record does not replay.
  */
 
-/** Whether the game waits at step 8a or 8b only because of counters that came back to the pool, or at 9e (a record made before ticket 17-1 or 16-17 passed that step). */
-export function waitsOnlyForReturned(ctx: GameContext, state: GameState): "8a" | "8b" | "9e" | null {
+/** Whether the game waits at step 8a or 8b only because of counters that came back to the pool, or at 9e, 7a or 7p (a record made before ticket 17-1, 16-17 or the Attrition wiring passed that step). */
+export function waitsOnlyForReturned(ctx: GameContext, state: GameState): "7a" | "7p" | "8a" | "8b" | "9e" | null {
   const p = state.position;
   if (state.phase !== "player-turn" || p?.part !== "player-turn") return null;
   // Step 9e (ticket 16-17): a record made before it waited passed the step; redeploying is optional, so the step is ended for the record. Nothing else waits there.
   if (p.step === "9e") return "9e";
+  // Steps 7a and 7p (spec 16 ticket 16-4 wiring): a record made before Attrition was live passed both steps; resolving it is optional, so the step is ended for the record.
+  if (p.step === "7a" || p.step === "7p") return p.step;
   if (p.step === "8b") {
     const builds = legalBuilds(ctx, state);
     return builds.length > 0 && builds.every((a) => a.unit.returned === true) ? "8b" : null;
@@ -41,7 +43,7 @@ export function replayRecord(ctx: GameContext, initial: GameState, recorded: rea
   const ended: number[] = [];
   for (const [i, action] of recorded.entries()) {
     let result = applyAction(ctx, state, action);
-    // At most three times: ending 8a can bring the game to an 8b that also waits only for returned counters, and then to 9e.
+    // At most three times: ending 8a can bring the game to an 8b that also waits only for returned counters, and then to 9e (7a and 7p are ended one at a time, before the recorded action that follows them).
     for (let guard = 0; guard < 3 && !result.ok; guard++) {
       const step = waitsOnlyForReturned(ctx, state);
       if (step === null) break;
