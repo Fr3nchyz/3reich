@@ -109,6 +109,8 @@ export function neutralLandProblem(ctx: GameContext, state: GameState, owners: r
   if (!NEUTRAL_LAND_CLOSED || isNobodys(state, hex)) return null; // land nobody controls (a conquered Power's, spec 14 R4) is open to all, TODO(verify) V34
   const control = controllerOf(ctx, state, hex);
   const country = ctx.map.hexes[hex]?.country;
+  // Spec 15 R11: the opened Persian route is no longer closed neutral land, for either side.
+  if (country === "persia" && state.countries?.persia?.opened) return null;
   for (const o of owners) {
     if (control !== null ? control !== o && sideInWar(state, control) === null && !atWar(state, o, control) : isMinorCountry(country) && !atWar(state, o, country as ForceOwner)) {
       return `${hex} is neutral land: ${o} is not at war with it.`;
