@@ -62,6 +62,7 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // Ticket 09-5 (spec 09 D1 / R9): displaced planes survive captures, changing later actions and menus. The seed-5 action hash changes
 // 3614890892 -> 2654150903, seed 2 changes 675559916 -> 915112679, and seed-5 7h menus change 3846847444 -> 620107077.
 // npm run rehash confirms seed 1 of 1939 and 1942 remain unchanged; with AIR_DISPLACED_ON_CAPTURE false every original hash returns.
+// Ticket 15-5 (income from conquered countries): 1939 seed 1 278484573 -> 2077938289, seed 5 2654150903 -> 2772694060, seed 2 915112679 -> 4000575119, the 7h list hash 620107077 -> 794928805; 1942 seed 1 unchanged. Checked with npm run compare-games: 16 of 22 games differ from the first conquered-income Year Start on.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {

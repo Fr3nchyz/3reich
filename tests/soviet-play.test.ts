@@ -11,6 +11,7 @@ import { runGame } from "../scripts/selfplay/runner";
 import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { SCENARIOS, type ScenarioKey } from "../scripts/selfplay/scenarios";
 
+// Ticket 15-5 (conquered income) moved the games: 1939 seed 1 now takes both cities (seed 8 took only Moscow).
 // Spec 14 ticket 14-14 (R7a), whole computer games that take Moscow and Leningrad: the 15 BRPs move once for each city even though control swings back and forth,
 // the Year Start Sequence moves another 15 for each city the Axis holds when it runs, and replaying the recorded actions gives the same state.
 
@@ -36,7 +37,7 @@ function replay(scenario: ScenarioKey, seed: number): { steps: Step[]; final: Ga
 const CITIES = ["H47", "D44"];
 
 
-describe.each([["1939", 8], ["1942", 1]] as const)("a whole computer game, %s seed %i, takes Moscow and Leningrad", (scenario, seed) => {
+describe.each([["1939", 1], ["1942", 1]] as const)("a whole computer game, %s seed %i, takes Moscow and Leningrad", (scenario, seed) => {
   const g = replay(scenario, seed);
   const CTX: GameContext = { map: MAP, scenario: SCENARIOS[scenario], supplyEffects: SUPPLY_EFFECTS_ENABLED };
   const moved = g.steps.flatMap((s) => s.events.filter((e) => e.type === "RUSSIA_BRPS_MOVED").map((e) => ({ s, e })));
