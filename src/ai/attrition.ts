@@ -66,7 +66,8 @@ export function chooseOccupiers(ctx: GameContext, state: GameState, to: HexId, o
     if (result) return result;
   }
   // R7 / ticket 16-8a: forced occupation even when every non-empty set is unsafe.
-  return [...eligible].sort((a, b) => b.strength - a.strength || order(a.id, b.id)).slice(0, 1).map((u) => u.id);
+  return [...eligible].sort((a, b) => b.strength - a.strength || order(a.id, b.id))
+    .filter((u) => stackingProblem(ctx, base, u.owner, u, to) === null).slice(0, 1).map((u) => u.id);
 }
 
 /** R5 / Part E: selection-time safety only; callers re-query after each retreat. */
