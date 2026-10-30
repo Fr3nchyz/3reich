@@ -93,3 +93,10 @@ export function noteIntervention(ctx: GameContext, state: GameState, units: read
   }
   return events.length ? { state: { ...state, countries }, events } : { state, events };
 }
+
+/**
+ * Spec 15 R8 (Ref 14.0, 15.0): a defending minor's units are supplied from its own capital or from any supply source of a Major Power of its side, even before that power
+ * Intervenes (the side's sources are all at war with the attacker), so they belong to no one source group (e.g. a minor helped only by the Soviets is fed from Soviet sources).
+ * The four Axis Minor-Allies are the Axis' own group (Ref 17.0). A power's sea supply of them goes through the same lines (naval-supply.ts names units of the side).
+ */
+export const minorFedByAnyGroup = (owner: ForceOwner): boolean => Object.hasOwn(MINOR_COUNTRY_FORCES, owner) && !(AXIS_MINOR_ALLIES as readonly string[]).includes(owner);
