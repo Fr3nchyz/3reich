@@ -85,12 +85,13 @@ describe("which hexes are Fortresses (Ref 4.8)", () => {
     expect(later.fortresses.M27).toBe(true);
   });
 
-  it("Sevastopol is a Fortress while the U.S.S.R. holds it (TODO(verify): the supply conditions of 4.8 are not built)", () => {
-    expect(forts(board([]))).toContain("V38");
-    const lost = refreshFortresses(CTX, { ...board([]), control: { V38: "germany" } });
-    expect(lost.fortresses.V38).toBeUndefined();
+  it("Sevastopol is a Fortress while the U.S.S.R. holds it, and never again once the Axis took it (Q23)", () => {
+    const held = refreshFortresses(CTX, board([]));
+    expect(forts(held)).toContain("V38");
+    const lost = refreshFortresses(CTX, { ...held, control: { V38: "germany" } });
+    expect(lost.fortresses.V38).toBe(false);
     const back = refreshFortresses(CTX, { ...lost, control: {} });
-    expect(back.fortresses.V38).toBe(true);
+    expect(back.fortresses.V38).toBe(false);
   });
 
   it("returns the same object when nothing changes", () => {
@@ -163,16 +164,17 @@ describe("fortress news and turn hooks (spec 16 R26, R27, R31)", () => {
     expect(news(later.events)).toEqual([]);
   });
 
-  it("R31: Sevastopol loses and regains status with one news line each way at Player Turn start", () => {
+  it("R31: Sevastopol loses status with one news line, and a regain is never announced (Q23)", () => {
     const base = refreshFortresses(CTX, board([]));
     const lost = advance(CTX, { ...base, control: { V38: "germany" }, position: { part: "turn-order" } });
     expect(news(lost.events)).toEqual([{ type: "FORTRESS_CHANGED", hex: "V38", status: false, why: "sevastopol" }]);
-    const regained = advance(CTX, { ...lost.state, control: {}, position: { part: "turn-order" } });
-    expect(news(regained.events)).toEqual([{ type: "FORTRESS_CHANGED", hex: "V38", status: true, why: "sevastopol" }]);
-    for (const event of [...news(lost.events), ...news(regained.events)]) {
-      expect(describeEvent(event, CTX, new Set(), new Map(), base)).toContain(event.status ? "now a fortress" : "no longer a fortress");
+    for (const event of news(lost.events)) {
+      expect(describeEvent(event, CTX, new Set(), new Map(), base)).toContain("no longer a fortress");
       expect(eventSide(event, "axis", base)).toBeNull();
     }
+    const later = advance(CTX, { ...lost.state, control: {}, position: { part: "turn-order" } });
+    expect(news(later.events)).toEqual([]);
+    expect(later.state.fortresses.V38).toBe(false);
   });
 });
 
