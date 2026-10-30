@@ -174,6 +174,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
     case "MINOR_DECLARATION_REVOKED":
       return `${POWER_NAMES[e.by]} did not enter or attack ${cap(e.minor)}: the declaration is revoked (${e.brpsLost} BRPs lost), ${cap(e.minor)} is neutral again.`;
+    case "MINOR_INTERVENED":
+      return `${POWER_NAMES[e.by]} intervenes in ${cap(e.minor)}: it fights beside ${POWER_NAMES[e.by]}.`;
     case "MINOR_FORCES_PLACED":
       return `${sideName(e.side)} set up the army of ${cap(e.minor)} (${e.units.length} counters).`;
     case "WAR_DECLARED":

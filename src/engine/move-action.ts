@@ -3,6 +3,7 @@ import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { noteMinorEntry } from "./minors-duty";
+import { noteIntervention } from "./minors-intervene";
 import { movesOf } from "./move-record";
 import { endProblem, movableProblem, movableUnits, movePathProblem, reachableHexes } from "./movement";
 import type { GameState, Unit } from "./types";
@@ -121,5 +122,9 @@ export function applyMove(ctx: GameContext, state: GameState, action: MoveAction
   }
   // Spec 15 R4: a move into a minor's land meets the declarer's duty; a pass-through counts, whatever CONTROL_ON_PASS_THROUGH says about control.
   next = noteMinorEntry(ctx, next, units, path);
+  // Spec 15 R6: the same entry by a Major Power of the minor's side is its Intervention.
+  const helped = noteIntervention(ctx, next, units, path);
+  next = helped.state;
+  events.push(...helped.events);
   return { ok: true, state: next, events };
 }

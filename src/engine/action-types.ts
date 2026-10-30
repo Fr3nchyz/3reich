@@ -134,6 +134,8 @@ export type GameEvent =
   | { type: "MINOR_FORCES_PLACED"; minor: MinorCountry; side: Side; units: string[] }
   /** Spec 15 R4: the declarer neither entered nor attacked, so the declaration on `minor` is revoked: it is neutral again, `removed` (its army and foreign units inside) are gone, the BRPs stay spent. */
   | { type: "MINOR_DECLARATION_REVOKED"; by: PowerId; minor: CountryId; brpsLost: number; removed: string[] }
+  /** Spec 15 R6: a Major Power of the other side entered an attacked minor with a ground unit; it is now a helper and the minor fights beside it. */
+  | { type: "MINOR_INTERVENED"; minor: MinorCountry; by: PowerId }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
