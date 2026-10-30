@@ -24,10 +24,19 @@ jobs:
     timeout-minutes: 5
     outputs:
       e2e: ${{ steps.scope.outputs.e2e }}
+      compare-games: ${{ steps.compare-scope.outputs.changed }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - id: compare-scope
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          if echo "$changed" | grep -qE '^src/(engine|ai|data)/'; then echo "changed=true" >> "$GITHUB_OUTPUT"; else echo "changed=false" >> "$GITHUB_OUTPUT"; fi
       - id: scope
         env:
           EVENT: ${{ github.event_name }}
@@ -54,6 +63,52 @@ jobs:
       # Unit tests with the coverage floor for src/engine (thresholds in vite.config.ts).
       - run: npm run coverage
       - run: npm run build
+  # Informational only; branch protection continues to use the existing checks.
+  compare-games:
+    needs: scope
+    if: github.event_name == 'pull_request' && needs.scope.outputs.compare-games == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - id: compare
+        shell: bash
+        continue-on-error: true
+        run: npm run compare-games | tee "$RUNNER_TEMP/compare-games.txt"
+      - name: Write job summary
+        if: always() && steps.compare.outcome != 'skipped'
+        run: cat "$RUNNER_TEMP/compare-games.txt" >> "$GITHUB_STEP_SUMMARY"
+      - name: Update comparison comment
+        if: >-
+          !cancelled() && steps.compare.outcome != 'skipped' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('node:fs');
+            const marker = '<!-- compare-games-summary -->';
+            const summary = fs.readFileSync(`${process.env.RUNNER_TEMP}/compare-games.txt`, 'utf8');
+            const body = `${marker}\n## Whole-game comparison\n\n${summary}\n\n[CI run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})`;
+            const issue = { ...context.repo, issue_number: context.issue.number };
+            const comments = await github.paginate(github.rest.issues.listComments, issue);
+            const previous = comments.find(comment =>
+              comment.user.login === 'github-actions[bot]' && comment.body?.startsWith(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: previous.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...issue, body });
+            }
   # Browser tests against `vite preview` on a build made for them (see playwright.config.ts), in three parallel shards so the wait is a third as long.
   e2e-shard:
     needs: scope

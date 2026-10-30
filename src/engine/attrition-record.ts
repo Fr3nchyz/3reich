@@ -1,6 +1,6 @@
 import type { GameEvent } from "./action-types";
 import { crossable, defendersAt, neighborIds } from "./attack-rules";
-import { attritionLossProblem, attritionParticipants, lossCandidates } from "./attrition";
+import { attritionLossProblem, attritionParticipants, lossCandidates, selectableHexes } from "./attrition";
 import { attritionColumn, resolveAttrition } from "./combat";
 import type { AttritionColumn } from "./combat";
 import { turnKey } from "./combat-record";
@@ -48,7 +48,10 @@ export interface AttritionRecord {
 /** Payloads for the later action integration; no new shared event types yet (spec 16 C4). */
 export type AttritionEvent =
   | { type: "ATTRITION_RESOLVED"; front: Front; side: Side; factors: number; column: AttritionColumn; roll: number; mustLose: number; hexesLeft: number; against: ForceOwner[] }
-  | { type: "ATTRITION_LOSSES_CHOSEN"; units: string[] };
+  | { type: "ATTRITION_LOSSES_CHOSEN"; units: string[] }
+  | { type: "ATTRITION_HEX_SELECTED"; hex: HexId }
+  | { type: "UNIT_RETREATED"; unit: string; from: HexId; to: HexId }
+  | { type: "ATTRITION_HEX_OCCUPIED"; hex: HexId; units: string[] };
 export interface AttritionResult { state: GameState; record: AttritionRecord; events: (GameEvent | AttritionEvent)[] }
 
 /** Missing and stale records read as empty (spec 16 C1). */
@@ -109,4 +112,21 @@ export function chooseAttritionLosses(ctx: GameContext, state: GameState, record
   const losses = eliminateUnits(state, ids); // spec 16 R4; spec 17 R1/R4: return to the owner's pool where eligible.
   return { state: losses.state, record: { ...rec, run: run.hexesLeft ? { ...run, stage: "hex", chooser: state.activeSide } : null },
     events: [{ type: "ATTRITION_LOSSES_CHOSEN", units: [...ids] }, ...losses.events] };
+}
+
+/** Close at a hex boundary when the allowance or current choices run out (spec 16 R5/R8, C8; AER11).
+ * Exported for the later caller after losses; no action wiring here.
+ */
+export function finishAttritionHexStage(ctx: GameContext, state: GameState, record: AttritionRecord): AttritionRecord {
+  const run = record.run;
+  if (!run || run.stage !== "hex") return record;
+  const participants = run.participants.flatMap((id) => state.units[id] ? [state.units[id]] : []);
+  if (run.hexesLeft > 0 && [...selectableHexes(ctx, state, run.front, participants).values()].some((p) => p === null)) return record;
+  return closeAttritionRun(record);
+}
+
+/** Completing or declining a run resolves its Front (spec 16 R8; AER9). */
+export function closeAttritionRun(record: AttritionRecord): AttritionRecord {
+  const front = record.run?.front;
+  return { ...record, run: null, done: ATTRITION_ONCE_PER_FRONT && front ? [...new Set([...record.done, front])] : record.done };
 }
