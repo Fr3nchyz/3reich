@@ -5,7 +5,7 @@ import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import { declarationCost, minorDeclarationProblem } from "./minors-declare";
-import { isDefenseless } from "./minors-rules";
+import { isDefenseless } from "./minors-ids";
 import type { Combatant, GameState, MinorCountry, Nation, PowerId, Side } from "./types";
 import { winterAfterDeclaration } from "./winter-record";
 
