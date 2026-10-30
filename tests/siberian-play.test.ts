@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
-import { chooseAction } from "../src/ai";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { SIBERIAN_TAKE_ALL } from "../src/ai/siberian";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
 import type { GameEvent } from "../src/engine/action-types";
@@ -44,7 +44,7 @@ function probing(seen: Seen): Choose {
       expect(legal[legal.length - 1]).toEqual({ type: "END_STEP", side: "allies", step: "8a" });
       expect(legal.filter((a) => a.type !== "SIBERIAN_TRANSFER").length, "the way on is the only other action").toBe(1);
     }
-    const decision = chooseAction(ctx, state, cfg);
+    const decision = chooseWithoutRedeploying(ctx, state, cfg);
     expect(decision, "the computer always has an action").not.toBeNull();
     return decision;
   };

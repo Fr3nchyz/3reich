@@ -8,6 +8,7 @@ import { citiesNamedHeldByAxis } from "../src/engine/soviet-income";
 import { SUPPLY_EFFECTS_ENABLED } from "../src/engine/supply-effects";
 import type { GameState } from "../src/engine/types";
 import { runGame } from "../scripts/selfplay/runner";
+import { chooseWithoutRedeploying } from "./helpers-redeploy";
 import { SCENARIOS, type ScenarioKey } from "../scripts/selfplay/scenarios";
 
 // Ticket 15-5 (conquered income) moved the games: 1939 seed 1 now takes both cities (seed 8 took only Moscow).
@@ -18,7 +19,7 @@ interface Step { index: number; before: GameState; after: GameState; events: Gam
 
 /** Replays a recorded game, keeping the state before and after each action that wrote one of the events we look at. */
 function replay(scenario: ScenarioKey, seed: number): { steps: Step[]; final: GameState; ended: string } {
-  const run = runGame({ scenario, seed, turns: "end", verify: false });
+  const run = runGame({ scenario, seed, turns: "end", verify: false }, { choose: chooseWithoutRedeploying });
   expect(run.anomalies).toEqual([]);
   const ctx: GameContext = { map: MAP, scenario: SCENARIOS[scenario], supplyEffects: SUPPLY_EFFECTS_ENABLED };
   let state = newGame(SCENARIOS[scenario], seed);

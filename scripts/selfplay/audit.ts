@@ -6,7 +6,8 @@ import { turnKey } from "../../src/engine/victory";
 import { surrenderOffer } from "../../src/engine/soviet-record";
 import { winterInForce } from "../../src/engine/winter-record";
 import { sideOfOwner } from "../../src/engine/setup";
-import type { GameState } from "../../src/engine/types";
+import { srView } from "../../src/engine/sr-region";
+import type { GameState, Side } from "../../src/engine/types";
 import type { AnomalyKind } from "./types";
 
 /** The checks of spec 14 part E that read a state or the run of states and events: what must never be true after a conquest, a winter, a surrender or the end of a game. */
@@ -120,3 +121,11 @@ export function conquestList(state: GameState): string[] {
 
 /** A game played "to the end" that stopped without a result and without any other anomaly to explain it. */
 export const endedWithoutResult = (turns: number | "end", ended: "game-over" | "turn-limit" | "stopped", anomalyCount: number): boolean => turns === "end" && ended !== "game-over" && anomalyCount === 0;
+
+/** A redeployment never ends on, or next to, an enemy unit (Ref 11.72; spec 16 R20): the engine refuses it, so this is a check on the engine and on the computer's choice. */
+export function auditRedeployed(ctx: GameContext, events: readonly GameEvent[], after: GameState, side: Side): Finding[] {
+  const moved = events.filter((e) => e.type === "UNITS_REDEPLOYED");
+  if (moved.length === 0) return [];
+  const view = srView(ctx, after, side);
+  return moved.filter((e) => view.blocked.has(e.to)).map((e) => ({ kind: "redeploy-near-enemy", detail: `${e.units.join(", ")} of ${e.nation} were redeployed from ${e.from} to ${e.to}, on or next to an enemy unit` }));
+}
