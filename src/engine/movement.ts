@@ -1,3 +1,4 @@
+import { minorEntryProblem } from "./minors-intervene";
 import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
 import { angloFrenchStopProblem } from "./anglo-french";
 import type { GameContext } from "./context";
@@ -106,9 +107,13 @@ export function entryProblem(ctx: GameContext, state: GameState, owners: readonl
  * One test for ground movement and for air flight (spec 09 R4: "the same test, so one rule decides both").
  */
 export function neutralLandProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
+  const minorProblem = minorEntryProblem(ctx, state, owners, hex); // spec 15 R5, R8: a fighting minor's land, and a minor's units stay home
+  if (minorProblem) return minorProblem;
   if (!NEUTRAL_LAND_CLOSED || isNobodys(state, hex)) return null; // land nobody controls (a conquered Power's, spec 14 R4) is open to all, TODO(verify) V34
   const control = controllerOf(ctx, state, hex);
   const country = ctx.map.hexes[hex]?.country;
+  // Spec 15 R11: the opened Persian route is no longer closed neutral land, for either side.
+  if (country === "persia" && state.countries?.persia?.opened) return null;
   for (const o of owners) {
     if (control !== null ? control !== o && sideInWar(state, control) === null && !atWar(state, o, control) : isMinorCountry(country) && !atWar(state, o, country as ForceOwner)) {
       return `${hex} is neutral land: ${o} is not at war with it.`;

@@ -8,6 +8,7 @@ import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
 import { chooseAttrition } from "./attrition-play";
+import { choosePlacement } from "./place";
 import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
@@ -34,6 +35,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
+    : step === "2" ? choosePlacement(legal) // 2: the computer sets up an attacked minor's army as the engine suggests it (spec 15 R16, ticket 15-3b)
     : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
@@ -64,6 +66,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
   const action = legal.find((a) => isMoveOn(a) && (a.type === "END_PLAYER_TURN" || a.step === step));
   if (!action) return null;
   const why: Record<string, string> = {
+    "2": "No minor country's army is left to set up.",
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",

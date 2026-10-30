@@ -24,6 +24,7 @@ import { applyBuild, legalBuilds } from "./construction";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
+import { applyPlaceMinorForces, hasMinorPlaceWork, legalMinorPlaceActions } from "./minors-step";
 import { releaseKept } from "./conquest-kept";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameState } from "./types";
@@ -51,6 +52,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
+  if (step === "2") return legalMinorPlaceActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8a") return legalSiberian(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
@@ -77,6 +79,8 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
+  // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
+  if (step === "2" && hasMinorPlaceWork(ctx, state)) return stepActions(ctx, state, step);
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
   // An overstack at 6g or 9j holds the step too: it is eliminated before the game moves on (R15).
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return stepActions(ctx, state, step);
@@ -193,6 +197,13 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     }
     case "PLACE_EXPLOITERS":
       return atStep(state, "7h", "Armor moves into a Breakthrough hex", () => applyPlaceExploiters(ctx, state, action));
+    case "PLACE_MINOR_FORCES": {
+      const done = atStep(state, "2", "A minor country's army is set up", () => applyPlaceMinorForces(ctx, state, action));
+      if (!done.ok) return done;
+      // The step goes on by itself once no army is left to set up (C5), as after any action that used up a step's work.
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
+    }
     case "SELECT_FRONT_OPTION":
       return atStep(state, "3", "Front Options are chosen", () => applyFrontOption(ctx, state, action));
     case "SIBERIAN_TRANSFER":
@@ -228,6 +239,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };
   if ((step === "7h" || step === "7o") && combatOf(state).pending) return { ok: false, error: `An Exchange in step ${step} is waiting for its losses to be chosen.` };

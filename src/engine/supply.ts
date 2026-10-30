@@ -5,6 +5,7 @@ import type { HexId } from "./hex";
 import type { MapHex } from "./map";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
+import { minorFedByAnyGroup } from "./minors-intervene";
 import { seaReaches } from "./naval-supply";
 import { fortressSupplies, specialNets } from "./supply-sources";
 import { adjacentHexes, canCross, enemyZocFor, ZOC_POLICY, ZOC_UNIT_TYPES, zocSources, type ZocPolicy } from "./zoc";
@@ -95,6 +96,7 @@ function groupOfHex(ctx: GameContext, state: GameState, side: Side, hex: HexId, 
   const c = controllerOf(ctx, state, hex);
   return c === null ? "western" : groupOfOwner(side, c, policy);
 }
+
 
 /** Whether a capital hex counts: a Major Power's always; a minor country's while that minor fights on the side. */
 function capitalCounts(state: GameState, side: Side, country: string | undefined): boolean {
@@ -245,7 +247,7 @@ export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, po
   network.reachFrom = (from) => searched.get(from.join(",")) ?? searched.set(from.join(","), reach(ctx, state, side, from, policy, obstacles)).get(from.join(","))!;
   for (const g of ["axis", "western", "soviet"] as const) {
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
-    if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => groupOfOwner(side, o, policy) === g));
+    if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => groupOfOwner(side, o, policy) === g || minorFedByAnyGroup(o)));
   }
   for (const net of specialNets(ctx, state, side)) network.reaches.push(lazyReach("net", net.sources, (o) => net.serves({ owner: o })));
   network.reaches.push(...seaReaches(ctx, state, network));
@@ -268,8 +270,9 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
     return land ? { ...land, via: "sea", sea: { fleets: [...r.sea!.fleets], from: r.sea!.from, to: land.source } } : null;
   };
   for (const u of checkedUnits(ctx, state, side)) {
-    const main = network.reaches.find((r) => r.kind === "main" && r.serves(u.owner));
-    let line = main ? lineIn(u, main.next) : null;
+    let line: SupplyLine | null = null;
+    // A defending minor's unit is served by every source group of its side (R8: any Major Power at war with its attacker); any other owner by its own group only.
+    for (const r of network.reaches) if (!line && r.kind === "main" && r.serves(u.owner)) line = lineIn(u, r.next);
     if (!line && exploitedSupplied(state, u.id)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" }; // spec 16 R14
     if (!line && fortressSupplies(ctx, state, side, u)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" };
     for (const r of network.reaches) if (!line && r.kind === "net" && r.serves(u.owner)) line = lineIn(u, r.next);
