@@ -26,6 +26,20 @@ flowchart LR
    - findings go back in one `@codex` comment on the PR listing every FIX FIRST item. Small fixes (a doc row, a test name) Claude may push itself as new commits.
 5. **Merge.** The owner told the project manager to "merge it once CI is green" (recorded 2026-10-23; this is the owner's explicit exception to CLAUDE.md's "ask first before merging", and it covers Codex PRs): reviewer says MERGE, gates pass and CI is green on the exact head sha; Claude marks the PR ready and squash merges with the expected head sha. Then the PLAN row moves to Done and the issue closes.
 
+## Landing checks
+
+From a clean worktree on the PR branch, run `scripts/land.sh <PR> [EXPECTED_BRANCH]`.
+It prints the current branch, refuses local changes or a mismatched optional branch,
+and checks that the PR is open when `gh auth status` succeeds. Without a token it
+states that the closed-PR check was skipped and continues. It runs lint, typecheck,
+coverage and build, plus the existing compare-games command only for an engine,
+computer-opponent or data diff against `origin/main` (which must exist locally).
+The summary includes test counts, comparison output, shared engine and stability-test
+changes, and newly added `TODO(verify)` ids missing from either required registry.
+It prints paths to a saved summary and full gate logs, and exits nonzero if a gate
+fails. The manager still reviews concerns, obtains the independent reviewer verdict,
+checks CI on the exact head and handles publishing; the helper never publishes.
+
 ## Which tickets go to Codex
 
 Good fits: a ticket whose spec settles every rule; pure functions and constants with tests (resolvers, rule queries, fact tables); a contained rule in a few named files; tests or tooling that copy an existing pattern; docs tables.
