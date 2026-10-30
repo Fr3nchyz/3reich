@@ -2,7 +2,7 @@ import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
 import { angloFrenchStopProblem } from "./anglo-french";
 import type { GameContext } from "./context";
 import { type HexId } from "./hex";
-import { stackingProblem } from "./placement";
+import { angloFrenchSharingProblem, stackingProblem } from "./placement";
 import { sideOfOwner } from "./setup";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { LandTerrain } from "./terrain";
@@ -124,13 +124,14 @@ export const entryCost = (ctx: GameContext, hex: HexId): number => TERRAIN_MOVE_
  * Why these units, standing together, may not all end in `to` (stacking and the Anglo-French rule of Ref 5.0, 26.0, as
  * in setup), or null. They are added one at a time, so each sees the ones before it; units already there count (`STACKING_CHECKED_ONE_AT_A_TIME`, TODO(verify)).
  */
-export function endProblem(ctx: GameContext, state: GameState, units: readonly Unit[], to: HexId): string | null {
+export function endProblem(ctx: GameContext, state: GameState, units: readonly Unit[], to: HexId, overstackHex?: HexId): string | null {
   if (!MIXED_NATIONS_MOVE_TOGETHER && new Set(units.map((u) => u.owner)).size > 1) return "Units of different nations do not move as one group.";
+  // Spec 16 R15: only the named Breakthrough hex may ignore the stacking limit.
   // Stacking looks only at the units in the hex, so the rest are left out of the state it is asked about.
   let s = { ...state, units: Object.fromEntries(occupants(state, to).map((u) => [u.id, u])) };
   for (const u of units) {
     const spec = { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) };
-    const problem = angloFrenchStopProblem(ctx, state, u.owner, to) ?? stackingProblem(ctx, s, u.owner, spec, to);
+    const problem = angloFrenchStopProblem(ctx, state, u.owner, to) ?? (to === overstackHex ? angloFrenchSharingProblem(state, u.owner, occupants(s, to)) : stackingProblem(ctx, s, u.owner, spec, to));
     if (problem) return problem;
     s = { ...s, units: { ...s.units, [u.id]: { ...u, at: to } } };
   }
