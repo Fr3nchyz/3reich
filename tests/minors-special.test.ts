@@ -32,6 +32,21 @@ describe("spec 15 R11: opening Persia", () => {
     expect(openPersia(recorded, "britain").countries?.persia).toEqual({ ...recorded.countries.persia, opened: true });
   });
 
+  it("R11: opening preserves declaration records and does not alias the input control or country containers", () => {
+    const declared = okOf(applyDeclaration(CTX, at6f([]), { type: "DECLARE_WAR", by: "germany", on: "persia" })).state;
+    const before = structuredClone(declared);
+    const opened = openPersia(declared, "france");
+    expect(opened.countries?.persia).toEqual({ ...declared.countries?.persia, opened: true });
+    expect(opened.wars).toEqual(declared.wars);
+    expect(opened.nations).toEqual(declared.nations);
+    expect(opened.control).not.toBe(declared.control);
+    expect(opened.countries).not.toBe(declared.countries);
+    expect(opened.countries?.persia).not.toBe(declared.countries?.persia);
+    expect(declared).toEqual(before);
+    // R11 / MC14: an ordinary declaration already permits entry before the route opens.
+    for (const hex of persianHexes) expect(neutralLandProblem(CTX, declared, ["germany"], hex.id)).toBeNull();
+  });
+
   it("R11: a second opening returns the identical state even with another payer or changed control", () => {
     const opened = openPersia(at6f([]), "britain");
     const changed = { ...opened, control: { ...opened.control, [persianHexes[0]!.id]: "germany" as const } };
