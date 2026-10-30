@@ -140,6 +140,8 @@ Added 2026-10-17 from `docs/specs/15-minor-countries.md` (rows MC1 to MC22; no i
 
 Ticket 15-1a: `minors-record.ts` contains only spec C1 record types, fresh opening data for 1939/Campaign, owner names and a derived-control fallback; no callers or new assumptions. MC9/MC10/MC19 and other rule hooks remain deferred; no new verification ids.
 
+Ticket 15-1b: wires 15-1a in. `ForceOwner` now includes every minor country, `GameState.countries` is optional and set for the 1939 scenario and the Campaign (Poland attacked), the four sleeping allies are in their `minorAllies`, and `control.ts` reads the derived control and the side of an attacked or helped minor. Only existing id MC19 applies (a helped minor takes the first helper's side); no new ids.
+
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
 |---|---|---|---|---|
 | MC1 | spec 15 R3 | Placed minor army | Stacking limits (2 ground units a hex), air on a base and fleets in a port apply to a minor army set up at step 2; the manual says only: inside the borders, a unit in the capital. | Listed ("Minor countries open items"). |

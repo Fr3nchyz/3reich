@@ -72,7 +72,7 @@ export function minorsFalling(ctx: GameContext, state: GameState, side: GameStat
     if (capital === null || isConquered(state, country)) continue;
     const holder = controllerOf(ctx, state, capital);
     if (holder === null || holder === (country as ForceOwner) || holder === startingControl(ctx).get(capital) || sideInWar(state, holder) !== side) continue;
-    if (fightsAs(state, holder).some((o) => areEnemies(state, o, country as ForceOwner))) out.push({ country, conqueror: holder });
+    if (fightsAs(state, holder).some((o) => areEnemies(state, o, country))) out.push({ country, conqueror: holder });
   }
   return out;
 }
