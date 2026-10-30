@@ -627,3 +627,6 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 - TODO(verify) MC23: `MC23_UNPLACEABLE_ARMY_PASSES = true`; an army that cannot be placed passes the step rather than stall the game.
 - No UI placement panel (15-15): a human can only be the placer through a watched game or later tickets; the computer places for a human declarer.
 
+- `tests/minors-step.test.ts` (14 tests): waiting and passing, side to act (including the 7h chooser), the single listed action, refusals, two armies in one turn, conquered/neutral/defenseless, MC23, the computer's answer for either side, replay, and a declaration flow. `toEndOfTurn` (tests/helpers.ts) now plays a waiting army, and `turn-steps.test.ts` lists "2" among the gated steps.
+- Thirteen restored mutation checks, each failing the focused suites: step 2 dropped from `IMPLEMENTED_STEPS`; `hasWork` always false; always true; `sideToAct` returning the active side; `sideToAct` reading the wrong step; no side check; no minor check; `legalActions` not holding the step; `END_STEP` allowed with an army waiting; action accepted at step 1; event with no units; computer chooser removed; MC23 off.
+- compare-games: 22 identical, 0 differ. No fixed-seed hash or recording changes.

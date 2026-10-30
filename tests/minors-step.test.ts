@@ -114,7 +114,7 @@ describe("step 2: an attacked minor's army (spec 15 R3, C5)", () => {
   it("MC23: an army with no legal placement does not stall the game", () => {
     expect(MC23_UNPLACEABLE_ARMY_PASSES).toBe(true);
     const full = at1({ belgium: attacked("allies") });
-    const blocked = { ...full, units: { ...full.units, ...Object.fromEntries(Object.values(CTX.map.hexes).filter((h) => h.country === "belgium")
+    const blocked: GameState = { ...full, units: { ...full.units, ...Object.fromEntries(Object.values(CTX.map.hexes).filter((h) => h.country === "belgium")
       .flatMap((h, i) => [0, 1, 2].map((k) => [`x${i}${k}`, { id: `x${i}${k}`, owner: "germany", type: "infantry", strength: 3, at: h.id, movement: 3 }]))) } };
     expect(step(settle(CTX, { ...blocked, position: { part: "player-turn", turn: 1, step: "2" } }).state)).not.toBe("2");
   });
