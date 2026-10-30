@@ -4,6 +4,7 @@ import { sideToAct } from "../src/engine/actor";
 import { attritionOf } from "../src/engine/attrition-record";
 import { chooseAction } from "../src/ai/choose";
 import { combatOf, turnKey } from "../src/engine/combat-record";
+import { IMPLEMENTED_STEPS } from "../src/engine/sequence";
 import { settle } from "../src/engine/turn";
 import { replayRecord } from "../src/engine/old-records";
 import { buttonLabels } from "../src/ui/statusView";
@@ -117,6 +118,22 @@ describe("the computer answers every stage (Part E, ticket 16-8)", () => {
 });
 
 describe("loose ends of the wiring", () => {
+  it("7a and 7p are implemented steps, so the engine stops there", () => {
+    expect(IMPLEMENTED_STEPS.has("7a") && IMPLEMENTED_STEPS.has("7p")).toBe(true);
+  });
+  it("the default losses give up a Replacement before a weaker unit (R4, Q4)", () => {
+    const strong = board([counter("g", "germany", "infantry", 15, "M32"), counter("f", "france", "infantry", 2, "M33"), counter("r", "france", "replacement", 3, "M33")], undefined,
+      { activeSide: "axis", control: { M33: "france" }, frontOptions: { eastern: { option: "attrition" } }, position: { part: "player-turn", turn: 1, step: "7p" } });
+    for (let seed = 1; seed < 400; seed++) {
+      const r = applyAction(CTX, { ...strong, rngState: seed }, resolve(strong));
+      const run = r.ok ? attritionOf(r.state, r.state.attrition).run : null;
+      if (run?.stage === "losses" && run.mustLose === 1) {
+        expect(legalActions(CTX, (r as { state: GameState }).state)[0]).toMatchObject({ type: "CHOOSE_ATTRITION_LOSSES", units: ["r"] });
+        return;
+      }
+    }
+    throw new Error("no seed");
+  });
   it("a run whose losses empty the only selectable hex closes by itself, the Front done (C8)", () => {
     const s = rolled("7p", (r) => r.stage === "losses" && r.mustLose === 2 && r.hexesLeft === 1);
     const after = ok(s, legalActions(CTX, s)[0]!);
