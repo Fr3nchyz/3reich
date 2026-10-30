@@ -4,7 +4,7 @@ import { attackerPool } from "./attack-rules";
 import { combatOf, turnKey, type AdvanceChance } from "./combat-record";
 import type { GameContext } from "./context";
 import { enterHexes } from "./control";
-import { exploitOf, exploiterIds, type BreakthroughGroup } from "./exploit-record";
+import { exploitOf, exploiterIds, type BreakthroughGroup, type ExploitAdvanceChance } from "./exploit-record";
 import { adjacent, hex, type HexId } from "./hex";
 import { movesOf } from "./move-record";
 import { sideOfOwner } from "./setup";
@@ -26,8 +26,8 @@ import type { GameState, Unit } from "./types";
 
 type PlaceAction = Extract<Action, { type: "PLACE_EXPLOITERS" }>;
 
-/** Whether an advance into the chance's hex makes it a Breakthrough hex: the battle's attackers included armor (R10). An old chance has no mark and makes none. */
-export const breakthroughAfter = (chance: AdvanceChance): boolean => chance.armor === true;
+/** Whether an advance into the chance's hex makes it a Breakthrough hex: the battle's attackers included armor (R10). An old chance has no mark and makes none. Exploitation advances never make one (spec 16 R13). */
+export const breakthroughAfter = (chance: ExploitAdvanceChance): boolean => chance.armor === true && chance.exploit === undefined;
 
 /** Whether `at` is one of the attackers' hexes or next to one (R11, AER12). */
 const nearAttackers = (from: readonly HexId[], at: HexId): boolean => from.includes(at) || from.some((f) => adjacent(hex(f), hex(at)));

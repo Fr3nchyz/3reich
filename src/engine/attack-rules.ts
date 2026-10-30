@@ -1,3 +1,4 @@
+import { frontOptionOf } from "./frontoptions";
 import type { GameContext } from "./context";
 import { defenseBasis, type DefenseBasis } from "./terrain";
 import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
@@ -58,8 +59,11 @@ export const ALONE_NONGROUND_DESTROYED = true;
  */
 export const isSupplied = (_ctx: GameContext, _state: GameState, _unit: Unit): boolean => true;
 
-/** Hook for front options: whether the side may attack on that Front. TODO(verify): Ref 11.2 Offensive Option, built elsewhere; every Front allows it. */
-export const frontAllowsAttack = (_ctx: GameContext, _state: GameState, _side: Side, _front: Front): boolean => true;
+/** Spec 16 R13: Exploitation needs the target Front's Offensive Option; the ordinary hook remains permissive. */
+export const frontAllowsAttack = (_ctx: GameContext, state: GameState, _side: Side, front: Front, exploit = false): boolean => !exploit || frontOptionOf(state, front) === "offensive"; // spec 16 R13: ordinary play retains its existing hook.
+
+/** TODO(verify) AER17, spec 16 R13: Exploitation bypasses the ordinary attacked-hex cap. */
+export const attackHexAllowed = (targets: readonly HexId[], target: HexId, exploit = false): boolean => exploit || !ONE_ATTACK_PER_HEX || !targets.includes(target);
 
 const POWERS: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
 
