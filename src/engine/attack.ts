@@ -1,7 +1,7 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { angloFrenchStopProblem } from "./anglo-french";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
-import { ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
+import { attackHexAllowed, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { breakthroughAfter, legalPlacements, openBreakthrough } from "./breakthrough";
 import { movesOf } from "./move-record";
@@ -38,7 +38,7 @@ export function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit
   const pool = attackerPool(ctx, state, state.activeSide, [...rec.attacked, ...exploiterIds(state)]); // exploiting armor takes no part in ordinary combat (spec 16 AER13)
   const targets = new Set(pool.flatMap((u) => neighborIds(ctx, u.at)));
   for (const t of [...targets].sort()) {
-    if (ONE_ATTACK_PER_HEX && rec.targets.includes(t)) continue;
+    if (!attackHexAllowed(rec.targets, t)) continue;
     const front = ctx.map.hexes[t]!.front;
     if (!frontAllowsAttack(ctx, state, state.activeSide, front)) continue;
     const from = pool.filter((u) => crossable(ctx, u.at, t));
@@ -135,7 +135,7 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (bad) return { ok: false, error: `${bad.id} cannot attack: it must be a ground unit of the ${state.activeSide} side in play that has not attacked this turn.` };
   const far = units.find((u) => !crossable(ctx, u.at, action.target));
   if (far) return { ok: false, error: `${far.id} at ${far.at} is not next to ${action.target} across a hexside ground units may attack over.` };
-  if (ONE_ATTACK_PER_HEX && rec.targets.includes(action.target)) return { ok: false, error: `${action.target} has already been attacked this turn.` };
+  if (!attackHexAllowed(rec.targets, action.target)) return { ok: false, error: `${action.target} has already been attacked this turn.` };
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
   const defenders = defendersAt(state, units, action.target);
   if (defenders.length === 0) {
