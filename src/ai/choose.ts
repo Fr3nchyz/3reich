@@ -3,6 +3,7 @@ import type { GameContext } from "../engine/context";
 import { FIRST_STEP, LAST_STEP } from "../engine/sequence";
 import type { GameState } from "../engine/types";
 import { chooseAdvance, chooseAttack } from "./assault";
+import { chooseExploitMove, choosePlace } from "./exploit";
 import { chooseBuild } from "./build";
 import { chooseDeclaration } from "./declare";
 import { chooseLosses } from "./doomed";
@@ -43,8 +44,9 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
     : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
     : step === "7a" || step === "7p" ? chooseAttrition(ctx, state, legal, step) // 7p: resolves every Front with its participants; at either step, answers a run's stages (spec 16 Part E, ticket 16-8)
-    : step === "7o" ? chooseLosses(ctx, state, legal, cfg) // 7o: the computer places no exploiters (ticket 16-13), so it only answers the Exchange a human's Exploitation battle leaves it to choose
-    : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
+    : step === "7j" ? chooseExploitMove(ctx, state, cfg) // 7j: the exploiters move one at a time (ticket 16-13, exploit.ts)
+    : step === "7o" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7o: the Exploitation attacks, losses and advances go through the 7h chooser (ticket 16-13)
+    : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? choosePlace(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7h: after the advance it places its armor in the Breakthrough hex before the next attack (ticket 16-13)
     : undefined;
   return picked ?? endTheStep(legal, step);
 }
@@ -66,8 +68,8 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
-    "7j": "The computer does not exploit yet.",
-    "7o": "The computer does not exploit yet.",
+    "7j": "Every exploiter has moved.",
+    "7o": "No Exploitation attack is worth making at the odds on offer.",
     "7h": "No ground attack is worth making at the odds on offer.",
     "7a": "The computer resolves its Attrition at step 7p.",
     "7p": "No Attrition to resolve.",
