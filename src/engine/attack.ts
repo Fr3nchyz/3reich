@@ -9,7 +9,7 @@ import { combatOf } from "./combat-record";
 import { exploitOf, exploiterIds } from "./exploit-record";
 import { exploitAdvanceProblem, markExploitAttackers } from "./exploit-action";
 import { enterHexes } from "./control";
-import { noteMinorEntry } from "./minors-declare";
+import { noteMinorEntry } from "./minors-duty";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { stackingProblem } from "./placement";

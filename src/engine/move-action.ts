@@ -2,7 +2,7 @@ import type { Action, ActionResult, GameEvent } from "./action-types";
 import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
-import { noteMinorEntry } from "./minors-declare";
+import { noteMinorEntry } from "./minors-duty";
 import { movesOf } from "./move-record";
 import { endProblem, movableProblem, movableUnits, movePathProblem, reachableHexes } from "./movement";
 import type { GameState, Unit } from "./types";

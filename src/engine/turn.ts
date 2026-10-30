@@ -2,7 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
-import { checkMinorDuties } from "./minors-declare";
+import { checkMinorDuties } from "./minors-duty";
 import { releaseKept } from "./conquest-kept";
 import { fortressChanges, refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";

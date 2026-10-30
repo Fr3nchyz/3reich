@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
-import { MC24_REVOKED_BRPS_LOST, MC3_ONLY_DECLARERS_UNITS, checkMinorDuties, minorDeclarationProblem, noteMinorEntry } from "../src/engine/minors-declare";
+import { minorDeclarationProblem } from "../src/engine/minors-declare";
+import { MC24_REVOKED_BRPS_LOST, MC3_ONLY_DECLARERS_UNITS, checkMinorDuties, noteMinorEntry } from "../src/engine/minors-duty";
 import { applyMinorPlacement, suggestMinorPlacement } from "../src/engine/minors-place";
 import { settle } from "../src/engine/turn";
 import { adjacentHexes } from "../src/engine/zoc";
