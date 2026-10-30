@@ -596,6 +596,18 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 - Human play only: the computer does not yet declare on minors. No computer, UI, action, turn, shared state type, hash or recording changes.
 - `tests/minors-declare.test.ts`: neutral/fighting/conquered states, sleeping/active allies, scenario bans, Eastern Europe dates, recorded Garrison bans/open Persia, ordinary/35 costs, spending, immutable records and both placing sides, defenseless minors. Ten mutation checks cover active status, scenario ban, fighting status, war pairs, conquest, date, cost, placement, duty and spending; each fails the focused suite and is restored.
 
+## As built, 15-3a
+
+- `minors-place.ts` provides pure, unwired R3 placement helpers. `legalMinorPlacements` returns current hex choices and counts per chart counter kind; these are not independent complete-army combinations. `applyMinorPlacement` checks the exact chart, combined stacking, borders, bases and a ground garrison in the capital, then creates counters with chart movement and clears the existing `toPlace` flag immutably. Other record fields, pools and turn state remain intact. Rejected placements return an error without changing the input.
+- TODO(verify) MC1: `MC1_NORMAL_PLACEMENT_LIMITS = true` reuses normal setup base and stacking checks; otherwise any home hex is allowed. No new verification ids.
+- The suggested order is R16's: capital first, then hexes with the Objective feature, then hexes nearest the attacker's units (distance to the closest unit of the attacking power; no distance when it has none on the map), then the lowest hex id, in chart counter order. Backtracking finds a complete legal army; no fitting placement returns null. Defenseless minors have no placement. Both placing sides use the same geometry; action authorization remains 15-3b.
+- No action, sequence, side-to-act, events, computer or UI wiring. Expected effect on computer games: none. Existing hashes and recordings are unchanged.
+- `tests/minors-place.test.ts` covers every armed chart minor on both sides, determinism/order, chart types/counts/strengths, borders, capital, combined/existing stacking, air bases, ports and capacity, immutable counters/records, duplicate placement, conquered/neutral/missing records, defenseless minors and an army with no room.
+- Ten restored mutation checks: foreign borders, disabled stacking, disabled bases, altered chart count, ignored strength, omitted capital requirement, ignored pending flag, ignored conquest, repeated unit ids and retained pending flag. Each is detected by the focused suite. Removing only the redundant total-count guard is equivalent while per-kind counts remain checked; the altered-count mutation tests the effective constraint.
+
+- 15-3a validation follow-up: capital lookup tolerates absent map ids; suggestion rejects a blocked capital before searching. Tests also preserve existing units, pools, unrelated records and helpers across placement and prove late rejection is atomic. Denmark's direct fixture includes both chart counters (one infantry and one air).
+
+- 15-3a review follow-up: regression coverage rejects unknown map destinations atomically and confirms suggestions are independent of map insertion order. No engine behavior change.
 ## As built, 15-12
 
 - R11 (Ref 24.0; Ops 5.41a): `minors-special.ts` exports the pure `openPersia(state, by)` hook. It assigns every Persian hex to the paying Allied power, records `opened: true` in `GameState.countries` using the existing `CountryRecord` shape, and preserves other state. A second call returns the same state, including after control changes. Payment and payer eligibility belong to the future Lend-Lease caller; no engine caller is added.
