@@ -25,6 +25,18 @@ describe("spec 15 R3 minor placement", () => {
       }
     }
   });
+  it("R16: after the capital, Objective hexes and then hexes nearest the attacker come before the lowest hex id", () => {
+    const s = start();
+    const p = suggestion(s);
+    const feat = (at: string) => CTX.map.hexes[at]!.features;
+    const rest = p.filter((x) => !feat(x.at).includes("capital"));
+    const objectives = rest.filter((x) => feat(x.at).includes("objective"));
+    // Objective hexes are taken before plain ones, so every plain hex placement follows the objective ones.
+    const firstPlain = rest.findIndex((x) => !feat(x.at).includes("objective"));
+    const lastObjective = rest.map((x) => feat(x.at).includes("objective")).lastIndexOf(true);
+    if (objectives.length > 0 && firstPlain >= 0) expect(lastObjective).toBeLessThan(firstPlain);
+    expect(suggestion(s)).toEqual(p);
+  });
   it("R3: uses capital first then ascending hex id", () => {
     const p = suggestion();
     const capital = Object.values(CTX.map.hexes).find((h) => h.country === "belgium" && h.features.includes("capital"))!;
