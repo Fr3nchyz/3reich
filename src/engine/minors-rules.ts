@@ -3,17 +3,13 @@ import type { ColonyId } from "./conquest-record";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { AIR_BASE_FEATURES } from "./terrain";
+import { AXIS_MINOR_ALLIES, MINOR_COUNTRIES } from "./minors-ids";
 import type { MinorCountry } from "./types";
 
-/** Spec 15 R1, Ref 14.0: exactly the nineteen countries on the Minor Country Forces chart. */
-export const MINOR_COUNTRIES: readonly MinorCountry[] = [
-  "arabia", "belgium", "bulgaria", "denmark", "finland", "greece", "hungary", "ireland", "luxembourg", "netherlands",
-  "norway", "persia", "poland", "portugal", "rumania", "spain", "sweden", "turkey", "yugoslavia",
-];
+export { AXIS_MINOR_ALLIES, MINOR_COUNTRIES };
+
 /** No army on the chart (spec 15 R1/R11; Ref 14.0, Ops 5.41a). */
 export const DEFENSELESS_MINORS: readonly MinorCountry[] = ["arabia", "ireland", "luxembourg", "persia", "portugal"];
-/** Spec 15 R9, Ref 17.0–17.3: Germany's four possible Minor-Allies. */
-export const AXIS_MINOR_ALLIES = ["finland", "hungary", "rumania", "bulgaria"] as const;
 /** Spec 15 R9, MC9: the Axis step 2 of Summer 1941; these are facts only, not an activation hook. */
 export const AXIS_MINOR_ALLY_WAKE_TURN = { year: 1941, season: "summer", side: "axis", step: "2" } as const;
 /** Spec 15 R7/R13: these colonies require all their cities, rather than a minor's capital. */

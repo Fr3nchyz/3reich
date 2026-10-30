@@ -128,11 +128,11 @@ describe("the nations after the fall (R5 points 4 and 6)", () => {
     expect(capitalState(CTX, r.state, "france")).toBe("conquered");
   });
   it("Vichy France is an inactive German Minor-Ally, added once; the Vichy and Free French have an empty Force Pool; France's own pool is gone", () => {
-    expect(r.state.minorAllies).toEqual([{ owner: "vichy-france", of: "germany", active: false }]);
+    expect(r.state.minorAllies.filter((m) => m.owner === "vichy-france")).toEqual([{ owner: "vichy-france", of: "germany", active: false }]); // the four sleeping allies of spec 15 C1 are also in the list
     expect(r.state.pools["vichy-france"]).toEqual({ forcePool: [], allowableBuilds: [] });
     expect(r.state.pools["free-france"]).toEqual({ forcePool: [], allowableBuilds: [] });
     expect(r.state.pools.france).toBeUndefined();
-    expect(franceMark(r.state).minorAllies).toHaveLength(1); // not added twice
+    expect(franceMark(r.state).minorAllies.filter((m) => m.owner === "vichy-france")).toHaveLength(1); // not added twice
   });
   it("Germany gets half of 85 in a later Year Start Sequence while it holds Paris, and Vichy France pays it nothing; France gets nothing", () => {
     const next = { ...r.state, year: 1941, season: "spring" as const };

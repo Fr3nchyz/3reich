@@ -1,3 +1,4 @@
+import { initialMinorRecords } from "./minors-record";
 import { atWar } from "./war";
 import type { ForceOwner, ForcePools, GameState, GameTurn, NationSetup, PowerId, Scenario, Season, Side, StrategicWarfare } from "./types";
 
@@ -62,6 +63,8 @@ export function newGame(scenario: Scenario, seed: number): GameState {
     wars: scenario.warsAtStart.map(([a, b]) => [a, b]),
     strategicWarfare,
     minorAllies: scenario.minorAllies.map((m) => ({ ...m })),
+    // Spec 15 C1: only the two opening scenarios start with minor-country records (Poland attacked); 1942 and 1944 start with none.
+    ...(scenario.id === "1939" || scenario.id === "campaign" ? { countries: initialMinorRecords(scenario.id).countries } : {}),
     setup: { order: [...scenario.deploymentOrder], index: 0 },
     units: {},
     nextUnitId: 1,
