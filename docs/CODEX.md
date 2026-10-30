@@ -28,6 +28,20 @@ flowchart LR
 
 CI posts the whole-game comparison summary as an updated PR comment for engine, computer-opponent or data changes; fork PRs receive the job summary only.
 
+## Landing checks
+
+From a clean worktree on the PR branch, run `scripts/land.sh <PR> [EXPECTED_BRANCH]`.
+It prints the current branch, refuses local changes or a mismatched optional branch,
+and checks that the PR is open when `gh auth status` succeeds. Without a token it
+states that the closed-PR check was skipped and continues. It runs lint, typecheck,
+coverage and build, plus the existing compare-games command only for an engine,
+computer-opponent or data diff against `origin/main` (which must exist locally).
+The summary includes test counts, comparison output, shared engine and stability-test
+changes, and newly added `TODO(verify)` ids missing from either required registry.
+It prints paths to a saved summary and full gate logs, and exits nonzero if a gate
+fails. The manager still reviews concerns, obtains the independent reviewer verdict,
+checks CI on the exact head and handles publishing; the helper never publishes.
+
 ## Which tickets go to Codex
 
 Good fits: a ticket whose spec settles every rule; pure functions and constants with tests (resolvers, rule queries, fact tables); a contained rule in a few named files; tests or tooling that copy an existing pattern; docs tables.
