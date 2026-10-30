@@ -134,4 +134,16 @@ describe("spec 15 R3 minor placement", () => {
     expect(result.state.countries!.belgium!.helpers).toEqual(["britain"]);
     expect(s).toEqual(before);
   });
+  it("R3/MC1: unknown destinations reject atomically and map insertion order does not change suggestions", () => {
+    const s = start("sweden");
+    const before = structuredClone(s);
+    const p = suggestion(s, "sweden");
+    const reversed = { ...CTX, map: { ...CTX.map,
+      hexes: Object.fromEntries(Object.entries(CTX.map.hexes).reverse()),
+    } };
+    expect(suggestMinorPlacement(reversed, s, "sweden")).toEqual(p);
+    const result = apply(p.map((x, i) => i === p.length - 1 ? { ...x, at: "missing-hex" } : x), s, "sweden");
+    expect(result).toEqual({ ok: false, error: "Illegal destination, base, or stacking." });
+    expect(s).toEqual(before);
+  });
 });

@@ -600,3 +600,5 @@ Nothing built yet. Each ticket adds its own section here, as in spec 09 ("As bui
 - Ten restored mutation checks: foreign borders, disabled stacking, disabled bases, altered chart count, ignored strength, omitted capital requirement, ignored pending flag, ignored conquest, repeated unit ids and retained pending flag. Each is detected by the focused suite. Removing only the redundant total-count guard is equivalent while per-kind counts remain checked; the altered-count mutation tests the effective constraint.
 
 - 15-3a validation follow-up: capital lookup tolerates absent map ids; suggestion rejects a blocked capital before searching. Tests also preserve existing units, pools, unrelated records and helpers across placement and prove late rejection is atomic. Denmark's direct fixture includes both chart counters (one infantry and one air).
+
+- 15-3a review follow-up: regression coverage rejects unknown map destinations atomically and confirms suggestions are independent of map insertion order. No engine behavior change.
