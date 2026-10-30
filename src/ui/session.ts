@@ -172,6 +172,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${POWER_NAMES[e.from]} grants ${e.amount} BRPs to ${POWER_NAMES[e.to]}.`;
     case "BRPS_CHANGED":
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
+    case "MINOR_FORCES_PLACED":
+      return `${sideName(e.side)} set up the army of ${cap(e.minor)} (${e.units.length} counters).`;
     case "WAR_DECLARED":
       return `${POWER_NAMES[e.by]} declares war on ${nameOf(e.on)} (${e.cost} BRPs).`;
     case "UNITS_SWEPT":
