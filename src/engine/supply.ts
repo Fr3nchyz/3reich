@@ -1,3 +1,4 @@
+import { exploitedSupplied } from "./exploit-record";
 import { controllerOf, controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -269,6 +270,7 @@ export function supplyStatus(ctx: GameContext, state: GameState, side: Side, pol
   for (const u of checkedUnits(ctx, state, side)) {
     const main = network.reaches.find((r) => r.kind === "main" && r.serves(u.owner));
     let line = main ? lineIn(u, main.next) : null;
+    if (!line && exploitedSupplied(state, u.id)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" }; // spec 16 R14
     if (!line && fortressSupplies(ctx, state, side, u)) line = { unitId: u.id, source: u.at, path: [u.at], via: "land" };
     for (const r of network.reaches) if (!line && r.kind === "net" && r.serves(u.owner)) line = lineIn(u, r.next);
     for (const r of network.reaches) if (!line && r.kind === "sea") line = seaLineIn(u, r);

@@ -1,6 +1,7 @@
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
+import type { AttritionEvent } from "./attrition-record";
 import type { Conquest } from "./conquest-record";
 import type { SovietCity } from "./soviet-record";
 import type { GameResult } from "./victory-record";
@@ -63,6 +64,18 @@ export type Action =
   | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
   /** Step 9e: ground units and Replacements are redeployed to a hex of their region, one use of their nation's allowance each (Ref 11.72; spec 16 R18 to R20). `escort` (a Sea Escort fleet) is ticket 16-21 and is refused until then. */
   | { type: "SR_UNITS"; side: Side; units: string[]; to: HexId; escort?: string }
+  /** Step 7a or 7p: the Phasing side resolves Attrition on a Front where its Option is Attrition, with all the eligible participants or a subset of them (Ref 12.4; spec 16 R8). */
+  | { type: "RESOLVE_ATTRITION"; side: Side; front: Front; units?: string[] }
+  /** Step 7a or 7p: the other side chooses the units it loses to the Attrition roll (spec 16 R4). */
+  | { type: "CHOOSE_ATTRITION_LOSSES"; side: Side; units: string[] }
+  /** Step 7a or 7p: the Phasing side selects one hex the enemy must leave (spec 16 R5). */
+  | { type: "SELECT_ATTRITION_HEX"; side: Side; hex: HexId }
+  /** Step 7a or 7p: the Phasing side takes no more hexes (spec 16 R5, R8). */
+  | { type: "END_ATTRITION"; side: Side }
+  /** Step 7a or 7p: the other side retreats one unit of the selected hex to a neighbouring hex (spec 16 R6). */
+  | { type: "RETREAT_UNIT"; side: Side; unit: string; to: HexId }
+  /** Step 7a or 7p: the Phasing side moves at least one eligible participant into the emptied hex (spec 16 R7). */
+  | { type: "OCCUPY_ATTRITION_HEX"; side: Side; units: string[] }
   /** Opening setup: set up one counter from the owner's Force Pool (Ops 4.1). */
   | { type: "SETUP_PLACE"; owner: ForceOwner; unit: { type: UnitType; strength: number; nationality?: ForceOwner }; at: HexId | OffMapBox }
   /** Opening setup: take a counter back off the map into the Force Pool. */
@@ -72,6 +85,8 @@ export type Action =
 
 /** What happened as a result of an action, for the UI and the log. */
 export type GameEvent =
+  /** Attrition, steps 7a and 7p (spec 16 C4). */
+  | AttritionEvent
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
   | { type: "AIRBASE_PLACED"; unitId: string; owner: PowerId; at: HexId }

@@ -24,7 +24,7 @@ export function allHeld(scenario: Scenario, allies: number): GameState {
  */
 export function withCounts(scenario: Scenario, allies: number, axis: number, siberian = false): GameState {
   const hexes = objectiveHexes(ctxFor(scenario));
-  const owner = (i: number): ForceOwner => (i < allies ? "britain" : i < allies + axis ? "germany" : ("spain" as ForceOwner));
+  const owner = (i: number): ForceOwner => (i < allies ? "britain" : i < allies + axis ? "germany" : "spain");
   const control = Object.fromEntries(hexes.map((h, i) => [h, owner(i)] as const));
   return { ...newGame(scenario, 1), control, ...(siberian ? { siberian: { used: true, taken: { "1941-winter": 1 } } } : {}) };
 }

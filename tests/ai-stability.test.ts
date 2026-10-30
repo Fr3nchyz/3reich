@@ -49,7 +49,7 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // action list gains SELECT_FRONT_OPTION actions from the first step 3 (action 117 in 1939, 190 in 1942) and the BRPs left for builds fall: all five hashes changed again on purpose (1939 seeds
 // 1, 5 and 2, 1942 seed 1, the 7h list hash of seed 5), and so did the two snapshots of tests/supply-snapshot.test.ts. Checked with npm run compare-games: in every one of the 22 games the
 // first difference from main is the first SELECT_FRONT_OPTION in place of the END_STEP at step 3.
-// Hashes of 2026-10-23 (ticket 16-20, on top of 16-1 above): the computer redeploys at step 9e (src/ai/redeploy.ts, policy AER47), so the lists gain SR_UNITS actions where they had an END_STEP
+// Hashes of 2026-10-23 (ticket 16-20, on top of 16-1 above): the computer redeploys at step 9e (src/ai/redeploy.ts, policy AER50), so the lists gain SR_UNITS actions where they had an END_STEP
 // at 9e and everything after the first one differs: all five hashes changed on purpose (before: 1939 seed 1 278484573, 1942 seed 1 958665354, 1939 seed 5 1755472541, seed 2 119043983, the
 // 7h list hash of seed 5 4106130461), and the supply snapshots are
 // unchanged because that test plays the computer without redeploying. Checked with `npm run compare-games`: in each of the 22 games the first difference from main is an SR_UNITS where main
@@ -65,8 +65,8 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1857619474));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(1552062176));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(0));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(0));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
     expect(hashOf("1939", 5, 4)).toBe(1765142873);
     expect(hashOf("1939", 2, 4)).toBe(4164658301);

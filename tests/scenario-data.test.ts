@@ -230,7 +230,8 @@ describe.each(ALL)("scenario data: $id", ({ s, maxTurns }) => {
       seen.add(k);
     }
     for (const m of s.minorAllies) {
-      expect(s.forces[m.owner], `${m.owner} has forces`).toBeDefined();
+      // Spec 15 R9: a sleeping ally (1939, Campaign) gets its army only when it wakes (step 2, ticket 15-3/15-8), so only active ones have forces at the start.
+      if (m.active) expect(s.forces[m.owner], `${m.owner} has forces`).toBeDefined();
       expect(s.nations[m.of]).toBeDefined();
     }
   });
@@ -325,7 +326,7 @@ describe("1939 scenario data (Ops 9.0, pp. 20-21)", () => {
 
   it("starts with Germany at war with Poland, France and Britain", () => {
     expect(s.warsAtStart).toEqual([["germany", "poland"], ["germany", "france"], ["germany", "britain"]]);
-    expect(s.minorAllies).toEqual([]);
+    expect(s.minorAllies).toEqual(["finland", "hungary", "rumania", "bulgaria"].map((owner) => ({ owner, of: "germany", active: false }))); // spec 15 C1: four sleeping allies
   });
 
   it("matches the printed force pools and builds, nation by nation", () => {

@@ -206,12 +206,13 @@ describe("self-play anomalies are detected, not looped on", () => {
       for (let i = 0; i < 8; i++) units[`y${i}`] = { id: `y${i}`, owner: "britain", type: "replacement", strength: 3, at: "K22" };
       return { ...st, units };
     };
+    // Spec 16 R6, R15: a side may stand overstacked after the other side's Player Turn (an Attrition retreat) until its own step 6g, so the audit looks only at the side whose turn ended.
     const r = runGame({ scenario: "1939", seed: 1, turns: 1 }, { prepare: plant });
-    const over = r.anomalies.filter((a) => a.kind === "overstack");
-    expect(over.length).toBeGreaterThan(0);
-    // Planted before play: the first check is after the first Player Turn, so it names the second side's turn, not the first.
-    expect(over[0]!.at).toContain(r.initial.firstSide === "axis" ? "allies" : "axis");
-    expect(over[0]!.at).not.toContain(`${r.initial.firstSide}, step`);
+    expect(r.anomalies.filter((a) => a.kind === "overstack")).toEqual([]);
+    const planted = plant(at6f([]));
+    expect(auditState(CTX, planted, true, "axis").map((p) => p.detail)).toEqual([expect.stringContaining("(axis)")]);
+    expect(auditState(CTX, planted, true, "allies").map((p) => p.detail)).toEqual([expect.stringContaining("(allies)")]);
+    expect(auditState(CTX, planted, true)).toHaveLength(2);
   });
 
   it("a setup that leaves the game in the setup phase is an anomaly, not a silent stop", () => {

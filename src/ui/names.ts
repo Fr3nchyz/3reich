@@ -34,6 +34,20 @@ const ADJECTIVES: Readonly<Record<ForceOwner, string>> = {
   rumania: "Rumanian",
   hungary: "Hungarian",
   bulgaria: "Bulgarian",
+  arabia: "Arabian",
+  belgium: "Belgian",
+  denmark: "Danish",
+  greece: "Greek",
+  ireland: "Irish",
+  luxembourg: "Luxembourgish",
+  netherlands: "Dutch",
+  norway: "Norwegian",
+  persia: "Persian",
+  portugal: "Portuguese",
+  spain: "Spanish",
+  sweden: "Swedish",
+  turkey: "Turkish",
+  yugoslavia: "Yugoslav",
 };
 
 /** The nation a counter belongs to, as an adjective: its nationality if it has one, else its owner ("Italian" for the Italian fleet Germany holds). */

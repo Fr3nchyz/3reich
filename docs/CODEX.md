@@ -20,11 +20,27 @@ flowchart LR
 3. **Codex works** on that branch and pushes its commits there, then writes its report (the `AGENTS.md` sections) as a PR comment or in the PR body.
 4. **Review by Claude**, the same bar as any builder's PR (CLAUDE.md):
    - read the PR's "Remaining concerns" first; a design question goes to the owner, not guessed;
-   - check out the branch, re-run `npm run lint && npm run typecheck && npm test && npm run build` and `npm run compare-games`, and compare with the PR's numbers;
+   - check out the branch, re-run `npm run lint && npm run typecheck && npm run coverage && npm run build` and `npm run compare-games`, and compare with the PR's numbers;
    - run the independent read-only `reviewer` agent (sonnet for engine-wide changes); it re-tries 3 to 5 of the PR's mutation checks;
    - run the browser specs that cover any `src/ui` change (Codex usually cannot);
    - findings go back in one `@codex` comment on the PR listing every FIX FIRST item. Small fixes (a doc row, a test name) Claude may push itself as new commits.
 5. **Merge.** The owner told the project manager to "merge it once CI is green" (recorded 2026-10-23; this is the owner's explicit exception to CLAUDE.md's "ask first before merging", and it covers Codex PRs): reviewer says MERGE, gates pass and CI is green on the exact head sha; Claude marks the PR ready and squash merges with the expected head sha. Then the PLAN row moves to Done and the issue closes.
+
+CI posts the whole-game comparison summary as an updated PR comment for engine, computer-opponent or data changes; fork PRs receive the job summary only.
+
+## Landing checks
+
+From a clean worktree on the PR branch, run `scripts/land.sh <PR> [EXPECTED_BRANCH]`.
+It prints the current branch, refuses local changes or a mismatched optional branch,
+and checks that the PR is open when `gh auth status` succeeds. Without a token it
+states that the closed-PR check was skipped and continues. It runs lint, typecheck,
+coverage and build, plus the existing compare-games command only for an engine,
+computer-opponent or data diff against `origin/main` (which must exist locally).
+The summary includes test counts, comparison output, shared engine and stability-test
+changes, and newly added `TODO(verify)` ids missing from either required registry.
+It prints paths to a saved summary and full gate logs, and exits nonzero if a gate
+fails. The manager still reviews concerns, obtains the independent reviewer verdict,
+checks CI on the exact head and handles publishing; the helper never publishes.
 
 ## Which tickets go to Codex
 

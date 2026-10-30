@@ -158,7 +158,7 @@ describe("what the computer redeploys (SR_MIN_GAIN)", () => {
 });
 
 describe("the shipped gain", () => {
-  it("SR_MIN_GAIN is 10: a Replacement 6 hexes from the front is not sent, a gain below it never is (AER47)", () => {
+  it("SR_MIN_GAIN is 10: a Replacement 6 hexes from the front is not sent, a gain below it never is (AER50)", () => {
     expect(SR_MIN_GAIN).toBe(10);
     const s = at9e([rep("r1", "germany", "Q27")]);
     expect(sendTowardFront(CTX, s, ["r1"])).toBeNull();

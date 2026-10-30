@@ -44,6 +44,20 @@ export const OWNER_COLOURS: Record<ForceOwner, { fill: string; text: string }> =
   rumania: { fill: "#b4b0a4", text: "#101418" },
   hungary: { fill: "#b4b0a4", text: "#101418" },
   bulgaria: { fill: "#b4b0a4", text: "#101418" },
+  arabia: { fill: "#b4b0a4", text: "#101418" },
+  belgium: { fill: "#b4b0a4", text: "#101418" },
+  denmark: { fill: "#b4b0a4", text: "#101418" },
+  greece: { fill: "#b4b0a4", text: "#101418" },
+  ireland: { fill: "#b4b0a4", text: "#101418" },
+  luxembourg: { fill: "#b4b0a4", text: "#101418" },
+  netherlands: { fill: "#b4b0a4", text: "#101418" },
+  norway: { fill: "#b4b0a4", text: "#101418" },
+  persia: { fill: "#b4b0a4", text: "#101418" },
+  portugal: { fill: "#b4b0a4", text: "#101418" },
+  spain: { fill: "#b4b0a4", text: "#101418" },
+  sweden: { fill: "#b4b0a4", text: "#101418" },
+  turkey: { fill: "#b4b0a4", text: "#101418" },
+  yugoslavia: { fill: "#b4b0a4", text: "#101418" },
 };
 
 /** The numbers printed on a counter: strength, and movement for ground and air units ("3-4", "9"). */

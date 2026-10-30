@@ -1,3 +1,4 @@
+import { initialMinorRecords } from "../engine/minors-record";
 import type { Scenario } from "../engine/types";
 import { air, airborne, armor, fleet, inf, nation, nationSetup, replacement } from "./counters";
 import { ISLANDS, POLAND_EAST_OF_PARTITION_LINE, VICHY_FRANCE } from "./zones";
@@ -37,7 +38,8 @@ export const SCENARIO_1939: Scenario = {
     ["germany", "france"],
     ["germany", "britain"],
   ],
-  minorAllies: [],
+  // Spec 15 C1, R9: the four Axis Minor-Allies sleep until Summer 1941 (or Intervention); inactive, they take no side and hold no land.
+  minorAllies: initialMinorRecords("1939").minorAllies,
 
   zones: {
     // Ref 29.0: a red line the program draws through Poland. It is not on the printed map card;

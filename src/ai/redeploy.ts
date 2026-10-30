@@ -18,14 +18,14 @@ import type { AiConfig, Decision } from "./types";
  * SR_MIN_GAIN hexes closer than where it stands. The engine already refuses a unit next to an enemy and a destination next to one. It never
  * empties the garrison of a capital its side holds (as the mover does). The allowance is the engine's: when a nation has none left its units
  * have no destination, and the computer goes on to the next. Only single units are sent, each costing one use of the allowance whatever its size.
- * TODO(verify) AER47: every number and order here is the computer's policy, to be tuned by play-testing; it is no rule.
+ * TODO(verify) AER50: every number and order here is the computer's policy, to be tuned by play-testing; it is no rule.
  */
 
-/** A unit goes only if the best hex it can reach is at least this many ground hexes closer to its target than the hex it stands on (AER47). 3 was tried first: Germany then sent units to the Polish front early and the Axis lost most games (see spec 16 "As built, 16-20"). */
+/** A unit goes only if the best hex it can reach is at least this many ground hexes closer to its target than the hex it stands on (AER50). 3 was tried first: Germany then sent units to the Polish front early and the Axis lost most games (see spec 16 "As built, 16-20"). */
 export const SR_MIN_GAIN = 10;
-/** The last non-Replacement ground unit on a capital the side holds stays (AER47; the mover's MOVE_KEEP_CAPITAL_GARRISON). */
+/** The last non-Replacement ground unit on a capital the side holds stays (AER50; the mover's MOVE_KEEP_CAPITAL_GARRISON). */
 export const SR_KEEP_CAPITAL_GARRISON = true;
-/** The order in which the nations of a side use their allowances (AER47). */
+/** The order in which the nations of a side use their allowances (AER50). */
 export const SR_NATION_ORDER: readonly PowerId[] = ["germany", "italy", "ussr", "britain", "france", "usa"];
 
 type Redeploy = Extract<Action, { type: "SR_UNITS" }>;

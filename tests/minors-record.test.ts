@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { derivedMinorControl, initialMinorRecords, MINOR_OWNER_NAMES, type MinorCountryState } from "../src/engine/minors-record";
+import { derivedMinorControl, initialMinorRecords, type MinorCountryState } from "../src/engine/minors-record";
 import { MINOR_COUNTRIES } from "../src/engine/minors-rules";
 import { OWNER_NAMES } from "../src/engine/nations";
 
@@ -52,8 +52,7 @@ describe("derived minor control (spec 15 C1; Ref 16.0)", () => {
 });
 
 it("names every minor counter owner and preserves existing owner names (spec 15 B4/C1)", () => {
-  expect(Object.keys(MINOR_OWNER_NAMES).sort()).toEqual([...new Set([...Object.keys(OWNER_NAMES), ...MINOR_COUNTRIES])].sort());
-  expect(MINOR_OWNER_NAMES).toMatchObject(OWNER_NAMES);
+  expect(Object.keys(OWNER_NAMES)).toEqual(expect.arrayContaining([...MINOR_COUNTRIES, "germany", "free-france", "vichy-france"]));
   const names = ["Arabia", "Belgium", "Bulgaria", "Denmark", "Finland", "Greece", "Hungary", "Ireland", "Luxembourg", "Netherlands", "Norway", "Persia", "Poland", "Portugal", "Rumania", "Spain", "Sweden", "Turkey", "Yugoslavia"];
-  expect(MINOR_COUNTRIES.map((minor) => MINOR_OWNER_NAMES[minor])).toEqual(names);
+  expect(MINOR_COUNTRIES.map((minor) => OWNER_NAMES[minor])).toEqual(names);
 });
