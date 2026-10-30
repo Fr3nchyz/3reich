@@ -118,7 +118,7 @@ for (const size of [[390, 844], [768, 1024]] as const) {
     await expect(page.locator(".turn")).toContainText("step 3"); // nothing was done
     await fold.locator("button", { hasText: "Eastern Front: Attrition Option" }).click();
     await expect(page.locator("ol.log li", { hasText: "choose the Attrition Option on the Eastern Front" })).toHaveCount(1);
-    await expect(fold.locator("button.greyed")).toHaveCount(0); // the East has its Option
+    await expect(fold.locator("button.greyed")).toHaveCount(1); // the East can still be changed (spec 15 R14), so the ban stays shown
     expect(errors).toEqual([]);
   });
 }

@@ -147,15 +147,24 @@ describe("Counterattack, CA1, CA2, CA3 (Ref 12.2)", () => {
 describe("a hex with no ground defender: the sweep (ALONE_NONGROUND_DESTROYED, TODO(verify))", () => {
   // Warsaw after the infantry are gone: two Polish air units.
   const air = [POL("a1", "M35", 1, "air"), POL("a2", "M35", 2, "air")];
-  it("says no roll, names the counters, and has no numbers or rows", () => {
+  it("says no roll, names the displaced planes and their range, and has no numbers or rows (spec 09 R9)", () => {
     const s = at7h([GER("g1", "M34", 3), GER("g2", "N34", 2), ...air]);
     const p = preview(s, "M35", defaultAttackers(CTX, s, "M35"));
-    expect(p.sweep?.text).toMatch(/^No roll\. These 2 counters are destroyed: /);
-    expect(p.sweep?.destroyed).toHaveLength(2);
+    expect(p.sweep?.text).toMatch(/^No roll\..*nearest usable friendly base within 8 hexes/);
+    expect(p.sweep?.moved).toHaveLength(2);
+    expect(p.sweep?.destroyed).toHaveLength(0);
     expect(p.numbers).toBeNull();
     expect(p.results).toEqual([]);
     expect(p.defenders).toEqual([]);
-    expect(p.button).toEqual({ text: expect.stringMatching(/^Destroy .*Polish air.* in Warsaw \(M35\)$/), risky: false, disabled: false });
+    expect(p.button).toEqual({ text: expect.stringMatching(/^Drive .*Polish air.* out of Warsaw \(M35\)$/), risky: false, disabled: false });
+  });
+  it("separates plane and airbase destinations and their loss conditions (spec 09 R9 / R2)", () => {
+    const s = at7h([GER("g1", "M34", 3), ...air, POL("b1", "M35", 1, "airbase")]);
+    const p = preview(s, "M35", ["g1"]);
+    expect(p.sweep?.destroyed).toEqual([]);
+    expect(p.sweep?.moved).toHaveLength(3);
+    expect(p.sweep?.text).toContain("within 8 hexes with room, or be lost if there is none");
+    expect(p.sweep?.text).toContain("return to their owner's Capital, or be lost if no friendly Capital is available");
   });
   it("defaults to the weakest single unit, infantry first", () => {
     const s = at7h([GER("g1", "M34", 3), GER("g2", "N34", 2), GER("g3", "L35", 1, "armor"), ...air]);
@@ -166,7 +175,7 @@ describe("a hex with no ground defender: the sweep (ALONE_NONGROUND_DESTROYED, T
   it("more units may be added with no effect on the result", () => {
     const s = at7h([GER("g1", "M34", 3), GER("g2", "N34", 2), ...air]);
     const p = preview(s, "M35", ["g1", "g2"]);
-    expect(p.sweep?.destroyed).toHaveLength(2);
+    expect(p.sweep?.destroyed).toHaveLength(0);
     expect(p.attackers.map((c) => c.state)).toEqual(["chosen", "chosen"]);
   });
   it("a hex with ground defenders is no sweep, and the air units are listed as not defending", () => {
@@ -175,8 +184,9 @@ describe("a hex with no ground defender: the sweep (ALONE_NONGROUND_DESTROYED, T
     expect(p.sweep).toBeNull();
     expect(p.defenders).toHaveLength(1);
     expect(p.nonDefenders.map((n) => n.reason)).toEqual(["does not defend", "does not defend"]);
-    expect(p.alsoDestroyed).toHaveLength(2);
-    expect(p.results.find((r) => r.result === "D")!.text).toContain("go too");
+    expect(p.alsoDestroyed).toHaveLength(0);
+    expect(p.alsoMoved).toHaveLength(2);
+    expect(p.results.find((r) => r.result === "D")!.text).toContain("nearest usable friendly base within 8 hexes");
   });
 });
 
@@ -279,10 +289,10 @@ describe("wording fixes from the review of 07-4", () => {
     const s = at7h([GER("g1", "M34", 3), GER("g2", "N34", 3), POL("p1", "M35"), ...air]);
     const row = preview(s, "M35", ["g1", "g2"]).results.find((r) => r.result === "Ex")!;
     expect(row.exchange).toMatchObject({ defendersLoseAll: true, chooser: "attackers" });
-    expect(row.text).toContain("These enemy counters in the hex go too, with no roll: 1 Polish air, 1 Polish air");
+    expect(row.text).toContain("2 x 1 Polish air must leave for the nearest usable friendly base within 8 hexes");
     expect(row.text).toContain("your survivors may advance");
     // The D row says the same, so the two rows agree about what is left.
-    expect(preview(s, "M35", ["g1", "g2"]).results.find((r) => r.result === "D")!.text).toContain("1 Polish air, 1 Polish air");
+    expect(preview(s, "M35", ["g1", "g2"]).results.find((r) => r.result === "D")!.text).toContain("2 x 1 Polish air must leave");
   });
 
   it("'you choose' only when there is a real choice of units", () => {

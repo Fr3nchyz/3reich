@@ -191,16 +191,19 @@ describe("step 3: the greyed Offensive button", () => {
     expect(legalActions(s.ctx, s.state).some((a) => a.type === "SELECT_FRONT_OPTION" && a.front === "eastern" && a.option === "offensive")).toBe(false);
     expect(greyedOffensive(s.state)).toEqual({ text: "Eastern Front: Offensive Option", reason: WINTER_TEXT.greyedReason });
   });
-  it("is not there when the winter is not on, at another step, for the Allies, or once the Eastern Front has its Option", () => {
+  it("is not there when the winter is not on, at another step, for the Allies, or once the Eastern Front is on Offensive", () => {
     const off = html(axis(null));
     expect(off).not.toContain("greyed");
     expect(off).toMatch(/data-action="\d+"[^>]*>Eastern Front: Offensive Option/);
     expect(greyedOffensive(axis(null).state)).toBeNull();
     expect(greyedOffensive({ ...axis().state, position: { part: "player-turn", turn: 1, step: "7h" } })).toBeNull();
     expect(greyedOffensive({ ...axis().state, activeSide: "allies" })).toBeNull();
-    expect(greyedOffensive({ ...axis().state, frontOptions: { eastern: { option: "attrition" } } })).toBeNull();
-    const chosen = axis(WINTER, { frontOptions: { eastern: { option: "attrition" } } });
-    expect(html(chosen)).not.toContain("greyed");
+    expect(greyedOffensive({ ...axis().state, frontOptions: { eastern: { option: "offensive" } } })).toBeNull();
+  });
+  it("still greys the Offensive button when the Eastern Front has another Option, which can be changed (spec 15 R14)", () => {
+    const s = { ...axis().state, frontOptions: { eastern: { option: "attrition" as const } } };
+    expect(greyedOffensive(s)).toEqual({ text: "Eastern Front: Offensive Option", reason: WINTER_TEXT.greyedReason });
+    expect(html(axis(WINTER, { frontOptions: { eastern: { option: "attrition" } } }))).toContain("greyed");
   });
   it("frontOptionButtons puts the grey button in front of the first Eastern choice and leaves a group without one as it is", () => {
     const s = axis().state;

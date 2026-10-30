@@ -89,3 +89,14 @@ Conquests seen (games out of 30 in which the country fell): 1939: Poland 30, Fra
 
 Anomalies: **one game, 1942 seed 2 (four report lines for the same hex)**: `conquered-hex`, first seen at Fall 1944, Axis step 1 and still there at Winter 1944: Germany was conquered in Summer 1944 and still controls hex KK33. At the fall an Italian infantry unit stood on KK33, so the hex was kept (V12: land under hostile ground units is not passed on); in Fall 1944 that unit left the hex (eliminated at action 977 of the recording), and the hex stayed with Germany instead of passing to the conqueror or to nobody. Nothing was fixed in this ticket; **ticket 14-25 fixed it** (the owner's decision of 2026-10-23: a kept hex passes on when its unit leaves; V62). With 14-25 the same 120 games play the identical actions and none has an anomaly; the Polish hexes N37 and Q35 of two whole-game tests in `tests/winter-play.test.ts` were the same case and are fixed too. A first version of the check, which did not know V12, also fired in 7 games of 1942 and 1944 (hexes under a unit of the conquered nation's side at the fall); with V12 built in, only this one is left. The other checks (winter length, surrender offered twice, Objectives counted twice or as capitals only, a unit of a conquered nation on the map, a game without a result) never fired on the 120 games.
 
+
+## Fixed-seed hashes: `npm run rehash`
+
+Run `npm run rehash [-- --base <git ref>] [--write]` to execute the hash cases
+from `tests/ai-stability.test.ts` on `origin/main` (or `--base`) and this checkout,
+including uncommitted changes. The base is exported to a temporary directory and
+removed afterwards; Git metadata is unchanged. Each line names a case and shows
+`main=<value> checkout=<value> same|different`. Exit status is 0 when all match,
+1 for a difference (including a checkout hash that disagrees with its test pin),
+and 2 if the command cannot run. `--write` prints exact replacement test lines;
+it never edits the test. Review game differences before using those lines.

@@ -17,6 +17,7 @@
     "coverage": "vitest run --coverage",
     "e2e": "playwright test",
     "selfplay": "vite-node scripts/selfplay/cli.ts",
+    "rehash": "node scripts/rehash.mjs",
     "compare-games": "node scripts/compare-games.mjs"
   },
   "devDependencies": {

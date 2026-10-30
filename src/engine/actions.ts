@@ -8,6 +8,7 @@ import { surrenderAsking } from "./soviet-record";
 import { applySiberian, applySurrenderAnswer, legalSiberian, legalSurrenderActions } from "./victory-actions";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
+import { applyPlaceExploiters } from "./breakthrough";
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
 import { applySeaSupply, legalSeaSupply } from "./naval-actions";
@@ -48,7 +49,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8a") return legalSiberian(ctx, state);
   if (step === "8b") return legalBuilds(ctx, state);
-  if (step === "9a") return legalGrants(state);
+  if (step === "9a") return legalGrants(ctx, state);
   return [];
 }
 
@@ -162,6 +163,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
     case "ADVANCE":
       return atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
+    case "PLACE_EXPLOITERS":
+      return atStep(state, "7h", "Armor moves into a Breakthrough hex", () => applyPlaceExploiters(ctx, state, action));
     case "SELECT_FRONT_OPTION":
       return atStep(state, "3", "Front Options are chosen", () => applyFrontOption(ctx, state, action));
     case "SIBERIAN_TRANSFER":
@@ -169,7 +172,7 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     case "BUILD":
       return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
     case "GRANT_BRPS":
-      return atStep(state, "9a", "BRP grants are made", () => applyGrant(state, action));
+      return atStep(state, "9a", "BRP grants are made", () => applyGrant(ctx, state, action));
     default:
       return { ok: false, error: `Unknown action: ${JSON.stringify(action)}` };
   }

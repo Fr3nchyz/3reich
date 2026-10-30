@@ -7,6 +7,7 @@ export function mapSyncProbe(s: Session): () => { yellow: string[]; pale: string
   return () => {
     const seen = { yellow: [] as string[], pale: [] as string[], marks: { from: null as string | null, ticked: [] as string[], left: [] as string[] } };
     const view = {
+      setFortresses: () => undefined,
       setUnits: (_u: unknown, m: { ticked: Set<string>; left: Set<string> }) => { seen.marks.ticked = [...m.ticked]; seen.marks.left = [...m.left]; },
       setHighlights: (a: Iterable<string>, b: Iterable<string>) => { seen.yellow = [...a]; seen.pale = [...b]; },
       setAttackMarks: (m: { from?: string | null }) => { seen.marks.from = m.from ?? null; },

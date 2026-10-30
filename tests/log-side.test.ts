@@ -108,6 +108,11 @@ describe("the side of an action and of an event", () => {
     expect(eventSide({ type: "COMBAT_RESOLVED", side: "axis", target: "M35", attackers: [], attackFactors: 1, defenseFactors: 1, multiplier: 1, rounds: [], outcome: "exchange" }, "allies")).toBe("axis");
   });
 
+  it("marks a capture displacement with the displaced owner's side (spec 09 R9 / R2)", () => {
+    expect(eventSide({ type: "AIR_DISPLACED", unitId: "a1", owner: "poland", from: "M35", to: "M33" }, "axis")).toBe("allies");
+    expect(eventSide({ type: "AIR_DISPLACED", unitId: "b1", owner: "germany", from: "K28", to: "L31" }, "allies")).toBe("axis");
+  });
+
   it("logLine marks an entry by its index and leaves a plain one unmarked, with the log itself only text", () => {
     const s = { log: ["a"] } as Pick<Session, "log" | "logSides">;
     logLine(s, "plain");

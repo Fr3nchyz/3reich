@@ -198,6 +198,10 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":
       return `The supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} no longer holds: ${e.reason}`;
+    case "AIR_DISPLACED": {
+      const name = stackSummary(unitsWithIds(before, [e.unitId]), true);
+      return `${name} displaced from ${placeName(ctx.map, e.from)}: ${e.to === null ? "eliminated because no legal destination was available" : `moved to ${placeName(ctx.map, e.to)}`}.`;
+    }
     case "FLEET_DISPLACED": {
       const fleet = before.units[e.unitId];
       const name = fleet ? unitName(fleet) : `${OWNER_NAMES[e.owner]} fleet`;
@@ -211,6 +215,14 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
     }
     case "UNITS_ADVANCED":
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
+    case "BREAKTHROUGH":
+      return `Breakthrough at ${placeName(ctx.map, e.hex)}${e.placeable.length > 0 ? `: ${e.placeable.length} armor unit${e.placeable.length === 1 ? "" : "s"} can move in free` : ""}.`;
+    case "EXPLOITERS_PLACED":
+      return `${stackSummary(unitsWithIds(before, e.units))} move into the Breakthrough at ${placeName(ctx.map, e.hex)}.`;
+    case "FORTRESS_CHANGED": {
+      const reasons = { "enemy-entered": "an enemy entered", sevastopol: "Sevastopol's control or supply conditions changed", "france-fell": "France has fallen", "west-wall": "the West Wall becomes fortified in 1944", "scenario-start": "the scenario begins" };
+      return `${placeName(ctx.map, e.hex)} is ${e.status ? "now" : "no longer"} a fortress: ${reasons[e.why]}.`;
+    }
     case "HEX_CONTROL_CHANGED":
       return `${nameOf(e.to)} takes control of ${e.hex}.`;
     case "OVERSTACK_ELIMINATED":

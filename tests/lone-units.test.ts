@@ -3,18 +3,12 @@ import { ALONE_NONGROUND_DESTROYED } from "../src/engine/attack-rules";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
 import { combatOf } from "../src/engine/combat-record";
 import { chooseAttack } from "../src/ai/assault";
-import { sweepLine } from "../src/ui/format";
 import { run, type Session } from "../src/ui/session";
 import type { GameState, Unit, UnitType, ForceOwner } from "../src/engine/types";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { CTX, atStart } from "./helpers";
 
-/**
- * Air units, fleets and airbases left alone in a hex (the Warsaw case of docs/FEEDBACK.md, 2 (2026-10-14)): they cannot defend on
- * the ground, and used to stay for ever, so the hex could never be attacked, entered or advanced into. ALONE_NONGROUND_DESTROYED
- * (TODO(verify): Ref 12.x text not in the repo) destroys them when ground units attack the hex or when a battle there removes the last
- * ground defenders.
- */
+/** Spec 09 D1 / R9: the Warsaw capture hook displaces air when the last ground defenders go; spec 12 R9 handles fleets. */
 
 const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, at: string): Unit => ({ id, owner, type, strength, at });
 const at7h = (units: Unit[], seed = 1): GameState => ({
@@ -45,13 +39,14 @@ const seedFor = (units: Unit[], ids: string[], pick: (s: GameState, events: Retu
 describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(verify))", () => {
   it("is on", () => expect(ALONE_NONGROUND_DESTROYED).toBe(true));
 
-  it("an attack on a hex with only air units, an airbase or a fleet is listed; the air and the airbase are destroyed without a roll and the fleet leaves (here M35 is no port, so it is lost)", () => {
+  it("an attack on a hex with only air units, an airbase or a fleet is listed; air displaces without a roll and the captured-capital airbase and portless fleet are lost", () => {
     const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 3, "M35"), unit("b1", "poland", "airbase", 1, "M35"), unit("f1", "poland", "fleet", 2, "M35")]);
     expect(legalActions(CTX, s)).toContainEqual({ type: "ATTACK", side: "axis", units: ["g1"], target: "M35" });
     const r = ok(attack(s, ["g1"], "M35"));
     expect(r.state.rngState).toBe(s.rngState); // no die rolled
     expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).toMatchObject({ attackers: ["g1"], defenseFactors: 0, rounds: [], outcome: "defender-eliminated" });
-    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED")).toHaveLength(2);
+    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED")).toHaveLength(1);
+    expect(r.state.units.a1!.at).toBe("M33");
     expect(r.events.filter((e) => e.type === "FLEET_DISPLACED")).toEqual([{ type: "FLEET_DISPLACED", unitId: "f1", owner: "poland", from: "M35", to: null }]);
     expect(stacks(r.state, "M35")).toEqual([]);
     expect(combatOf(r.state)).toMatchObject({ attacked: ["g1"], targets: ["M35"], advances: [{ to: "M35", units: ["g1"] }] });
@@ -60,15 +55,17 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
     expect(legalActions(CTX, r.state).some((a) => a.type === "ATTACK")).toBe(false);
   });
 
-  it("the Warsaw case: 2 infantry and 2 air units; when the infantry fall the air units go with them and the attackers can advance", () => {
+  it("the Warsaw case: 2 infantry and 2 air units; when the infantry fall the air units displace and the attackers can advance", () => {
     const base = [unit("g1", "germany", "infantry", 4, "M34"), unit("g2", "germany", "infantry", 4, "L35"), ...WARSAW()];
     const seed = seedFor(base, ["g1", "g2"], (s, ev) => ev.some((e) => e.type === "COMBAT_RESOLVED" && e.outcome === "defender-eliminated") && stacks(s, "M35").length === 0);
     const r = ok(attack(at7h(base, seed), ["g1", "g2"], "M35"));
-    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId).sort()).toEqual(["a1", "a2", "p1", "p2"]);
+    expect(r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId).sort()).toEqual(["p1", "p2"]);
+    expect(r.state.units.a1!.at).toBe("M33");
+    expect(r.state.units.a2!.at).toBe("M33");
     expect(legalActions(CTX, r.state).filter((a) => a.type === "ADVANCE").length).toBeGreaterThan(0);
   });
 
-  it("the air units go too when the Exchange is settled by ALLOCATE_LOSSES", () => {
+  it("the air units displace when the Exchange is settled by ALLOCATE_LOSSES", () => {
     const base = [unit("g1", "germany", "infantry", 3, "M34"), unit("g2", "germany", "infantry", 3, "L35"), unit("g3", "germany", "infantry", 3, "L36"), ...WARSAW()];
     const seed = seedFor(base, ["g1", "g2", "g3"], (s) => combatOf(s).pending !== null);
     const waiting = ok(attack(at7h(base, seed), ["g1", "g2", "g3"], "M35")).state;
@@ -77,7 +74,9 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
     const r = ok(applyAction(CTX, waiting, choice));
     expect(stacks(r.state, "M35")).toEqual([]);
     const gone = r.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => (e as { unitId: string }).unitId);
-    expect(gone).toEqual(expect.arrayContaining(["a1", "a2"]));
+    expect(gone).not.toEqual(expect.arrayContaining(["a1", "a2"]));
+    expect(r.state.units.a1!.at).toBe("M33");
+    expect(r.state.units.a2!.at).toBe("M33");
   });
 
   it("when the attack fails the ground defenders hold and so do the air units", () => {
@@ -98,7 +97,7 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
     expect(attack(s, ["g1"], "M35")).toMatchObject({ ok: false });
   });
 
-  it("equal totals in an Exchange: both sides are wholly eliminated and the air units go with them", () => {
+  it("equal totals in an Exchange: both sides are wholly eliminated and the air units displace", () => {
     // The defenders count at their terrain multiple in the first round (x3 across the river at Warsaw), so the equal totals are found by search.
     let found = 0;
     for (let attack_ = 1; attack_ <= 6; attack_++) {
@@ -110,31 +109,35 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
         const fought = r.events.find((e) => e.type === "COMBAT_RESOLVED") as { outcome: string };
         if (fought.outcome !== "exchange" || !gone.includes("g1") || !gone.includes("p1")) continue;
         found++;
-        expect(gone, `attack ${attack_}, seed ${seed}`).toContain("a1");
+        expect(gone, `attack ${attack_}, seed ${seed}`).not.toContain("a1");
+        expect(r.state.units.a1!.at).toBe("M33");
         expect(stacks(r.state, "M35")).toEqual([]);
       }
     }
     expect(found).toBeGreaterThan(0);
   });
 
-  it("marks the roll-free attack as a sweep and says so in the log in one line with the place name", () => {
+  it("marks the roll-free attack and logs each displacement with its destination", () => {
     const s = at7h([unit("g1", "germany", "infantry", 3, "M34"), unit("a1", "poland", "air", 1, "M35"), unit("a2", "poland", "air", 1, "M35")]);
     const r = ok(attack(s, ["g1"], "M35"));
     expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).toMatchObject({ sweep: true });
-    const swept = r.events.find((e) => e.type === "UNITS_SWEPT");
-    expect(swept).toMatchObject({ type: "UNITS_SWEPT", hex: "M35", units: [{ id: "a1", type: "air" }, { id: "a2", type: "air" }] });
-    expect(sweepLine(CTX, swept as Extract<typeof swept, { type: "UNITS_SWEPT" }>)).toBe("Warsaw (M35): 2 air units alone in the hex are destroyed (Poland air 1, Poland air 1).");
+    expect(r.events.some((e) => e.type === "UNITS_SWEPT")).toBe(false);
+    expect(r.events.filter((e) => e.type === "AIR_DISPLACED")).toEqual([
+      { type: "AIR_DISPLACED", unitId: "a1", owner: "poland", from: "M35", to: "M33" },
+      { type: "AIR_DISPLACED", unitId: "a2", owner: "poland", from: "M35", to: "M33" },
+    ]);
     const session = { ctx: CTX, state: s, log: [] as string[], toast: "" } as unknown as Session;
     expect(run(session, { type: "ATTACK", side: "axis", units: ["g1"], target: "M35" })).toBe(true);
-    expect(session.log.filter((l) => /M35/.test(l))).toEqual(["Warsaw (M35): 2 air units alone in the hex are destroyed (Poland air 1, Poland air 1)."]);
+    expect(session.log.filter((l) => /M35/.test(l))).toEqual(["1 Polish air displaced from Warsaw (M35): moved to Poznan (M33).", "1 Polish air displaced from Warsaw (M35): moved to Poznan (M33)."]);
   });
 
-  it("a battle that ends with air units alone also reports the sweep, and a normal attack does not", () => {
+  it("a battle that ends with air units alone reports displacement without a sweep", () => {
     const base = [unit("g1", "germany", "infantry", 4, "M34"), unit("g2", "germany", "infantry", 4, "L35"), ...WARSAW()];
     const seed = seedFor(base, ["g1", "g2"], (s, ev) => ev.some((e) => e.type === "COMBAT_RESOLVED" && e.outcome === "defender-eliminated") && stacks(s, "M35").length === 0);
     const r = ok(attack(at7h(base, seed), ["g1", "g2"], "M35"));
     expect(r.events.find((e) => e.type === "COMBAT_RESOLVED")).not.toHaveProperty("sweep");
-    expect(r.events.find((e) => e.type === "UNITS_SWEPT")).toMatchObject({ units: [{ id: "a1" }, { id: "a2" }] });
+    expect(r.events.some((e) => e.type === "UNITS_SWEPT")).toBe(false);
+    expect(r.events.filter((e) => e.type === "AIR_DISPLACED").map((e) => e.unitId)).toEqual(["a1", "a2"]);
   });
 });
 

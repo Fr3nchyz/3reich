@@ -1,4 +1,14 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
+import { isEnemy, neighborIds } from "./attack-rules";
+import { capitalOf } from "./capital";
+import { isConquered } from "./conquest-record";
+import type { GameContext } from "./context";
+import { hex, hexsideId } from "./hex";
+import { POWER_NAMES } from "./nations";
+import { srOf } from "./sr-record";
+import { srAllowanceProblem, srGrantCost } from "./sr-rules";
+import { sovietCityAt, sovietCityHexes } from "./soviet";
+import { surrenderOffer } from "./soviet-record";
 import { spend, spendable } from "./brps";
 import { turnIndex } from "./game";
 import type { GameState, PowerId } from "./types";
@@ -18,8 +28,10 @@ import { atWar, sideOfPower } from "./war";
  * TODO(verify): Strategic Warfare construction is not built, so nothing is deducted before `spendLimit` is set (yearstart.ts). The 1939 and
  * Campaign setups, which start with no sequence, count from 0.
  *
- * Not built yet (TODO(verify), spec 02): a grant cannot travel while either capital has an enemy
- * unit next to it (except for the U.S.S.R.), and each 20 BRPs granted count as one Strategic Redeployment.
+ * Spec 16 R21 (Ref 11.72, 11.71; TODO(verify) AER30): every 20 BRPs or part uses one of the giver's redeployments in the shared SrRecord.
+ * Enemy counters next to either capital block a grant; the receiving U.S.S.R. ignores the Moscow block until surrender or conquest.
+ * "Next to" uses a land hexside, as R20 does, not open water or a Crossing Arrow. All counter types count here: R21 says "enemy unit",
+ * whereas R20's ground-only reading is AER23. In Beta, grants across the sea need no escort (AER30); escorts remain Release 1, ticket 16-23.
  */
 
 export const GRANT_LIMIT = 40;
@@ -46,27 +58,47 @@ export function grantRoom(state: GameState, from: PowerId, to: PowerId): number 
   return Math.max(0, Math.min(cap, spendable(giver), yearRoom));
 }
 
+/** Capital-to-capital block (Ref 11.72, 11.71; spec 16 R21; TODO(verify) AER30). The U.S.A. has no capital hex on this map. */
+function capitalGrantProblem(ctx: GameContext, state: GameState, from: PowerId, to: PowerId): string | null {
+  if (to === "ussr" && (isConquered(state, "ussr") || surrenderOffer(state) === "accepted")) return "The U.S.S.R. cannot receive grants after surrender or conquest.";
+  for (const power of [from, to]) {
+    const capital = power === "ussr" ? sovietCityHexes(ctx).find((h) => sovietCityAt(ctx, h) === "moscow") : capitalOf(ctx, power);
+    if (power === to && power === "ussr") continue; // R21: the receiving Soviet Union alone has the Moscow exception.
+    if (!capital) continue;
+    const near = new Set(neighborIds(ctx, capital).filter((h) => ctx.map.hexsides[hexsideId(hex(capital), hex(h))]?.land === true));
+    if (Object.values(state.units).some((u) => near.has(u.at) && isEnemy(state, power, u.owner))) return `An enemy unit is next to ${POWER_NAMES[power]}'s capital, so this grant cannot travel (Ref 11.72).`;
+  }
+  return null;
+}
+
 /** The grants the side to move may make now, in steps of 10 BRPs (any whole amount up to the room is legal). */
-export function legalGrants(state: GameState): GrantAction[] {
+export function legalGrants(ctx: GameContext, state: GameState): GrantAction[] {
   const out: GrantAction[] = [];
   const powers = Object.keys(state.nations) as PowerId[];
   for (const from of powers) {
     for (const to of powers) {
       const room = grantRoom(state, from, to);
-      for (let amount = 10; amount <= room; amount += 10) out.push({ type: "GRANT_BRPS", from, to, amount });
-      if (room > 0 && room % 10 !== 0) out.push({ type: "GRANT_BRPS", from, to, amount: room });
+      if (room === 0 || capitalGrantProblem(ctx, state, from, to)) continue;
+      const fits = (amount: number) => srAllowanceProblem(srOf(state).used, { [from]: srGrantCost(amount) }) === null;
+      for (let amount = 10; amount <= room; amount += 10) if (fits(amount)) out.push({ type: "GRANT_BRPS", from, to, amount });
+      if (room > 0 && room % 10 !== 0 && fits(room)) out.push({ type: "GRANT_BRPS", from, to, amount: room });
     }
   }
   return out;
 }
 
-export function applyGrant(state: GameState, action: GrantAction): ActionResult {
+export function applyGrant(ctx: GameContext, state: GameState, action: GrantAction): ActionResult {
   const { from, to, amount } = action;
   if (!state.nations[from] || !state.nations[to]) return { ok: false, error: "A grant is between two Major Powers in this game." };
   if (!Number.isInteger(amount) || amount < 1) return { ok: false, error: `${amount} BRPs is not a grant.` };
   const room = grantRoom(state, from, to);
   if (room === 0) return { ok: false, error: `${from} may not grant BRPs to ${to} now: it must be an allied Major Power, within the 40-BRP cap, the spending limit and the half-allotment cap for the year, and the rules must allow it.` };
   if (amount > room) return { ok: false, error: `${from} may grant at most ${room} BRPs to ${to} now.` };
+  const blocked = capitalGrantProblem(ctx, state, from, to);
+  if (blocked) return { ok: false, error: blocked };
+  const rec = srOf(state), cost = srGrantCost(amount);
+  const allowance = srAllowanceProblem(rec.used, { [from]: cost });
+  if (allowance) return { ok: false, error: allowance };
   const paid = spend(state, from, amount, `a grant to ${to}`);
   if (!paid.ok) return paid;
   const receiver = paid.state.nations[to];
@@ -76,6 +108,7 @@ export function applyGrant(state: GameState, action: GrantAction): ActionResult 
     ok: true,
     state: {
       ...paid.state,
+      sr: { ...rec, used: { ...rec.used, [from]: (rec.used[from] ?? 0) + cost } },
       nations: { ...paid.state.nations, [from]: { ...paid.state.nations[from], grantedThisYear: (paid.state.nations[from].grantedThisYear ?? 0) + amount }, [to]: { ...receiver, brpTotal: total } },
       grants: [...paid.state.grants, { from, to, amount }],
       noGrants: state.noGrants.some(([g, r]) => g === to && r === from) ? paid.state.noGrants : [...paid.state.noGrants, [to, from]],

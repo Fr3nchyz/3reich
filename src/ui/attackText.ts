@@ -37,7 +37,7 @@ export function nonDefendersLine(p: AttackPreview): string | null {
 /** The defence of a hex with no ground defender, for a row: what is destroyed and what is driven out, both with no roll. */
 function sweepRow(sweep: { destroyed: readonly string[]; moved: readonly string[] }): string {
   const gone = sweep.destroyed.length > 0 ? `${grouped(sweep.destroyed)}: no ground defender, destroyed with no roll` : "";
-  const out = sweep.moved.length > 0 ? `${grouped(sweep.moved)}: ${gone ? "driven out to a friendly port" : "no ground defender, driven out to a friendly port with no roll"}` : "";
+  const out = sweep.moved.length > 0 ? `${grouped(sweep.moved)}: ${gone ? "displaced" : "no ground defender, displaced with no roll"}` : "";
   return [gone, out].filter(Boolean).join("; ");
 }
 

@@ -94,7 +94,7 @@ describe("BRP grants (Ref 11.71)", () => {
   it("any whole number of BRPs from 1 up to the room is a grant; zero, a negative or a fraction is not", () => {
     expect(grant(allied42(), 1)).toMatchObject({ ok: true });
     for (const bad of [0, -1, 0.5, 1.5, Number.NaN]) expect(grant(allied42(), bad), String(bad)).toMatchObject({ ok: false });
-    const r = applyGrant(allied42(), { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 1 });
+    const r = applyGrant(CTX, allied42(), { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 1 });
     expect(r.ok && r.state.grants).toEqual([{ from: "britain", to: "usa", amount: 1 }]);
   });
 
@@ -112,28 +112,28 @@ describe("BRP grants (Ref 11.71)", () => {
   // TODO(verify, Ref 11.71): the grant rules come from web-sourced rulebook text (docs/RULES.md "Web research", spec 02), not the
   // PC manual. The 40-BRP cap is per receiver (the Western Allies together for the U.S.S.R.), not per giver.
   it("the 40-BRP cap is counted per receiver: a grant to one ally does not use up the room for another", () => {
-    const first = applyGrant(allied42(), { type: "GRANT_BRPS", from: "usa", to: "britain", amount: 30 });
+    const first = applyGrant(CTX, allied42(), { type: "GRANT_BRPS", from: "usa", to: "britain", amount: 30 });
     if (!first.ok) throw new Error(first.error);
     expect(grantRoom(first.state, "usa", "britain")).toBe(10);
     expect(grantRoom(first.state, "usa", "ussr")).toBe(40);
-    const second = applyGrant(first.state, { type: "GRANT_BRPS", from: "usa", to: "ussr", amount: 40 });
+    const second = applyGrant(CTX, first.state, { type: "GRANT_BRPS", from: "usa", to: "ussr", amount: 40 });
     expect(second.ok).toBe(true);
   });
 
   it("the no-handing-back record holds each pair once, however many grants are made", () => {
-    const first = applyGrant(allied42(), { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
+    const first = applyGrant(CTX, allied42(), { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
     expect(first.ok).toBe(true);
     if (!first.ok) return;
-    const second = applyGrant(first.state, { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
+    const second = applyGrant(CTX, first.state, { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
     expect(second.ok && second.state.noGrants).toEqual([["usa", "britain"]]);
   });
 
   it("each grant adds its own pair: two givers to one receiver, and one giver to two receivers", () => {
-    const toUssr = applyGrant(allied42(), { type: "GRANT_BRPS", from: "britain", to: "ussr", amount: 10 });
+    const toUssr = applyGrant(CTX, allied42(), { type: "GRANT_BRPS", from: "britain", to: "ussr", amount: 10 });
     if (!toUssr.ok) throw new Error(toUssr.error);
-    const both = applyGrant(toUssr.state, { type: "GRANT_BRPS", from: "usa", to: "ussr", amount: 10 });
+    const both = applyGrant(CTX, toUssr.state, { type: "GRANT_BRPS", from: "usa", to: "ussr", amount: 10 });
     expect(both.ok && both.state.noGrants).toEqual([["ussr", "britain"], ["ussr", "usa"]]);
-    const toUsa = applyGrant(toUssr.state, { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
+    const toUsa = applyGrant(CTX, toUssr.state, { type: "GRANT_BRPS", from: "britain", to: "usa", amount: 10 });
     expect(toUsa.ok && toUsa.state.noGrants).toEqual([["ussr", "britain"], ["usa", "britain"]]);
   });
 });

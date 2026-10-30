@@ -3,12 +3,13 @@ import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
 import { releaseKept } from "./conquest-kept";
-import { refreshFortresses } from "./fortress";
+import { fortressChanges, refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
 import { determineInitiative, initiativeTotals, nextTurn, otherSide, turnIndex } from "./game";
 import { FIRST_STEP, IMPLEMENTED_STEPS, nextStepId } from "./sequence";
 import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
+import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
 import { legalBuilds } from "./construction";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
@@ -69,7 +70,10 @@ export function beginPlay(ctx: GameContext, state: GameState): Transition {
 
 /** A Player Turn begins: spending starts again from nothing, the air record is started (it keeps the control the turn began with, Ref 20.2), Fortress status is refreshed (Ref 4.8) and the scenario's own declarations of war are made (Ref 10.0, 13.0). */
 function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
-  return scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })))));
+  const refreshed = refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })));
+  const declared = scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshed));
+  // Spec 16 R31: report the refresh once, at the Player Turn boundary.
+  return { state: declared.state, events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
@@ -103,8 +107,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");
       const step = nextStepId(pos.step);
       if (step) {
-        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41).
-        const lost = pos.step === "7h" ? loseUnusedGroundSupport(state) : { state, events: [] };
+        // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
+        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : { state, events: [] };
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
@@ -174,7 +178,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7b":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
-      return hasCombatWork(ctx, state);
+      return hasCombatWork(ctx, state) || hasPlaceWork(ctx, state);
     case "3":
       return atWarNow(state);
     case "8a":
@@ -184,7 +188,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "10a":
       return surrenderAsking(state);
     case "9a":
-      return legalGrants(state).length > 0;
+      return legalGrants(ctx, state).length > 0;
     default:
       return true;
   }

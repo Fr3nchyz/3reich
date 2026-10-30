@@ -25,9 +25,9 @@ export interface BattleResult {
   /** Eliminated units of the attacking side, and of the defending side (without the swept ones). */
   lostAttackers: Unit[];
   lostDefenders: Unit[];
-  /** Air units and the like destroyed alone in the hex after the battle (fleets are in `displaced`). */
+  /** Counters destroyed by the legacy sweep (displaced counters have their own list). */
   swept: Unit[];
-  /** Fleets left alone in the hex that moved to a friendly port (`to`) or were eliminated for lack of one (`to` null), spec 12 R9. */
+  /** Counters displaced to a friendly port, air base or Capital, or eliminated (`to` null), specs 12 R9 and 09 R9 / R2. */
   displaced: { unit: Unit; to: string | null }[];
   /** Survivors who advanced into the emptied hex (spec 07, State 4). */
   advanced: Unit[];
@@ -51,7 +51,7 @@ export function trackBattle(prev: BattleResult | null, events: readonly GameEven
   if (!battle) return null;
   const moved = events.flatMap((e) => (e.type === "UNITS_ADVANCED" && e.to === battle!.target ? unitsWithIds(before, e.units) : []));
   if (moved.length > 0) battle = { ...battle, advanced: [...battle.advanced, ...moved] };
-  const displaced = events.flatMap((e) => (e.type === "FLEET_DISPLACED" && before.units[e.unitId] ? [{ unit: before.units[e.unitId]!, to: e.to }] : []));
+  const displaced = events.flatMap((e) => ((e.type === "FLEET_DISPLACED" || e.type === "AIR_DISPLACED") && e.from === battle!.target && before.units[e.unitId] ? [{ unit: before.units[e.unitId]!, to: e.to }] : []));
   if (displaced.length > 0) battle = { ...battle, displaced: [...battle.displaced, ...displaced] };
   const sweptIds = new Set(events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
   const gone = events.flatMap((e) => (e.type === "UNIT_ELIMINATED" && before.units[e.unitId] ? [before.units[e.unitId]!] : []));

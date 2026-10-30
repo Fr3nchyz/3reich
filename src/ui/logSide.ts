@@ -55,7 +55,8 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
   switch (e.type) {
     case "INITIATIVE_DETERMINED":
     case "SETUP_COMPLETE":
-    case "GAME_OVER": return null;
+    case "GAME_OVER":
+    case "FORTRESS_CHANGED": return null; // spec 16 R31: fortress status news
     case "PLAYER_TURN_STARTED":
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender
@@ -68,6 +69,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "UNIT_PLACED":
     case "UNIT_REMOVED":
     case "FLEET_DISPLACED":
+    case "AIR_DISPLACED":
     case "UNIT_ELIMINATED": // the side that owns the unit lost, not the side that attacked
     case "OVERSTACK_ELIMINATED":
     case "UNIT_RETURNED_TO_POOL": // where a lost unit went: the side that lost it
@@ -97,6 +99,8 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "UNITS_MOVED":
     case "UNITS_REDEPLOYED":
     case "UNITS_ADVANCED": return sideOfUnits(e.units, before) ?? actor;
+    case "BREAKTHROUGH":
+    case "EXPLOITERS_PLACED": return e.side;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
     case "SEA_SUPPLY_LAPSED": return sideOfUnits(e.fleets, before) ?? actor;

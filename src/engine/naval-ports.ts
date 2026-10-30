@@ -1,8 +1,12 @@
 import type { GameContext } from "./context";
+import { nationOf } from "./air-bases";
+import { ANGLO_FRENCH_BASE_BAN_UNTIL, WESTERN_ALLIED_OWNERS } from "./air-rules";
+import { controllerOf, sideInWar } from "./control";
 import type { HexId } from "./hex";
 import type { Front, MapHex } from "./map";
 import { DOUBLE_PORT_HEXES, NAVAL_PER_PORT, ONE_HEX_ISLANDS, SMALL_PORT_CAPACITY, SMALL_PORT_HEXES } from "./naval-rules";
 import { NAVAL_BASE_FEATURES } from "./terrain";
+import type { GameState, Unit } from "./types";
 
 /**
  * Port facts (spec 12 R2 and R3; Ref 4.7, 4.9, 5.0, 21.1, 33.0): what a port bases, which Front it serves, which hexes are one-hex
@@ -117,3 +121,26 @@ export const portsOnFront = (ctx: GameContext, front: Front): HexId[] => portsOf
 
 /** Whether the hex is a playable one-hex island (Ref 4.9; see `ONE_HEX_ISLANDS`). */
 export const isOneHexIsland = (ctx: GameContext, hex: HexId): boolean => ONE_HEX_ISLANDS.includes(hex) && hexOf(ctx, hex)?.land != null;
+
+/**
+ * Why a fleet may not base here, or null; room is checked separately (spec 12 R4; Ref 21.1, 26.0, 27.0).
+ * Before 1942 an empty allied port is usable, but no British/French sharing, including airbases, is allowed.
+ * Nationality is the printed nation, even for a counter owned by another Power (R4, Ref 16.0).
+ */
+export function mayBasePort(ctx: GameContext, state: GameState, fleet: Pick<Unit, "id" | "owner" | "nationality">, hex: HexId): string | null {
+  if (!isPort(ctx, hex)) return `${hex} is not a port.`;
+  const side = sideInWar(state, fleet.owner);
+  const holder = controllerOf(ctx, state, hex);
+  if (side === null || holder === null || sideInWar(state, holder) !== side) return `${hex} is not held by the ${side ?? "same"} side.`;
+  const nation = nationOf(fleet);
+  if ((nation === "ussr" && WESTERN_ALLIED_OWNERS.includes(holder)) || (holder === "ussr" && WESTERN_ALLIED_OWNERS.includes(nation))) {
+    return "Russian and Western Allied fleets may not use each other's ports (Ref 27.0).";
+  }
+  if (state.year < ANGLO_FRENCH_BASE_BAN_UNTIL && (nation === "britain" || nation === "france")) {
+    const other = nation === "britain" ? "france" : "britain";
+    if (Object.values(state.units).some((u) => u.id !== fleet.id && u.at === hex && nationOf(u) === other)) {
+      return `British and French units may not share a fleet's port before ${ANGLO_FRENCH_BASE_BAN_UNTIL} (Ref 26.0).`;
+    }
+  }
+  return null;
+}

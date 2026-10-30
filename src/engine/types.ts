@@ -3,6 +3,7 @@ import type { Front } from "./map";
 import type { CombatRecord } from "./combat-record";
 import type { MoveRecord } from "./move-record";
 import type { SrRecord } from "./sr-record";
+import type { ExploitRecord } from "./exploit-record";
 import type { AirFlown, AirState } from "./air-record";
 import type { NavalState } from "./naval-record";
 import type { Conquest, KeptHex } from "./conquest-record";
@@ -329,6 +330,8 @@ export interface GameState {
   moves?: MoveRecord;
   /** Strategic Redeployment so far in the current Player Turn (step 9e, spec 16 C1); absent until the first one, and in an older saved game. */
   sr?: SrRecord;
+  /** Breakthroughs and their exploiting armor in the current Player Turn (spec 16 C1, R10, R11); absent until the first Breakthrough, and in an older saved game. */
+  exploit?: ExploitRecord;
   /** Countries that have been conquered, in order (spec 14); absent in an older saved game, and until the conquest rules are built: nobody has been conquered. */
   conquests?: Conquest[];
   /** Hexes kept at a fall under hostile ground units (V12) that have not passed on yet (ticket 14-25, V62). Absent: none (and in an older saved game). */
