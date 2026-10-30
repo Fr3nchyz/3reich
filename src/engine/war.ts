@@ -3,8 +3,10 @@ import { charge, spend, spendable } from "./brps";
 import { isConquered } from "./conquest-record";
 import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
-import { BRP_COSTS, MINOR_COUNTRY_FORCES } from "./tables";
-import type { Combatant, GameState, Nation, PowerId, Side } from "./types";
+import { MINOR_COUNTRY_FORCES } from "./tables";
+import { declarationCost, minorDeclarationProblem } from "./minors-declare";
+import { isDefenseless } from "./minors-rules";
+import type { Combatant, GameState, MinorCountry, Nation, PowerId, Side } from "./types";
 import { winterAfterDeclaration } from "./winter-record";
 
 /**
@@ -13,8 +15,7 @@ import { winterAfterDeclaration } from "./winter-record";
  *
  * Not built yet (TODO(verify), spec 02): the minor country's forces appearing when it is attacked
  * (step 2); the rule that a declaration on a minor must be followed that turn by a move into it
- * or an attack on it, or it is revoked and the BRPs lost; the 35-BRP price when a declaration on
- * a minor or colony would bring war with a Major Power; alliances (a neutral Major Power joining
+ * or an attack on it, or it is revoked and the BRPs lost; alliances (a neutral Major Power joining
  * a side).
  */
 
@@ -36,8 +37,6 @@ export function sideOfPower(n: Nation): Side | null {
   return n.status === "axis" ? "axis" : n.status === "allied" ? "allies" : null;
 }
 
-const costOf = (on: Combatant) => (isMajorPower(on) ? BRP_COSTS.declareWarOnMajorPower : BRP_COSTS.declareWarOnMinorCountry);
-
 /** Who `by` may declare war on now: not already at war, not on its own side, and the scenario allows it. */
 export function declarationTargets(ctx: GameContext, state: GameState, by: PowerId): Combatant[] {
   const me = state.nations[by];
@@ -53,15 +52,11 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
     if (sideOfPower(other) === null && noNeutrals) continue;
     targets.push(other.id);
   }
-  const minorAllies = new Set<string>(state.minorAllies.map((m) => m.owner));
-  const powers = Object.keys(state.nations) as PowerId[];
   for (const minor of Object.keys(MINOR_COUNTRY_FORCES) as (keyof typeof MINOR_COUNTRY_FORCES)[]) {
-    // A minor already at war with a Major Power is no neutral to attack (it fights for one side); an
-    // active Minor-Ally is handled by the Minor-Ally rules.
-    if (noNeutrals || minorAllies.has(minor) || isConquered(state, minor) || powers.some((p) => atWar(state, p, minor))) continue;
-    targets.push(minor);
+    // Spec 15 R2: include sleeping allies; only active or otherwise fighting minors are excluded.
+    if (minorDeclarationProblem(ctx, state, by, minor) === null) targets.push(minor);
   }
-  return targets.filter((t) => costOf(t) <= spendable(me));
+  return targets.filter((t) => declarationCost(ctx, state, by, t) <= spendable(me));
 }
 
 /** Every declaration the side to move may make now. */
@@ -77,12 +72,22 @@ export function applyDeclaration(ctx: GameContext, state: GameState, action: Ext
   if (!declarationTargets(ctx, state, action.by).includes(action.on)) {
     return { ok: false, error: `${action.by} may not declare war on ${action.on}: it is on the same side, out of the game, protected by the scenario, or beyond what ${action.by} may spend this turn.` };
   }
-  const cost = costOf(action.on);
+  const cost = declarationCost(ctx, state, action.by, action.on);
   const paid = spend(state, action.by, cost, `declaring war on ${combatantName(action.on)}`);
   if (!paid.ok) return paid;
   const events: GameEvent[] = [paid.event, { type: "WAR_DECLARED", by: action.by, on: action.on, cost }];
   const wars: GameState["wars"] = [...paid.state.wars, [action.by, action.on]];
-  const declared = joinsItsSide({ ...paid.state, wars }, action.on);
+  let declared = joinsItsSide({ ...paid.state, wars }, action.on);
+  if (!isMajorPower(action.on)) {
+    const minor = action.on as MinorCountry;
+    // Spec 15 R2/R3/C1: the opponent places the army; defenseless minors skip placement.
+    // Spec 15 R4: record the open duty now; its enforcement belongs to 15-4.
+    declared = { ...declared, countries: { ...declared.countries, [minor]: {
+      ...declared.countries?.[minor], status: "attacked", attacker: action.by,
+      ...(!isDefenseless(action.on) ? { toPlace: state.activeSide === "axis" ? "allies" as const : "axis" as const } : {}),
+      duty: { by: action.by, declared: { year: state.year, season: state.season } },
+    } } };
+  }
   // Ref 28.0: the U.S.S.R. declaring on Germany in a Winter Game Turn makes that turn the first winter at once (spec 14 R10).
   const winter = winterAfterDeclaration(ctx, declared, action.by, action.on);
   return { ok: true, state: winter.state, events: [...events, ...winter.events] };
