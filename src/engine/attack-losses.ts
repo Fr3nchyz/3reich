@@ -95,7 +95,7 @@ export interface ExchangeCost {
 /**
  * The arithmetic of an Exchange, apart from the dice: the side with fewer factors is eliminated, the larger removes at least that many
  * (Ref 12.2). `multiple` is the factor the defenders count at: their terrain multiple in the original attack, 1 in a counterattack.
- * TODO(verify): the defenders' multiplied value is also what they remove when they are the larger side.
+ * Ref 12.2, ruling Q12 (2026-10-29): the defenders remove factors at the same value they count at when they are the larger side.
  */
 export function exchangeCost(attackers: readonly Unit[], defenders: readonly Unit[], multiple: number): ExchangeCost {
   const attackTotal = attackers.reduce((n, u) => n + u.strength, 0);
@@ -125,7 +125,7 @@ export interface Battle {
  * Exchange (Ref 12.2): the side with fewer factors loses everything; the other removes at least as
  * many, chosen by its owner (ALLOCATE_LOSSES) unless only one choice exists. On the original attack the
  * defenders count at their terrain multiple; on a counterattack both sides count basic factors.
- * TODO(verify): the defenders' multiplied value is also what they remove when they are the larger side.
+ * Ref 12.2, ruling Q12 (2026-10-29): the defenders remove factors at the same value they count at when they are the larger side.
  */
 export function applyOutcome(ctx: GameContext, state: GameState, b: Battle): { state: GameState; events: GameEvent[] } {
   const ids = (us: readonly Unit[]) => us.map((u) => u.id);

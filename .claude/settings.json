@@ -1,4 +1,24 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(npm run lint)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run compare-games*)",
+      "Bash(npx vitest run*)",
+      "Bash(npx tsc --noEmit*)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f *)",
+      "Bash(git commit --amend*)",
+      "Bash(git commit * --amend*)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
@@ -21,6 +41,16 @@
           {
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/scripts/claude/pre-push-gate.mjs\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/claude/stop-typecheck.mjs\""
           }
         ]
       }
