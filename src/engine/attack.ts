@@ -10,6 +10,7 @@ import { exploitOf, exploiterIds } from "./exploit-record";
 import { exploitAdvanceProblem, markExploitAttackers } from "./exploit-action";
 import { enterHexes } from "./control";
 import { noteMinorEntry } from "./minors-duty";
+import { MC5_ADVANCE_INTERVENES, minorEntryProblem, noteIntervention } from "./minors-intervene";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { stackingProblem } from "./placement";
@@ -75,6 +76,9 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
   return out;
 }
 
+/** Spec 15 R8: a minor's unit may not advance over its border after an attack (the same test as its ground movement), else null. */
+const advanceBorderProblem = (ctx: GameContext, state: GameState, owner: Unit["owner"], to: HexId): string | null => minorEntryProblem(ctx, state, [owner], to);
+
 /**
  * Why these units may not all end in `to` (stacking and the Anglo-French rule of Ref 5.0, 26.0, as in setup),
  * or null. Units are added one at a time so each sees the ones before it.
@@ -85,7 +89,7 @@ function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string
   let s = state;
   for (const id of ids) {
     const u = s.units[id]!;
-    const problem = angloFrenchStopProblem(ctx, state, u.owner, to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, to);
+    const problem = advanceBorderProblem(ctx, state, u.owner, to) ?? angloFrenchStopProblem(ctx, state, u.owner, to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, to);
     if (problem) return problem;
     s = { ...s, units: { ...s.units, [id]: { ...u, at: to } } };
   }
@@ -111,7 +115,7 @@ export function legalAdvances(ctx: GameContext, state: GameState): Action[] {
       for (let i = from; i < ids.length; i++) {
         const id = ids[i]!;
         const u = s.units[id]!;
-        if ((exploiting && exploitAdvanceProblem(ctx, s, record, id, chance.to)) || (angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to))) continue;
+        if ((exploiting && exploitAdvanceProblem(ctx, s, record, id, chance.to)) || (advanceBorderProblem(ctx, state, u.owner, chance.to) ?? angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to))) continue;
         const next = mask | (1 << i);
         found.push({ mask: next, action: { type: "ADVANCE", side: state.activeSide, units: ids.filter((_, k) => next & (1 << k)), to: chance.to } });
         walk({ ...s, units: { ...s.units, [id]: { ...u, at: chance.to } } }, i + 1, next);
@@ -214,6 +218,11 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
   const moves = movesOf(state); // spec 16 R30 / AER38: advancing counts as moving for fortress supply.
   let next: GameState = { ...state, units, combat: { ...rec, advances }, moves: { ...moves, moved: [...new Set([...moves.moved, ...ids])] } };
   const events: GameEvent[] = [{ type: "UNITS_ADVANCED", units: [...ids], from, to: action.to }];
+  if (MC5_ADVANCE_INTERVENES) { // spec 15 R6 (MC5): standing in a hex of the attacked minor after the advance
+    const helped = noteIntervention(ctx, next, ids.map((id) => next.units[id]!), [action.to]);
+    next = helped.state;
+    events.push(...helped.events);
+  }
   for (const id of ids) {
     const entered = enterHexes(ctx, next, next.units[id]!, [action.to]);
     next = entered.state;
