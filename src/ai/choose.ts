@@ -29,7 +29,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
   // At 7b the computer commits no air yet, so the designations are not worked out either; nor are the redeployments at 9e (the policy asks `srDestinations` per unit, ticket 16-20).
-  const legal = step === "6f" || step === "7b" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
+  const legal = step === "6f" || step === "7b" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(state, legal)
@@ -43,6 +43,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
     : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
     : step === "7a" || step === "7p" ? chooseAttrition(ctx, state, legal, step) // 7p: resolves every Front with its participants; at either step, answers a run's stages (spec 16 Part E, ticket 16-8)
+    : step === "7o" ? chooseLosses(ctx, state, legal, cfg) // 7o: the computer places no exploiters (ticket 16-13), so it only answers the Exchange a human's Exploitation battle leaves it to choose
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg)
     : undefined;
   return picked ?? endTheStep(legal, step);
@@ -65,6 +66,8 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
+    "7j": "The computer does not exploit yet.",
+    "7o": "The computer does not exploit yet.",
     "7h": "No ground attack is worth making at the odds on offer.",
     "7a": "The computer resolves its Attrition at step 7p.",
     "7p": "No Attrition to resolve.",

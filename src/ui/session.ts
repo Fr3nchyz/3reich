@@ -220,6 +220,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `Breakthrough at ${placeName(ctx.map, e.hex)}${e.placeable.length > 0 ? `: ${e.placeable.length} armor unit${e.placeable.length === 1 ? "" : "s"} can move in free` : ""}.`;
     case "EXPLOITERS_PLACED":
       return `${stackSummary(unitsWithIds(before, e.units))} move into the Breakthrough at ${placeName(ctx.map, e.hex)}.`;
+    case "EXPLOIT_MOVED":
+      return e.path.length === 0 ? `${stackSummary(unitsWithIds(before, [e.unit]))} hold the Breakthrough at ${placeName(ctx.map, e.from)}.` : `${stackSummary(unitsWithIds(before, [e.unit]))} exploit from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.path.at(-1)!)}.`;
     case "FORTRESS_CHANGED": {
       const reasons = { "enemy-entered": "an enemy entered", sevastopol: "Sevastopol's control or supply conditions changed", "france-fell": "France has fallen", "west-wall": "the West Wall becomes fortified in 1944", "scenario-start": "the scenario begins" };
       return `${placeName(ctx.map, e.hex)} is ${e.status ? "now" : "no longer"} a fortress: ${reasons[e.why]}.`;

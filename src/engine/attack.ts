@@ -6,7 +6,8 @@ import { resolveOffensiveCombat } from "./combat";
 import { breakthroughAfter, legalPlacements, openBreakthrough } from "./breakthrough";
 import { movesOf } from "./move-record";
 import { combatOf } from "./combat-record";
-import { exploiterIds } from "./exploit-record";
+import { exploitOf, exploiterIds } from "./exploit-record";
+import { exploitAdvanceProblem, markExploitAttackers } from "./exploit-action";
 import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -30,6 +31,12 @@ import type { GameState, Unit } from "./types";
 
 type AttackAction = Extract<Action, { type: "ATTACK" }>;
 type AdvanceAction = Extract<Action, { type: "ADVANCE" }>;
+
+/** Whether the game waits at step 7o, where only exploiting armor attacks and advances (spec 16 R13). */
+const atExploitCombat = (state: GameState): boolean => state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "7o";
+
+/** At 7o only a chance made by exploiters is theirs to advance into (a left-over ordinary chance of step 7h is not). */
+const exploitChance = (state: GameState, units: readonly string[]): boolean => units.every((id) => exploiterIds(state).includes(id));
 
 /** Attackers grouped by the enemy hex they could attack, for every hex that can be attacked now. */
 export function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
@@ -88,9 +95,12 @@ function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string
  * Each way the survivors may advance: any set that fits the hex. Only the first 12 survivors are
  * considered (at most six hexes of two units can attack one hex), which bounds the subsets listed.
  */
-function legalAdvances(ctx: GameContext, state: GameState): Action[] {
+export function legalAdvances(ctx: GameContext, state: GameState): Action[] {
   const found: { mask: number; action: Action }[] = [];
+  const exploiting = atExploitCombat(state);
+  const record = exploitOf(state);
   for (const chance of combatOf(state).advances) {
+    if (exploiting && !exploitChance(state, chance.units)) continue;
     const ids = chance.units.filter((id) => state.units[id] && !(UNSUPPLIED_CANNOT_ADVANCE && wasCutOff(state, id))).slice(0, 12); // Ref 12.21: units cut off at the start of the turn cannot advance
     // A set is listed when advanceProblem finds nothing, and that adds its units one at a time in this order, so a set
     // fits only if the same set without its last unit fits and that unit then fits on top. Walking the sets that way
@@ -100,7 +110,7 @@ function legalAdvances(ctx: GameContext, state: GameState): Action[] {
       for (let i = from; i < ids.length; i++) {
         const id = ids[i]!;
         const u = s.units[id]!;
-        if (angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to)) continue;
+        if ((exploiting && exploitAdvanceProblem(ctx, s, record, id, chance.to)) || (angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to))) continue;
         const next = mask | (1 << i);
         found.push({ mask: next, action: { type: "ADVANCE", side: state.activeSide, units: ids.filter((_, k) => next & (1 << k)), to: chance.to } });
         walk({ ...s, units: { ...s.units, [id]: { ...u, at: chance.to } } }, i + 1, next);
@@ -137,32 +147,56 @@ export function applyAttack(ctx: GameContext, state: GameState, action: AttackAc
   if (far) return { ok: false, error: `${far.id} at ${far.at} is not next to ${action.target} across a hexside ground units may attack over.` };
   if (!attackHexAllowed(rec.targets, action.target)) return { ok: false, error: `${action.target} has already been attacked this turn.` };
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return { ok: false, error: `The ${state.activeSide} side may not attack on the ${target.front} front now.` };
-  const defenders = defendersAt(state, units, action.target);
+  return fight(ctx, state, units, action.target, false);
+}
+
+/**
+ * The battle itself, once the attackers and the hex are known to be legal: ordinary at step 7h (the attackers join the used list and the hex the attacked hexes) or
+ * Exploitation at step 7o (the attackers are marked in their Breakthrough group instead, spec 16 R13, AER17; the event says so).
+ */
+export function fight(ctx: GameContext, state: GameState, units: readonly Unit[], target: HexId, exploit: boolean): ActionResult {
+  const rec = combatOf(state);
+  const ids = units.map((u) => u.id);
+  const stamp = (s: GameState): GameState => exploit
+    ? { ...s, combat: { ...rec, targets: [...rec.targets, target] }, exploit: markExploitAttackers(exploitOf(s), ids) }
+    : { ...s, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, target] } };
+  const tag = exploit ? { exploitation: true as const } : {};
+  const defenders = defendersAt(state, units, target);
   if (defenders.length === 0) {
     // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll; air and the like are destroyed, fleets are driven out to a friendly port (capture.ts).
-    const loners = lonersAt(state, units, action.target);
-    if (loners.length === 0) return { ok: false, error: `${action.target} holds no enemy ground unit to attack.` };
-    const swept = applySweep(ctx, { ...state, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } }, units, action.target);
+    const loners = lonersAt(state, units, target);
+    if (loners.length === 0) return { ok: false, error: `${target} holds no enemy ground unit to attack.` };
+    const swept = applySweep(ctx, stamp(state), units, target);
     const factors = units.reduce((n, u) => n + u.strength, 0);
-    return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated", sweep: true }, ...swept.events] };
+    return { ok: true, state: swept.state, events: [{ type: "COMBAT_RESOLVED", side: state.activeSide, target, attackers: [...ids], attackFactors: factors, defenseFactors: 0, multiplier: 1, rounds: [], outcome: "defender-eliminated", sweep: true, ...tag }, ...swept.events] };
   }
 
-  const numbers = attackNumbers(ctx, state, units, defenders, action.target);
+  const numbers = attackNumbers(ctx, state, units, defenders, target);
   const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier }, state.rngState);
-  const marked: GameState = { ...state, rngState: res.rngState, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] } };
-  const applied = applyOutcome(ctx, marked, { outcome: res.outcome, side: state.activeSide, target: action.target, attackers: units, air: numbers.air, defenders, multiplier: numbers.multiplier });
-  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target: action.target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}) };
+  const marked: GameState = { ...stamp(state), rngState: res.rngState };
+  const applied = applyOutcome(ctx, marked, { outcome: res.outcome, side: state.activeSide, target, attackers: [...units], air: numbers.air, defenders, multiplier: numbers.multiplier });
+  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}), ...tag };
   return { ok: true, state: applied.state, events: [event, ...applied.events] };
 }
 
 export function applyAdvance(ctx: GameContext, state: GameState, action: AdvanceAction): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   const rec = combatOf(state);
-  const chance = rec.advances.find((a) => a.to === action.to);
+  const exploiting = atExploitCombat(state);
+  const chance = rec.advances.find((a) => a.to === action.to && (!exploiting || exploitChance(state, a.units)));
   if (!chance) return { ok: false, error: `No unit may advance into ${action.to}: it was not left empty by a battle this turn, or the advance was made.` };
   const ids = action.units;
   if (!Array.isArray(ids) || ids.length === 0 || new Set(ids).size !== ids.length || ids.some((id) => !chance.units.includes(id) || !Object.hasOwn(state.units, id))) {
     return { ok: false, error: `Only surviving units that attacked ${action.to} may advance into it.` };
+  }
+  if (exploiting) {
+    // Spec 16 R13, AER18: an Exploitation advance may not break the chain; units are tried one at a time, each seeing the ones before it in the hex.
+    let s = state;
+    for (const id of ids) {
+      const broken = exploitAdvanceProblem(ctx, s, exploitOf(state), id, action.to);
+      if (broken) return { ok: false, error: broken };
+      s = { ...s, units: { ...s.units, [id]: { ...s.units[id]!, at: action.to } } };
+    }
   }
   const problem = advanceProblem(ctx, state, ids, action.to);
   if (problem) return { ok: false, error: problem };
@@ -181,7 +215,7 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
     events.push(...entered.events);
   }
   // A won attack with armor in it, advanced into: the hex is a Breakthrough hex (Ref 12.31; spec 16 R10).
-  if (breakthroughAfter(chance)) {
+  if (!exploiting && breakthroughAfter(chance)) { // an Exploitation advance is not a new Breakthrough (spec 16 R13)
     const opened = openBreakthrough(ctx, next, chance);
     next = opened.state;
     events.push(...opened.events);
