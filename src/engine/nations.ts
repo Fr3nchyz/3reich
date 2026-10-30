@@ -9,7 +9,7 @@ export const POWER_NAMES: Record<PowerId, string> = {
   usa: "United States",
 };
 
-/** Names for every owner of a force pool, including minor countries. */
+/** Names for every owner of a force pool, including every minor country (spec 15 C1). */
 export const OWNER_NAMES: Record<ForceOwner, string> = {
   ...POWER_NAMES,
   poland: "Poland",
@@ -19,6 +19,20 @@ export const OWNER_NAMES: Record<ForceOwner, string> = {
   rumania: "Rumania",
   hungary: "Hungary",
   bulgaria: "Bulgaria",
+  arabia: "Arabia",
+  belgium: "Belgium",
+  denmark: "Denmark",
+  greece: "Greece",
+  ireland: "Ireland",
+  luxembourg: "Luxembourg",
+  netherlands: "Netherlands",
+  norway: "Norway",
+  persia: "Persia",
+  portugal: "Portugal",
+  spain: "Spain",
+  sweden: "Sweden",
+  turkey: "Turkey",
+  yugoslavia: "Yugoslavia",
 };
 
 /** Countries whose id is two words (colonies, Eastern Europe, the Baltic States). */

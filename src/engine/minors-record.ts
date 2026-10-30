@@ -1,11 +1,9 @@
 import type { ColonyId, Conquest } from "./conquest-record";
-import { MINOR_COUNTRIES, AXIS_MINOR_ALLIES } from "./minors-rules";
-import { OWNER_NAMES as EXISTING_OWNER_NAMES, combatantName } from "./nations";
-import type { ForceOwner, GameTurn, MinorAlly, MinorCountry, PowerId, Side } from "./types";
+import { MINOR_COUNTRIES, AXIS_MINOR_ALLIES } from "./minors-ids";
+import type { GameTurn, MinorAlly, MinorCountry, PowerId, Side } from "./types";
 
 /** Spec 15 C1: local types until the later state-integration ticket. */
 export type CountryId = MinorCountry | ColonyId | "eastern-europe";
-export type MinorForceOwner = ForceOwner | MinorCountry;
 
 /** Spec 15 C1; conquest is recorded separately by spec 14, never as a status here. */
 export interface CountryRecord {
@@ -57,9 +55,3 @@ export function derivedMinorControl(state: MinorCountryState, country: string | 
   if (state.conquests?.some((c) => c.country === minor)) return null;
   return minor;
 }
-
-/** Spec 15 B4/C1: every possible minor counter owner has a name, without widening shared types yet. */
-export const MINOR_OWNER_NAMES: Readonly<Record<MinorForceOwner, string>> = {
-  ...Object.fromEntries(MINOR_COUNTRIES.map((minor) => [minor, combatantName(minor)])) as Record<MinorCountry, string>,
-  ...EXISTING_OWNER_NAMES,
-};

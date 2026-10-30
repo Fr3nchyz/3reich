@@ -3,6 +3,7 @@ import { isBox, territoryOf } from "./areas";
 import { powerOfCapital } from "./capital";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { derivedMinorControl } from "./minors-record";
 import { sovietCityTaken } from "./soviet";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { ForceOwner, GameState, MinorCountry, PowerId, Side, Unit, UnitType } from "./types";
@@ -50,7 +51,11 @@ export function startingControl(ctx: GameContext): ReadonlyMap<HexId, ForceOwner
 /** Who controls a hex now, or null for land nobody controls (and for sea). */
 export function controllerOf(ctx: GameContext, state: GameState, hex: HexId): ForceOwner | null {
   const held = state.control[hex]; // null is an entry too: nobody controls the hex, whatever the start territory says
-  return held !== undefined ? held : startingControl(ctx).get(hex) ?? null;
+  if (held !== undefined) return held;
+  const start = startingControl(ctx).get(hex);
+  if (start !== undefined) return start;
+  // Spec 15 C1: last fallback, a fighting minor controls its own land unless spec 14 records its conquest (derived, never stored).
+  return ctx.map.hexes[hex]?.land ? derivedMinorControl(state, ctx.map.hexes[hex]?.country) : null;
 }
 
 /** Whether the record says nobody controls this hex (a conquered Power's land outside its own country, spec 14 R4). */
@@ -70,6 +75,20 @@ const ALLIED_FOR_GOOD: readonly ForceOwner[] = ["poland", "free-france"];
 const MINOR_ALLIES: readonly ForceOwner[] = ["finland", "rumania", "hungary", "bulgaria"];
 
 /**
+ * Spec 15 C4.1: the side a minor country with a record fights on. Attacked: opposite the declarer. Allied (helped): the first helper's side.
+ * Neutral, unrecorded or an older saved game: no side. TODO(verify) MC19 (two helpers, one value) is not read here: the first helper decides.
+ */
+function sideOfMinor(state: GameState, owner: ForceOwner): Side | null {
+  const record = state.countries?.[owner as MinorCountry];
+  if (record?.status === "attacked" && record.attacker) {
+    const declarer = sideOfPower(state.nations[record.attacker]);
+    return declarer === null ? null : declarer === "axis" ? "allies" : "axis";
+  }
+  const helper = record?.status === "allied" ? record.helpers?.[0] : undefined;
+  return helper ? sideOfPower(state.nations[helper]) : null;
+}
+
+/**
  * The side an owner fights on right now, or null while it takes no part: a Major Power that is
  * neutral, out of the scenario or Vichy; an inactive Minor-Ally; Vichy France (TODO(verify): the
  * Vichy forces are neutral until they are attacked).
@@ -78,7 +97,7 @@ export function sideInWar(state: GameState, owner: ForceOwner): Side | null {
   if (owner in state.nations) return sideOfPower(state.nations[owner as PowerId]);
   if (ALLIED_FOR_GOOD.includes(owner)) return "allies";
   if (MINOR_ALLIES.includes(owner)) return state.minorAllies.some((m) => m.owner === owner && m.active) ? "axis" : null;
-  return null;
+  return sideOfMinor(state, owner);
 }
 
 /** Whether two owners are enemies: on opposite sides, or (when one takes no side) at war by the record. */
