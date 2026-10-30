@@ -24,6 +24,8 @@ Read `README.md` first: it holds the working rules (cite sources, never invent a
 - `.claude/settings.json` blocks `git push` until `npm run lint && npm run typecheck && npm test && npm run build` passes (`scripts/claude/pre-push-gate.mjs`).
 - Commit as `37098628+Fr3nchyz@users.noreply.github.com`.
 
+CI posts the whole-game comparison summary as an updated PR comment for engine, computer-opponent or data changes; fork PRs receive the job summary only.
+
 ## Conventions for agents (read before building)
 
 - Work in your own git worktree under `3reich-wt/<branch>` next to the main checkout (for example `/home/user/3reich-wt/<branch>`) (symlink `node_modules`), one branch and one pull request per ticket or tightly coupled slice. Never edit another checkout.
