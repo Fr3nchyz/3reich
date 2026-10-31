@@ -57,6 +57,12 @@ describe("settleVitalAreas", () => {
     const quiet = advance(CTX, at7p({}));
     expect(britain(quiet.state)).toBe(britain(s));
   });
+  it("is read again when the Game Turn ends, for a city taken by movement after the last Combat Phase", () => {
+    const s = at7p({ AA7: "germany" }, { activeSide: "allies", position: { part: "player-turn", turn: 2, step: "10b" } });
+    const r = advance(CTX, s);
+    expect(britain(r.state)).toBeLessThanOrEqual(britain(s) - 25);
+    expect(r.state.vitalPaid).toEqual({ gibraltar: true });
+  });
   it("an older saved game, without the field, still loads and plays", () => {
     const s = at7p({});
     expect("vitalPaid" in s).toBe(false);
