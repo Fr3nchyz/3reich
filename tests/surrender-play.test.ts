@@ -35,7 +35,7 @@ import { CTX } from "./helpers";
 // Spec 14 ticket 14-15 (hazards 1 and 3 of the brief): whole computer games that reach Russia's offer to surrender and accept or refuse it. At every state of each game the legal
 // list is not empty and exactly the right side acts; the computer never stalls at the new prompt; the recorded actions replay to the same state.
 // Since spec 17 (ticket 17-1) the computer here never uses a Russian loss again, neither rebuilding it nor taking it in the Free Siberian Transfer (`withoutRussianRebuilds`, legal choices): with Russia rebuilding, no game reaches the offer.
-// Spec 09 R9 keeps displaced planes alive: seeds 3 and 5 no longer offered surrender; with Attrition live (ticket 16-4 wiring) seeds 1 and 8 stopped offering, 5 and 15 started: the games below use 5, 10, 13 and 15, and 3 and 4 for no offer. Ticket 15-5 (conquered income) moved the games again: 10, 11, 15 and 26 offered (5 and 13 no longer did). Ticket 16-13 (the computer exploits) moved them once more: 8, 9, 10 and 20 offer now (11, 15 and 26 no longer do). Ticket 15-7 (Germany walks into the sleeping Axis allies, so the computer's armies take other routes) moved them again: 3, 8, 10 and 20 offer now (9 no longer does), and 4 and 5 are the no-offer games. Acceptance/refusal coverage uses other surrendering games; those two seeds are checked separately below.
+// Spec 09 R9 keeps displaced planes alive: seeds 3 and 5 no longer offered surrender; with Attrition live (ticket 16-4 wiring) seeds 1 and 8 stopped offering, 5 and 15 started: the games below use 5, 10, 13 and 15, and 3 and 4 for no offer. Ticket 15-5 (conquered income) moved the games again: 10, 11, 15 and 26 offered (5 and 13 no longer did). Ticket 16-13 (the computer exploits) moved them once more: 8, 9, 10 and 20 offer now (11, 15 and 26 no longer do). Ticket 15-7 (Germany walks into the sleeping Axis allies, so the computer's armies take other routes) moved them again: 3, 8, 10 and 20 offer now (9 no longer does), and 4 and 5 are the no-offer games. Acceptance/refusal coverage uses other surrendering games; those two seeds are checked separately below. Ticket 15-8 (the Axis allies wake in Summer 1941, so the Axis places four armies and the games differ again): seed 20 no longer offers, so 3, 8 and 10 are the surrendering games.
 
 type Choose = NonNullable<Hooks["choose"]>;
 
@@ -89,7 +89,7 @@ function playNow(scenario: ScenarioKey, seed: number, policy: "accept" | "refuse
   return { run, ctx, events, state, seen, at };
 }
 
-describe.each([3, 8, 10, 20])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
+describe.each([3, 8, 10])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
   const accepted = play("1939", seed, "accept");
   it("ends normally with no anomaly, and the replay equals the final state", () => {
     expect(accepted.run.ended).toBe("game-over");
