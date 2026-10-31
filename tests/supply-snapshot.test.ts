@@ -17,8 +17,6 @@ import { SCENARIOS, type ScenarioKey } from "../scripts/selfplay/scenarios";
 // 1939 seed 2 (ticket 14-7): France now falls with Paris in this game (the computer without its supply rules takes Paris in Fall 1940, after the 80th
 // of the positions), so the positions after the fall differ: 125 positions and hash 3952921572 before, 108 and 1416377456 now. Checked then: the hash of the
 // first 81 positions is the same on the old and the new engine. The 1942 snapshot is unchanged.
-// 1939 seed 2 (ticket 15-7, spec 15 R10): the same 98 positions (the computer's play is the same) but hash 689106388 before, 2713478257 now: the capitals of the four
-// sleeping Axis allies are Axis supply sources and their land carries Axis lines, so `sources` and some lines differ. The 1942 snapshot (allies awake) is unchanged.
 const fnv = (text: string): number => {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619) >>> 0;
@@ -52,9 +50,10 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
 // 1416377456, 1942 seed 1 hash 872140485. Checked then on the old and the new engine: the first action to differ is a BUILD of a returned counter (1939: the 118th
 // action of play, 1942: the 179th) and the first 32 positions of 1939 and 85 of 1942 are the same; the first that differs comes after that build.
 // Both snapshots changed again on purpose in ticket 16-1 (the computer chooses Front Options and pays for the Offensive Option; see tests/ai-stability.test.ts): 1939 seed 2 was 114 positions, hash 1723459913; 1942 seed 1 was 111 positions, hash 1231100402.
-// Ticket 15-5 (income from conquered countries) changed the 1939 seed 2 snapshot from 97 positions, hash 913067668, to 98 positions, hash 2713478257 (a different game from the first conquered-income Year Start on).
+// Ticket 15-5 (income from conquered countries) changed the 1939 seed 2 snapshot from 97 positions, hash 913067668, to 98 positions, hash 689106388 (a different game from the first conquered-income Year Start on).
 // Ticket 12-5: sea designations now rescue counters even with land supply policy disabled; 1942 seed 1 changes from hash 2332416509 to 2533027313 (110 positions).
+// Ticket 16-13 (the computer exploits) changed both: 1939 seed 2 hash 689106388 to 3546749625 (98 positions as before), 1942 seed 1 hash 2533027313 to 2794420972 (110 positions as before).
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 98, hash: 2713478257 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2533027313 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 98, hash: 3546749625 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2794420972 }), 120_000);
 });

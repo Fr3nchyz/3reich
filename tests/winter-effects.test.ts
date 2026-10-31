@@ -213,9 +213,9 @@ describe("step 3: the Axis Offensive Option on the Eastern Front (Ref 28.0)", ()
   });
 });
 
-// Ticket 16-20 (the computer redeploys): seed 1 no longer fights a winter battle on Axis defenders in Russia, seed 2 does.
-describe("whole computer games: the winter in a game the computer plays (1939 seed 2, to its end)", () => {
-  const r = runGame({ scenario: "1939", seed: 2, turns: "end", verify: true });
+// Ticket 16-20 (the computer redeploys): seed 1 no longer fought a winter battle on Axis defenders in Russia, seed 2 did. Ticket 16-13 (the computer exploits): seed 2 no longer does, seed 3 does.
+describe("whole computer games: the winter in a game the computer plays (1939 seed 3, to its end)", () => {
+  const r = runGame({ scenario: "1939", seed: 3, turns: "end", verify: true });
   it("has no anomaly and the winter starts in Winter 1941", () => {
     expect(r.anomalies).toEqual([]);
     expect(r.final.winter).toMatchObject({ stage: "over", inForce: KEY });
