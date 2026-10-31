@@ -3,10 +3,11 @@ import { ISLANDS } from "../src/data/islands";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import type { GameEvent } from "../src/engine/action-types";
+import type { Conquest } from "../src/engine/conquest-record";
 import { conquestIncome } from "../src/engine/conquest-income";
 import { chooseFleets, settleItalySurrender } from "../src/engine/conquest-italy-fall";
 import { controllerOf } from "../src/engine/control";
-import { isPort } from "../src/engine/naval-ports";
+import { isPort, portsOnFront } from "../src/engine/naval-ports";
 import { rollD6 } from "../src/engine/rng";
 import { advance } from "../src/engine/turn";
 import type { GameState } from "../src/engine/types";
@@ -19,7 +20,7 @@ const STEP_7P = { part: "player-turn", turn: 2, step: "7p" } as const;
 const rome = Object.values(MAP.hexes).find((h) => h.country === "italy" && h.name === "Rome")!.id;
 const naples = Object.values(MAP.hexes).find((h) => h.country === "italy" && h.name === "Naples")!.id;
 const italianPorts = Object.values(MAP.hexes).filter((h) => h.land && h.country === "italy" && isPort(ctx, h.id)).map((h) => h.id);
-const MINORS = ["bulgaria", "hungary", "romania", "finland", "yugoslavia", "greece", "albania", "spain", "turkey", "portugal", "switzerland", "sweden", "norway", "denmark", "belgium", "netherlands", "luxembourg", "poland"] as const;
+const MINORS = ["bulgaria", "hungary", "romania", "finland", "yugoslavia", "greece", "albania", "spain", "turkey", "portugal", "sweden", "norway", "denmark", "belgium", "netherlands", "luxembourg", "poland"] as const;
 /** Two Italian ports (and their fleets' berths) that stay Italian: they pass to Germany at the surrender. */
 const NORTH = italianPorts.slice(0, 2);
 const seedFor = (die: number): number => { for (let s = 1; s < 10000; s++) if (rollD6(s).roll === die) return s; throw new Error("no seed"); };
@@ -29,7 +30,7 @@ function position(tweak: Partial<GameState> = {}): GameState {
   s.nations.italy.status = "axis";
   // The Allies hold all the land but Rome (so Italy has not fallen by its capital, and their unit is supplied), Germany keeps Germany; the minor countries they would conquer are already conquered.
   for (const h of Object.values(MAP.hexes)) if (h.land) s.control[h.id] = h.id === rome || NORTH.includes(h.id) ? "italy" : h.country === "germany" ? "germany" : "britain";
-  s.conquests = MINORS.map((country) => ({ country, by: "britain", side: "axis", how: "capital", at: { year: 1942, season: "winter" } }));
+  s.conquests = MINORS.map((country): Conquest => ({ country, by: "britain", side: "axis", how: "capital", at: { year: 1942, season: "winter" } }));
   for (const h of ISLANDS.sicily.hexes) s.control[h] = "britain";
   return s;
 }
@@ -140,5 +141,28 @@ describe("the German share of the Italian fleet (V16)", () => {
     const s = withFleets(position(), [2]);
     s.units.h = { ...counter("h", "germany", "fleet", 5, italianPorts[0]!), nationality: "italy" };
     expect(kept(advance(ctx, s).events).available).toBe(2);
+  });
+  it("a counter keeps its own port when it is German-held after the fall", () => {
+    const s = withFleets(position({ rngState: seedFor(1) }), [1, 1]);
+    const r = advance(ctx, s);
+    expect(r.state.units.f1!.at).toBe(NORTH[0]);
+    expect(r.state.units.f2!.at).toBe(NORTH[1]);
+  });
+  it("a counter with no German-held port with room on its Front is lost and not counted as placed", () => {
+    const s = withFleets(position({ rngState: seedFor(1) }), [2, 2]);
+    for (const h of portsOnFront(ctx, "mediterranean")) if (!NORTH.includes(h) && s.control[h] !== "britain") s.control[h] = "britain"; // no other German-held port on the Front
+    NORTH.forEach((h, i) => { for (let k = 0; k < 4; k++) s.units[`g${i}${k}`] = counter(`g${i}${k}`, "germany", "fleet", 9, h); }); // a port holds 36 factors
+    const r = advance(ctx, s);
+    expect(kept(r.events)).toMatchObject({ counters: 2, placed: 0 });
+    expect(italianShips(r.state).filter((u) => u.nationality === "italy")).toHaveLength(0);
+  });
+});
+
+describe("what Italy held outside Italy (V16)", () => {
+  it("an Italian-held hex in another country passes to Germany too, not to nobody", () => {
+    const libya = Object.values(MAP.hexes).find((h) => h.land && h.country === "libya")!.id;
+    const s = position();
+    s.control[libya] = "italy";
+    expect(controllerOf(ctx, advance(ctx, s).state, libya)).toBe("germany");
   });
 });
