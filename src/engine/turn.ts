@@ -123,8 +123,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
         // Arriving at 10a: at the end of an Allied Player Turn Russia may offer to surrender (spec 14 R7b); the game then waits there for the Axis.
         const offered = step === "10a" ? offerSurrender(ctx, fell.state) : { state: fell.state, events: [] };
         // Leaving 1 for 2: the Axis Minor-Allies wake up in Summer 1941, before the armies of newly activated allies are set up at 2 (spec 15 R9, MC9).
-        const woke = pos.step === FIRST_STEP ? wakeSleepers(offered.state) : { state: offered.state, events: [] };
-        return { state: { ...woke.state, position: { ...pos, step } }, events: [...lost.events, ...fell.events, ...offered.events, ...woke.events] };
+        const woke = pos.step === FIRST_STEP ? wakeSleepers(ctx, { ...offered.state, position: { ...pos, step } }) : { state: { ...offered.state, position: { ...pos, step } }, events: [] };
+        return { state: woke.state, events: [...lost.events, ...fell.events, ...offered.events, ...woke.events] };
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
       const eliminated = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over

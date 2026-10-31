@@ -3,8 +3,8 @@ import type { GameContext } from "./context";
 import { sideInWar } from "./control";
 import type { HexId } from "./hex";
 import { AXIS_MINOR_ALLIES } from "./minors-ids";
-import { attackerInside, garrisonMayEnter, interventionMayEnter, sleepingAlly } from "./minors-axis";
-import { wakeAlly } from "./minors-wake";
+import { attackerInside, garrisonMayEnter, interventionMayEnter } from "./minors-axis";
+import { interventionWake, wakeWithArmy } from "./minors-wake";
 import type { CountryId, CountryRecord } from "./minors-record";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { ForceOwner, GameState, MinorCountry, PowerId } from "./types";
@@ -82,12 +82,11 @@ export function noteIntervention(ctx: GameContext, from: GameState, units: reado
   const events: GameEvent[] = [];
   let state = from;
   // R9: Germany's Intervention wakes a sleeping ally that an Allied power attacked and entered (without that unit inside it would be a Garrison, R10); it then counts as fighting, so the helper is recorded below.
-  for (const country of new Set(hexes.map((x) => ctx.map.hexes[x]?.country))) {
-    if (!units.some((u) => u.owner === "germany") || !sleepingAlly(state, country) || !fightingRecord(state, country) || !attackerInside(ctx, state, country)) continue;
-    const woke = wakeAlly(state, country, "intervention");
-    state = woke.state;
-    events.push(...woke.events);
-  }
+  const entered = new Set(hexes.map((x) => ctx.map.hexes[x]?.country));
+  const wakes = units.some((u) => u.owner === "germany") ? interventionWake(ctx, state).filter((c) => entered.has(c) && attackerInside(ctx, state, c)) : [];
+  const woke = wakeWithArmy(ctx, state, wakes, "intervention");
+  state = woke.state;
+  events.push(...woke.events);
   let countries = state.countries!;
   for (const country of new Set(hexes.map((x) => ctx.map.hexes[x]?.country))) {
     const record = fightingRecord({ ...state, countries }, country);
