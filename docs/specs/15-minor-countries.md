@@ -661,6 +661,15 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 - `tests/minors-axis.test.ts` (41 tests). Nineteen restored mutation checks, each failing a focused suite: any owner may garrison; Italy allowed; attacker's unit inside ignored; war pair kept; no ban; army kept; Finland limit 6; no Bessarabia ban; an awake ally still sleeps; sleeping land not supply; capital not a source; capital in the Allied group; neutral-land entry closed; attacked-ally entry closed; no revocation on a move; Finland limit missing from `endProblem`; ban on the wrong hexes. (An eleventh candidate, changing `record?.status !== "attacked" || !record.attacker` to `&&`, is equivalent and was dropped.)
 - Review follow-up mutations (restored, each failing `tests/minors-axis.test.ts`): Allied-held hex friendly; advance limits dropped in `advanceProblem`; no Garrison on advance; `legalAdvances` ignoring the limits; MC27 off.
 
+## As built, 15-11a
+
+- R12 (Ref 29.0; Peele's errata): `minors-east.ts` exports pure, unwired `createEasternEurope(state)`, guarded to Axis Fall 1939. The future caller schedules it at turn end; this slice adds no turn hook. It records a neutral country, reuses the existing 25-BRP value, neutralizes all its hexes, and permanently removes Polish counters east of the line only if Poland is unconquered. German elimination stays with the existing scenario rule. No army is created and no BRPs or original country values change.
+- `easternEuropeCountryOf(ctx, state, hex)` projects permanent political membership from the created record: Baltic land, eastern Poland and Bessarabia belong to Eastern Europe. This reader is unwired; existing map, conquest, movement and income readers are not changed. The record shape has no land or value fields, so these facts remain separate pure exports. Full integration is deferred.
+- `easternEuropeDeclarationProblem(ctx, state, side)` reuses ordinary declaration restrictions and the German 1940 / Soviet Fall 1939 gates, additionally rejecting the Soviet declaration during Axis Fall 1939. It accepts a power or a coalition; MC13 coalition representatives are Germany and the U.S.S.R. No declaration target, action, payment or war is added.
+- Reused TODO(verify) MC13 defaults: `MC13_EASTERN_EUROPE_ARMY = []`, `MC13_EASTERN_EUROPE_CONTROLLER = null`, `MC13_POLISH_REMOVAL_AT_CREATION = true` (immediate permanent removal, no transfer to an Eastern European army or pool), `MC13_SIDE_DECLARERS = { axis: "germany", allies: "ussr" }`. Cities remain 15-5's map-feature reading; no new verification ids.
+- `tests/minors-east.test.ts` pins repository geography, creation guards, neutral control, immutable state, unchanged values, absent army, old saves, idempotence, political membership, Polish-only removal and conquest exception, and declaration gates/restrictions.
+- Expected computer-game effect: none; no production caller imports this module. Fixed-seed hashes and recordings are unchanged.
+
 
 ## As built, 15-9a
 
