@@ -12,6 +12,7 @@ import type { CountryId, CountryRecord } from "./minors-record";
 import type { SiberianRecord, SovietRecord } from "./soviet-record";
 import type { GameResult, VictoryRecord, VictoryRules } from "./victory-record";
 import type { RussianWinter } from "./winter-record";
+import type { VitalPaid } from "./vital-areas";
 
 /** Minor countries that can be attacked, each with forces on the Minor Country Forces chart (Ref 14.0). */
 export type MinorCountry =
@@ -351,6 +352,8 @@ export interface GameState {
   soviet?: SovietRecord;
   /** What the victory rules remember during play (spec 14): the Campaign's Winter 1943 Objective count. Absent: nothing yet. */
   victory?: VictoryRecord;
+  /** Which vital production area losses Britain has paid (spec 14 R8, V27); absent in an older saved game: none paid yet. */
+  vitalPaid?: VitalPaid;
   /** Who won, set once, together with the phase "game-over" (spec 14 R3). Absent while the game is on, and in a game over saved before this existed. */
   result?: GameResult;
   /**
