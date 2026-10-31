@@ -24,14 +24,16 @@ export function vitalBalance(total: number, loss: number, deficitAllowed: boolea
   return deficitAllowed ? total - loss : Math.max(0, total - loss);
 }
 
+// spec 14 R8: use map city names, and the controller's current side, for both areas.
+const axisHoldsCity = (ctx: GameContext, state: GameState) => (name: string): boolean => {
+  const hex = Object.values(ctx.map.hexes).find((h) => h.name === name);
+  if (!hex) throw new Error(`Missing vital area city: ${name}`);
+  return controllingSide(ctx, state, hex.id) === "axis";
+};
+
 /** What Britain owes now, given what was already paid. Pure. */
 export function vitalAreasDue(ctx: GameContext, state: GameState, paid: VitalPaid): VitalDue {
-  // spec 14 R8: use map city names, and the controller's current side, for both areas.
-  const axisHolds = (name: string): boolean => {
-    const hex = Object.values(ctx.map.hexes).find((h) => h.name === name);
-    if (!hex) throw new Error(`Missing vital area city: ${name}`);
-    return controllingSide(ctx, state, hex.id) === "axis";
-  };
+  const axisHolds = axisHoldsCity(ctx, state);
   // spec 14 R8: separate, once-only losses; neither is refunded on recapture (V27_NO_RETURN).
   const gibraltar = !paid.gibraltar && axisHolds("Gibraltar");
   const suez = !paid.suez && suezLost([axisHolds("Suez"), axisHolds("Alexandria")]);
@@ -39,11 +41,19 @@ export function vitalAreasDue(ctx: GameContext, state: GameState, paid: VitalPai
 }
 
 /** New state with Britain's losses removed (negative allowed, V27), and new paid flags. */
-export function payVitalAreas(ctx: GameContext, state: GameState, paid: VitalPaid): { state: GameState; paid: VitalPaid; due: VitalDue } {
+export function payVitalAreas(ctx: GameContext, state: GameState, paid: VitalPaid, noReturn: boolean = V27_NO_RETURN): { state: GameState; paid: VitalPaid; due: VitalDue } {
   const due = vitalAreasDue(ctx, state, paid);
   // spec 14 R8: brps.ts charges clamp at zero; copy Britain to preserve the V27 deficit without spending.
   const britain = state.nations.britain;
   const next = { ...state, nations: { ...state.nations, britain: { ...britain, brpTotal: vitalBalance(britain.brpTotal, due.total) } } };
   // spec 14 R8: retain previously paid flags even after the cities are retaken (V27_NO_RETURN).
-  return { state: next, paid: { ...paid, ...(due.gibraltar ? { gibraltar: true } : {}), ...(due.suez ? { suez: true } : {}) }, due };
+  const merged: VitalPaid = { ...paid, ...(due.gibraltar ? { gibraltar: true } : {}), ...(due.suez ? { suez: true } : {}) };
+  if (noReturn) return { state: next, paid: merged, due };
+  // The alternative: a city retaken by the Allies clears its flag, so a later Axis capture costs again.
+  const holds = axisHoldsCity(ctx, state);
+  const kept: VitalPaid = {
+    ...(merged.gibraltar && holds("Gibraltar") ? { gibraltar: true } : {}),
+    ...(merged.suez && suezLost([holds("Suez"), holds("Alexandria")]) ? { suez: true } : {}),
+  };
+  return { state: next, paid: kept, due };
 }

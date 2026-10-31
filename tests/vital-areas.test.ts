@@ -56,6 +56,10 @@ describe("vital production areas (spec 14 R8)", () => {
     expect(back.state).toEqual(retaken);
     expect(back.paid).toEqual(first.paid);
     expect(vitalAreasDue(CTX, first.state, back.paid).total).toBe(0);
+    // The alternative (V27_NO_RETURN off): the retaken cities clear their flags, so a later capture costs again.
+    const cleared = payVitalAreas(CTX, retaken, first.paid, false);
+    expect(cleared.paid).toEqual({});
+    expect(payVitalAreas(CTX, held({ AA7: "germany" }), cleared.paid, false).due.total).toBe(VITAL_AREA_LOSS);
   });
   it("allows a deficit that stops spending; the alternative clamps at zero", () => {
     expect(V27_DEFICIT_ALLOWED).toBe(true);
