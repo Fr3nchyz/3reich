@@ -138,6 +138,8 @@ export type GameEvent =
   | { type: "MINOR_INTERVENED"; minor: MinorCountry; by: PowerId }
   /** Spec 15 R10: German units entered a sleeping Axis ally that `revoked` had declared on, with none of `revoked` inside: the declaration is revoked, the ally does not wake. */
   | { type: "MINOR_GARRISONED"; minor: MinorCountry; by: PowerId; revoked: PowerId; removed: string[] }
+  /** Spec 15 R9: a sleeping Axis Minor-Ally woke (Summer 1941 or the Intervention); `value` joined the total of `of`; `toPlace` is true when the Axis must now set its army up at step 2. */
+  | { type: "MINOR_ALLY_WOKE"; minor: MinorCountry; of: PowerId; value: number; cause: "summer-1941" | "intervention"; toPlace: boolean }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

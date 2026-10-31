@@ -143,11 +143,11 @@ describe("R10: a Garrison revokes an Allied declaration and does not wake the al
     const s = declared({ countries: { hungary: { status: "attacked", attacker: "britain", closedTo: ["france"] } } });
     expect(okOf(move(s, ["g1"], ["R31"])).state.countries?.hungary?.closedTo).toEqual(["france", "britain"]);
   });
-  it("an Allied unit inside: Germany's entry is an Intervention (15-8), not a Garrison, so it is refused here and nothing is revoked", () => {
+  it("an Allied unit inside: Germany's entry is an Intervention (15-8), not a Garrison: it is allowed, wakes the ally, and nothing is revoked", () => {
     const s = declared();
     const withB = { ...s, units: { ...s.units, b1: inf("b1", "britain", "R32", 3, 3) } };
     expect(garrisonMayEnter(CTX, withB, "germany", "R31")).toBe(false);
-    expect(entryProblem(CTX, withB, ["germany"], "R31")).not.toBeNull();
+    expect(entryProblem(CTX, withB, ["germany"], "R31")).toBeNull();
     expect(noteGarrison(CTX, withB, [s.units.g1!], ["R31"]).events).toEqual([]);
   });
   it("Italian units never make a Garrison", () => {

@@ -3,7 +3,8 @@ import type { GameContext } from "./context";
 import { sideInWar } from "./control";
 import type { HexId } from "./hex";
 import { AXIS_MINOR_ALLIES } from "./minors-ids";
-import { garrisonMayEnter } from "./minors-axis";
+import { attackerInside, garrisonMayEnter, interventionMayEnter, sleepingAlly } from "./minors-axis";
+import { wakeAlly } from "./minors-wake";
 import type { CountryId, CountryRecord } from "./minors-record";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { ForceOwner, GameState, MinorCountry, PowerId } from "./types";
@@ -64,6 +65,7 @@ export function minorEntryProblem(ctx: GameContext, state: GameState, owners: re
   for (const o of owners) {
     if (o === country || o === record.attacker) continue;
     if (garrisonMayEnter(ctx, state, o, hex)) continue; // R10: a German Garrison walks in; the attacker has no unit inside
+    if (interventionMayEnter(ctx, state, o, hex)) continue; // R9: Germany's Intervention in a sleeping ally the attacker has entered
     if (!isMinorOwner(o) && Object.hasOwn(state.nations, o) && side !== null && sideInWar(state, o) === side) continue; // the Intervention (R6)
     return `${hex} is in ${country}, which ${o} may not enter: only its attacker and a Major Power of the other side may (R5).`;
   }
@@ -75,10 +77,18 @@ export function minorEntryProblem(ctx: GameContext, state: GameState, owners: re
  * (first to Intervene first, MC19), the minor is then `allied`, and MINOR_INTERVENED is logged once for each new helper. A conquered minor cannot be helped; air and naval
  * missions are not moves and never call this.
  */
-export function noteIntervention(ctx: GameContext, state: GameState, units: readonly { owner: ForceOwner }[], hexes: readonly HexId[]): { state: GameState; events: GameEvent[] } {
-  if (!state.countries) return { state, events: [] };
-  let countries = state.countries;
+export function noteIntervention(ctx: GameContext, from: GameState, units: readonly { owner: ForceOwner }[], hexes: readonly HexId[]): { state: GameState; events: GameEvent[] } {
+  if (!from.countries) return { state: from, events: [] };
   const events: GameEvent[] = [];
+  let state = from;
+  // R9: Germany's Intervention wakes a sleeping ally that an Allied power attacked and entered (without that unit inside it would be a Garrison, R10); it then counts as fighting, so the helper is recorded below.
+  for (const country of new Set(hexes.map((x) => ctx.map.hexes[x]?.country))) {
+    if (!units.some((u) => u.owner === "germany") || !sleepingAlly(state, country) || !fightingRecord(state, country) || !attackerInside(ctx, state, country)) continue;
+    const woke = wakeAlly(state, country, "intervention");
+    state = woke.state;
+    events.push(...woke.events);
+  }
+  let countries = state.countries!;
   for (const country of new Set(hexes.map((x) => ctx.map.hexes[x]?.country))) {
     const record = fightingRecord({ ...state, countries }, country);
     if (!record) continue;
@@ -93,7 +103,7 @@ export function noteIntervention(ctx: GameContext, state: GameState, units: read
       events.push({ type: "MINOR_INTERVENED", minor, by: by });
     }
   }
-  return events.length ? { state: { ...state, countries }, events } : { state, events };
+  return { state: countries === state.countries ? state : { ...state, countries }, events };
 }
 
 /**

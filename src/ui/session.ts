@@ -176,6 +176,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${POWER_NAMES[e.by]} did not enter or attack ${cap(e.minor)}: the declaration is revoked (${e.brpsLost} BRPs lost), ${cap(e.minor)} is neutral again.`;
     case "MINOR_GARRISONED":
       return `${POWER_NAMES[e.by]} garrisons ${cap(e.minor)}: the declaration of ${POWER_NAMES[e.revoked]} is revoked and ${cap(e.minor)} stays asleep.`;
+    case "MINOR_ALLY_WOKE":
+      return `${cap(e.minor)} wakes as an ally of ${POWER_NAMES[e.of]}${e.cause === "intervention" ? " (Intervention)" : ""}: ${e.value} BRPs join ${POWER_NAMES[e.of]}'s total${e.toPlace ? ", and its army is set up at step 2" : ""}.`;
     case "MINOR_INTERVENED":
       return `${POWER_NAMES[e.by]} intervenes in ${cap(e.minor)}: it fights beside ${POWER_NAMES[e.by]}.`;
     case "MINOR_FORCES_PLACED":

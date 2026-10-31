@@ -23,7 +23,8 @@ const capital = (ctx: GameContext, at: HexId) =>
 const objective = (ctx: GameContext, at: HexId) => ctx.map.hexes[at]?.features.includes("objective") ?? false;
 export const pending = (state: GameState, country: MinorCountry) =>
   MINOR_COUNTRIES.includes(country) && !!state.countries?.[country]?.toPlace &&
-  state.countries?.[country]?.status !== "neutral" && !state.conquests?.some((c) => c.country === country);
+  (state.countries?.[country]?.status !== "neutral" || state.minorAllies.some((m) => m.owner === country && m.active)) && // R9: a woken ally's record stays neutral while its army waits
+  !state.conquests?.some((c) => c.country === country);
 
 /** Spec 15 R3/MC1: current destinations per chart kind, not a Cartesian set of complete armies.
  * Complete placements must also satisfy the capital requirement and combined stacking in apply.
