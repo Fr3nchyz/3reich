@@ -104,7 +104,7 @@ function groupOfHex(ctx: GameContext, state: GameState, side: Side, hex: HexId, 
  * Minor-Ally (17.3 makes it German ground). Control of the hex is not changed. Used where `controllingSide` was read for tracing and for sources.
  */
 export const supplyFriendly = (ctx: GameContext, state: GameState, side: Side, hex: HexId): boolean =>
-  controllingSide(ctx, state, hex) === side || (MC10_SLEEPING_LAND_SUPPLIES && side === "axis" && sleepingAllyOfHex(ctx, state, hex) !== null);
+  controllingSide(ctx, state, hex) === side || (MC10_SLEEPING_LAND_SUPPLIES && side === "axis" && [null, "axis"].includes(controllingSide(ctx, state, hex)) && sleepingAllyOfHex(ctx, state, hex) !== null); // an Allied-held hex of a sleeping ally is not Axis ground
 
 /** Whether a capital hex counts: a Major Power's always; a minor country's while that minor fights on the side. */
 function capitalCounts(state: GameState, side: Side, country: string | undefined): boolean {

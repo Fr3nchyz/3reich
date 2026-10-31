@@ -39,6 +39,13 @@ export const MC22_FINLAND_GARRISON_MAX_FACTORS = 5;
 /** TODO(verify) MC22, spec 15 R10, Ref 29.0: no German Garrison in Bessarabia (the Rumanian hexes of Eastern Europe) unless Germany is at war with the U.S.S.R. Off: no ban. */
 export const MC22_BESSARABIA_BAN = true;
 
+/**
+ * TODO(verify) MC27, spec 15 R10 / errata: whether air units count among the five German factors allowed in Finland. The errata says "factors"; the opening setup limit
+ * (`max-factors`) counts air units, replacements included, so this does too. Off: only ground units and replacements count.
+ */
+export const MC27_FINLAND_LIMIT_COUNTS_AIR = true;
+const limitFactors = (u: Pick<Unit, "type" | "strength">): number => (!MC27_FINLAND_LIMIT_COUNTS_AIR && u.type === "air" ? 0 : factorsOf(u));
+
 const isOwner = (o: ForceOwner): boolean => o === "germany" || (!MC10_ONLY_GERMANY_ENTERS && o === "italy");
 
 /**
@@ -93,8 +100,8 @@ export function garrisonLimitProblem(ctx: GameContext, state: GameState, units: 
   if (ctx.map.hexes[to]?.country !== "finland" || sleepingAllyOfHex(ctx, state, to) === null) return null;
   const moving = new Set(units.map((u) => u.id));
   const germans = (u: Pick<Unit, "owner">) => u.owner === "germany";
-  const there = Object.values(state.units).filter((u) => germans(u) && !moving.has(u.id) && ctx.map.hexes[u.at]?.country === "finland").reduce((n, u) => n + factorsOf(u), 0);
-  const added = units.filter(germans).reduce((n, u) => n + factorsOf(u), 0);
+  const there = Object.values(state.units).filter((u) => germans(u) && !moving.has(u.id) && ctx.map.hexes[u.at]?.country === "finland").reduce((n, u) => n + limitFactors(u), 0);
+  const added = units.filter(germans).reduce((n, u) => n + limitFactors(u), 0);
   return added > 0 && there + added > MC22_FINLAND_GARRISON_MAX_FACTORS ? `At most ${MC22_FINLAND_GARRISON_MAX_FACTORS} German factors may garrison Finland (R10, errata); this would make ${there + added}.` : null;
 }
 

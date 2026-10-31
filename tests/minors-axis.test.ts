@@ -245,3 +245,56 @@ describe("R10, MC10: German units in a sleeping ally are in supply (the Helsinki
     expect(unsuppliedUnits(ON, g, "axis")).toEqual(["g1"]); // Berlin lost, Budapest holds an enemy: the only other sleeping capitals are not allies here
   });
 });
+
+// Review fixes (ticket 15-7): Allied-held hexes, advances, air units in the Finland count.
+import { turnKey } from "../src/engine/combat-record";
+import { MC27_FINLAND_LIMIT_COUNTS_AIR } from "../src/engine/minors-axis";
+
+/** Step 7h, Axis to act, a won attack left `to` empty and the units in `ids` may advance into it. */
+function advancing(units: ReturnType<typeof inf>[], to: string, tweak: Partial<GameState> = {}): GameState {
+  const s = at6f(units, "axis", SCENARIO_1939, tweak);
+  return { ...s, position: { part: "player-turn", turn: 1, step: "7h" }, combat: { turn: turnKey(s), attacked: units.map((u) => u.id), targets: [to], pending: null, advances: [{ to, units: units.map((u) => u.id) }] } };
+}
+
+describe("review: supplyFriendly and an Allied-held hex", () => {
+  it("an Allied-controlled hex of an attacked sleeping ally is not Axis ground or an Axis source", () => {
+    const s = declared({ control: { R31: "britain" } });
+    expect(supplyFriendly(CTX, s, "axis", "R31")).toBe(false);
+    expect(supplyFriendly(CTX, s, "axis", "R32")).toBe(true); // uncontrolled sleeping land still is
+    const capital = declared({ control: { S30: "britain" } });
+    expect(supplySources(CTX, capital, "axis")).not.toContain("S30");
+  });
+});
+
+describe("review: advances", () => {
+  it("Finland's five factors hold on an advance (listed and applied)", () => {
+    const s = advancing([inf("g1", "germany", "D40", 3, 3), inf("g2", "germany", "D40", 3, 3)], "D41");
+    const full = { ...s, units: { ...s.units, f1: inf("f1", "germany", "D42", 1, 3) } };
+    const r = applyAction(CTX, full, { type: "ADVANCE", side: "axis", units: ["g1", "g2"], to: "D41" });
+    expect(errorOf(r)).toMatch(/at most 5/i);
+    expect(legalActions(CTX, full).filter((a) => a.type === "ADVANCE").every((a) => a.type === "ADVANCE" && a.units.length === 1)).toBe(true);
+  });
+  it("the Bessarabia ban holds on an advance, until Germany is at war with the U.S.S.R.", () => {
+    const s = advancing([inf("g1", "germany", "S35", 3, 3)], "S36");
+    expect(errorOf(applyAction(CTX, s, { type: "ADVANCE", side: "axis", units: ["g1"], to: "S36" }))).toMatch(/Bessarabia/);
+    expect(legalActions(CTX, s).some((a) => a.type === "ADVANCE")).toBe(false);
+    const war = { ...s, wars: [...s.wars, ["germany", "ussr"] as [never, never]] };
+    expect(applyAction(CTX, war, { type: "ADVANCE", side: "axis", units: ["g1"], to: "S36" }).ok).toBe(true);
+  });
+  it("a German advance into an attacked sleeping ally is a Garrison and revokes the declaration", () => {
+    const d = declared();
+    const s = advancing([inf("g1", "germany", "R30", 3, 3)], "R31", { wars: d.wars, countries: d.countries });
+    const full = { ...s, units: { ...s.units, h1: d.units.h1! } };
+    const r = okOf(applyAction(CTX, full, { type: "ADVANCE", side: "axis", units: ["g1"], to: "R31" }));
+    expect(r.state.countries?.hungary).toEqual({ status: "neutral", closedTo: ["britain"] });
+    expect(r.events.some((e) => e.type === "MINOR_GARRISONED")).toBe(true);
+  });
+});
+
+describe("review: MC27 air units in the Finland count", () => {
+  it("air factors count against the five (default)", () => {
+    expect(MC27_FINLAND_LIMIT_COUNTS_AIR).toBe(true);
+    const s = at6f([inf("a1", "germany", "D41", 4, 3, "air"), inf("g9", "germany", "D44", 1, 3)]);
+    expect(garrisonLimitProblem(CTX, s, [inf("x1", "germany", "L32", 2, 3)], "D43")).toMatch(/at most 5/i);
+  });
+});
