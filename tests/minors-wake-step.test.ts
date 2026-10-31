@@ -161,7 +161,8 @@ describe("R9: Germany's Intervention wakes a sleeping ally early", () => {
     if (r.ok) expect(r.state.minorAllies.find((m) => m.owner === "hungary")!.active).toBe(false);
   });
   it("noteIntervention by an Italian unit alone never wakes it", () => {
-    const s = withBritish(true);
+    const w = withBritish(true);
+    const s = { ...w, units: { ...w.units, g9: inf("g9", "germany", "R31", 3, 3) } }; // a German unit already inside: only the mover's owner may wake it
     const r = noteIntervention(CTX, s, [{ owner: "italy" }], ["R31"]);
     expect(r.events.some((e) => e.type === "MINOR_ALLY_WOKE")).toBe(false);
     expect(r.state.minorAllies.find((m) => m.owner === "hungary")!.active).toBe(false);
