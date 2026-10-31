@@ -48,6 +48,19 @@ describe("occupationCount", () => {
   });
 });
 
+describe("the other V21 switches", () => {
+  it("air factors count only when the air switch is on", () => {
+    const s = pos([ground("g", 30), airU("a", 15)]);
+    expect(occupationCountWith(CTX, s, { navalCounts: false, airCounts: true })).toMatchObject({ air: 15, total: 45, met: true });
+    expect(occupationCountWith(CTX, s, { navalCounts: false, airCounts: false })).toMatchObject({ air: 0, total: 30, totalOk: false, met: false });
+  });
+  it("airborne and replacements are ground only when the airborne switch is on", () => {
+    const s = pos([ground("g", 20), counter("ab", "germany", "airborne", 6, "A50", 4), counter("rp", "germany", "replacement", 4, "B49")]);
+    expect(occupationCountWith(CTX, s, { navalCounts: false, airborneIsGround: true })).toMatchObject({ ground: 30, groundOk: true });
+    expect(occupationCountWith(CTX, s, { navalCounts: false, airborneIsGround: false })).toMatchObject({ ground: 20, total: 20, groundOk: false });
+  });
+});
+
 describe("occupationShortfall", () => {
   it("met costs nothing", () => {
     expect(occupationShortfall(CTX, pos([ground("g", 40), airU("a", 10)]))).toEqual({ met: true, missingTotal: 0, missingGround: 0, penalty: 0, redeployOnlyToFix: false });

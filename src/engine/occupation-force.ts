@@ -27,8 +27,7 @@ export const V21_AIR_COUNTS = true;
 export const V21_PENALTY_PAYER = "germany" as const;
 /** TODO(verify) V21: airborne and replacement counters are ground (as V17 in `soviet-surrender.ts`). */
 export const V21_AIRBORNE_IS_GROUND = true;
-/** TODO(verify) V21: once per turn is not enforced here; the caller applies `applyShortfall` once per check. */
-export const V21_ONCE_PER_TURN = false;
+// TODO(verify) V21: once per turn is not enforced here; the caller applies `applyShortfall` once per check.
 
 export interface OccupationCount {
   ground: number;
@@ -42,12 +41,16 @@ export interface OccupationCount {
 
 export interface OccupationSwitches {
   navalCounts: boolean;
+  /** Defaults to `V21_AIR_COUNTS`. */
+  airCounts?: boolean;
+  /** Defaults to `V21_AIRBORNE_IS_GROUND`; off, only infantry and armor are ground. */
+  airborneIsGround?: boolean;
 }
-
-const isGround = (u: Unit): boolean => (V21_AIRBORNE_IS_GROUND ? isGroundCombatUnit(u) : u.type === "infantry" || u.type === "armor");
 
 /** Same as `occupationCount` with the naval switch given, so a test can flip it. */
 export function occupationCountWith(ctx: GameContext, state: GameState, opts: OccupationSwitches): OccupationCount {
+  const airCounts = opts.airCounts ?? V21_AIR_COUNTS;
+  const isGround = (u: Unit): boolean => ((opts.airborneIsGround ?? V21_AIRBORNE_IS_GROUND) ? isGroundCombatUnit(u) : u.type === "infantry" || u.type === "armor");
   let ground = 0;
   let air = 0;
   let naval = 0;
@@ -55,7 +58,7 @@ export function occupationCountWith(ctx: GameContext, state: GameState, opts: Oc
   for (const u of Object.values(state.units)) {
     if (sideInWar(state, u.owner) !== "axis" || ctx.map.hexes[u.at]?.country !== RUSSIA_COUNTRY) continue;
     if (isGround(u)) ground += u.strength;
-    else if (u.type === "air" && V21_AIR_COUNTS) air += u.strength;
+    else if (u.type === "air" && airCounts) air += u.strength;
     else if (u.type === "fleet") naval += u.strength;
   }
   const total = ground + air + (opts.navalCounts ? naval : 0);
