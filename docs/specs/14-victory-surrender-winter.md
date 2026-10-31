@@ -947,7 +947,7 @@ Every Beta ticket is built: 14-1 to 14-7, 14-11 to 14-16, 14-18 to 14-20 and 14-
 - **The fall.** Same stages as any Power (conquest-stages.ts); every Italian-held hex passes to Germany (not only Italy's own country); Italian units leave; the Conquest record says `how: "italian-surrender"`, so Germany is paid half of Italy's starting BRPs while it holds Rome (`conquestIncome`).
 - **The fleet.** `before` rolls one die from `rngState` (always, even with no fleet), the share is `germanNavalShare(die, italianNavalFactors)`, and `chooseFleets` takes Italian fleet counters by unit number, the last cut down to what is left. `after` sets them up as German counters with Italian nationality (so they keep the Italian naval DRM and, with Italy's pool gone, are never rebuilt) in a German-held port on the Front of the hex they stood in, that hex first; a counter with no such port with room is lost. The event `ITALIAN_FLEET_KEPT` (die, available, share, counters, placed) is written after the fall's own events and read by the log (`conquestText.ts`).
 - **Shared files.** `turn.ts`, `conquest.ts` (the pass rule for `italian-surrender`), `action-types.ts` (one event), `ui/conquestText.ts`, `ui/session.ts`, `ui/logSide.ts`.
-- **Tests.** `tests/conquest-italy-fall.test.ts` (16).
+- **Tests.** `tests/conquest-italy-fall.test.ts` (19).
 - **TODO(verify).** V16 stays; its row now also covers where the kept fleet is placed (same Front, first German-held port with room).
 
 ## As built (ticket 14-24: docs and the program check, Beta milestone)

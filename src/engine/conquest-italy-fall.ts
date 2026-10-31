@@ -3,7 +3,7 @@ import { fall } from "./conquest";
 import { germanNavalShare, italianNavalFactors, italySurrenderTest } from "./conquest-italy";
 import type { FallStep } from "./conquest-stages";
 import type { GameContext } from "./context";
-import { mayBasePort, portCapacity, portFronts, portsOnFront } from "./naval-ports";
+import { mayBasePort, portFronts, portsOnFront } from "./naval-ports";
 import { stackingProblem } from "./placement";
 import { rollD6 } from "./rng";
 import type { GameState, Unit } from "./types";
@@ -54,8 +54,7 @@ export function italySteps(): { before: FallStep; after: FallStep } {
         const front = ctx.map.hexes[was]?.front ?? "mediterranean";
         const fleet: Unit = { ...u, owner: "germany", nationality: "italy" }; // keeps the Italian naval DRM; Italy's pool is gone, so it is never rebuilt
         const ports = [...(portFronts(ctx, was).length > 0 ? [was] : []), ...portsOnFront(ctx, front)];
-        const used = (h: string): number => Object.values(s.units).reduce((n, o) => n + (o.type === "fleet" && o.at === h ? o.strength : 0), 0);
-        const at = ports.find((h) => mayBasePort(ctx, s, fleet, h) === null && used(h) + u.strength <= portCapacity(ctx, h) && stackingProblem(ctx, s, "germany", { type: "fleet", strength: u.strength, nationality: "italy" }, h) === null);
+        const at = ports.find((h) => mayBasePort(ctx, s, fleet, h) === null && stackingProblem(ctx, s, "germany", { type: "fleet", strength: u.strength, nationality: "italy" }, h) === null);
         if (at === undefined) continue; // no German-held port with room on the Front: lost with Italy
         s = { ...s, units: { ...s.units, [u.id]: { ...fleet, at } } };
         placed++;

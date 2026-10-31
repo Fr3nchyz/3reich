@@ -20,7 +20,7 @@ const STEP_7P = { part: "player-turn", turn: 2, step: "7p" } as const;
 const rome = Object.values(MAP.hexes).find((h) => h.country === "italy" && h.name === "Rome")!.id;
 const naples = Object.values(MAP.hexes).find((h) => h.country === "italy" && h.name === "Naples")!.id;
 const italianPorts = Object.values(MAP.hexes).filter((h) => h.land && h.country === "italy" && isPort(ctx, h.id)).map((h) => h.id);
-const MINORS = ["bulgaria", "hungary", "romania", "finland", "yugoslavia", "greece", "albania", "spain", "turkey", "portugal", "sweden", "norway", "denmark", "belgium", "netherlands", "luxembourg", "poland"] as const;
+const MINORS = ["bulgaria", "hungary", "rumania", "finland", "yugoslavia", "greece", "spain", "turkey", "portugal", "sweden", "norway", "denmark", "belgium", "netherlands", "luxembourg", "poland"] as const;
 /** Two Italian ports (and their fleets' berths) that stay Italian: they pass to Germany at the surrender. */
 const NORTH = italianPorts.slice(0, 2);
 const seedFor = (die: number): number => { for (let s = 1; s < 10000; s++) if (rollD6(s).roll === die) return s; throw new Error("no seed"); };
