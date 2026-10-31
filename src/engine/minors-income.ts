@@ -4,7 +4,7 @@ import { countryLand, fallCountry } from "./conquest-minor";
 import { controllerOf, sideInWar, startingControl } from "./control";
 import type { GameContext } from "./context";
 import type { CountryId } from "./minors-record";
-import { capitalOf, COLONIES, minorValue } from "./minors-rules";
+import { capitalOf, COLONIES, MINOR_COUNTRIES, minorValue } from "./minors-rules";
 import { sideOfOwner } from "./setup";
 import { AIR_BASE_FEATURES } from "./terrain";
 import type { GameState, PowerId, Side } from "./types";
@@ -76,4 +76,48 @@ export function settleAllCitiesConquests(ctx: GameContext, state: GameState): { 
     events.push(...done.events);
   }
   return { state: next, events };
+}
+
+/** Spec 15 R13: these lines exclude spec 14's Major Power and Soviet-city income. */
+export interface TerritoryIncomeLine {
+  country: CountryId;
+  kind: "minor-ally" | "helped-minor" | "conquered";
+  brps: number;
+}
+
+/** TODO(verify) MC19, spec 15 R13: only the first intervener receives the value. */
+export const MC19_INCOME_HELPER_INDEX = 0;
+/** TODO(verify) MC20, spec 15 R13: no helper income after any completed conquest or loss of the capital. */
+export const MC20_REQUIRE_FRIENDLY_CAPITAL = true;
+
+/** Spec 15 R13: pure Year Start figures only; no payment, Base change, loss charge or event. */
+export function territoryIncome(ctx: GameContext, state: GameState, side: PowerId): { lines: TerritoryIncomeLine[]; total: number } {
+  const lines: TerritoryIncomeLine[] = [];
+  const conquered = new Set(state.conquests?.map((c) => c.country));
+  // R13 item 1: active allies pay individually, including the printed starting-allies exception.
+  for (const ally of state.minorAllies) {
+    if (!ally.active || ally.of !== side || conquered.has(ally.owner)) continue;
+    const country = MINOR_COUNTRIES.find((country) => country === ally.owner);
+    if (country === undefined) continue; // R13: only countries with a minor value belong here.
+    lines.push({ country, kind: "minor-ally", brps: minorValue(country) ?? UNREAD_CONQUERED_VALUE });
+  }
+  // R13 item 2 / MC19 / MC20: an unconquered helped minor pays once, to its first helper.
+  for (const country of Object.keys(state.countries ?? {}).sort() as CountryId[]) {
+    const record = state.countries![country]!;
+    if (record.status !== "allied" || record.helpers?.[MC19_INCOME_HELPER_INDEX] !== side || conquered.has(country)) continue;
+    if (state.minorAllies.some((a) => a.owner === country && a.active)) continue; // R13: one value per country.
+    const capital = capitalOf(ctx, country);
+    const recipientSide = sideInWar(state, side);
+    if (capital === null || recipientSide === null) continue;
+    const start = startingControl(ctx).get(capital);
+    if (start !== undefined && sideOfOwner(start) === recipientSide) continue; // R13: starting holdings cannot add income.
+    const holder = controllerOf(ctx, state, capital);
+    if (MC20_REQUIRE_FRIENDLY_CAPITAL && (holder === null || sideInWar(state, holder) !== recipientSide)) continue;
+    lines.push({ country, kind: "helped-minor", brps: minorValue(country) ?? UNREAD_CONQUERED_VALUE });
+  }
+  // R13 item 3: delegate completion dates, current holders, starting land and all-city tests to 15-5.
+  for (const line of conqueredIncomeLines(ctx, state, side)) {
+    lines.push({ country: line.country, kind: "conquered", brps: line.value });
+  }
+  return { lines, total: lines.reduce((total, line) => total + line.brps, 0) };
 }
