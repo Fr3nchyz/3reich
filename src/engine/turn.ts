@@ -27,6 +27,7 @@ import { hasAttritionWork } from "./attrition-step";
 import { hasSrWork } from "./sr-action";
 import { hasMoveWork } from "./move-action";
 import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
+import { settleVitalAreas } from "./vital-wire";
 import { recordCheckpoint, evaluateVictory } from "./victory";
 import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
@@ -143,7 +144,9 @@ function endCombatPhase(ctx: GameContext, state: GameState): Transition {
   const duties = checkMinorDuties(ctx, state); // Spec 15 R4, R7: the duty of a declaration on a minor is checked first (it can remove a minor's army)
   const fell = settleConquests(ctx, duties.state);
   const russia = settleSoviet(ctx, fell.state); // does nothing once a fall has ended the game
-  return { state: russia.state, events: [...duties.events, ...fell.events, ...russia.events] };
+  // Spec 14 R8: Gibraltar, or Suez with Alexandria, may just have fallen; Britain pays 25 BRPs for each, once.
+  const vital = settleVitalAreas(ctx, russia.state);
+  return { state: vital.state, events: [...duties.events, ...fell.events, ...russia.events, ...vital.events] };
 }
 
 function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
@@ -155,7 +158,10 @@ function secondPlayerTurn(ctx: GameContext, state: GameState): Transition {
 /** Both Player Turns are done: the Campaign's checkpoint is read, then the scenario ends with its result (Ref 2.0), or the next Game Turn begins at its first part. */
 function endGameTurn(ctx: GameContext, from: GameState): Transition {
   // Kept hexes whose hostile unit left during the Game Turn pass on before the checkpoint and the result read control (ticket 14-25, TODO(verify) V62).
-  const freed = releaseKept(ctx, from);
+  const freed0 = releaseKept(ctx, from);
+  // Spec 14 R8: control may also have changed by movement after the last Combat Phase; the vital areas are read before the year turns.
+  const vital = settleVitalAreas(ctx, freed0.state);
+  const freed = { state: vital.state, events: [...freed0.events, ...vital.events] };
   const state = recordCheckpoint(ctx, freed.state);
   if (turnIndex(state) >= turnIndex(state.lastTurn)) {
     const result = evaluateVictory(ctx, state, "end-of-play");
