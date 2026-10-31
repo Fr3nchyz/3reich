@@ -1,5 +1,6 @@
 import type { GameEvent, LostReason } from "../../src/engine/action-types";
 import type { ForceOwner, GameState, PowerId, UnitType } from "../../src/engine/types";
+import { MINOR_COUNTRY_FORCES } from "../../src/engine/tables";
 import type { Finding } from "./audit";
 
 /** Spec 17 ticket 17-5 (Part E, Part D): what happened to lost units in a game, counted from its events, and the check of RB13. */
@@ -83,6 +84,7 @@ export function auditCounters(initial: GameState, final: GameState): Finding[] {
   const start = holdings(initial);
   const end = holdings(final);
   const out: Finding[] = [];
-  for (const [key, n] of end) if (n > (start.get(key) ?? 0)) out.push({ kind: "counter-excess", detail: `${key}: ${n} at the end (map plus pool), the scenario lists ${start.get(key) ?? 0}` });
+  // Spec 15 R3, R9: the army of a minor country is set up from the Minor Country Forces chart when it is attacked or wakes, not from the scenario's counters: only the scenario's own count is audited for it.
+  for (const [key, n] of end) if (n > (start.get(key) ?? 0) && !(!start.has(key) && Object.hasOwn(MINOR_COUNTRY_FORCES, key.split(" ")[0]!))) out.push({ kind: "counter-excess", detail: `${key}: ${n} at the end (map plus pool), the scenario lists ${start.get(key) ?? 0}` });
   return out;
 }

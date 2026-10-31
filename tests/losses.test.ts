@@ -257,9 +257,8 @@ describe("R7: a record made before ticket 17-1 still replays to its end", () => 
       expect(replay(ctx, newGame(scenario, rec.seed), r.actions).state).toEqual(r.state);
     });
   }
-  it("the surrender-build record needed it (its game lost units before Spring 1942); a game recorded now needs nothing", () => {
-    const rec = JSON.parse(readFileSync("tests/e2e/fixtures/surrender-build.json", "utf8")) as { seed: number; actions: Action[] };
-    expect(replayRecord(CTX, newGame(SCENARIO_1939, rec.seed), rec.actions).ended.length).toBeGreaterThan(0);
+  // The old surrender-build record that proved this was replaced in ticket 15-8: a game that crosses Summer 1941 has the four armies of the Axis Minor-Allies to set up (unit numbers shift), so it was recorded again.
+  it("a game recorded now needs nothing", () => {
     const now = runGame({ scenario: "1939", seed: 1, turns: 3, verify: false });
     const again = replayRecord(CTX, now.initial, now.actions);
     expect(again.ended).toEqual([]);
