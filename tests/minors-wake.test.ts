@@ -6,6 +6,7 @@ import { sideToAct } from "../src/engine/actor";
 import { sideInWar } from "../src/engine/control";
 import { describeEvent } from "../src/ui/session";
 import { MC28_WAKE_VALUE_RAISES_SPEND_LIMIT, MC29_ATTACKED_SLEEPER_WAKES_IN_1941, wakeAlly, wakeSleepers } from "../src/engine/minors-wake";
+import { noteIntervention } from "../src/engine/minors-intervene";
 import { sleepingAlly } from "../src/engine/minors-axis";
 import { minorValue } from "../src/engine/minors-rules";
 import type { GameState } from "../src/engine/types";
@@ -158,6 +159,12 @@ describe("R9: Germany's Intervention wakes a sleeping ally early", () => {
     const it2 = { ...s, units: { ...s.units, i1: inf("i1", "italy", "R30", 3, 3) } };
     const r = move(it2, ["i1"], ["R31"]);
     if (r.ok) expect(r.state.minorAllies.find((m) => m.owner === "hungary")!.active).toBe(false);
+  });
+  it("noteIntervention by an Italian unit alone never wakes it", () => {
+    const s = withBritish(true);
+    const r = noteIntervention(CTX, s, [{ owner: "italy" }], ["R31"]);
+    expect(r.events.some((e) => e.type === "MINOR_ALLY_WOKE")).toBe(false);
+    expect(r.state.minorAllies.find((m) => m.owner === "hungary")!.active).toBe(false);
   });
   it("a second German entry does not wake it again", () => {
     const r = okOf(move(withBritish(true), ["g1"], ["R31"]));
