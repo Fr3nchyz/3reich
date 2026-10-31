@@ -53,8 +53,9 @@ export function sleepingAlly(state: GameState, country: string | undefined): cou
   return !(attacker !== undefined && sideInWar(state, attacker) === "axis");
 }
 
-/** The Rumanian hexes of Eastern Europe (Bessarabia, Ref 29.0), from the scenario's zone. */
-const bessarabia = (ctx: GameContext, hex: HexId): boolean => ctx.scenario.zones["eastern-europe"]?.hexes?.includes(hex) === true && ctx.map.hexes[hex]?.country === "rumania";
+/** Bessarabia (Ref 29.0): the five Rumanian hexes of EASTEURP.CON, east of the Partition Line. A local list, as the engine may not import the data files; tests/minors-axis.test.ts checks it against them. */
+export const BESSARABIA_HEXES: readonly HexId[] = ["R35", "R36", "S36", "T36", "U36"];
+const bessarabia = (hex: HexId): boolean => BESSARABIA_HEXES.includes(hex);
 
 /**
  * The sleeping ally whose land this hex is, or null. Bessarabia stops being Rumanian once Eastern Europe is created (Ref 29.0; 15-11 creates the record).
@@ -63,7 +64,7 @@ export function sleepingAllyOfHex(ctx: GameContext, state: GameState, hex: HexId
   const h = ctx.map.hexes[hex];
   const country = h?.land ? h.country : undefined;
   if (!sleepingAlly(state, country)) return null;
-  return state.countries?.["eastern-europe"] && bessarabia(ctx, hex) ? null : country;
+  return state.countries?.["eastern-europe"] && bessarabia(hex) ? null : country;
 }
 
 /** Whether a unit of the power that declared on a sleeping ally stands in it (then a German entry would be an Intervention, 15-8, not a Garrison). */
@@ -74,7 +75,7 @@ const attackerInside = (ctx: GameContext, state: GameState, country: MinorCountr
 
 /** R10 / MC22: why a German Garrison may not be in this hex of a sleeping ally (Bessarabia without war on the U.S.S.R.), or null. */
 export function garrisonBanProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
-  if (!MC22_BESSARABIA_BAN || !owners.some(isOwner) || sleepingAllyOfHex(ctx, state, hex) === null || !bessarabia(ctx, hex) || atWar(state, "germany", "ussr")) return null;
+  if (!MC22_BESSARABIA_BAN || !owners.some(isOwner) || sleepingAllyOfHex(ctx, state, hex) === null || !bessarabia(hex) || atWar(state, "germany", "ussr")) return null;
   return `${hex} is in Bessarabia: Germany may not Garrison it without being at war with the U.S.S.R. (R10, Ref 29.0).`;
 }
 
