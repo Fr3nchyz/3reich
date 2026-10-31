@@ -1,7 +1,7 @@
-import { controlAfterEntry, controllingSide, sideInWar } from "../engine/control";
+import { controlAfterEntry, sideInWar } from "../engine/control";
 import type { GameContext } from "../engine/context";
 import type { HexId } from "../engine/hex";
-import { SUPPLY_CHECKED_TYPES, SUPPLY_POLICY, supplyNetwork, type SupplyNetwork } from "../engine/supply";
+import { SUPPLY_CHECKED_TYPES, SUPPLY_POLICY, supplyFriendly, supplyNetwork, type SupplyNetwork } from "../engine/supply";
 import { supplyEffectsOn } from "../engine/supply-effects";
 import { exploitedSupplied } from "../engine/exploit-record";
 import { fortressSupplies } from "../engine/supply-sources";
@@ -73,7 +73,7 @@ export function suppliedAfterMove(ctx: GameContext, state: GameState, net: Suppl
   const checked = units.filter((u) => SUPPLY_CHECKED_TYPES.includes(u.type)); // replacements are not checked (supply.ts)
   if (checked.length === 0) return true;
   const side = net.side;
-  const friendly = controllingSide(ctx, state, to) === side || units.some((u) => {
+  const friendly = supplyFriendly(ctx, state, side, to) || units.some((u) => {
     const c = controlAfterEntry(ctx, state, u, to);
     return c !== null && sideInWar(state, c) === side;
   });

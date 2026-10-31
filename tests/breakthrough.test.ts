@@ -167,7 +167,7 @@ describe("R11: armor that moves in", () => {
 
   it("with the supply effects on, armor out of supply cannot be placed; with them off nothing is checked (R14, AER15)", () => {
     const s = advanced(afterWin()).state;
-    const cut = { ...s, control: { ...s.control, L31: "poland" as const } }; // Berlin held by the enemy: no German unit is in supply
+    const cut = { ...s, minorAllies: [], control: { ...s.control, L31: "poland" as const } }; // Berlin held by the enemy: no German unit is in supply (and no sleeping Axis ally, whose capital would supply them, spec 15 R10)
     const on = { ...CTX, supplyEffects: true };
     expect(placeableArmor(CTX, cut, exploitOf(cut).groups[0]!)).toEqual(["a2", "a3", "a4"]);
     expect(placeableArmor(on, s, exploitOf(s).groups[0]!)).toEqual(["a2", "a3", "a4"]);

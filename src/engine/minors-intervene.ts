@@ -3,6 +3,7 @@ import type { GameContext } from "./context";
 import { sideInWar } from "./control";
 import type { HexId } from "./hex";
 import { AXIS_MINOR_ALLIES } from "./minors-ids";
+import { garrisonMayEnter } from "./minors-axis";
 import type { CountryId, CountryRecord } from "./minors-record";
 import { MINOR_COUNTRY_FORCES } from "./tables";
 import type { ForceOwner, GameState, MinorCountry, PowerId } from "./types";
@@ -62,6 +63,7 @@ export function minorEntryProblem(ctx: GameContext, state: GameState, owners: re
   const side = sideInWar(state, country);
   for (const o of owners) {
     if (o === country || o === record.attacker) continue;
+    if (garrisonMayEnter(ctx, state, o, hex)) continue; // R10: a German Garrison walks in; the attacker has no unit inside
     if (!isMinorOwner(o) && Object.hasOwn(state.nations, o) && side !== null && sideInWar(state, o) === side) continue; // the Intervention (R6)
     return `${hex} is in ${country}, which ${o} may not enter: only its attacker and a Major Power of the other side may (R5).`;
   }

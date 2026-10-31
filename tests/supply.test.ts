@@ -25,24 +25,25 @@ const lineOf = (s: GameState, side: "axis" | "allies", id: string) => supplyStat
 describe("supply sources (Ref 19.2: capitals)", () => {
   it("1939: Berlin for the Axis; London, Paris and Warsaw for the Allies (Italy is neutral)", () => {
     const s = board([]);
-    expect(supplySources(CTX, s, "axis")).toEqual(["L31"]);
+    // Spec 15 R10 (MC10): the capitals of the four sleeping Axis allies (Helsinki, Budapest, Bucharest, Sofia) are Axis sources while they sleep.
+    expect(supplySources(CTX, s, "axis")).toEqual(["D41", "L31", "S30", "W33", "Y30"]);
     expect(supplySources(CTX, s, "allies")).toEqual(["K23", "M35", "O22"]);
   });
 
   it("Rome joins them once Italy is at war", () => {
-    expect(supplySources(CTX, withItaly([]), "axis")).toEqual(["L31", "Y22"]);
+    expect(supplySources(CTX, withItaly([]), "axis")).toEqual(["D41", "L31", "S30", "W33", "Y22", "Y30"]);
   });
 
   it("a minor country that takes no side has no source; a captured Polish capital does not supply the Axis", () => {
     const s = board([], undefined, { control: { M35: "germany" } });
     expect(supplySources(CTX, s, "allies")).toEqual(["K23", "O22"]);
-    expect(supplySources(CTX, s, "axis")).toEqual(["L31"]); // Poland is not an Axis minor: TODO(verify) captured minor capitals
+    expect(supplySources(CTX, s, "axis")).toEqual(["D41", "L31", "S30", "W33", "Y30"]); // Poland is not an Axis minor: TODO(verify) captured minor capitals
     expect(supplySources(CTX, board([]), "axis")).not.toContain("DD28"); // Athens, Greece neutral
   });
 
   it("a Major Power's captured capital supplies its captor (19.2: its controlling side)", () => {
     const s = board([], undefined, { control: { O22: "germany" } });
-    expect(supplySources(CTX, s, "axis")).toEqual(["L31", "O22"]);
+    expect(supplySources(CTX, s, "axis")).toEqual(["D41", "L31", "O22", "S30", "W33", "Y30"]);
     expect(supplySources(CTX, s, "allies")).not.toContain("O22");
   });
 
@@ -109,16 +110,17 @@ describe("land supply lines (Ref 19.3)", () => {
     expect(unsuppliedUnits(CTX, { ...open, control: { CC23: "france" as const } }, "axis")).toEqual(["i1"]);
   });
 
-  it("a hex nobody controls cannot carry a line (Ref 7.0: neutral Hungary)", () => {
-    expect(CTX.map.hexes["S30"]?.land).toBeTruthy();
-    const s = board([german("g1", "S30"), german("g2", "L32")]);
-    expect(controllingSide(CTX, s, "S30")).toBeNull();
+  it("a hex nobody controls cannot carry a line (Ref 7.0: neutral Yugoslavia; a sleeping Axis ally is the exception, spec 15 R10)", () => {
+    const yugoslavia = Object.values(CTX.map.hexes).find((h) => h.land && h.country === "yugoslavia")!.id;
+    const s = board([german("g1", yugoslavia), german("g2", "L32")]);
+    expect(controllingSide(CTX, s, yugoslavia)).toBeNull();
     expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["g1"]);
     expect(unsuppliedUnits(CTX, board([german("g3", "CC30")]), "axis")).toEqual(["g3"]);
   });
 
   it("an enemy ground unit standing on a controlled source cuts it off (the capital cannot supply)", () => {
-    const s = board([german("g1", "L32"), british("b1", "L31")]);
+    // Without the sleeping allies (spec 15 R10 makes their capitals Axis sources too, so g1 would trace to Budapest), Berlin is the only Axis source.
+    const s = board([german("g1", "L32"), british("b1", "L31")], undefined, { minorAllies: [] });
     expect(unsuppliedUnits(CTX, s, "axis")).toEqual(["g1"]);
   });
 

@@ -8,9 +8,9 @@ import type { GameState } from "../src/engine/types";
 import { CTX } from "./helpers";
 import { at6f, errorOf, inf, move, okOf } from "./helpers-move";
 
-// What being out of supply does (Ref 19.4, 11.74, 12.21). Positions on the real 1939 map: S30 is neutral Hungarian land nobody controls,
+// What being out of supply does (Ref 19.4, 11.74, 12.21). Positions on the real 1939 map: V28 is neutral Yugoslav land nobody controls (not S30: Hungary sleeps and supplies Germans, spec 15 R10),
 // so a German unit there has no line to Berlin (L31); L32 and L33 are German plain next to Berlin.
-const cut = () => at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "L32", 3, 3)]);
+const cut = () => at6f([inf("g1", "germany", "V28", 3, 3), inf("g2", "germany", "L32", 3, 3)]);
 
 describe("the record of who is cut off when the Player Turn begins", () => {
   it("is switched off for now: nothing is recorded, so supply changes nothing in play (see SUPPLY_EFFECTS_ENABLED)", () => {
@@ -69,8 +69,8 @@ describe("the Player Turn ends: cut-off units are eliminated (Ref 19.4, 11.74)",
     expect(r.state.units.g2).toBeDefined();
     expect(r.state.unsuppliedAtStart).toBeUndefined();
     expect(r.events).toEqual([
-      { type: "UNIT_ELIMINATED", unitId: "g1", owner: "germany", at: "S30", reason: "unsupplied" },
-      { type: "UNIT_RETURNED_TO_POOL", unitId: "g1", owner: "germany", unitType: "infantry", strength: 3, at: "S30", pool: "germany" }, // spec 17 R1 (Ref 11.74)
+      { type: "UNIT_ELIMINATED", unitId: "g1", owner: "germany", at: "V28", reason: "unsupplied" },
+      { type: "UNIT_RETURNED_TO_POOL", unitId: "g1", owner: "germany", unitType: "infantry", strength: 3, at: "V28", pool: "germany" }, // spec 17 R1 (Ref 11.74)
     ]);
   });
 

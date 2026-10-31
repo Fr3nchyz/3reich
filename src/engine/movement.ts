@@ -1,3 +1,4 @@
+import { garrisonBanProblem, garrisonLimitProblem, garrisonMayEnter } from "./minors-axis";
 import { minorEntryProblem } from "./minors-intervene";
 import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
 import { angloFrenchStopProblem } from "./anglo-french";
@@ -107,6 +108,8 @@ export function entryProblem(ctx: GameContext, state: GameState, owners: readonl
  * One test for ground movement and for air flight (spec 09 R4: "the same test, so one rule decides both").
  */
 export function neutralLandProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {
+  const banned = garrisonBanProblem(ctx, state, owners, hex); // spec 15 R10, MC22: no Garrison in Bessarabia without war on the U.S.S.R.
+  if (banned) return banned;
   const minorProblem = minorEntryProblem(ctx, state, owners, hex); // spec 15 R5, R8: a fighting minor's land, and a minor's units stay home
   if (minorProblem) return minorProblem;
   if (!NEUTRAL_LAND_CLOSED || isNobodys(state, hex)) return null; // land nobody controls (a conquered Power's, spec 14 R4) is open to all, TODO(verify) V34
@@ -115,6 +118,7 @@ export function neutralLandProblem(ctx: GameContext, state: GameState, owners: r
   // Spec 15 R11: the opened Persian route is no longer closed neutral land, for either side.
   if (country === "persia" && state.countries?.persia?.opened) return null;
   for (const o of owners) {
+    if (garrisonMayEnter(ctx, state, o, hex)) continue; // spec 15 R10 (Ref 17.2): Germany walks into a sleeping Axis ally, no declaration
     if (control !== null ? control !== o && sideInWar(state, control) === null && !atWar(state, o, control) : isMinorCountry(country) && !atWar(state, o, country as ForceOwner)) {
       return `${hex} is neutral land: ${o} is not at war with it.`;
     }
@@ -131,6 +135,8 @@ export const entryCost = (ctx: GameContext, hex: HexId): number => TERRAIN_MOVE_
  */
 export function endProblem(ctx: GameContext, state: GameState, units: readonly Unit[], to: HexId, overstackHex?: HexId): string | null {
   if (!MIXED_NATIONS_MOVE_TOGETHER && new Set(units.map((u) => u.owner)).size > 1) return "Units of different nations do not move as one group.";
+  const garrison = garrisonLimitProblem(ctx, state, units, to); // spec 15 R10, MC22: five German factors in Finland
+  if (garrison) return garrison;
   // Spec 16 R15: only the named Breakthrough hex may ignore the stacking limit.
   // Stacking looks only at the units in the hex, so the rest are left out of the state it is asked about.
   let s = { ...state, units: Object.fromEntries(occupants(state, to).map((u) => [u.id, u])) };
