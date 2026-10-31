@@ -1,3 +1,4 @@
+import type { GameEvent } from "./action-types";
 import { charge } from "./brps";
 import type { GameContext } from "./context";
 import { sideInWar, CONTROL_CHANGING_TYPES } from "./control";
@@ -64,4 +65,45 @@ export function interventionWake(ctx: GameContext, state: GameState): MinorCount
       && Object.values(state.units).some((u) => u.owner === "germany" && CONTROL_CHANGING_TYPES.includes(u.type)
         && ctx.map.hexes[u.at]?.land && ctx.map.hexes[u.at]?.country === country);
   }).sort();
+}
+
+/**
+ * TODO(verify) MC28, spec 15 R9 (Ref 9.2): the value that joins the German total when an ally wakes also raises Germany's spending limit (half the total, as the Year Start Sequence
+ * sets it). The text says the value is "added to the total" and says nothing of the limit. Off (conservative): only the total grows; the limit stays as it was.
+ */
+export const MC28_WAKE_VALUE_RAISES_SPEND_LIMIT = false;
+
+/**
+ * TODO(verify) MC29, spec 15 R9: a sleeping ally that an Allied power attacked and that Germany did not help still wakes on its own at Summer 1941 ("they wake automatically"), keeping
+ * the army the declaration called up. Off: it stays asleep and fights on alone, as before.
+ */
+export const MC29_ATTACKED_SLEEPER_WAKES_IN_1941 = true;
+
+export type WakeCause = "summer-1941" | "intervention";
+
+/**
+ * Ticket 15-8: `wakeAllies` (value, wars) plus what the game needs around it: a woken ally with no fighting record (none, or neutral after a revoked declaration) is asked for its army
+ * (`toPlace: "axis"`, set up at step 2 by the Axis, R3); one the Allied declaration already called up keeps its army. Logs MINOR_ALLY_WOKE for each and one BRPS_CHANGED for the German total.
+ */
+export function wakeWithArmy(ctx: GameContext, state: GameState, countries: readonly MinorCountry[], cause: WakeCause): { state: GameState; events: GameEvent[] } {
+  const r = wakeAllies(ctx, state, countries);
+  if (r.woken.length === 0) return { state, events: [] };
+  let next = r.state;
+  const gain = next.nations.germany.brpTotal - state.nations.germany.brpTotal;
+  if (MC28_WAKE_VALUE_RAISES_SPEND_LIMIT) next = { ...next, nations: { ...next.nations, germany: { ...next.nations.germany, spendLimit: Math.floor(next.nations.germany.brpTotal / 2) } } };
+  const events: GameEvent[] = [];
+  for (const country of r.woken) {
+    const record = state.countries?.[country];
+    const place = state.countries !== undefined && (record === undefined || record.status === "neutral");
+    if (place) next = { ...next, countries: { ...next.countries, [country]: { ...(record ?? { status: "neutral" as const }), toPlace: "axis" as const } } };
+    events.push({ type: "MINOR_ALLY_WOKE", minor: country, of: "germany", value: minorValue(country) ?? 0, cause, toPlace: place });
+  }
+  events.push({ type: "BRPS_CHANGED", nation: "germany", delta: gain, total: next.nations.germany.brpTotal, reason: `${r.woken.join(", ")} wake as allies of germany (Ref 17.0, 9.2)` });
+  return { state: next, events };
+}
+
+/** Arriving at step 2 of an Axis Player Turn: every sleeping ally wakes once the date has come (`allyDueToWake`, MC9; MC29 for an ally the Allies attacked). */
+export function wakeSleepers(ctx: GameContext, state: GameState): { state: GameState; events: GameEvent[] } {
+  const due = allyDueToWake(ctx, state).filter((c) => MC29_ATTACKED_SLEEPER_WAKES_IN_1941 || state.countries?.[c]?.status !== "attacked");
+  return wakeWithArmy(ctx, state, due, "summer-1941");
 }

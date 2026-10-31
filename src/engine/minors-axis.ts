@@ -75,10 +75,19 @@ export function sleepingAllyOfHex(ctx: GameContext, state: GameState, hex: HexId
 }
 
 /** Whether a unit of the power that declared on a sleeping ally stands in it (then a German entry would be an Intervention, 15-8, not a Garrison). */
-const attackerInside = (ctx: GameContext, state: GameState, country: MinorCountry): boolean => {
+export const attackerInside = (ctx: GameContext, state: GameState, country: MinorCountry): boolean => {
   const attacker = state.countries?.[country]?.attacker;
   return attacker !== undefined && Object.values(state.units).some((u) => u.owner === attacker && ctx.map.hexes[u.at]?.country === country);
 };
+
+/**
+ * R9 (Ref 17.2): whether this owner may enter the hex as the Intervention in a sleeping ally: a German unit, a sleeping ally's land, and the Allied power that declared on the ally
+ * has a unit inside. The entry wakes the ally (`noteIntervention`, minors-wake.ts). Without that unit inside it is a Garrison (`garrisonMayEnter`).
+ */
+export function interventionMayEnter(ctx: GameContext, state: GameState, owner: ForceOwner, hex: HexId): boolean {
+  const country = sleepingAllyOfHex(ctx, state, hex);
+  return country !== null && isOwner(owner) && attackerInside(ctx, state, country) && garrisonBanProblem(ctx, state, [owner], hex) === null;
+}
 
 /** R10 / MC22: why a German Garrison may not be in this hex of a sleeping ally (Bessarabia without war on the U.S.S.R.), or null. */
 export function garrisonBanProblem(ctx: GameContext, state: GameState, owners: readonly ForceOwner[], hex: HexId): string | null {

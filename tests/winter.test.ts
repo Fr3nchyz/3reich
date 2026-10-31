@@ -361,7 +361,7 @@ describe("the winter is in force for the whole Game Turn and no longer", () => {
     let s = s0;
     for (let guard = 0; guard < 80 && !(s.season === "winter" && s.position?.part === "player-turn" && s.position.turn === 2); guard++) {
       const here = legalActions(CTX, s);
-      const a = here.find((x) => x.type === "END_PLAYER_TURN" || x.type === "END_STEP" || (x.type === "SURRENDER_ANSWER" && !x.accept))!; // Russia has no unit on this board, so it offers to surrender at 10a (spec 14 R7b): refused
+      const a = here.find((x) => x.type === "PLACE_MINOR_FORCES" || x.type === "END_PLAYER_TURN" || x.type === "END_STEP" || (x.type === "SURRENDER_ANSWER" && !x.accept))!; // Russia has no unit on this board, so it offers to surrender at 10a (spec 14 R7b): refused
       const r = applyAction(CTX, s, a);
       if (!r.ok) throw new Error(r.error);
       s = r.state;
@@ -370,7 +370,7 @@ describe("the winter is in force for the whole Game Turn and no longer", () => {
     expect(winterInForce(s)).toBe(true);
     // ...and out of it: Spring 1942
     for (let guard = 0; guard < 80 && s.season === "winter"; guard++) {
-      const a = legalActions(CTX, s).find((x) => x.type === "END_PLAYER_TURN" || x.type === "END_STEP" || (x.type === "SURRENDER_ANSWER" && !x.accept))!;
+      const a = legalActions(CTX, s).find((x) => x.type === "PLACE_MINOR_FORCES" || x.type === "END_PLAYER_TURN" || x.type === "END_STEP" || (x.type === "SURRENDER_ANSWER" && !x.accept))!;
       const r = applyAction(CTX, s, a);
       if (!r.ok) throw new Error(r.error);
       s = r.state;

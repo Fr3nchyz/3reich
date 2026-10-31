@@ -64,6 +64,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "UNIT_RETREATED": return sideOfUnits([e.unit], before) ?? actor;
     case "MINOR_DECLARATION_REVOKED":
     case "MINOR_GARRISONED": return sideOfOwner(e.by); // the garrisoning side
+    case "MINOR_ALLY_WOKE": return sideOfOwner(e.of); // the side the ally joins
     case "MINOR_INTERVENED": return sideOfOwner(e.by); // the declarer's side; the helper's side
     case "PLAYER_TURN_STARTED":
     case "MINOR_FORCES_PLACED": // the side that set the army up

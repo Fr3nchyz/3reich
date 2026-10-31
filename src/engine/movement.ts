@@ -1,4 +1,4 @@
-import { garrisonBanProblem, garrisonLimitProblem, garrisonMayEnter } from "./minors-axis";
+import { garrisonBanProblem, garrisonLimitProblem, garrisonMayEnter, interventionMayEnter } from "./minors-axis";
 import { minorEntryProblem } from "./minors-intervene";
 import { areEnemies, controllerOf, isNobodys, sideInWar } from "./control";
 import { angloFrenchStopProblem } from "./anglo-french";
@@ -119,6 +119,7 @@ export function neutralLandProblem(ctx: GameContext, state: GameState, owners: r
   if (country === "persia" && state.countries?.persia?.opened) return null;
   for (const o of owners) {
     if (garrisonMayEnter(ctx, state, o, hex)) continue; // spec 15 R10 (Ref 17.2): Germany walks into a sleeping Axis ally, no declaration
+    if (interventionMayEnter(ctx, state, o, hex)) continue; // spec 15 R9 (Ref 17.2): Germany's Intervention in a sleeping ally the attacker has entered
     if (control !== null ? control !== o && sideInWar(state, control) === null && !atWar(state, o, control) : isMinorCountry(country) && !atWar(state, o, country as ForceOwner)) {
       return `${hex} is neutral land: ${o} is not at war with it.`;
     }
