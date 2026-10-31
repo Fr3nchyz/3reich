@@ -33,7 +33,7 @@ describe("R9: the wake-up at step 2 of the Axis turn of Summer 1941", () => {
     expect(sum).toBe(45);
     expect(r.state.nations.germany.brpTotal).toBe(summer41().nations.germany.brpTotal + 45);
     expect(r.events.filter((e) => e.type === "MINOR_ALLY_WOKE").map((e) => (e as { minor: string }).minor)).toEqual([...FOUR].sort());
-    expect(r.events).toContainEqual({ type: "BRPS_CHANGED", nation: "germany", delta: 10, total: summer41().nations.germany.brpTotal + 10, reason: expect.stringContaining("finland") });
+    expect(r.events).toContainEqual({ type: "BRPS_CHANGED", nation: "germany", delta: 45, total: summer41().nations.germany.brpTotal + 45, reason: expect.stringContaining("finland") });
   });
   it("they fight on the Axis side at once and nobody pays a declaration", () => {
     for (const c of FOUR) expect(sideInWar(r.state, c)).toBe("axis");
