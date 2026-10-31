@@ -10,6 +10,7 @@ import { exploitOf, exploiterIds } from "./exploit-record";
 import { exploitAdvanceProblem, markExploitAttackers } from "./exploit-action";
 import { enterHexes } from "./control";
 import { noteMinorEntry } from "./minors-duty";
+import { garrisonBanProblem, garrisonLimitProblem, noteGarrison } from "./minors-axis";
 import { MC5_ADVANCE_INTERVENES, minorEntryProblem, noteIntervention } from "./minors-intervene";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -79,6 +80,12 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
 /** Spec 15 R8: a minor's unit may not advance over its border after an attack (the same test as its ground movement), else null. */
 const advanceBorderProblem = (ctx: GameContext, state: GameState, owner: Unit["owner"], to: HexId): string | null => minorEntryProblem(ctx, state, [owner], to);
 
+/** Spec 15 R10, MC22: the Bessarabia ban and Finland's five German factors also hold for an advance (ids are the advancing units). */
+const advanceGarrisonProblem = (ctx: GameContext, state: GameState, ids: readonly string[], to: HexId): string | null => {
+  const units = ids.map((id) => state.units[id]!);
+  return garrisonBanProblem(ctx, state, units.map((u) => u.owner), to) ?? garrisonLimitProblem(ctx, state, units, to);
+};
+
 /**
  * Why these units may not all end in `to` (stacking and the Anglo-French rule of Ref 5.0, 26.0, as in setup),
  * or null. Units are added one at a time so each sees the ones before it.
@@ -86,6 +93,8 @@ const advanceBorderProblem = (ctx: GameContext, state: GameState, owner: Unit["o
 function advanceProblem(ctx: GameContext, state: GameState, ids: readonly string[], to: HexId): string | null {
   const cut = ids.find((id) => UNSUPPLIED_CANNOT_ADVANCE && wasCutOff(state, id));
   if (cut) return `${cut} was out of supply when the turn began and cannot advance (Ref 12.21).`;
+  const garrison = advanceGarrisonProblem(ctx, state, ids, to);
+  if (garrison) return garrison;
   let s = state;
   for (const id of ids) {
     const u = s.units[id]!;
@@ -115,7 +124,7 @@ export function legalAdvances(ctx: GameContext, state: GameState): Action[] {
       for (let i = from; i < ids.length; i++) {
         const id = ids[i]!;
         const u = s.units[id]!;
-        if ((exploiting && exploitAdvanceProblem(ctx, s, record, id, chance.to)) || (advanceBorderProblem(ctx, state, u.owner, chance.to) ?? angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to))) continue;
+        if ((exploiting && exploitAdvanceProblem(ctx, s, record, id, chance.to)) || (advanceBorderProblem(ctx, state, u.owner, chance.to) ?? advanceGarrisonProblem(ctx, s, [id], chance.to) ?? angloFrenchStopProblem(ctx, state, u.owner, chance.to) ?? stackingProblem(ctx, s, u.owner, { type: u.type, strength: u.strength, ...(u.nationality ? { nationality: u.nationality } : {}) }, chance.to))) continue;
         const next = mask | (1 << i);
         found.push({ mask: next, action: { type: "ADVANCE", side: state.activeSide, units: ids.filter((_, k) => next & (1 << k)), to: chance.to } });
         walk({ ...s, units: { ...s.units, [id]: { ...u, at: chance.to } } }, i + 1, next);
@@ -223,6 +232,9 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
     next = helped.state;
     events.push(...helped.events);
   }
+  const garrisoned = noteGarrison(ctx, next, ids.map((id) => next.units[id]!), [action.to]); // spec 15 R10: a German advance into a sleeping ally is a Garrison
+  next = garrisoned.state;
+  events.push(...garrisoned.events);
   for (const id of ids) {
     const entered = enterHexes(ctx, next, next.units[id]!, [action.to]);
     next = entered.state;

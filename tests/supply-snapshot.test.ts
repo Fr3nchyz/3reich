@@ -53,7 +53,8 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
 // Ticket 15-5 (income from conquered countries) changed the 1939 seed 2 snapshot from 97 positions, hash 913067668, to 98 positions, hash 689106388 (a different game from the first conquered-income Year Start on).
 // Ticket 12-5: sea designations now rescue counters even with land supply policy disabled; 1942 seed 1 changes from hash 2332416509 to 2533027313 (110 positions).
 // Ticket 16-13 (the computer exploits) changed both: 1939 seed 2 hash 689106388 to 3546749625 (98 positions as before), 1942 seed 1 hash 2533027313 to 2794420972 (110 positions as before).
+// Ticket 15-7 (spec 15 R10: the capitals of the four sleeping Axis allies are Axis supply sources, their land carries Axis lines, and the computer's armies cross them) changed 1939 seed 2 only: 98 positions, hash 3546749625 to 99 positions, hash 2830968417. 1942 is unchanged (the allies are awake).
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 98, hash: 3546749625 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 99, hash: 2830968417 }), 120_000);
   it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2794420972 }), 120_000);
 });

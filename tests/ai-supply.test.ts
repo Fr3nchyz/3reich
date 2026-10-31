@@ -16,7 +16,7 @@ import { legalActions } from "../src/engine/actions";
 
 // The computer's supply rules (spec 05, "As built: supply-aware movement"): computer policy, not rules. Positions on the real 1939 map:
 // L31 Berlin, L32-L33 German plain, L34, M33, M34 Polish plain, M35 Warsaw (a minor capital: no source for the Axis), K35 German (East Prussia),
-// so L35 touches German land; S30 is neutral Hungarian land, where a German unit has no line. O22 is Paris, a Major Power's capital.
+// so L35 touches German land; V28 is neutral Yugoslav land, where a German unit has no line. O22 is Paris, a Major Power's capital.
 const ON: GameContext = { ...CTX, supplyEffects: true };
 const OFF: GameContext = { ...CTX, supplyEffects: false };
 type Move = Extract<Action, { type: "MOVE" }>;
@@ -133,7 +133,7 @@ describe("MOVE_PREFER_SUPPLY: of the moves that get closer, one that keeps the s
 
 describe("units lost anyway: cut off when the turn began and still cut off", () => {
   // g1 stands on neutral Hungarian land (no line), g2 next to Berlin.
-  const s: GameState = { ...at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "L32", 3, 3)]), unsuppliedAtStart: ["g1"] };
+  const s: GameState = { ...at6f([inf("g1", "germany", "V28", 3, 3), inf("g2", "germany", "L32", 3, 3)]), unsuppliedAtStart: ["g1"] };
   it("cutOffNow and isDoomed read the engine's supply", () => {
     expect([...cutOffNow(ON, s, "axis")]).toEqual(["g1"]);
     expect(isDoomed(ON, s, "g1")).toBe(true);
@@ -164,13 +164,13 @@ describe("units lost anyway: cut off when the turn began and still cut off", () 
     const nothingRecorded: GameState = { ...s, unsuppliedAtStart: undefined }; // g1 cut off now, but not when the turn began
     expect(chooseLosses(ON, nothingRecorded, sets, { seed: 1 })!.action).toBe(sets[0]);
     // g1 doomed, g2 cut off only now (also on neutral Hungarian land), g3 supplied: the doomed g1 goes, though listed last.
-    const three: GameState = { ...at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "S31", 3, 3), inf("g3", "germany", "L32", 3, 3)]), unsuppliedAtStart: ["g1"] };
+    const three: GameState = { ...at6f([inf("g1", "germany", "V28", 3, 3), inf("g2", "germany", "V29", 3, 3), inf("g3", "germany", "L32", 3, 3)]), unsuppliedAtStart: ["g1"] };
     expect(cutOffNow(ON, three, "axis").has("g2")).toBe(true);
     const by3: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g3"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
     expect(chooseLosses(ON, three, by3, { seed: 1 })!.action).toBe(by3[2]);
   });
   it("...when the other side chooses (its units defended), none of its units is doomed this turn: the first set listed", () => {
-    const def: GameState = { ...at6f([inf("g1", "germany", "S30", 3, 3), inf("g2", "germany", "L32", 3, 3)], "allies"), unsuppliedAtStart: [] };
+    const def: GameState = { ...at6f([inf("g1", "germany", "V28", 3, 3), inf("g2", "germany", "L32", 3, 3)], "allies"), unsuppliedAtStart: [] };
     const sets: Action[] = [{ type: "ALLOCATE_LOSSES", side: "axis", units: ["g2"] }, { type: "ALLOCATE_LOSSES", side: "axis", units: ["g1"] }];
     expect(chooseLosses(ON, def, sets, { seed: 1 })!.action).toBe(sets[0]);
   });
