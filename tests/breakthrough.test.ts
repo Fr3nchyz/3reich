@@ -204,10 +204,10 @@ describe("step 7h waits for a Breakthrough, and leaving it lapses what was not p
     expect(exploitOf({ ...s, exploit: { turn: "1900-spring-axis", groups: [{ hex: "M33", from: [], placeable: ["x"], placed: ["x"], moved: {}, attacked: [] }] } }).groups).toEqual([]);
   });
 
-  it("the computer, which places no exploiters yet (ticket 16-13), ends the step rather than stall", () => {
+  it("the computer places the armor offered (ticket 16-13), so it does not stall at the step", () => {
     const s = at7h([INF("g1", "M33"), ARM("a2", "M31")]);
     const rec: ExploitRecord = { turn: turnKey(s), groups: [{ hex: "M33", from: ["M32"], placeable: ["a2"], placed: [], moved: {}, attacked: [] }] };
     const d = chooseAction(CTX, { ...s, exploit: rec }, { seed: 1 });
-    expect(d?.action).toEqual({ type: "END_STEP", side: "axis", step: "7h" });
+    expect(d?.action).toEqual({ type: "PLACE_EXPLOITERS", side: "axis", hex: "M33", units: ["a2"] });
   });
 });

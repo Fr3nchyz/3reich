@@ -3,6 +3,7 @@ import type { GameContext } from "../engine/context";
 import type { HexId } from "../engine/hex";
 import { SUPPLY_CHECKED_TYPES, SUPPLY_POLICY, supplyNetwork, type SupplyNetwork } from "../engine/supply";
 import { supplyEffectsOn } from "../engine/supply-effects";
+import { exploitedSupplied } from "../engine/exploit-record";
 import { fortressSupplies } from "../engine/supply-sources";
 import type { GameState, Side, Unit } from "../engine/types";
 import { adjacentHexes, canCross, zocSources } from "../engine/zoc";
@@ -46,6 +47,7 @@ const isMajorCapital = (ctx: GameContext, state: GameState, hex: HexId): boolean
 /** Whether a unit of `owner` standing on `to` would be supplied, once `units` (which include it) have moved there. */
 function unitSupplied(ctx: GameContext, state: GameState, net: SupplyNetwork, unit: Unit, to: HexId): boolean {
   const owner = unit.owner;
+  if (exploitedSupplied(state, unit.id)) return true; // an exploited unit stays supplied until its turn is over (spec 16 R14)
   if (fortressSupplies(ctx, state, net.side, { at: to, owner })) return true;
   if (isMajorCapital(ctx, state, to)) return true;
   for (const r of net.reaches) {

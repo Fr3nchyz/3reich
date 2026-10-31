@@ -52,7 +52,8 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
 // Both snapshots changed again on purpose in ticket 16-1 (the computer chooses Front Options and pays for the Offensive Option; see tests/ai-stability.test.ts): 1939 seed 2 was 114 positions, hash 1723459913; 1942 seed 1 was 111 positions, hash 1231100402.
 // Ticket 15-5 (income from conquered countries) changed the 1939 seed 2 snapshot from 97 positions, hash 913067668, to 98 positions, hash 689106388 (a different game from the first conquered-income Year Start on).
 // Ticket 12-5: sea designations now rescue counters even with land supply policy disabled; 1942 seed 1 changes from hash 2332416509 to 2533027313 (110 positions).
+// Ticket 16-13 (the computer exploits) changed both: 1939 seed 2 hash 689106388 to 3546749625 (98 positions as before), 1942 seed 1 hash 2533027313 to 2794420972 (110 positions as before).
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 98, hash: 689106388 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2533027313 }), 120_000);
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 98, hash: 3546749625 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2794420972 }), 120_000);
 });
