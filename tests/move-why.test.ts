@@ -30,8 +30,8 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
     expect(text.replace(/\(M33\)/, "")).not.toMatch(ID);
   });
 
-  it("neutral land: Hungary", () => {
-    const s = at6f([inf("u1", "germany", "R30", 3, 3)]);
+  it("neutral land: Hungary, for a unit that is not German (Germany walks into a sleeping Axis ally, spec 15 R10)", () => {
+    const s = at6f([inf("u1", "britain", "R30", 3, 3)], "allies");
     const hex = Object.values(MAP.hexes).find((h) => h.country === "hungary" && h.land)!.id;
     expect(whyNot(CTX, s, [s.units.u1!], hex)).toMatch(/neutral land/);
   });
@@ -99,10 +99,12 @@ describe("why a tapped hex is refused (Ref 5.0, 4.3, 7.0, 13.0)", () => {
     expect(checked).toBeGreaterThan(100);
   });
 
-  it("a closed land holding an inactive minor's unit is neutral land, not an attack", () => {
+  it("a closed land holding an inactive minor's unit is never called an attack (spec 15 R10: Germany may enter a sleeping Axis ally, so not even 'neutral land')", () => {
     const hex = Object.values(MAP.hexes).find((h) => h.country === "hungary" && h.land)!.id;
     const s = at6f([inf("u1", "germany", "R30", 3, 3), inf("h1", "hungary", hex, 2, 3)]);
-    expect(whyNot(CTX, s, [s.units.u1!], hex)).toMatch(/neutral land/);
+    expect(whyNot(CTX, s, [s.units.u1!], hex)).not.toMatch(/attack/);
+    const closed = at6f([inf("u1", "italy", "R30", 3, 3), inf("h1", "hungary", hex, 2, 3)]);
+    expect(whyNot(CTX, closed, [closed.units.u1!], hex)).toMatch(/neutral land|attack/); // Italy: closed (MC10)
   });
 
   it("never puts a bare unit id or hex id in a sentence", () => {

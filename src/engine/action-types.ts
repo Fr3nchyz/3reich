@@ -136,6 +136,8 @@ export type GameEvent =
   | { type: "MINOR_DECLARATION_REVOKED"; by: PowerId; minor: CountryId; brpsLost: number; removed: string[] }
   /** Spec 15 R6: a Major Power of the other side entered an attacked minor with a ground unit; it is now a helper and the minor fights beside it. */
   | { type: "MINOR_INTERVENED"; minor: MinorCountry; by: PowerId }
+  /** Spec 15 R10: German units entered a sleeping Axis ally that `revoked` had declared on, with none of `revoked` inside: the declaration is revoked, the ally does not wake. */
+  | { type: "MINOR_GARRISONED"; minor: MinorCountry; by: PowerId; revoked: PowerId; removed: string[] }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

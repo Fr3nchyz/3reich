@@ -3,6 +3,7 @@ import { enterHexes } from "./control";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
 import { noteMinorEntry } from "./minors-duty";
+import { noteGarrison } from "./minors-axis";
 import { noteIntervention } from "./minors-intervene";
 import { movesOf } from "./move-record";
 import { endProblem, movableProblem, movableUnits, movePathProblem, reachableHexes } from "./movement";
@@ -126,5 +127,9 @@ export function applyMove(ctx: GameContext, state: GameState, action: MoveAction
   const helped = noteIntervention(ctx, next, units, path);
   next = helped.state;
   events.push(...helped.events);
+  // Spec 15 R10: German units in a sleeping ally on which an Allied power has declared are a Garrison and revoke the declaration.
+  const garrisoned = noteGarrison(ctx, next, units, path);
+  next = garrisoned.state;
+  events.push(...garrisoned.events);
   return { ok: true, state: next, events };
 }

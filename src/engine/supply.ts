@@ -5,6 +5,7 @@ import type { HexId } from "./hex";
 import type { MapHex } from "./map";
 import type { HexFeature } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
+import { MC10_SLEEPING_LAND_SUPPLIES, sleepingAlly, sleepingAllyOfHex } from "./minors-axis";
 import { minorFedByAnyGroup } from "./minors-intervene";
 import { seaReaches } from "./naval-supply";
 import { fortressSupplies, specialNets } from "./supply-sources";
@@ -94,14 +95,21 @@ const groupOfOwner = (side: Side, owner: ForceOwner, policy: SupplyPolicy): Supp
 /** Which source set a controlled hex belongs to: by who controls it (a Soviet-held Moscow supplies Soviets). */
 function groupOfHex(ctx: GameContext, state: GameState, side: Side, hex: HexId, policy: SupplyPolicy): SupplyGroup {
   const c = controllerOf(ctx, state, hex);
-  return c === null ? "western" : groupOfOwner(side, c, policy);
+  return c === null ? (side === "axis" ? "axis" : "western") : groupOfOwner(side, c, policy); // a sleeping ally's capital (no controller, R10) is the Axis' own
 }
 
+
+/**
+ * Spec 15 R10, C4.3, TODO(verify) MC10: whether a hex counts as the side's own ground for tracing supply: a hex it controls, or, for the Axis, the land of a sleeping Axis
+ * Minor-Ally (17.3 makes it German ground). Control of the hex is not changed. Used where `controllingSide` was read for tracing and for sources.
+ */
+export const supplyFriendly = (ctx: GameContext, state: GameState, side: Side, hex: HexId): boolean =>
+  controllingSide(ctx, state, hex) === side || (MC10_SLEEPING_LAND_SUPPLIES && side === "axis" && sleepingAllyOfHex(ctx, state, hex) !== null);
 
 /** Whether a capital hex counts: a Major Power's always; a minor country's while that minor fights on the side. */
 function capitalCounts(state: GameState, side: Side, country: string | undefined): boolean {
   if (country === undefined) return false;
-  return country in (state.nations ?? {}) || sideInWar(state, country as ForceOwner) === side;
+  return country in (state.nations ?? {}) || sideInWar(state, country as ForceOwner) === side || (MC10_SLEEPING_LAND_SUPPLIES && side === "axis" && sleepingAlly(state, country));
 }
 
 /** Whether the state has the parts supply reads (a cheap shape check so a malformed state gives an empty answer, not a throw). */
@@ -112,7 +120,7 @@ const wellFormed = (state: GameState): boolean =>
 export function supplySources(ctx: GameContext, state: GameState, side: Side, policy: SupplyPolicy = SUPPLY_POLICY): HexId[] {
   if (!isSide(side) || !wellFormed(state)) return [];
   return sourceCandidates(ctx, policy.sourceFeatures)
-    .filter((h) => capitalCounts(state, side, h.country) && controllingSide(ctx, state, h.id) === side)
+    .filter((h) => capitalCounts(state, side, h.country) && supplyFriendly(ctx, state, side, h.id))
     .map((h) => h.id)
     .sort(byHex);
 }
@@ -235,7 +243,7 @@ export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, po
   if (!isSide(side) || !wellFormed(state)) return network;
   const blocked = enemyGroundHexes(state, side);
   const opened = new Map<HexId, boolean>();
-  const open = (h: HexId): boolean => opened.get(h) ?? opened.set(h, !!ctx.map.hexes[h]?.land && controllingSide(ctx, state, h) === side && !blocked.has(h)).get(h)!;
+  const open = (h: HexId): boolean => opened.get(h) ?? opened.set(h, !!ctx.map.hexes[h]?.land && supplyFriendly(ctx, state, side, h) && !blocked.has(h)).get(h)!;
   const obstacles: Obstacles = { zoc: enemyZocFor(ctx, state, side, policy.zoc), open };
   // Each set's search runs the first time its `next` is read: most units are supplied by their main set, so the special nets are often never searched.
   const lazyReach = (kind: SupplyReach["kind"], from: readonly HexId[], serves: SupplyReach["serves"]): SupplyReach => {

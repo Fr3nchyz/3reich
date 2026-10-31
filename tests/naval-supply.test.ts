@@ -409,14 +409,14 @@ describe("the pockets the automatic setups leave (spec 12, 'What exists today')"
     expect(unsuppliedUnits(c.ctx, both, "axis")).toEqual([]);
   });
 
-  it("1944: German units at Oslo (Antwerp) and British armor at Cagliari (Tripoli, Alexandria or Suez); 1939 and the Campaign: Finland's armor, which no fleet can reach", () => {
+  it("1944: German units at Oslo (Antwerp) and British armor at Cagliari (Tripoli, Alexandria or Suez); 1939 and the Campaign: no pocket (Finland's armor is supplied by R10)", () => {
     const c = played(SCENARIO_1944);
     expect(seaSupplyOptions(c.ctx, c.state, "axis").map((o) => [o.from, o.to, o.saves])).toEqual([["L25", "C33", 3]]);
     expect(seaSupplyOptions(c.ctx, c.state, "allies").map((o) => [o.from, o.to, o.saves])).toEqual([["II17", "AA19", 2], ["LL29", "AA19", 2], ["MM30", "AA19", 2]]);
     for (const side of ["axis", "allies"] as const) for (const o of seaSupplyOptions(c.ctx, c.state, side)) expect(unsuppliedUnits(c.ctx, withDesignation(c.state, o), side).length).toBe(0);
     for (const scenario of [SCENARIO_1939, SCENARIO_CAMPAIGN]) {
       const k = played(scenario);
-      expect(cut(k, "axis")).toEqual(["u93@D41"]);
+      expect(cut(k, "axis")).toEqual([]); // spec 15 R10: Helsinki is supplied from its own capital while Finland sleeps (it was the one pocket before)
       expect(seaSupplyOptions(k.ctx, k.state, "axis")).toEqual([]);
     }
   });
