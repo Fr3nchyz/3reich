@@ -690,6 +690,13 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 - `tests/minors-territory.test.ts` pins individual allies, 1942/1944 totals, sleeping and conquered allies, old saves, first helper, invalid helper records, capital control, late conquest, conquered timing/current holder, mixed totals, starting holdings, blank values and determinism/immutability.
 - No `yearstart.ts` or `minorAllyBrps` changes: later wiring owns payment, logging and events. Expected effect on computer games: none; there are no engine callers. Fixed-seed hashes and recordings unchanged.
 
+## As built, 15-9b
+
+- R13 (Ref 9.2): `yearstart.ts` no longer has `minorAllyBrps`. `recalculated` calls `territoryIncome` for each nation: active Minor-Allies at their own values (so one ally less loses only its own value, not all 45), helped minors, and 15-5's conquered countries. Spec 14's lines (half the BRPs of a conquered Major Power; Moscow and Leningrad) stay beside them. The 1942 and 1944 total is still 45 (test).
+- `COUNTRY_INCOME { nation, lines: { name, value, reason }[], total }` is emitted before `BRPS_CHANGED` for a nation with at least one line (territory lines, "conquered Major Powers", "Moscow and Leningrad"); the UI log prints it (`session.ts`) on the nation's side (`logSide.ts`). The `BRPS_CHANGED` reason lists the territory lines in brackets.
+- 15-8 wake value: the Year Start Sequence rebuilds the total from the Base, so the value credited at a wake is not paid a second time; a woken ally pays again from the next sequence as an active ally (test). Any of its value left unspent still counts as unused BRPs for the growth, as the 1942 allies' value did before; no new id.
+- No new TODO(verify) ids (MC12, MC19, MC20, MC28 as listed). Not built: the "Next year start" panel (15-16).
+
 ## As built, 15-8
 
 - R9 (Ref 17.0 to 17.3, 9.2): `minors-wake.ts` (15-8a's pure module is the base: `wakeDateReached`, `allyDueToWake`, `wakeAllies`, `interventionWake`, MC9 constants). 15-8 adds `wakeWithArmy`, which calls `wakeAllies` (active flag, wars, value) and logs `MINOR_ALLY_WOKE { minor, of, value, cause, toPlace }` and one `BRPS_CHANGED`. If the country has no fighting record (none, or neutral after a revoked declaration) its record gets `toPlace: "axis"` and step 2 asks the Axis for the army (`PLACE_MINOR_FORCES`, the chart row, a ground unit in the capital); `pending` accepts a neutral record of an active ally. If an Allied declaration already called the army up, nothing is placed again.
