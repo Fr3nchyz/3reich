@@ -65,7 +65,9 @@ export function minorAllyBrps(ctx: GameContext, state: GameState, id: PowerId): 
  */
 function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: Nation; growth: number; minors: number; conquered: number; cities: number } {
   const unused = n.brpTotal;
-  const growth = growthAllowed(ctx, state.year) ? growthOf(unused, n.growthRate) : 0;
+  // Spec 14 R8, TODO(verify) V27: a deficit (from the 25-BRP vital area losses) earns no growth and is taken from the new total.
+  const deficit = Math.min(0, unused);
+  const growth = growthAllowed(ctx, state.year) ? growthOf(Math.max(0, unused), n.growthRate) : 0;
   const brpBase = n.brpBase + growth;
   // Spec 15 R13 item 3: add minor/colony income beside spec 14's Major Power income.
   const conquered = conquestIncome(ctx, state, n.id) + conqueredIncome(ctx, state, n.id);
@@ -73,7 +75,7 @@ function recalculated(ctx: GameContext, state: GameState, n: Nation): { nation: 
   const cities = sovietCityIncome(ctx, state, n.id);
   // TODO(verify) V46: the 15s of Moscow and Leningrad join the new initial total after the growth of the Base (they do not feed it, nor the next year's growth), so the spending
   // limit, half the total, moves with them; a total never goes below 0 (it only could for the U.S.S.R.).
-  const brpTotal = Math.max(0, brpBase + minors + conquered + cities + (KEEP_UNUSED_BRPS ? unused : 0));
+  const brpTotal = Math.max(0, brpBase + minors + conquered + cities + deficit + (KEEP_UNUSED_BRPS ? Math.max(0, unused) : 0));
   return { nation: { ...n, brpBase, brpTotal, spendLimit: Math.floor(brpTotal / 2), spent: 0, grantedThisYear: 0 }, growth, minors, conquered, cities };
 }
 
