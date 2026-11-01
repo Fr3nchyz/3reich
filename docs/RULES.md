@@ -156,6 +156,8 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 
 ## Open questions
 
+- **Save format (spec 11, 11-1; no game rule):** TODO(verify) AER52 requires semantic `STATE_VERSION = 1` for snapshot rescue; AER53 selects `SAVE_METADATA_POLICY = "iso-utc-record-memory"` (canonical UTC ISO date, nonempty build, plain targets/left records); AER54 selects `FINGERPRINT_ALGORITHM = "fnv1a32-utf16"` over sorted JSON, eight hex digits, possible collisions. AER55 selects `SNAPSHOT_SHAPE_POLICY = "fresh-fields-only"`: exact top-level/nation fields, explicit Unit fields and populated fresh substructures (including setup and heterogeneous array exemplars); optional records absent at startup conservatively block rescue. Empty collections have no exemplar; this boolean screening does not establish engine invariants. See [TODO-VERIFY.md](TODO-VERIFY.md).
+
 > Rulings of 2026-10-29 (owner-approved, from the cross-checked research reports) are in [RULINGS-2026-10-29.md](RULINGS-2026-10-29.md) and win over any open question below that they settle.
 
 
