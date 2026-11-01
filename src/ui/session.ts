@@ -249,6 +249,7 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
     case "OBJECTIVES_CREDITED":
     case "COUNTRY_CONQUERED":
     case "VICHY_CREATED":
+    case "ITALIAN_FLEET_KEPT":
     case "UNITS_REMOVED_BY_CONQUEST":
     case "CONTROL_PASSED":
       return conquestLine(ctx, e);

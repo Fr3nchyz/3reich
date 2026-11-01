@@ -34,6 +34,8 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
       const british = e.britishEliminated > 0 ? ` ${e.britishEliminated} British unit${e.britishEliminated === 1 ? " in" : "s in"} Vichy territory ${e.britishEliminated === 1 ? "is" : "are"} eliminated.` : "";
       return `Vichy France now exists. ${e.halved.kept} French unit${e.halved.kept === 1 ? "" : "s"} became Vichy and ${lost} ${lost === 1 ? "was" : "were"} lost. ${e.colonies.map(colony).join(". ")}.${british}`;
     }
+    case "ITALIAN_FLEET_KEPT":
+      return `Italy surrenders. The die is ${e.die}: Germany keeps ${e.share} of ${e.available} Italian naval factors${e.placed < e.counters ? ` (${e.counters - e.placed} counter${e.counters - e.placed === 1 ? "" : "s"} found no German port and ${e.counters - e.placed === 1 ? "is" : "are"} lost)` : ""}.`;
     case "UNITS_REMOVED_BY_CONQUEST":
     case "CONTROL_PASSED":
       return null;

@@ -182,6 +182,8 @@ export type GameEvent =
    * `britishEliminated` counts the British units that stood in Vichy territory. The hexes that became Vichy or Free French are in CONTROL_PASSED events of their own.
    */
   | { type: "VICHY_CREATED"; halved: { kept: number; lost: number }; colonies: { colony: "lebanon-syria" | "north-africa"; die: number; becomes: "vichy" | "free-french" }[]; britishEliminated: number }
+  /** Italy surrendered (spec 14 R6, ticket 14-8; V16): one die plus two, capped by the `available` Italian naval factors, is the `share` Germany keeps in `counters` counters; `placed` of them were set up in German-held ports (the rest were lost with Italy). */
+  | { type: "ITALIAN_FLEET_KEPT"; die: number; available: number; share: number; counters: number; placed: number }
   /** Step II.A: four dice were rolled and the Axis ground units east of the Russian border counted (spec 14 R10); `mayPostpone` is `axisUnits < total`. */
   | { type: "WINTER_ROLLED"; dice: number[]; total: number; axisUnits: number; mayPostpone: boolean }
   /** The Allies put the Russian winter off to the next Winter Game Turn. */
