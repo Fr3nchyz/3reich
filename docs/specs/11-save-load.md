@@ -494,3 +494,25 @@ The lint follow-up uses explicit resolved promises in the memory implementation 
 its persistence test double. Database-open errors always reject with an Error,
 including a missing IndexedDB error; cursor keys follow the string slot-id contract.
 The fallback test also covers an open failure with a null error.
+
+## As built, 11-10
+
+The tests-only pack attempts two seeds in all four scenarios at setup, early-play
+and short-run cuts through the session record, memory store, validation and restore.
+Those eight scenario/continuation tests are expected failures marked TODO(verify)
+AER54: played states acquire undefined fields that fingerprint rejects as non-JSON.
+Consequently the full cuts and 200-action continuation assertions are not all reached;
+this ticket does not claim round-trip or continuation equivalence is established.
+No source is changed. The plain-word corrupt-input cases and fake-timer autosave of
+real setup actions pass, including hidden-tab flush and exact replay restore.
+
+TODO(verify) AER53 remains: the save envelope uses object records and omits policy
+counters, while the memory helpers use entry arrays and counters. Full continuation
+through envelope memory is a named pending test. Snapshot rescue still needs the
+caller's invariant validator (AER55). Exchange/end-of-scenario cuts and device facts
+remain unverified. No computer-game behavior, fixed-seed hashes or recordings change.
+
+The rescue test's injected validator compares unknown input structurally with the
+known fresh fixture before returning a copy (AER55); it does not pass untrusted
+input to the typed fingerprint function. The autosave test wraps the memory-store
+write with its receiver intact and asserts on the local mock (Parts D/H).
