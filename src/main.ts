@@ -46,6 +46,10 @@ import { installE2eLoad } from "./ui/e2eLoad";
 import { statusHtml } from "./ui/statusView";
 import { bindEnd, revealEnd, revealSurrender, revealWinter, syncObjectives } from "./ui/endBind";
 
+import { createAutosave, bindAutosaveLifecycle } from "./ui/autosave";
+import { openSaveStore } from "./save/store";
+import { version } from "../package.json";
+
 const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, SCENARIO_1944];
 
 /** The one game being played; start() replaces it. */
@@ -62,6 +66,16 @@ const hexText = (h: MapHex): string => [describeHex(h), describeUnits(session.st
 const computer = createComputerLoop(() => session, () => render());
 const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
+// Spec 11 Parts C/D: always-on autosave; notices stay outside the game state.
+const autosave = createAutosave({ store: openSaveStore().then(({ store, error }) => {
+  if (error) shell.live.textContent = "Saves are not kept in this browser window. Use Save to a file.";
+  return store;
+}), gameVersion: version, onError: error => {
+  shell.live.textContent = error.code === "quota"
+    ? "Could not save: the browser is full. Delete a saved game or save to a file."
+    : "Saves are not kept in this browser window. Use Save to a file.";
+} });
+bindAutosaveLifecycle(autosave);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
   onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
@@ -131,6 +145,7 @@ function takeOverAs(side: Side): void {
 }
 
 function render(): void {
+  autosave.observe(session); // Spec 11 Part D: observe accepted actions before the next computer slice.
   normaliseMode(session);
   const setup = setupView(session);
   // Step 9e (spec 16, ticket 16-17): the engine lists every stack to every hex it can reach, 10,600 to 18,950 actions and 70 to 120 ms a position, so the human
