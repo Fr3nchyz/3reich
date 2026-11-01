@@ -389,7 +389,6 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 6. A game saved by a version whose rules changed is either opened exactly (the fingerprint matches) or offered as a clearly worded rescue, never silently changed.
 7. No rule was added; anything unconfirmed is marked `TODO(verify)`. Lint, type check, unit tests, build and the browser tests pass.
 
-<<<<<<< HEAD
 ## As built, 11-3
 
 Every session starts recording before setup; accepted actions append in order and refused
@@ -403,7 +402,6 @@ connecting these helpers to browser saves belong to later tickets.
 
 No game decisions change; the expected comparison is 22 identical games. Existing
 stability hashes and recordings are unchanged. No new verification ids or defaults.
-=======
 ## As built, 11-1
 
 Pure, unwired modules now define format 2, read bounded JSON into explicitly untrusted
@@ -437,4 +435,3 @@ Caps: 4 MiB of UTF-8 before parsing, 100,000 actions, 200 UTF-16 code units per
 string/key, 20 container edges below the root; title 40, log tail 60. Caps and forbidden
 keys apply even inside discarded fields. Engine action legality and sliced restore,
 rescue decisions, browser storage, and cross-device/continuation tests remain later tickets.
->>>>>>> origin/main
