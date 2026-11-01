@@ -422,3 +422,30 @@ Caps: 4 MiB of UTF-8 before parsing, 100,000 actions, 200 UTF-16 code units per
 string/key, 20 container edges below the root; title 40, log tail 60. Caps and forbidden
 keys apply even inside discarded fields. Engine action legality and sliced restore,
 rescue decisions, browser storage, and cross-device/continuation tests remain later tickets.
+
+## As built, 11-4
+
+`SaveStore` now has IndexedDB and volatile in-memory implementations (Parts C/D/H),
+with list/get/put/delete, explicit durability, and quota/unavailable results as data.
+`openSaveStore` accepts an injected factory and persistence API; absent, refused or
+blocked storage returns the memory fallback plus an unavailable result. This remains
+unwired: callers must disable autosave and display the Part C notice for a volatile
+store. A later transaction failure is reported without silently switching stores or
+hiding existing entries.
+
+Reads return untrusted values, including damaged entries, for the later loader to
+validate or export. Writes accept format-2 `SaveFile` data and resolve only after
+transaction commit; aborted writes retain the previous entry. Both implementations
+copy values rather than sharing caller-owned objects. Slot naming, the named-save
+limit, replacement confirmation and rotation remain caller policy (tickets 11-5/6/7).
+
+`requestPersistence()` caches its first result, including denial or failure. The
+caller invokes it after the first autosave (Part C, ticket 11-5); writes never depend
+on a grant. A missing persistence API returns false. Connections close explicitly or
+on a version-change request. No new provisional game or product policy, or new
+TODO(verify) id, is introduced. E6/E8 browser facts still require the iPad check.
+
+Tests use an asynchronous injected factory to exercise commit/abort, quota rollback,
+blocked opening, damaged entries and persistence, plus the same basic contract for
+the memory store. Real-browser integration remains for ticket 11-11. No engine,
+computer, data or UI changes; expected effect on computer games: none.
