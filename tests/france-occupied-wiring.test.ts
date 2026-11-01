@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, legalActions, type Action } from "../src/engine/actions";
-import { attritionParticipants } from "../src/engine/attrition";
+import { attritionParticipantProblem, attritionParticipants } from "../src/engine/attrition";
 import { capitalOf } from "../src/engine/capital";
 import * as occupied from "../src/engine/france-occupied";
 import { legalMoves } from "../src/engine/move-action";
+import { hasCombatWork } from "../src/engine/attack";
 import { crossable, neighborIds } from "../src/engine/attack-rules";
 import { hex, hexId, neighbors } from "../src/engine/hex";
 import { supplyStatus } from "../src/engine/supply";
@@ -69,6 +70,8 @@ describe("French attacks while Paris is Axis-held", () => {
   it("has no combat work when only barred French units could attack", () => {
     const s = room([german(2), unit("f1", "france", "infantry", 1, N1)], "7h");
     expect(legalActions(CTX, s).some((a) => a.type === "ATTACK")).toBe(false);
+    expect(hasCombatWork(CTX, s)).toBe(false);
+    expect(hasCombatWork(CTX, room([german(2), unit("f1", "france", "infantry", 1, N1)], "7h", {}, false))).toBe(true);
   });
 });
 
@@ -89,6 +92,8 @@ describe("French Options, declarations, moves and supply while Paris is Axis-hel
     const ids = attritionParticipants(CTX, s, "western").units.map((u) => u.id);
     expect(ids).toContain("b1");
     expect(ids).not.toContain("f1");
+    expect(attritionParticipantProblem(CTX, s, s.units.f1!, "western")).toBe(occupied.OCCUPIED_ATTRITION_TEXT);
+    expect(attritionParticipantProblem(CTX, s, s.units.b1!, "western")).toBeNull();
     const freed = room([german(2), unit("f1", "france", "infantry", 1, N1)], "7h", { frontOptions: { western: { option: "attrition" } } }, false);
     expect(attritionParticipants(CTX, freed, "western").units.map((u) => u.id)).toContain("f1");
   });
