@@ -127,7 +127,7 @@ export function snapshotHasFreshShape(snapshot: JsonObject, scenario: Scenario, 
   fresh: GameState = newGame(scenario, 0)): boolean {
   if (stateVersion !== STATE_VERSION || snapshot.scenarioId !== scenario.id) return false;
   const sameKeys = (a: JsonObject, b: object): boolean =>
-    Object.keys(a).sort().join("\0") === Object.keys(b).sort().join("\0");
+    Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => Object.hasOwn(b, key));
   if (!sameKeys(snapshot, fresh) || !object(snapshot.nations) || !object(snapshot.units)) return false;
   if (!sameKeys(snapshot.nations, fresh.nations)) return false;
   for (const [id, nation] of Object.entries(snapshot.nations)) {
@@ -147,18 +147,19 @@ export function snapshotHasFreshShape(snapshot: JsonObject, scenario: Scenario, 
     if (unit.movement !== undefined && !integer(unit.movement)) return false;
     if (unit.nationality !== undefined && (!text(unit.nationality) || !owners.includes(unit.nationality))) return false;
   }
-  // Spec 11 A: compare populated fresh structures recursively; empty collections have no exemplar.
+  // Spec 11 A; AER55: arrays may contain several fresh entry shapes; empty collections have no exemplar.
   const resembles = (value: Json | undefined, template: unknown): boolean => {
     if (template === null) return value === null;
     if (Array.isArray(template)) return Array.isArray(value)
-      && (template.length === 0 || value.every(v => resembles(v, template[0] as unknown)));
+      && (template.length === 0 || value.every(v => template.some(example => resembles(v, example))));
     if (typeof template !== "object") return typeof value === typeof template;
     if (!object(value) || !template) return false;
     const entries = Object.entries(template);
     return entries.length === 0 || (sameKeys(value, template)
       && entries.every(([k, v]) => resembles(value[k], v)));
   };
-  for (const key of ["lastTurn", "pools", "wars", "strategicWarfare", "minorAllies", "countries"]) {
+  for (const key of ["lastTurn", "pools", "wars", "strategicWarfare", "minorAllies", "countries", "setup"]) {
+    if (key === "setup" && snapshot.setup === null) continue;
     if (key in fresh && !resembles(snapshot[key], (fresh as unknown as JsonObject)[key])) return false;
   }
   if (!object(snapshot.control) || !Object.values(snapshot.control).every(v => v === null || (text(v) && owners.includes(v)))) return false;

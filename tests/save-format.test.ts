@@ -5,7 +5,7 @@ import { SCENARIO_1944 } from "../src/data/scenario-1944";
 import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { newGame } from "../src/engine/game";
 import { fingerprint, sortedJson } from "../src/save/fingerprint";
-import { MAX_ACTIONS, MAX_DEPTH, MAX_FILE_BYTES, STATE_VERSION } from "../src/save/format";
+import { MAX_ACTIONS, MAX_DEPTH, MAX_FILE_BYTES, MAX_STRING_LENGTH, STATE_VERSION } from "../src/save/format";
 import type { JsonObject } from "../src/save/format";
 import { readSave, snapshotHasFreshShape } from "../src/save/validate";
 
@@ -22,6 +22,9 @@ const fixture = (): JsonObject => ({
 const read = (value: unknown) => readSave(JSON.stringify(value), scenarios);
 
 describe("spec 11 Parts A/B/H: save reader", () => {
+  it("Part H: safety caps retain the specified values", () => {
+    expect([MAX_FILE_BYTES, MAX_ACTIONS, MAX_STRING_LENGTH, MAX_DEPTH]).toEqual([4 * 1024 * 1024, 100_000, 200, 20]);
+  });
   it("Part B: all fields round trip, optional fields may be absent, builds do not decide acceptance", () => {
     const file = fixture();
     expect(read(file)).toEqual({ ok: true, save: file });
@@ -44,6 +47,33 @@ describe("spec 11 Parts A/B/H: save reader", () => {
       expect(result.save.start).toEqual({ kind: "new" });
       expect(result.save.ai).toEqual({ targets: {}, left: {} });
     }
+  });
+  it("Part A/H: replay input survives an unusable snapshot and a different semantic revision", () => {
+    const file = fixture(); file.snapshot = {}; file.stateVersion = STATE_VERSION + 1;
+    expect(read(file).ok).toBe(true);
+    expect(snapshotHasFreshShape({}, SCENARIO_1939, STATE_VERSION)).toBe(false);
+  });
+  it("Part H: strips unknown action, unit, nation and snapshot fields", () => {
+    const file = fixture();
+    file.actions = [{ type: "SETUP_PLACE", owner: "germany", at: "M35",
+      extra: true, unit: { type: "infantry", strength: 3, nationality: "germany", extra: true } }];
+    const snapshot = file.snapshot as JsonObject;
+    snapshot.extra = true;
+    (snapshot.nations as JsonObject).unknown = {};
+    ((snapshot.nations as JsonObject).germany as JsonObject).extra = true;
+    snapshot.units = { u1: { id: "u1", owner: "germany", type: "infantry", strength: 3, at: "M35", extra: true } };
+    const result = read(file);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.save.actions[0]).not.toHaveProperty("extra");
+      expect(result.save.actions[0]!.unit).not.toHaveProperty("extra");
+      expect(result.save.snapshot).not.toHaveProperty("extra");
+      expect(result.save.snapshot.nations).not.toHaveProperty("unknown");
+      expect((result.save.snapshot.nations as JsonObject).germany).not.toHaveProperty("extra");
+      expect((result.save.snapshot.units as JsonObject).u1).not.toHaveProperty("extra");
+    }
+    file.extra = { ["x".repeat(201)]: true };
+    expect(read(file).ok).toBe(false);
   });
   it.each(["format", "app", "title", "savedAt", "gameVersion", "stateVersion", "scenario", "seed", "humanSide", "start", "actions", "setupActions", "fingerprint", "snapshot"])(
     "Part B/H: requires %s", key => { const file = fixture(); delete file[key]; expect(read(file).ok).toBe(false); },
@@ -70,6 +100,7 @@ describe("spec 11 Parts A/B/H: save reader", () => {
   it.each(["__proto__", "constructor", "prototype"])("Part H: rejects forbidden %s anywhere, including ignored data", key => {
     expect(readSave(JSON.stringify(fixture()).replace('"report"', `{"${key}":{}}`), scenarios).ok).toBe(false);
     expect(readSave(`{"${key}":0}`, scenarios).ok).toBe(false);
+    expect(read({ ...fixture(), extra: { [key]: {} } }).ok).toBe(false);
   });
   it("Part H: string, nesting and action caps include exact boundaries", () => {
     const file = fixture(); file.note = "x".repeat(200);
@@ -97,6 +128,24 @@ describe("spec 11 Part A: fresh shape screening (not a state type assertion)", (
   it.each(scenarios)("Part A/I: fresh $id snapshot and JSON copy have the same shape", scenario => {
     const snapshot = JSON.parse(JSON.stringify(newGame(scenario, 1))) as JsonObject;
     expect(snapshotHasFreshShape(snapshot, scenario, STATE_VERSION)).toBe(true);
+  });
+  it("Part A/AER55: heterogeneous pools match fresh exemplars; malformed nested records do not", () => {
+    for (const field of ["pools", "countries", "setup"]) {
+      const snapshot = state();
+      snapshot[field] = { broken: true };
+      expect(snapshotHasFreshShape(snapshot, SCENARIO_1939, STATE_VERSION)).toBe(false);
+    }
+    const snapshot = state(); snapshot.setup = null;
+    expect(snapshotHasFreshShape(snapshot, SCENARIO_1939, STATE_VERSION)).toBe(true);
+    const pool = ((snapshot.pools as JsonObject).germany as JsonObject).forcePool as JsonObject[];
+    pool[0]!.strength = "bad";
+    expect(snapshotHasFreshShape(snapshot, SCENARIO_1939, STATE_VERSION)).toBe(false);
+  });
+  it("Part A/H: embedded separators cannot disguise missing nation fields", () => {
+    const snapshot = state(); const nations = snapshot.nations as JsonObject;
+    nations["britain\0france"] = nations.britain!;
+    delete nations.britain; delete nations.france;
+    expect(snapshotHasFreshShape(snapshot, SCENARIO_1939, STATE_VERSION)).toBe(false);
   });
   it("Part A: missing/extra top-level and nation fields, bad units, semantic versions are refused", () => {
     const snapshot = state();

@@ -413,8 +413,8 @@ New provisional choices, recorded in RULES and TODO-VERIFY:
 - AER55: fresh top-level and nation fields must match exactly; unit required fields
   follow the engine's Unit interface. Fields absent in fresh state have no inferred
   schema: snapshots carrying optional play records are conservatively unsuitable for
-  rescue. Populated fresh substructures are checked recursively; empty collections
-  have no exemplar. Shape screening is not an engine-invariant validator or type guard.
+  rescue. Populated fresh substructures (including setup) are checked recursively;
+  array entries may match any fresh exemplar; empty collections have no exemplar. Shape screening is not an engine-invariant validator or type guard.
   Restore must validate a selected snapshot before handing it to the engine; replay
   acceptance is independent of snapshot suitability (Part A).
 
