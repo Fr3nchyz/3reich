@@ -172,6 +172,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${POWER_NAMES[e.from]} grants ${e.amount} BRPs to ${POWER_NAMES[e.to]}.`;
     case "BRPS_CHANGED":
       return `${POWER_NAMES[e.nation]}: ${e.delta} BRPs (${e.reason}), ${e.total} left.`;
+    case "COUNTRY_INCOME":
+      return `${POWER_NAMES[e.nation]} territory income ${e.total}: ${e.lines.map((l) => `${cap(l.name)} ${l.value} (${l.reason})`).join(", ")}.`;
     case "MINOR_DECLARATION_REVOKED":
       return `${POWER_NAMES[e.by]} did not enter or attack ${cap(e.minor)}: the declaration is revoked (${e.brpsLost} BRPs lost), ${cap(e.minor)} is neutral again.`;
     case "MINOR_GARRISONED":

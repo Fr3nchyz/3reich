@@ -265,7 +265,7 @@ describe("the Year Start Sequence (R7a)", () => {
   it("the reason no longer counts conquered countries or the cities as Minor-Allies' BRPs", () => {
     const events = runYearStartSequence(ctxFor(SCENARIO_1942), { ...board([], SCENARIO_1942, { year: 1943, season: "spring" }), control: { [MOSCOW]: "germany" }, wars: [["germany", "ussr"]] }).events;
     const ger = events.find((e) => e.type === "BRPS_CHANGED" && e.nation === "germany");
-    expect(ger && ger.type === "BRPS_CHANGED" && ger.reason).toMatch(/plus 45 from Minor-Allies, plus 15 for Moscow/);
+    expect(ger && ger.type === "BRPS_CHANGED" && ger.reason).toMatch(/plus 45 from Minor-Allies \([^)]*\), plus 15 for Moscow/);
   });
   it("a U.S.S.R. that has left the game gets and gives nothing (the sequence skips it; Germany's +15 stops too)", () => {
     const s = atWar({ ...held(MOSCOW, LENINGRAD), conquests: [{ country: "ussr", by: "germany", side: "allies", how: "surrender", at: { year: 1941, season: "fall" } }] });
