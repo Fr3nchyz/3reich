@@ -1,5 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { charge, spend, spendable } from "./brps";
+import { occupiedDeclareProblem } from "./france-occupied";
 import { isConquered } from "./conquest-record";
 import { combatantName, isGone } from "./nations";
 import type { GameContext } from "./context";
@@ -43,7 +44,7 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
   // A recorded action can name anyone; an unknown nation has nothing to declare (applyAction must not throw).
   if (!me) return [];
   const side = sideOfPower(me);
-  if (side === null || side !== state.activeSide) return [];
+  if (side === null || side !== state.activeSide || occupiedDeclareProblem(ctx, state, by) !== null) return []; // spec 14 R5 (Ref 18.3)
   const noNeutrals = ctx.scenario.rules.some((r) => r.kind === "no-war-on-neutrals");
   const targets: Combatant[] = [];
   for (const other of Object.values(state.nations)) {
@@ -69,6 +70,8 @@ export function applyDeclaration(ctx: GameContext, state: GameState, action: Ext
   if (!nation) return { ok: false, error: `${String(action.by)} is not a Major Power in this game.` };
   if (sideOfPower(nation) !== state.activeSide) return { ok: false, error: `${action.by} is not on the ${state.activeSide} side, so it cannot declare war now.` };
   if (atWar(state, action.by, action.on)) return { ok: false, error: `${action.by} is already at war with ${action.on}.` };
+  const occupied = occupiedDeclareProblem(ctx, state, action.by);
+  if (occupied) return { ok: false, error: occupied };
   if (!declarationTargets(ctx, state, action.by).includes(action.on)) {
     return { ok: false, error: `${action.by} may not declare war on ${action.on}: it is on the same side, out of the game, protected by the scenario, or beyond what ${action.by} may spend this turn.` };
   }

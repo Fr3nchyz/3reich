@@ -1,6 +1,8 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { angloFrenchStopProblem } from "./anglo-french";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
+import { franceOccupied } from "./france-occupied";
+import { occupiedAttackFor } from "./occupied-wiring";
 import { attackHexAllowed, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, lonersAt, neighborIds } from "./attack-rules";
 import { resolveOffensiveCombat } from "./combat";
 import { breakthroughAfter, legalPlacements, openBreakthrough } from "./breakthrough";
@@ -58,7 +60,7 @@ export function attackables(ctx: GameContext, state: GameState): Map<HexId, Unit
 }
 
 /** Whether the step has anything to wait for: an attack could be made. */
-export const hasCombatWork = (ctx: GameContext, state: GameState): boolean => attackables(ctx, state).size > 0;
+export const hasCombatWork = (ctx: GameContext, state: GameState): boolean => (franceOccupied(ctx, state) ? legalAttacks(ctx, state).length > 0 : attackables(ctx, state).size > 0); // spec 14 R5: France's limits may leave nothing to attack with
 
 /** The attacks listed for each target: everyone who can reach it, and each source hex alone when there are several. */
 function legalAttacks(ctx: GameContext, state: GameState): Action[] {
@@ -66,6 +68,8 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
   for (const [target, from] of attackables(ctx, state)) {
     const all = from.filter((u) => defendersAt(state, [u], target).length > 0 || lonersAt(state, [u], target).length > 0);
     out.push({ type: "ATTACK", side: state.activeSide, units: all.map((u) => u.id), target });
+    const others = all.filter((u) => u.owner !== "france"); // spec 14 R5: a stack that fails France's limits may still go without the French (filtered below)
+    if (others.length > 0 && others.length < all.length) out.push({ type: "ATTACK", side: state.activeSide, units: others.map((u) => u.id), target });
     const hexes = [...new Set(all.map((u) => u.at))];
     if (hexes.length > 1) for (const h of hexes) out.push({ type: "ATTACK", side: state.activeSide, units: all.filter((u) => u.at === h).map((u) => u.id), target });
     // A sweep of a hex with only air units or the like needs one ground unit, so each may go alone (the computer sends the least it can).
@@ -74,7 +78,7 @@ function legalAttacks(ctx: GameContext, state: GameState): Action[] {
       for (const u of all) if (!have([u.id])) out.push({ type: "ATTACK", side: state.activeSide, units: [u.id], target });
     }
   }
-  return out;
+  return out.filter((a) => a.type !== "ATTACK" || occupiedAttackFor(ctx, state, a.units.map((id) => state.units[id]!), a.target) === null); // spec 14 R5 (Ref 18.3)
 }
 
 /** Spec 15 R8: a minor's unit may not advance over its border after an attack (the same test as its ground movement), else null. */
@@ -179,6 +183,8 @@ export function fight(ctx: GameContext, state: GameState, units: readonly Unit[]
       : { ...s, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, target] } };
   };
   const tag = exploit ? { exploitation: true as const } : {};
+  const limited = occupiedAttackFor(ctx, state, units, target); // spec 14 R5 (Ref 18.3): France while Paris is Axis-held
+  if (limited) return { ok: false, error: limited };
   const defenders = defendersAt(state, units, target);
   if (defenders.length === 0) {
     // Only air units, fleets or the like (ALONE_NONGROUND_DESTROYED): the attack needs no roll; air and the like are destroyed, fleets are driven out to a friendly port (capture.ts).

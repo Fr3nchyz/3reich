@@ -5,6 +5,7 @@ import type { Front } from "./map";
 import { BRP_COSTS } from "./tables";
 import type { FrontChoice, FrontOption, GameState, PowerId } from "./types";
 import { isMajorPower, sideOfPower } from "./war";
+import { occupiedOptionProblem } from "./france-occupied";
 import { winterBansOffensive } from "./winter-effects";
 
 /**
@@ -70,7 +71,7 @@ export function legalFrontOptions(ctx: GameContext, state: GameState): Action[] 
       if (winterBansOffensive(state, state.activeSide, front, option)) continue; // Ref 28.0: not offered while the Russian winter is on
       const cost = optionCost(ctx, state, front, option);
       if (cost === 0) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option });
-      else for (const payer of payersFor(state, cost)) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option, payer });
+      else for (const payer of payersFor(state, cost).filter((p) => occupiedOptionProblem(state, p, front, option, ctx) === null)) out.push({ type: "SELECT_FRONT_OPTION", side: state.activeSide, front, option, payer });
     }
   }
   return out;
@@ -84,6 +85,8 @@ export function applyFrontOption(ctx: GameContext, state: GameState, action: Sel
   if (!FRONT_OPTIONS.includes(option)) return { ok: false, error: `${String(option)} is not a Front Option.` };
   if (state.frontOptions[front]?.option === option) return { ok: true, state, events: [] };
   if (winterBansOffensive(state, state.activeSide, front, option)) return { ok: false, error: WINTER_BAN_TEXT };
+  const banned = payer ? occupiedOptionProblem(state, payer, front, option, ctx) : null; // spec 14 R5 (Ref 18.3): France while Paris is Axis-held
+  if (banned) return { ok: false, error: banned };
   const cost = optionCost(ctx, state, front, option);
   let next = state;
   const events: Extract<ActionResult, { ok: true }>["events"] = [];
