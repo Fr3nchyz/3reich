@@ -96,6 +96,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "SURRENDER_REFUSED": // the Axis' answer
     case "OCCUPATION_SHORT":
     case "OCCUPATION_PENALTY": return "axis"; // the Axis Occupation Force (spec 14 R7c)
+    case "ITALIAN_FLEET_KEPT": return "axis"; // Italy's loss, at the end of the Axis Combat Phase
     case "VICHY_CREATED": return "allies"; // France's loss, like the fall it follows
     case "WINTER_ROLLED":
     case "WINTER_STARTED": return null; // the dice and the winter itself concern both sides
