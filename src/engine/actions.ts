@@ -4,7 +4,8 @@ import { applySetupAction, legalSetupActions } from "./setup";
 import { advance, settle } from "./turn";
 import { applyChooseWinter, legalWinterActions } from "./winter";
 import { winterAsking } from "./winter-record";
-import { surrenderAsking } from "./soviet-record";
+import { occupationAsking, surrenderAsking } from "./soviet-record";
+import { applyConcede, legalConcede } from "./occupation-step";
 import { applySiberian, applySurrenderAnswer, legalSiberian, legalSurrenderActions } from "./victory-actions";
 import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
@@ -76,6 +77,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (state.phase === "setup") return legalSetupActions(ctx, state);
   if (winterAsking(state)) return legalWinterActions(state);
   if (surrenderAsking(state)) return legalSurrenderActions(state); // step 10a: the Axis answers Russia's offer to surrender; nothing else, not even moving on, is legal
+  if (occupationAsking(state)) return legalConcede(ctx, state); // step 6h or 9k: the Axis names the Objective it hands back; nothing else is legal
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
@@ -104,7 +106,16 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
   if (state.phase === "game-over") return { ok: false, error: "The game is over." };
   if (typeof action !== "object" || action === null) return { ok: false, error: "An action is an object with a type." };
   if (surrenderAsking(state) && action.type !== "SURRENDER_ANSWER") return { ok: false, error: SURRENDER_WAITS };
+  if (occupationAsking(state) && action.type !== "OCCUPATION_CONCEDE") return { ok: false, error: "The game waits for the Axis to name the Objective it hands back to Russia (the Occupation Force)." };
   switch (action.type) {
+    case "OCCUPATION_CONCEDE": {
+      const answered = applyConcede(ctx, state, action);
+      if (!answered.ok) return answered;
+      // The choice was the only thing the game waited for at the step: it moves on.
+      const left = advance(ctx, answered.state);
+      const settled = settle(ctx, left.state);
+      return { ok: true, state: settled.state, events: [...answered.events, ...left.events, ...settled.events] };
+    }
     case "SETUP_PLACE":
     case "SETUP_REMOVE":
     case "SETUP_DONE": {

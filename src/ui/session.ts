@@ -247,6 +247,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
     case "RUSSIA_SURRENDERED":
     case "SURRENDER_REFUSED":
     case "OBJECTIVES_CREDITED":
+    case "OCCUPATION_SHORT":
+    case "OCCUPATION_PENALTY":
     case "COUNTRY_CONQUERED":
     case "VICHY_CREATED":
     case "ITALIAN_FLEET_KEPT":

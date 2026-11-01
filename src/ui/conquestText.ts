@@ -23,6 +23,10 @@ export function conquestLine(ctx: GameContext, e: GameEvent): string | null {
       return "The Axis refuse Russia's surrender: the war goes on until the last Russian unit inside Russia is gone, and Russia will not offer again.";
     case "OBJECTIVES_CREDITED":
       return `${e.hexes.length} objective${e.hexes.length === 1 ? " now counts" : "s now count"} for the Allies for good: ${e.hexes.map((h) => placeName(ctx.map, h)).join(", ")}.`;
+    case "OCCUPATION_SHORT":
+      return `The Axis Occupation Force in Russia is short: ${e.total} factors, ${e.ground} of them ground, against 45 and 30.`;
+    case "OCCUPATION_PENALTY":
+      return `Occupation Force penalty: ${POWER_NAMES.germany} loses ${e.amount} BRPs${e.hex === null ? "; no Russian Objective is left to hand back" : ` and ${placeName(ctx.map, e.hex)} goes back to Russia for good`}.`;
     case "CAPITAL_RETAKEN":
       return `${POWER_NAMES[e.power]} has taken back ${placeName(ctx.map, e.capital)}.`;
     case "COUNTRY_CONQUERED":
