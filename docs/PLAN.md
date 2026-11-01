@@ -158,8 +158,12 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 14-20 Self-play and the gate: a Conquests list per game, six new anomaly checks, 30 seeds of each scenario | | S: **Done** (2026-10-23). 120 games, anomalies in one game (1942 seed 2, four report lines for the same kept hex of conquered Germany). No engine, policy or hash changed |
 | 14-25 A hex kept at a fall under a hostile ground unit (V12) passes on, by the rule of the fall, once no such unit stands there (owner's decision of 2026-10-23; found by the 14-20 gate, 1942 seed 2, KK33) | | M: **Done** (2026-10-23). Timing is V62: after every action and at the end of each Game Turn. No fixed-seed hash changed |
 | 14-24 Docs and the program check: "As built" of spec 14 brought up to date, the V rows of RULES.md and TODO-VERIFY.md checked against the code | | S (Beta): **Done** (2026-10-23) for the docs. The program check of the victory numbers (`scripts/gamedata/`) is **not done**: it needs the game folder, which was not at hand |
-| 14-8b Italy's surrender wired into the end of the Axis Combat Phase, the German share of the fleet (V16; no prompt, `firstSide` is the Initiative) | | M (Release 1): **Done** (2026-10-31) |
+| 14-8b Italy's surrender wired into the end of the Axis Combat Phase, the German share of the fleet (V16; no prompt, `firstSide` is the Initiative) | | M (Release 1): **Done** (#269, 2026-10-31) |
 | 14-8, 14-9, 14-10, 14-17, 14-21, 14-22, 14-23 Italy's surrender, limits on French attacks while Paris is held, Vichy waking up, the 45-factor Occupation Force, the computer's matching play, the 25-BRP losses at Gibraltar and Suez, the supply-line exception for trapped enemy units (spec 14 owns it; Beta uses the simplified rule) | | M, M, M, M, M, S, M (Release 1) |
+| 14-8 status | | Built: pure slice 14-8a (#258), wiring 14-8b (#269). |
+| 14-9 status | | Built: pure slice 14-9a (#254), wiring 14-9b (#272). |
+| 14-17 status | | Built: pure slice 14-17a (#255), wiring 14-17b (#270). |
+| 14-22 status | | Built: pure slice 14-22a (#253), wiring 14-22b (#268). |
 | **Lost units come back: spec written** ([17](specs/17-rebuild-eliminated-units.md), Approved 2026-10-23 (Q1 to Q4 yes); 7 Beta tickets, 4 S and 3 M; comes after group 1 (spec 14) and before group 3 (spec 16)) | 4.5 | 17-0 read the manual pages (S, needs network access to the manual's host or Frank), 17-1 the return to the pool (M), 17-2 air and fleet factors (S), 17-3 gray fleets (M), 17-4 screens (S), 17-5 Siberian Transfer and self-play (M), 17-6 docs (S) |
 | 17-1 The return to the pool: every loss goes back to its nation's pool or is lost for good (R1, R4), returned counters are built at step 8b (R2), the two log events, old records replay (R7) | | M: **Done** (2026-10-23). All 22 computer games differ from the first BUILD of a returned counter on, none with an anomaly; every 1939 and Campaign game now uses the Free Siberian Transfer, and no computer game reaches Russia's offer to surrender any more (the surrender tests play with Russia not rebuilding). New: RB15, RB16 |
 | 17-2 Air factors lost by a surviving air unit go back to the pool in the spec 09 sizes; a fleet's factors lost in a break-down stay lost (R3) | | S: **Done** (2026-10-23). `losses.ts` and `air-breakdown.ts`, with no caller until air combat (spec 09). New: RB17 |
@@ -168,18 +172,40 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 17-5 Siberian Transfer test with returned units (R6), and the self-play report of lost units, rebuilds and the RB13 check (Part E) | | M: **Done** (PR #161, 2026-10-23) |
 | 17-6 Docs: "As built" of spec 17 for 17-2 to 17-5, the RULES.md and TODO-VERIFY.md rows, and these PLAN rows | | S: **Done** (2026-10-23) |
 | Minor countries (spec 15 approved 2026-10-23; 15-0 facts: Done (#169)): forces of a newly attacked minor, Minor-Ally activation, BRPs from conquest (spec 15, draft: 17 Beta tickets, 5 S and 12 M; 5 more for Release 1, 4 M and 1 L; the conquest of every country, Vichy, Moscow and Leningrad and the trapped-units exception are spec 14's) | 4.3 rest | Beta: 5 S + 12 M. Release 1: 4 M + 1 L |
+| 15-1 status | | 15-1b built (#219); pure record 15-1a built (#200). |
+| 15-2 status | | Built (#224). |
+| 15-3 status | | 15-3a pure placement built (#231); 15-3b step 2 wiring built (#232). |
+| 15-4 status | | Built (#233). |
+| 15-5 status | | Built (#225). |
+| 15-6 status | | Built (#234). |
+| 15-7 status | | Built (#235). |
+| 15-8 status | | Built (#264); pure slice 15-8a built (#252). |
+| 15-9 status | | Built: 15-9a pure income (#249), 15-9b Year Start wiring (#273). |
+| 15-11 status | | 15-11a pure slice built (#250); wiring pending. |
+| 15-12 status | | Built (#230). |
+| 15-19 status | | 15-19a pure slice built (#266); wiring pending. |
+| 15-20 status | | 15-20a pure slice built (#265); wiring pending. |
 | **Attrition, Exploitation, Strategic Redeployment, Fortress changes: spec written** ([16](specs/16-attrition-exploitation-redeployment.md), Approved 2026-10-23 (Q1 to Q6 yes), building; 28 tickets; sizes below are the spec's, not guesses; who owns what is in part H of spec 16) | 6.2, 6.3, 5.6, 5.7 | 24 Beta tickets (5 S, 13 M, 6 L), of which 12 are Beta-critical (1 S, 8 M, 3 L); 4 Release 1 tickets (3 M, 1 L); not in the 47 counted above |
-| 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). 16-3: Done (#143). 16-4/16-5/16-8 wiring: built, branch `claude/attrition-wiring` (waiting for the owner). |
+| 16-0, 16-1, 16-3 to 16-8 Attrition and what it needs: the facts, the computer's Front Options, the rules, the roll and the losses, the hexes with retreat and occupation, overstack at steps 6g and 9j, the screens, the computer | 6.2 | S, M, M, M, L, M, L, M (all Beta-critical) 16-0: Done (#134). 16-3: Done (#143). 16-5a: built (#215). 16-8a: built (#220). 16-4/16-5/16-8 wiring: built (#226). |
 | 16-2 Attacks need the Offensive Option (spec 16, owner's Q1) | | M (Beta) |
 | 16-9 to 16-13 Exploitation (owner's Q2): Breakthrough, movement, combat, screens, computer | 6.3 | M, L, M, L, M (Beta) |
 | 16-14, 16-15 The vacant-hex attack, air support in Exploitation | | M, M (Release 1) |
-| 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta). 16-18: in progress (Codex, #159). |
+| 16-16 to 16-20 Strategic Redeployment on land: rules, step 9e, grants as redeployments, screens, computer | 5.6 | L, M, S, M, M (16-16, 16-17 and 16-19 Beta-critical; 16-18 and 16-20 Beta). 16-18: Done (#160). 16-20: Done (#166). |
 | 16-21 Sea Escort for ground units (owner's Q3) | | L (Beta) |
 | 16-22, 16-23 Air units and airbases, fleets and escort chains, by redeployment | | M, L (Release 1) |
-| 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). 16-24: Done (#142). 16-25: in progress (Codex, #175). |
+| 16-24 to 16-26 Fortresses: Sevastopol's two conditions, status news and map outlines, the Anglo-French stop ban | 5.7 | S, S, S (Beta). 16-26: Done (#135). 16-24: Done (#142). 16-25: Done (#183). |
 | 16-27 Gate and docs | | M (Beta-critical) |
+| 16-4 status | | Built: Attrition wiring (#226); pure slice 16-4a (#205). |
+| 16-5 status | | Built: pure slice 16-5a (#215), Attrition wiring (#226). |
+| 16-8 status | | Built: pure choosers 16-8a (#220), Attrition wiring (#226). |
+| 16-10 status | | Built: pure slice 16-10a (#216), Exploitation wiring (#228). |
+| 16-11 status | | Built: pure slice 16-11a (#223), Exploitation wiring (#228). |
+| 16-13 status | | Built (#229). |
+| 16-14 status | | 16-14a pure slice built (#251); wiring pending. |
+| 16-20 status | | Built (#166). |
+| 16-22 status | | 16-22a pure slice built (#267); wiring pending. |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
-| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S: in progress (Codex, #168)), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
+| Small items from the PC manual audit: Germany garrisoning an inactive Axis minor (15-7, M), Persia costing the Axis nothing (15-12, S), a Front Option changed within the step (15-13, S: Done (#170, follow-up #173)), Minor-Ally BRPs while inactive (15-9, M); all counted in the row above. The Option per country (audit item 12) stays open: ask Frank | audit, spec 15 | in spec 15 |
 
 ## E. The computer
 
