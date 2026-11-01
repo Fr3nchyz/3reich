@@ -422,3 +422,31 @@ Caps: 4 MiB of UTF-8 before parsing, 100,000 actions, 200 UTF-16 code units per
 string/key, 20 container edges below the root; title 40, log tail 60. Caps and forbidden
 keys apply even inside discarded fields. Engine action legality and sliced restore,
 rescue decisions, browser storage, and cross-device/continuation tests remain later tickets.
+
+## As built, 11-2
+
+`src/save/restore.ts` is an unwired restore boundary (Parts A, B and H). It reads
+format 2 text through the bounded reader, replays with `applyAction`, reports
+completed/total actions, yields at 40 ms boundaries and checks a 20 s elapsed
+budget. Clock, yielding and Cancel are injected; there are no platform globals,
+UI or storage. One action remains indivisible. Cancel returns refused data.
+
+Results are `opened`, `rescue` or `refused`, with plain words. Replay success
+requires the saved fingerprint, independent of snapshot shape or build version.
+Only budget exhaustion can open an exact snapshot directly. Divergence offers
+rescue; its proposed save starts at the snapshot with an empty action record.
+The caller must obtain consent before adopting that proposal.
+
+AER55's shape screen is deliberately not a state validator. The API therefore
+requires a `validateSnapshot` dependency that returns a validated copy or rejects
+it. Both snapshot starts and fallback snapshots pass the shape screen and this
+validator before use; validation must preserve the position's fingerprint.
+An absent, throwing or rejecting validation result never hands untrusted state
+to the engine. Integrators must provide this validator before enabling snapshot
+loading. This ticket does not claim a complete engine-invariant validator.
+
+No new provisional constants or verification ids. The timing defaults are those
+in Part H (E7 still requires device measurement). No engine, computer, data, UI,
+storage, fixed-seed hash or recording changes; expected computer-game effect: none.
+Legacy format 1 remains refused for ticket 11-9. Broad computer-played round trips
+and continuation coverage remain ticket 11-10.
