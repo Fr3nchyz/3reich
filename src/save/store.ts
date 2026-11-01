@@ -40,7 +40,7 @@ export async function openSaveStore(options?: StoreOptions): Promise<OpenStoreRe
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains("saves")) request.result.createObjectStore("saves");
       };
-      request.onerror = () => reject(request.error);
+      request.onerror = () => reject(request.error ?? new Error("Storage open failed"));
       request.onblocked = () => { settled = true; reject(new Error("Storage blocked")); };
       request.onsuccess = () => {
         if (settled) request.result.close();
@@ -77,8 +77,8 @@ export async function openSaveStore(options?: StoreOptions): Promise<OpenStoreRe
       request.onsuccess = () => {
         const cursor = request.result;
         if (!cursor) { set(entries); return; }
-        // Spec 11 H: preserve unreadable entries; validation belongs to the loader.
-        entries.push({ id: String(cursor.key), value: cursor.value as unknown });
+        // Spec 11 C/H: slot keys are strings written by put; preserve unreadable values for the loader.
+        entries.push({ id: cursor.key as string, value: cursor.value as unknown });
         cursor.continue();
       };
     }),

@@ -449,3 +449,8 @@ Tests use an asynchronous injected factory to exercise commit/abort, quota rollb
 blocked opening, damaged entries and persistence, plus the same basic contract for
 the memory store. Real-browser integration remains for ticket 11-11. No engine,
 computer, data or UI changes; expected effect on computer games: none.
+
+The lint follow-up uses explicit resolved promises in the memory implementation and
+its persistence test double. Database-open errors always reject with an Error,
+including a missing IndexedDB error; cursor keys follow the string slot-id contract.
+The fallback test also covers an open failure with a null error.

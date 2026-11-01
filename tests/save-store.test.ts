@@ -12,7 +12,7 @@ const save = (title = "A game"): SaveFile => ({
 // Spec 11 C/D/H: asynchronous factory double models request success followed by commit or abort.
 function database() {
   const data = new Map<string, unknown>();
-  const control = { fail: "", blocked: false, openError: false, closed: 0, created: 0, writes: 0 };
+  const control = { fail: "", blocked: false, openError: false, nullError: false, closed: 0, created: 0, writes: 0 };
   const db = {
     objectStoreNames: { contains: () => false },
     createObjectStore: () => { control.created++; },
@@ -64,7 +64,7 @@ function database() {
   };
   const factory = { open: () => {
     const request = {
-      result: db, error: new DOMException("blocked", "SecurityError"),
+      result: db, error: control.nullError ? null : new DOMException("blocked", "SecurityError"),
       onupgradeneeded: undefined as (() => void) | undefined,
       onblocked: undefined as (() => void) | undefined,
       onerror: undefined as (() => void) | undefined,
@@ -119,7 +119,8 @@ describe("spec 11 C/D/H: storage failures and persistence", () => {
   it("Part C: absent, throwing, failed and blocked factories fall back explicitly", async () => {
     const failing = database(); failing.control.openError = true;
     const blocked = database(); blocked.control.blocked = true;
-    for (const options of [{}, { factory: { open() { throw new Error("denied"); } } as unknown as IDBFactory }, failing, blocked]) {
+    const nullError = database(); nullError.control.openError = true; nullError.control.nullError = true;
+    for (const options of [{}, { factory: { open() { throw new Error("denied"); } } as unknown as IDBFactory }, failing, blocked, nullError]) {
       const result = await openSaveStore(options);
       expect(result.error).toEqual({ ok: false, code: "unavailable" });
       expect(result.store.persistent).toBe(false);
@@ -166,8 +167,8 @@ describe("spec 11 C/D/H: storage failures and persistence", () => {
   it("Part C: persistence is explicit, requested once, and independent of writes", async () => {
     for (const granted of [true, false, "throw"] as const) {
       const fake = database(); let calls = 0;
-      const { store } = await openSaveStore({ ...fake, storage: { persist: async () => {
-        calls++; if (granted === "throw") throw new Error("denied"); return granted;
+      const { store } = await openSaveStore({ ...fake, storage: { persist: () => {
+        calls++; return granted === "throw" ? Promise.reject(new Error("denied")) : Promise.resolve(granted);
       } } });
       expect(calls).toBe(0); await store.put("auto", save()); expect(calls).toBe(0);
       const results = await Promise.all([store.requestPersistence(), store.requestPersistence()]);

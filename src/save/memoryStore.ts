@@ -8,18 +8,18 @@ export function createMemoryStore(): SaveStore {
   return {
     persistent: false,
     // Spec 11 C/H: copies match IndexedDB ownership; unreadable data is never silently removed.
-    list: async () => ({ ok: true, value: [...saves].map(([id, value]) => ({ id, value: structuredClone(value) })) }),
-    get: async id => ({ ok: true, value: structuredClone(saves.get(id)) }),
-    put: async (id, save) => {
+    list: () => Promise.resolve({ ok: true, value: [...saves].map(([id, value]) => ({ id, value: structuredClone(value) })) }),
+    get: id => Promise.resolve({ ok: true, value: structuredClone(saves.get(id)) }),
+    put: (id, save) => {
       try {
         // Spec 11 D: clone before replacement, leaving the old entry on failure.
         const copy = structuredClone(save);
         saves.set(id, copy);
-        return { ok: true, value: undefined };
-      } catch (error) { return storeError(error); }
+        return Promise.resolve({ ok: true, value: undefined });
+      } catch (error) { return Promise.resolve(storeError(error)); }
     },
-    delete: async id => { saves.delete(id); return { ok: true, value: undefined }; },
-    requestPersistence: async () => ({ ok: true, value: false }),
+    delete: id => { saves.delete(id); return Promise.resolve({ ok: true, value: undefined }); },
+    requestPersistence: () => Promise.resolve({ ok: true, value: false }),
     close: () => {},
   };
 }
