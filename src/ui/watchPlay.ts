@@ -2,7 +2,7 @@ import type { Scenario, Side } from "../engine/types";
 import { computerAct } from "./computerPlay";
 import { cap, sideName } from "./format";
 import { describeStep } from "../engine/sequence";
-import { surrenderAsking } from "../engine/soviet-record";
+import { occupationAsking, surrenderAsking } from "../engine/soviet-record";
 import { winterAsking } from "../engine/winter-record";
 import { resetLog } from "./logSide";
 import { newSession, placeTheRest, type Session } from "./session";
@@ -35,6 +35,7 @@ export function whereText(s: Session): string {
   if (state.phase === "setup") return `${turn}, setup`;
   if (state.phase === "game-over") return `${turn}, game over`;
   if (winterAsking(state)) return `${turn}, step II.A (Russian winter), the Allies are asked`;
+  if (occupationAsking(state)) return `${turn}, step ${state.position?.part === "player-turn" ? state.position.step : "?"} (Occupation Force), the Axis are asked`;
   if (surrenderAsking(state)) return `${turn}, step 10a (Russian surrender), the Axis are asked`;
   return `${turn}, ${sideName(state.activeSide)} player turn${state.position?.part === "player-turn" ? `, step ${describeStep(state.position.step)}` : ""}`;
 }

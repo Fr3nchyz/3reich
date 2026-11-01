@@ -1,11 +1,12 @@
 import type { Action } from "../engine/actions";
 import { initiativeTotals } from "../engine/game";
 import { POWER_NAMES, spendingLimit } from "../engine/nations";
+import { placeName } from "./names";
 import { BRP_COSTS } from "../engine/tables";
 import { isMajorPower } from "../engine/war";
 import { describeStep } from "../engine/sequence";
 import { winterAsking } from "../engine/winter-record";
-import { surrenderAsking } from "../engine/soviet-record";
+import { occupationAsking, surrenderAsking } from "../engine/soviet-record";
 import { SURRENDER_TEXT, WINTER_TEXT } from "./endText";
 import { frontOptionButtons, winterBannerHtml, winterCardHtml } from "./winterCard";
 import { surrenderCardHtml } from "./surrenderCard";
@@ -42,6 +43,8 @@ function turnLine(s: Session): string {
   // At 10a the Axis answer Russia's offer to surrender in the middle of the Allied Player Turn: the line says so.
   if (surrenderAsking(state)) return `${cap(state.season)} ${state.year} &mdash; step ${describeStep("10a")}: ${computerToMove(s) ? SURRENDER_TEXT.askLineComputer : SURRENDER_TEXT.askLine}`;
   const step = state.position?.part === "player-turn" ? ` &mdash; step ${describeStep(state.position.step)}` : "";
+  // The Occupation Force is short: the Axis chooses the Objective to hand back to Russia (spec 14 R7c).
+  if (occupationAsking(state)) return `${cap(state.season)} ${state.year} &mdash; Axis player turn${step}: the Occupation Force in Russia is short; choose the Objective to hand back to Russia (it costs 15 BRPs).`;
   return `${cap(state.season)} ${state.year} &mdash; ${sideName(state.activeSide)} player turn (${cap(state.firstSide)} hold the initiative)${step}`;
 }
 
@@ -74,6 +77,8 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
       return `${cap(a.front)} Front: ${cap(a.option)} Option${a.payer ? ` (${BRP_COSTS.offensiveOption} BRPs from ${POWER_NAMES[a.payer]})` : ""}`;
     case "CHOOSE_WINTER":
       return a.postpone ? WINTER_TEXT.wait : WINTER_TEXT.start; // the buttons of the winter card (winterCard.ts)
+    case "OCCUPATION_CONCEDE":
+      return `Hand back ${placeName(ctx.map, a.hex)} (${a.hex}) to Russia`;
     case "SURRENDER_ANSWER":
       return a.accept ? SURRENDER_TEXT.accept : SURRENDER_TEXT.refuse;
     case "ELIMINATE_OVERSTACK":

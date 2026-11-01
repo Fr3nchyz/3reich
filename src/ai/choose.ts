@@ -17,6 +17,7 @@ import { chooseMove } from "./move";
 import { chooseOverstack } from "./overstack";
 import { chooseRedeploy } from "./redeploy";
 import { chooseSurrender } from "./surrender";
+import { chooseConcede } from "./occupation";
 import { chooseWinter } from "./winter";
 import type { AiConfig, Decision } from "./types";
 
@@ -44,6 +45,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "9e" ? chooseRedeploy(ctx, state, cfg) // 9e: Strategic Redeployment (ticket 16-20); the list is not enumerated, only the way on is
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
+    : (step === "6h" || step === "9k") ? chooseConcede(legal) // 6h, 9k: the Axis hand back an Objective after an Occupation Force shortfall (ticket 14-17)
     : step === "6g" || step === "9j" ? chooseOverstack(legal) // 6g, 9j: the computer eliminates what the engine's default choice names (ticket 16-6; 16-8 refines it)
     : step === "7a" || step === "7p" ? chooseAttrition(ctx, state, legal, step) // 7p: resolves every Front with its participants; at either step, answers a run's stages (spec 16 Part E, ticket 16-8)
     : step === "7j" ? chooseExploitMove(ctx, state, cfg) // 7j: the exploiters move one at a time (ticket 16-13, exploit.ts)

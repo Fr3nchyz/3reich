@@ -93,7 +93,9 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "RUSSIA_OFFERS_SURRENDER":
     case "RUSSIA_SURRENDERED":
     case "OBJECTIVES_CREDITED": return "allies"; // Russia's offer, and what it gives the Allies
-    case "SURRENDER_REFUSED": return "axis"; // the Axis' answer
+    case "SURRENDER_REFUSED": // the Axis' answer
+    case "OCCUPATION_SHORT":
+    case "OCCUPATION_PENALTY": return "axis"; // the Axis Occupation Force (spec 14 R7c)
     case "VICHY_CREATED": return "allies"; // France's loss, like the fall it follows
     case "WINTER_ROLLED":
     case "WINTER_STARTED": return null; // the dice and the winter itself concern both sides

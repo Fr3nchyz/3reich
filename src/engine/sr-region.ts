@@ -1,4 +1,5 @@
 import { atWar } from "./war";
+import { occupationSrProblem } from "./occupation-step";
 import { controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
 import { hexsideId, parseHexId, type HexId } from "./hex";
@@ -28,7 +29,7 @@ import { adjacentHexes, canCross } from "./zoc";
  * - TODO(verify) AER22: a unit that moved, attacked or was built this Player Turn may be redeployed; only a unit already redeployed (AER28) may not.
  * - TODO(verify) AER25: no Front restriction on land. TODO(verify) AER27: a redeployment may not end overstacked (`endProblem`, Ref 5.0, 26.0).
  * The Anglo-French stop ban (R32) reaches the end of a redeployment through `endProblem` (anglo-french.ts). Not here: Sea Escort (16-21), the
- * Occupation Force flag (AER31: spec 14 has not built it).
+ * Occupation Force flag (AER31: built in occupation-step.ts, `occupationSrProblem`, ticket 14-17).
  */
 
 /** Enemy counters a redeployed unit may not stand next to (Ref 11.72; R20). TODO(verify): AER23. */
@@ -170,6 +171,8 @@ export function srProblem(ctx: GameContext, state: GameState, unitIds: readonly 
     const problem = srUnitProblem(ctx, state, u, soFar.redeployed ?? [], view);
     if (problem) return problem;
     if (u.at === to) return `${id} is already in ${to}.`;
+    const held = occupationSrProblem(ctx, state, u, to); // spec 14 R7c, AER31
+    if (held) return held;
     if (!srRegion(ctx, state, u, view).has(to)) return `${id} cannot be redeployed to ${to}: ${srHexProblem(ctx, state, view, u, to) ?? `${to} cannot be reached from ${u.at} through the side's own supplied land.`}`;
     units.push(u);
   }
@@ -179,5 +182,5 @@ export function srProblem(ctx: GameContext, state: GameState, unitIds: readonly 
 /** The hexes a unit may be redeployed to now (its region less its own hex, where it fits alone), in hex-id order; empty if it cannot be redeployed. */
 export function srDestinations(ctx: GameContext, state: GameState, unit: Unit, soFar: SrSoFar = {}, view: SrView = srView(ctx, state)): HexId[] {
   if (srUnitProblem(ctx, state, unit, soFar.redeployed ?? [], view) !== null || srAllowanceProblem(soFar.used ?? {}, srUnitCost(state, [unit])) !== null) return [];
-  return [...srRegion(ctx, state, unit, view)].filter((h) => h !== unit.at && endProblem(ctx, state, [unit], h) === null).sort();
+  return [...srRegion(ctx, state, unit, view)].filter((h) => h !== unit.at && occupationSrProblem(ctx, state, unit, h) === null && endProblem(ctx, state, [unit], h) === null).sort();
 }

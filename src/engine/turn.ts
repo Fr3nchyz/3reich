@@ -33,7 +33,8 @@ import { runYearStartSequence } from "./yearstart";
 import { legalDeclarations, scheduledDeclarations } from "./war";
 import { enterWinter } from "./winter";
 import { winterAsking } from "./winter-record";
-import { surrenderAsking } from "./soviet-record";
+import { occupationAsking, surrenderAsking } from "./soviet-record";
+import { checkOccupation } from "./occupation-step";
 import { offerSurrender, settleSoviet } from "./soviet-surrender";
 
 /**
@@ -111,6 +112,7 @@ export function advance(ctx: GameContext, state: GameState): Transition {
     case "player-turn": {
       // 10a waits only while the Axis is asked about Russia's offer to surrender (SURRENDER_ANSWER); `settle` stops there, so this is reached once they have answered.
       if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");
+      if (occupationAsking(state)) throw new Error("advance: the Axis have not chosen the Objective to hand back (step 6h or 9k).");
       const step = nextStepId(pos.step);
       if (step) {
         // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
@@ -123,9 +125,11 @@ export function advance(ctx: GameContext, state: GameState): Transition {
         const fell = pos.step === "7p" ? endCombatPhase(ctx, read) : { state: read, events: [] };
         // Arriving at 10a: at the end of an Allied Player Turn Russia may offer to surrender (spec 14 R7b); the game then waits there for the Axis.
         const offered = step === "10a" ? offerSurrender(ctx, fell.state) : { state: fell.state, events: [] };
+        // Arriving at 6h or 9k: the Axis Occupation Force is checked (spec 14 R7c).
+        const checked = step === "6h" || step === "9k" ? checkOccupation(ctx, offered.state, step) : { state: offered.state, events: [] };
         // Leaving 1 for 2: the Axis Minor-Allies wake up in Summer 1941, before the armies of newly activated allies are set up at 2 (spec 15 R9, MC9).
-        const woke = pos.step === FIRST_STEP ? wakeSleepers(ctx, { ...offered.state, position: { ...pos, step } }) : { state: { ...offered.state, position: { ...pos, step } }, events: [] };
-        return { state: woke.state, events: [...lost.events, ...fell.events, ...offered.events, ...woke.events] };
+        const woke = pos.step === FIRST_STEP ? wakeSleepers(ctx, { ...checked.state, position: { ...pos, step } }) : { state: { ...checked.state, position: { ...pos, step } }, events: [] };
+        return { state: woke.state, events: [...lost.events, ...fell.events, ...offered.events, ...checked.events, ...woke.events] };
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
       const eliminated = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
@@ -210,6 +214,9 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return legalBuilds(ctx, state).length > 0;
     case "10a":
       return surrenderAsking(state);
+    case "6h":
+    case "9k":
+      return occupationAsking(state);
     case "9a":
       return legalGrants(ctx, state).length > 0;
     default:

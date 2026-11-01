@@ -31,6 +31,10 @@ export interface SovietRecord {
   offer?: SurrenderOffer;
   /** The Objectives the Allies hold for good after the surrender was accepted (R7c, R1), in hex order; the standings read them. */
   credited?: HexId[];
+  /** The Game Turn ("1942-spring") of the last Occupation Force penalty: at most one a turn (ticket 14-17, R7c). */
+  shortfallTurn?: string;
+  /** True while the Axis must choose which Objective to hand back (step 6h or 9k, `OCCUPATION_CONCEDE`, ticket 14-17). */
+  conceding?: boolean;
 }
 
 /** Where the offer stands now. */
@@ -39,3 +43,7 @@ export const surrenderOffer = (state: GameState): SurrenderOffer => state.soviet
 /** Whether the Axis has to answer the Russian surrender offer: the game waits at step 10a of the Allied Player Turn for `SURRENDER_ANSWER`. Like `winterAsking`, it needs the position, so a state that passed 10a is not asking. */
 export const surrenderAsking = (state: GameState): boolean =>
   state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "10a" && surrenderOffer(state) === "asking";
+
+/** Whether the game waits for the Axis to name the Objective it hands back to Russia (the Occupation Force, steps 6h and 9k). Like `surrenderAsking`, it needs the position. */
+export const occupationAsking = (state: GameState): boolean =>
+  state.phase === "player-turn" && state.position?.part === "player-turn" && (state.position.step === "6h" || state.position.step === "9k") && state.soviet?.conceding === true;
