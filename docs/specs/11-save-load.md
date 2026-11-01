@@ -389,6 +389,19 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 6. A game saved by a version whose rules changed is either opened exactly (the fingerprint matches) or offered as a clearly worded rescue, never silently changed.
 7. No rule was added; anything unconfirmed is marked `TODO(verify)`. Lint, type check, unit tests, build and the browser tests pass.
 
+## As built, 11-3
+
+Every session starts recording before setup; accepted actions append in order and refused
+ones do not. Watch mode uses the same record, and takeover keeps it (part G).
+The memory module exports plain entry arrays for targets and hexes left, plus the
+quiet-since and stall-turn policy counters added since this spec was drafted. Import
+copies these values into fresh memory; absent memory starts empty (part B). Distance,
+nearest-objective and staging caches rebuild on demand (E5). Export and import do not
+share mutable visit objects or side counters with their inputs. File validation and
+connecting these helpers to browser saves belong to later tickets.
+
+No game decisions change; the expected comparison is 22 identical games. Existing
+stability hashes and recordings are unchanged. No new verification ids or defaults.
 ## As built, 11-1
 
 Pure, unwired modules now define format 2, read bounded JSON into explicitly untrusted

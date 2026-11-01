@@ -25,3 +25,32 @@ export interface AiMemory {
 }
 
 export const createMemory = (): AiMemory => ({ targets: new Map(), left: new Map(), distances: new Map(), nearest: new Map(), staging: new Map(), distancesTurn: -1, quietSince: {}, stallTurn: {} });
+
+/** Plain save data for persistent policy memory (spec 11 part B, ticket 11-3). */
+export interface SavedMemory {
+  targets: [string, HexId][];
+  left: [string, { hex: HexId; turn: number }[]][];
+  quietSince: Partial<Record<Side, number>>;
+  stallTurn: Partial<Record<Side, number>>;
+}
+
+/** Copy policy state without the derived distance caches (spec 11 part B, E5). */
+export function exportMemory(memory: AiMemory): SavedMemory {
+  return {
+    targets: [...memory.targets],
+    left: [...memory.left].map(([unit, visits]) => [unit, visits.map((visit) => ({ ...visit }))]),
+    quietSince: { ...memory.quietSince },
+    stallTurn: { ...memory.stallTurn },
+  };
+}
+
+/** Restore validated save data, or fresh memory when absent (spec 11 part B, E5). */
+export function importMemory(saved?: SavedMemory): AiMemory {
+  const memory = createMemory();
+  if (!saved) return memory;
+  memory.targets = new Map(saved.targets);
+  memory.left = new Map(saved.left.map(([unit, visits]) => [unit, visits.map((visit) => ({ ...visit }))]));
+  memory.quietSince = { ...saved.quietSince };
+  memory.stallTurn = { ...saved.stallTurn };
+  return memory;
+}
