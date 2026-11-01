@@ -16,6 +16,7 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // short games: THEY CHANGE ON PURPOSE whenever the computer's policy (src/ai) changes; then take the new value from the failure
 // message after checking the play with `npm run selfplay` (docs/SELFPLAY.md). They guard against an accidental change, not against a change.
 // Hashes of ticket 16-13 (the computer places, moves, attacks and advances exploiters; AER51): all five hashes changed on purpose (1939 seed 1: 2608239176 to 71469326; 1942 seed 1: 2060812987 to 499761129; 1939 seeds 5 and 2: 1273200678 to 1328485314 and 1411623926 to 84129622; the 7h list hash: 1571766906 to 2398356580), as the computer now plays the Exploitation steps 7h, 7j and 7o; see the PR for the compare-games summary.
+// Ticket 14-9b (France while Paris is Axis-held, spec 14 R5): the 1939 seed 1 hash moved from 71469326 to 3553260422, because French moves, attacks and supply are now limited and the computer plays on from there.
 // Hashes of 2026-10-16 (ticket 09-14): step 7b now waits for a side with air in range of an attackable hex, so the computer's list gains one END_STEP at 7b
 // for each such turn. Checked then: with those END_STEP actions taken out of the lists, every hash equals the one before (1260916810, 3779823303,
 // 2114108264, 947755197), so nothing else in the computer's play changed.
@@ -67,7 +68,7 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(71469326));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(3553260422));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(499761129));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
     expect(hashOf("1939", 5, 4)).toBe(1328485314);

@@ -5,6 +5,7 @@ import { combatOf } from "./combat-record";
 import type { GameContext } from "./context";
 import { controllingSide } from "./control";
 import { FRONTS, frontOptionOf } from "./frontoptions";
+import { occupiedOptionProblem } from "./france-occupied";
 import { otherSide } from "./game";
 import { hex, hexsideId, type HexId } from "./hex";
 import type { Front } from "./map";
@@ -24,6 +25,8 @@ const contact = (ctx: GameContext, state: GameState, u: Unit, front: Front): boo
 /** A screen's reason for excluding one unit (Ref 12.4, 22.0; spec 16 R2; AER2/AER3/AER8). */
 export function attritionParticipantProblem(ctx: GameContext, state: GameState, unit: Unit, front: Front, used: readonly string[] = []): string | null {
   if (unit.type === "replacement") return "Replacements do not take part in Attrition.";
+  const banned = unit.owner === "france" ? occupiedOptionProblem(state, "france", front, "attrition", ctx) : null; // spec 14 R5 (Ref 18.3)
+  if (banned) return banned;
   if (used.includes(unit.id) || combatOf(state).attacked.includes(unit.id)) return "This unit has already been used in combat this Player Turn.";
   if (!attackerPool(ctx, state, state.activeSide, []).some((u) => u.id === unit.id)) return "Only ground units of the Phasing side in play may take part.";
   return contact(ctx, state, unit, front) ? null : "This unit has no land contact with an enemy ground unit on this Front.";
@@ -33,6 +36,7 @@ export function attritionParticipantProblem(ctx: GameContext, state: GameState, 
 export function attritionParticipants(ctx: GameContext, state: GameState, front: Front, used: readonly string[] = []): { units: Unit[]; factors: number } {
   const unavailable = [...combatOf(state).attacked, ...used];
   const units = ordered(attackerPool(ctx, state, state.activeSide, unavailable).filter((u) => u.type !== "replacement"
+    && !(u.owner === "france" && occupiedOptionProblem(state, "france", front, "attrition", ctx) !== null)
     && contact(ctx, state, u, front)));
   return { units, factors: units.reduce((sum, u) => sum + u.strength, 0) };
 }

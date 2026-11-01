@@ -1,3 +1,4 @@
+import { occupiedSupplySources } from "./france-occupied";
 import { exploitedSupplied } from "./exploit-record";
 import { controllerOf, controllingSide, sideInWar } from "./control";
 import type { GameContext } from "./context";
@@ -253,10 +254,14 @@ export function supplyNetwork(ctx: GameContext, state: GameState, side: Side, po
   network.zoc = obstacles.zoc;
   const searched = new Map<string, ReadonlyMap<HexId, HexId | null>>();
   network.reachFrom = (from) => searched.get(from.join(",")) ?? searched.set(from.join(","), reach(ctx, state, side, from, policy, obstacles)).get(from.join(","))!;
+  // Spec 14 R5 (Ref 18.3): while Paris is Axis-held, French units are supplied from London alone, whatever other sources the Allies hold.
+  const london = side === "allies" ? (occupiedSupplySources(ctx, state) ?? []).filter((h) => sources.includes(h)) : [];
+  const frenchApart = (o: ForceOwner): boolean => london.length > 0 && o === "france";
   for (const g of ["axis", "western", "soviet"] as const) {
     const mine = sources.filter((s) => groupOfHex(ctx, state, side, s, policy) === g);
-    if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => groupOfOwner(side, o, policy) === g || minorFedByAnyGroup(o)));
+    if (mine.length) network.reaches.push(lazyReach("main", mine, (o) => !frenchApart(o) && (groupOfOwner(side, o, policy) === g || minorFedByAnyGroup(o))));
   }
+  if (london.length > 0) network.reaches.push(lazyReach("main", london, frenchApart));
   for (const net of specialNets(ctx, state, side)) network.reaches.push(lazyReach("net", net.sources, (o) => net.serves({ owner: o })));
   network.reaches.push(...seaReaches(ctx, state, network));
   return network;
