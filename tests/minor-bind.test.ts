@@ -31,15 +31,18 @@ function bind(s: ReturnType<typeof session>, selector: string, dataset: Record<s
 const html = (s: ReturnType<typeof session>) => minorHtml(s, legalActions(CTX, s.state));
 
 describe("minor bindings spec 15 D1/D2/D5", () => {
-  it("R1/R2 D1: status groups minor inspection separately from major declarations", () => {
+  it("R1/R2 D1: status adds minor inspection alongside the unchanged declaration fold-out", () => {
     const s = session();
     const h = statusHtml(s, null, legalActions(CTX, s.state));
     expect(h).toContain("Small countries");
-    expect(h).toContain("Major Powers");
+    expect(h).toMatch(/<summary>Declare war \(\d+ choices\)<\/summary>/);
     expect(h).toContain('data-minor="belgium"');
     expect(h).toContain("price 10 BRPs");
     expect(h).toContain("5 infantry factors");
-    expect(h).not.toContain("Germany declares war on Belgium");
+    const inspection = h.match(/<details class="declarations"><summary>Small countries<\/summary>(.*?)<\/details>/s)?.[1];
+    expect(inspection).toBeDefined();
+    expect(inspection).not.toContain("Germany declares war on Belgium");
+    expect(h).toContain("Germany declares war on Belgium (10 BRPs)");
   });
   it("R2/R4 D1: inspection and cancellation do not declare; confirmation records the legal action", () => {
     const s = session(), before = s.state;

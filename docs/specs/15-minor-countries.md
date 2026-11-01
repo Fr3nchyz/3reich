@@ -732,7 +732,7 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 
 ## As built, 15-15b
 
-- R1/R2/R4, D1: status now separates Major Powers and Small countries. Minor rows show chart totals, value, price, status and refusals; inspection opens the existing model's duty warning with explicit Declare war / Cancel. Duty chips use the model records. Confirmation uses the normal session action path.
+- R1/R2/R4, D1: status adds a Small countries inspection fold-out alongside the unchanged Declare war action fold-out (including its minor declarations). Minor rows show chart totals, value, price, status and refusals; inspection opens the existing model's duty warning with explicit Declare war / Cancel. Duty chips use the model records. Confirmation uses the normal session action path.
 - R3/R9/R16, D2/D5: the offered human placer gets counter chips, yellow legal destinations and equivalent destination buttons. Place automatically fills an editable local draft; Done submits only a model-validated army. A new state drops the draft. Computer and watched turns retain their existing placement path.
 - R2/R7/R9/R10, D3/D5: hex-card location lines include war/sleep status. A state-aware map refresh draws light sleeping-country tint and capital-only asleep text, removing them on activation or conquest. Marks never intercept map taps.
 - No model output, engine, computer policy, hashes or recordings changed. No new verification defaults or ids. Expected effect on computer games: none. Later cards (15-16), placement reveal/acknowledgement for computer armies, and Eastern Europe declaration wiring remain separate.
