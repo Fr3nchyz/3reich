@@ -97,7 +97,7 @@ describe("spec 11 restore", () => {
     expect(apply).not.toHaveBeenCalled();
     let time = 0; let cancelled = false;
     apply.mockImplementation(() => { time += 40; return { ok: true, state: fresh(), events: [] }; });
-    const opt = options({ now: () => time, cancelled: () => cancelled, yield: async () => { cancelled = true; } });
+    const opt = options({ now: () => time, cancelled: () => cancelled, yield: () => { cancelled = true; return Promise.resolve(); } });
     expect(await restore(file({ actions: [{ type: "x" }, { type: "x" }] }), CTX, opt)).toMatchObject({ code: "cancelled" });
     expect(apply).toHaveBeenCalledTimes(1);
     cancelled = false; apply.mockImplementation(() => { cancelled = true; return { ok: true, state: fresh(), events: [] }; });
@@ -114,7 +114,7 @@ describe("spec 11 restore", () => {
     apply.mockImplementation(() => { time += 40; return { ok: true, state: fresh(), events: [] }; });
     apply.mockClear();
     expect(await restore(file({ actions: [{ type: "x" }, { type: "x" }] }), CTX,
-      options({ now: () => time, yield: async () => { time = 20_000; } })))
+      options({ now: () => time, yield: () => { time = 20_000; return Promise.resolve(); } })))
       .toMatchObject({ kind: "opened", via: "snapshot" });
     expect(apply).toHaveBeenCalledTimes(1);
   });
