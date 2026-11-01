@@ -107,6 +107,9 @@ describe("minor models (spec 15 D1/D2/D5)", () => {
     expect(minorHexModel(CTX, s, "unknown")).toBeNull();
     s.conquests = [{ country: "hungary", by: "britain", side: "axis", how: "capital", at: { year: 1940, season: "spring" } }];
     expect(minorHexModel(CTX, s, capitalOf(CTX, "hungary")!)).toBeNull();
+    // R7/D4: conquest also suppresses a stale fighting record's war line.
+    s.countries = { hungary: { status: "attacked", attacker: "britain" } };
+    expect(minorHexModel(CTX, s, capitalOf(CTX, "hungary")!)).toBeNull();
     delete s.countries;
     expect(minorDutyMarks(s)).toEqual([]);
     expect(belgium(s).status).toBe("neutral");

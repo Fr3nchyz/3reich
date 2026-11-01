@@ -1,5 +1,6 @@
 import type { Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
+import { isConquered } from "../engine/conquest-record";
 import type { HexId } from "../engine/hex";
 import { minorForceEntries } from "../engine/minors";
 import { sleepingAlly, sleepingAllyOfHex } from "../engine/minors-axis";
@@ -78,11 +79,13 @@ export function minorDutyMarks(state: GameState) {
   }] : []);
 }
 
-/** Spec 15 R2/R9/R10, D3/D5: plain hex-card lines and map tint/capital marker; no map binding. */
+/** Spec 15 R2/R7/R9/R10, D3/D5: plain hex-card lines and map tint/capital marker; no map binding. */
 export function minorHexModel(ctx: GameContext, state: GameState, hex: HexId) {
   const country = ctx.map.hexes[hex]?.country;
   const minor = MINOR_COUNTRIES.find((c) => c === country);
   if (!minor) return null;
+  // Spec 15 R7/D4: conquered-country cards and map colouring belong to spec 14.
+  if (isConquered(state, minor)) return null;
   const name = combatantName(minor);
   const record = state.countries?.[minor];
   const asleep = sleepingAllyOfHex(ctx, state, hex) === minor;
