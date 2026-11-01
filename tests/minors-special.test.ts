@@ -69,6 +69,7 @@ describe("spec 15 R11: opening Persia", () => {
     for (const side of ["axis", "allies"] as const) {
       const opened = openPersia(at6f([], side), "britain");
       for (const by of Object.keys(opened.nations) as (keyof typeof opened.nations)[]) {
+        if (side === "axis" && by === "france") continue; // France made an Axis power would read as holding Paris for the Axis, which bars its declarations (spec 14 R5)
         // R11: activate each declarer so an empty neutral-power list cannot hide a regression.
         const eligible = { ...opened, nations: { ...opened.nations, [by]: {
           ...opened.nations[by], status: side === "axis" ? "axis" as const : "allied" as const,

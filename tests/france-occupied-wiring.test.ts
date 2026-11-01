@@ -21,7 +21,7 @@ const unit = (id: string, owner: ForceOwner, type: UnitType, strength: number, a
 const nations = (s: GameState): GameState["nations"] => ({ ...s.nations, germany: { ...s.nations.germany, status: "axis" }, britain: { ...s.nations.britain, status: "allied" }, france: { ...s.nations.france, status: "allied" } });
 const room = (units: Unit[], step: string, over: Partial<GameState> = {}, held = true): GameState => {
   const s = atStart(SCENARIO_1939, 1);
-  return { ...s, nations: nations(s), wars: [["germany", "france"], ["germany", "britain"]], activeSide: "allies", position: { part: "player-turn", turn: 1, step } as GameState["position"],
+  return { ...s, nations: nations(s), wars: [["germany", "france"], ["germany", "britain"]], activeSide: "allies", position: { part: "player-turn", turn: 1, step },
     units: Object.fromEntries(units.map((u) => [u.id, u])), control: { ...s.control, ...(held ? { [PARIS]: "germany" } : {}) }, ...over };
 };
 const attacks = (s: GameState) => legalActions(CTX, s).filter((a): a is Extract<Action, { type: "ATTACK" }> => a.type === "ATTACK");
@@ -108,7 +108,7 @@ describe("French Options, declarations, moves and supply while Paris is Axis-hel
     expect(ends("f1").length).toBeGreaterThan(0);
     expect(new Set(ends("f1"))).toEqual(new Set(["france"]));
     expect(ends("b1").length).toBeGreaterThan(0);
-    const freed = { ...s, control: { ...s.control, [PARIS]: "france" } };
+    const freed = room([unit("f1", "france", "infantry", 2, edge)], "6f", {}, false);
     const freeEnds = legalMoves(CTX, freed).filter((a) => a.type === "MOVE" && a.units.join() === "f1").map((a) => CTX.map.hexes[(a as { path: string[] }).path.at(-1)!]!.country);
     expect(new Set(freeEnds).size).toBeGreaterThan(1);
   });
@@ -118,7 +118,7 @@ describe("French Options, declarations, moves and supply while Paris is Axis-hel
     const st = supplyStatus(CTX, s, "allies");
     expect(st.supplied.find((l) => l.unitId === "f1")?.source).toBe(LONDON);
     expect(st.unsupplied).toContain("f2");
-    const freed = supplyStatus(CTX, { ...s, control: { ...s.control, [PARIS]: "france" } }, "allies");
+    const freed = supplyStatus(CTX, room([unit("f2", "france", "infantry", 2, N1)], "6f", {}, false), "allies");
     expect(freed.supplied.some((l) => l.unitId === "f2")).toBe(true);
   });
 });
