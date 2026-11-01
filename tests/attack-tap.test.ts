@@ -26,7 +26,7 @@ function session(units: Unit[], seed = 1, extra: Partial<GameState> = {}): Sessi
   const s = createSession(SCENARIO_1939, "axis", seed);
   s.state = at7h(units, seed, extra);
   s.log = [];
-  s.record = undefined;
+  s.record = []; // spec 11 ticket 11-3: every session keeps a record.
   return s;
 }
 

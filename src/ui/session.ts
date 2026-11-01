@@ -111,8 +111,8 @@ export interface Session {
   surrenderFocused?: boolean;
   /** Set while two computers play and the human only watches (spec 06); `humanSide` then means nothing. */
   watch?: WatchInfo;
-  /** Every action applied, in order, kept for a watched game so it can be saved and replayed. */
-  record?: Action[];
+  /** Every accepted action from setup onward (spec 11, ticket 11-3, part B). */
+  record: Action[];
 }
 
 /** A new game in `scenario` with the human on `side`, with nothing set up yet. */
@@ -129,6 +129,7 @@ export function newSession(scenario: Scenario, side: Side, seed: number): Sessio
     focusedOwner: null,
     foldOpen: false,
     build: null,
+    record: [], // spec 11, ticket 11-3: record every game before setup begins.
   };
 }
 
@@ -149,7 +150,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
       return false;
     }
     s.state = result.state;
-    s.record?.push(action);
+    s.record.push(action);
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const actor = actorSide(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));
