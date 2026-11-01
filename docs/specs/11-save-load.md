@@ -389,6 +389,7 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 6. A game saved by a version whose rules changed is either opened exactly (the fingerprint matches) or offered as a clearly worded rescue, never silently changed.
 7. No rule was added; anything unconfirmed is marked `TODO(verify)`. Lint, type check, unit tests, build and the browser tests pass.
 
+<<<<<<< HEAD
 ## As built, 11-3
 
 Every session starts recording before setup; accepted actions append in order and refused
@@ -402,3 +403,38 @@ connecting these helpers to browser saves belong to later tickets.
 
 No game decisions change; the expected comparison is 22 identical games. Existing
 stability hashes and recordings are unchanged. No new verification ids or defaults.
+=======
+## As built, 11-1
+
+Pure, unwired modules now define format 2, read bounded JSON into explicitly untrusted
+snapshot/action data, compute sorted-key fingerprints, and screen snapshot shape against
+`newGame`. No engine, computer, UI, storage or restore behavior changes.
+
+Sources are Parts A, B, H and I (this spec has no numbered R rules). `setupActions`
+is a count within `actions`, matching the existing record format. Format 1 returns a
+separate `legacy` result for ticket 11-9. Game build strings do not decide acceptance;
+future file formats do. Unknown envelope/start/memory/action fields and unknown
+snapshot top-level/nation/unit fields are discarded. State subrecords remain untrusted
+JSON; this reader does not assert that a snapshot is a valid `GameState`.
+
+New provisional choices, recorded in RULES and TODO-VERIFY:
+
+- AER52: required `stateVersion`, initially 1; shape screening requires exact equality.
+- AER53: canonical ISO UTC timestamps with milliseconds, nonempty build strings;
+  memory is `{ targets: Record<id, hex>, left: Record<id, { hex, turn }[]> }`.
+  Cache data is omitted. E5 continuation equivalence remains for later tickets.
+- AER54: eight lowercase hex digits, FNV-1a on UTF-16 code units of sorted-key JSON.
+  This detects damage, with possible collisions; it is not authentication.
+- AER55: fresh top-level and nation fields must match exactly; unit required fields
+  follow the engine's Unit interface. Fields absent in fresh state have no inferred
+  schema: snapshots carrying optional play records are conservatively unsuitable for
+  rescue. Populated fresh substructures (including setup) are checked recursively;
+  array entries may match any fresh exemplar; empty collections have no exemplar. Shape screening is not an engine-invariant validator or type guard.
+  Restore must validate a selected snapshot before handing it to the engine; replay
+  acceptance is independent of snapshot suitability (Part A).
+
+Caps: 4 MiB of UTF-8 before parsing, 100,000 actions, 200 UTF-16 code units per
+string/key, 20 container edges below the root; title 40, log tail 60. Caps and forbidden
+keys apply even inside discarded fields. Engine action legality and sliced restore,
+rescue decisions, browser storage, and cross-device/continuation tests remain later tickets.
+>>>>>>> origin/main
