@@ -94,6 +94,9 @@ export type Action =
   | { type: "SETUP_DONE"; owner: ForceOwner };
 
 /** What happened as a result of an action, for the UI and the log. */
+/** One line of a COUNTRY_INCOME event: what paid, how much, and why. */
+export interface IncomeLine { name: string; value: number; reason: string }
+
 export type GameEvent =
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent
@@ -142,6 +145,8 @@ export type GameEvent =
   | { type: "MINOR_GARRISONED"; minor: MinorCountry; by: PowerId; revoked: PowerId; removed: string[] }
   /** Spec 15 R9: a sleeping Axis Minor-Ally woke (Summer 1941 or the Intervention); `value` joined the total of `of`; `toPlace` is true when the Axis must now set its army up at step 2. */
   | { type: "MINOR_ALLY_WOKE"; minor: MinorCountry; of: PowerId; value: number; cause: "summer-1941" | "intervention"; toPlace: boolean }
+  /** Spec 15 R13 (15-9b): the lines of territory income at the Year Start Sequence for `nation`, spec 14's beside spec 15's; `total` is their sum. */
+  | { type: "COUNTRY_INCOME"; nation: PowerId; lines: IncomeLine[]; total: number }
   /** `owner` paid; `returned` marks a counter bought back from the pool (spec 17 R2), `pool` the pool it came from when it is not the payer's (RB10). */
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }

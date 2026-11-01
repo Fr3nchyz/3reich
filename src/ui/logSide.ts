@@ -71,6 +71,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender
     case "COMBAT_RESOLVED": return e.side; // the attack is the attacker's
+    case "COUNTRY_INCOME":
     case "BRPS_CHANGED": return sideOfOwner(e.nation); // a nation's own treasury, whoever's action moved it (a Year Start, say)
     case "WAR_DECLARED": return sideOfOwner(e.by); // also the scenario's own declaration, made as the other side's turn ends
     case "BRPS_GRANTED": return sideOfOwner(e.from);

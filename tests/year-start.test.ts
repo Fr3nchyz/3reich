@@ -5,7 +5,8 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { SCENARIO_CAMPAIGN } from "../src/data/scenario-campaign";
 import { applyAction } from "../src/engine/actions";
 import type { GameState, PowerId, Scenario } from "../src/engine/types";
-import { growthOf, KEEP_UNUSED_BRPS, minorAllyBrps, runYearStartSequence } from "../src/engine/yearstart";
+import { territoryIncome } from "../src/engine/minors-income";
+import { growthOf, KEEP_UNUSED_BRPS, runYearStartSequence } from "../src/engine/yearstart";
 import { ctxFor, started } from "./helpers";
 
 /** Spec 02: the Year Start Sequence's BRP arithmetic (Ref 9.2, 10.0; Ops 6.0 part B). */
@@ -72,22 +73,37 @@ describe("BRP growth (Ref 9.2)", () => {
   });
 });
 
-describe("Minor-Allies in the initial total (Ref 9.2)", () => {
-  it("add the scenario's figure to Germany's new Base: 1942 has 245 + 45", () => {
-    expect(minorAllyBrps(ctxFor(SCENARIO_1942), started(SCENARIO_1942, 1), "germany")).toBe(45);
+describe("Minor-Allies in the initial total (Ref 9.2, spec 15 R13)", () => {
+  const minorTotal = (sc: Parameters<typeof ctxFor>[0], s: ReturnType<typeof started>, id: "germany" | "britain") =>
+    territoryIncome(ctxFor(sc), s, id).lines.filter((l) => l.kind === "minor-ally").reduce((t, l) => t + l.brps, 0);
+
+  it("add each ally's value to Germany's new Base: 1942 has 245 + 45", () => {
+    expect(minorTotal(SCENARIO_1942, started(SCENARIO_1942, 1), "germany")).toBe(45);
     const r = yss(SCENARIO_1942, 1943, { germany: 0 });
     expect(r.state.nations.germany).toMatchObject({ brpBase: 245, brpTotal: 290 });
+    const e = r.events.find((x) => x.type === "COUNTRY_INCOME" && x.nation === "germany");
+    expect(e).toMatchObject({ total: 45 });
+    expect(e?.type === "COUNTRY_INCOME" && e.lines.map((l) => l.name).sort()).toEqual(["bulgaria", "finland", "hungary", "rumania"]);
   });
 
   it("add nothing in a scenario where none are active, or for a nation without any", () => {
-    expect(minorAllyBrps(ctxFor(SCENARIO_1939), started(SCENARIO_1939, 1), "germany")).toBe(0);
-    expect(minorAllyBrps(ctxFor(SCENARIO_1942), started(SCENARIO_1942, 1), "britain")).toBe(0);
+    expect(minorTotal(SCENARIO_1939, started(SCENARIO_1939, 1), "germany")).toBe(0);
+    expect(minorTotal(SCENARIO_1942, started(SCENARIO_1942, 1), "britain")).toBe(0);
+    expect(yss(SCENARIO_1939, 1941, { germany: 0 }).events.some((x) => x.type === "COUNTRY_INCOME" && x.nation === "germany")).toBe(false);
   });
 
-  it("are not counted once one of them is no longer active (TODO(verify): each one's own value)", () => {
+  it("count only the allies still active, each at its own value", () => {
     const s = started(SCENARIO_1942, 1);
     const off = { ...s, minorAllies: s.minorAllies.map((m) => (m.owner === "finland" ? { ...m, active: false } : m)) };
-    expect(minorAllyBrps(ctxFor(SCENARIO_1942), off, "germany")).toBe(0);
+    expect(minorTotal(SCENARIO_1942, off, "germany")).toBe(35);
+  });
+
+  it("pay a woken ally's value once: the wake-up credit is rebuilt from the Base, not added again", () => {
+    const s = started(SCENARIO_1939, 1);
+    const woke = { ...s, minorAllies: s.minorAllies.map((m) => (m.owner === "bulgaria" ? { ...m, active: true } : m)) };
+    const credited = { ...woke, nations: { ...woke.nations, germany: { ...woke.nations.germany, brpTotal: woke.nations.germany.brpBase + 10 } } };
+    const r = runYearStartSequence(ctxFor(SCENARIO_1939), { ...credited, year: 1942 });
+    expect(r.state.nations.germany.brpTotal).toBe(r.state.nations.germany.brpBase + 10);
   });
 });
 
