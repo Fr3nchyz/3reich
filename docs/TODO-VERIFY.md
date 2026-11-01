@@ -435,3 +435,12 @@ For victory, surrender and the Russian winter (spec 14, rows V1 to V29): when th
 Also worth asking, if time allows: for fleets (spec 12), how the game asks you to supply units by sea, what happens to a fleet when its port is taken, which Front the Black Sea and Baltic ports are on, how interception distance is counted, and whether Libyan ports supply by themselves; whether replacement counters move and fight; what forces a minor country gets when attacked and where they go; whether an automatic declaration of war counts towards the spending limit; and whether a grant is blocked when an enemy stands next to a capital.
 
 For minor countries (spec 15, questions P1 to P8): whether the game places an attacked minor's army by itself, what happens when you declare war and neither enter nor attack, whether an attacked minor moves and attacks on its own turn, when Finland, Hungary, Rumania and Bulgaria appear in Summer 1941, whether German units may walk into them earlier and stay in supply, who gets a minor's BRPs when two countries help it, whether each country (Germany, Italy) chooses its own Front Option or one is chosen for the whole side, and what value is printed on the map for each country.
+
+### Save format and screening (spec 11, ticket 11-1)
+
+| Id | Source | Choice | Conservative default | Status |
+|---|---|---|---|---|
+| AER52 | spec 11 Part A | Semantic state revision | `STATE_VERSION = 1`, required in format 2; exact match for snapshot screening, independent of build version. | TODO(verify). |
+| AER53 | spec 11 Part B, E5 | Metadata/memory encoding | `SAVE_METADATA_POLICY = "iso-utc-record-memory"`: canonical UTC ISO timestamp with milliseconds, nonempty build, targets/left records; no caches. | TODO(verify); continuation is a later ticket. |
+| AER54 | spec 11 Parts B/H | Fingerprint algorithm | `FINGERPRINT_ALGORITHM = "fnv1a32-utf16"`: eight hex digits from sorted JSON UTF-16 code units; nonsecurity, collisions possible. | TODO(verify), including cross-device E2. |
+| AER55 | spec 11 Part A | Fresh shape limits | `SNAPSHOT_SHAPE_POLICY = "fresh-fields-only"`: exact top-level/nation keys, explicit Unit fields, recursive populated fresh substructures; optional records absent from fresh state disqualify rescue. Empty collections lack exemplars. Boolean screening only, not an assertion of engine invariants. | TODO(verify); restore must validate chosen states. |
