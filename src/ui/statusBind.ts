@@ -1,6 +1,7 @@
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
 import { winterKey } from "../engine/winter-record";
+import { bindMinor } from "./minorBind";
 import { bindAir } from "./airBind";
 import { bindAirMove } from "./airMoveBind";
 import { bindAttack } from "./attackBind";
@@ -40,6 +41,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on<HTMLButtonElement>("button[data-siberian]", (b) => pickSiberian(s, b.dataset.siberian!));
   on<HTMLButtonElement>("button[data-siberian-city]", (b) => takeSiberian(s, b.dataset.siberianCity!));
   on<HTMLButtonElement>("button[data-box]", (b) => { if (owner) placeInBox(s, owner, spec, b.dataset.box as OffMapBox); });
+  bindMinor(root, s, actions, redraw);
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
   bindAirMove(root, s, redraw);

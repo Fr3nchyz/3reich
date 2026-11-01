@@ -13,6 +13,7 @@ import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
 import { describeHex, describeUnits } from "./ui/format";
 import type { MapHex } from "./engine/map";
+import { minorTap } from "./ui/minorBind";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
 import { createComputerLoop } from "./ui/computerLoop";
@@ -78,7 +79,7 @@ const autosave = createAutosave({ store: openSaveStore().then(({ store, error })
 bindAutosaveLifecycle(autosave);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
+  onHexClick: (h) => { shell.info.textContent = hexText(h); if (!minorTap(session, h.id)) tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));

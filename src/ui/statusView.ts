@@ -30,6 +30,7 @@ import { DONE_BUTTON } from "./redeployText";
 import { airHtml } from "./airCardView";
 import { airMoveHtml } from "./airMoveView";
 import { endHtml, statusText } from "./endCard";
+import { minorHtml } from "./minorBind";
 import { scoreHtml } from "./objectivesCard";
 
 /** The status area under the map: HTML text for each part, from the session. */
@@ -112,7 +113,7 @@ function turnButtons(actions: Action[], open: boolean, ctx: GameContext, state: 
     const group = actions.filter((a) => a.type === type && text.has(a));
     return group.length === 0 ? "" : `<details class="declarations"${open ? " open" : ""}><summary>${title} (${group.length} ${group.length === 1 ? "choice" : "choices"})</summary><div class="${COMBAT_FOLDS.includes(type) ? "fold-buttons" : "actions"} controls">${type === "SELECT_FRONT_OPTION" ? frontOptionButtons(state, group, button) : group.map(button).join("")}</div></details>`;
   };
-  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR" && a.type !== "CHOOSE_WINTER" && a.type !== "SURRENDER_ANSWER" && !(cardEnds8a && a.type === "END_STEP" && a.step === "8a"));
+  const rest = actions.filter((a) => text.has(a) && a.type !== "DECLARE_WAR" && a.type !== "GRANT_BRPS" && a.type !== "BUILD" && a.type !== "PLACE_MINOR_FORCES" && a.type !== "SELECT_FRONT_OPTION" && a.type !== "MOVE" && a.type !== "ATTACK" && a.type !== "ALLOCATE_LOSSES" && a.type !== "ADVANCE" && a.type !== "DESIGNATE_AIR" && a.type !== "CHOOSE_WINTER" && a.type !== "SURRENDER_ANSWER" && !(cardEnds8a && a.type === "END_STEP" && a.step === "8a"));
   return {
     folds: `${fold("ATTACK", "All attacks as a list")}${fold("ALLOCATE_LOSSES", "All ways to lose, as a list")}${fold("ADVANCE", "All advances as a list")}${fold("DESIGNATE_AIR", "All air support as a list")}${fold("DECLARE_WAR", "Declare war")}${fold("SELECT_FRONT_OPTION", "Choose a Front Option")}${fold("GRANT_BRPS", "Grant BRPs")}`,
     rest: rest.map(button).join(""),
@@ -150,6 +151,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${nationTable(s)}
       ${frontPrompt(s, actions)}
       ${buildPanel(s, actions)}
+      ${minorHtml(s, actions)}
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
       ${logHtml(s.log, s.logSides)}

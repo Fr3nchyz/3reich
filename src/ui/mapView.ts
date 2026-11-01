@@ -12,7 +12,8 @@ import { unitMarksMarkup } from "./mapUnitMarks";
 import type { ObjectiveStandings } from "../engine/objectives";
 import { fortressMarkup, markRadius, objectiveMarksMarkup } from "./mapCities";
 import type { OverlayCells } from "./overlayModel";
-import { buildHexLayers, svgMarkup } from "./mapLayers";
+import type { GameContext } from "../engine/context";
+import { buildHexLayers, minorMarksMarkup, svgMarkup } from "./mapLayers";
 import { createViewport, padBox, MAP_MARGIN } from "./viewport";
 
 /**
@@ -130,4 +131,11 @@ export function renderMap(container: HTMLElement, map: MapData, opts: MapViewOpt
       return centres.length > 0;
     },
   };
+}
+
+/** Spec 15 R9/R10 D5: refresh after status redraws, including loads and wake-ups. */
+export function refreshMinorMarks(root: ParentNode, ctx: GameContext, state: GameState): void {
+  const layer = root.querySelector("g.minor-marks");
+  const markup = minorMarksMarkup(ctx, state);
+  if (layer && layer.innerHTML !== markup) layer.innerHTML = markup;
 }
