@@ -126,7 +126,7 @@ describe("air units and fleets alone in a hex (ALONE_NONGROUND_DESTROYED, TODO(v
       { type: "AIR_DISPLACED", unitId: "a1", owner: "poland", from: "M35", to: "M33" },
       { type: "AIR_DISPLACED", unitId: "a2", owner: "poland", from: "M35", to: "M33" },
     ]);
-    const session = { ctx: CTX, state: s, log: [] as string[], toast: "" } as unknown as Session;
+    const session = { ctx: CTX, state: s, log: [] as string[], toast: "", record: [] } as unknown as Session;
     expect(run(session, { type: "ATTACK", side: "axis", units: ["g1"], target: "M35" })).toBe(true);
     expect(session.log.filter((l) => /M35/.test(l))).toEqual(["1 Polish air displaced from Warsaw (M35): moved to Poznan (M33).", "1 Polish air displaced from Warsaw (M35): moved to Poznan (M33)."]);
   });
