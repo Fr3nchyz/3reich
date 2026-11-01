@@ -511,3 +511,8 @@ counters, while the memory helpers use entry arrays and counters. Full continuat
 through envelope memory is a named pending test. Snapshot rescue still needs the
 caller's invariant validator (AER55). Exchange/end-of-scenario cuts and device facts
 remain unverified. No computer-game behavior, fixed-seed hashes or recordings change.
+
+The rescue test's injected validator compares unknown input structurally with the
+known fresh fixture before returning a copy (AER55); it does not pass untrusted
+input to the typed fingerprint function. The autosave test wraps the memory-store
+write with its receiver intact and asserts on the local mock (Parts D/H).

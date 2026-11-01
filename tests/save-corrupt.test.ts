@@ -1,4 +1,5 @@
 import { expect, it, vi } from "vitest";
+import { isDeepStrictEqual } from "node:util";
 import { newGame } from "../src/engine/game";
 import { CTX } from "./helpers";
 import { fingerprint } from "../src/save/fingerprint";
@@ -38,7 +39,7 @@ it.each([
 it("spec 11 Parts A/H/I AER55: old illegal record offers consent rescue; missing fresh field refuses", async () => {
   const options = { now: () => 0, yield: async () => {}, cancelled: () => false,
     // Spec 11 A/AER55: accept only this known engine-created fixture, not arbitrary snapshots.
-    validateSnapshot: (value: unknown) => fingerprint(value) === fingerprint(state) ? structuredClone(state) : undefined };
+    validateSnapshot: (value: unknown) => isDeepStrictEqual(value, state) ? structuredClone(state) : undefined };
   const result = await restore(file({ actions: [{ type: "unknown" }] }), CTX, options);
   expect(result).toMatchObject({ kind: "rescue", state, save: { actions: [], setupActions: 0,
     start: { kind: "snapshot", state } }, message: expect.stringContaining("rules as they are now?") });

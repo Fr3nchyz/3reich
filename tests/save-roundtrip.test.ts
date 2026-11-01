@@ -49,7 +49,8 @@ it.fails.each(SCENARIO_KEYS)("TODO(verify) AER54 spec 11 Parts B/I E3/E4: %s two
 it("spec 11 Parts D/H: real session record autosaves after debounce and hidden flush restores exactly", async () => {
   vi.useFakeTimers();
   const memory = createMemoryStore();
-  const store = { ...memory, persistent: true, put: vi.fn(memory.put) };
+  const put = vi.fn<typeof memory.put>((id, save) => memory.put(id, save));
+  const store = { ...memory, persistent: true, put };
   const autosave = createAutosave({ store, gameVersion: "test", onError: error => { throw Error(error.code); } });
   const session = newSession(SCENARIOS["1939"], "allies", 1);
   const doc = Object.assign(new EventTarget(), { visibilityState: "hidden" as const });
@@ -57,19 +58,19 @@ it("spec 11 Parts D/H: real session record autosaves after debounce and hidden f
   try {
     autosave.observe(session);
     await vi.advanceTimersByTimeAsync(6000);
-    expect(store.put).not.toHaveBeenCalled();
+    expect(put).not.toHaveBeenCalled();
     const actions = runGame({ scenario: "1939", seed: 1, turns: 1, verify: false }).actions;
     expect(run(session, actions[0]!)).toBe(true);
     autosave.observe(session);
     await vi.advanceTimersByTimeAsync(999);
-    expect(store.put).not.toHaveBeenCalled();
+    expect(put).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1);
-    expect(store.put).toHaveBeenCalledTimes(1);
+    expect(put).toHaveBeenCalledTimes(1);
     expect(run(session, actions[1]!)).toBe(true);
     autosave.observe(session);
     doc.dispatchEvent(new Event("visibilitychange"));
     await autosave.flush();
-    expect(store.put).toHaveBeenCalledTimes(2);
+    expect(put).toHaveBeenCalledTimes(2);
     const entry = await store.get(AUTOSAVE_SLOT);
     if (!entry.ok) throw Error(entry.code);
     const result = await restore(JSON.stringify(entry.value), session.ctx, { now: () => 0,
