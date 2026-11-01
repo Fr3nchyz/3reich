@@ -168,3 +168,16 @@ describe("'Place the rest for me' after counters were placed by hand", () => {
     expect(setupView(s)?.owner).not.toBe("italy");
   });
 });
+
+describe("a chosen build of a returned counter", () => {
+  it("stays chosen: the check that drops an unavailable build keeps the returned mark (the browser surrender spec found it dropped)", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { sessionFromRecord } = await import("../src/ui/e2eLoad");
+    const { pickBuild } = await import("../src/ui/sessionActions");
+    const f = JSON.parse(readFileSync("tests/e2e/fixtures/surrender-build.json", "utf8")) as { seed: number; actions: never[] };
+    const s = sessionFromRecord(SCENARIO_1939, "allies", f.seed, f.actions);
+    pickBuild(s, "ussr:infantry:1:returned");
+    normaliseMode(s);
+    expect(s.build).toEqual({ owner: "ussr", type: "infantry", strength: 1, returned: true });
+  });
+});

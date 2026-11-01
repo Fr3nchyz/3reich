@@ -139,7 +139,7 @@ for (const size of SIZES) {
     if (!pt) throw new Error("no yellow hex is visible on the map");
     if (hasTouch) await page.touchscreen.tap(pt[0]!, pt[1]!);
     else await page.mouse.click(pt[0]!, pt[1]!);
-    await expect(page.locator("ol.log li").first()).toContainText("Soviet Union builds");
+    await expect(page.locator("ol.log li").first()).toContainText(/Soviet Union (re)?builds/);
     await expect(page.locator(".toast")).toBeEmpty();
     const now = await page.locator(".build .surrender-warning").allInnerTexts();
     if (now.length > 0) expect(Number(/has (\d+) more/.exec(now[0]!)![1])).toBeLessThan(BUILD.shortfall!);

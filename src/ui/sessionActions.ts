@@ -27,7 +27,7 @@ export function normaliseMode(s: Session): void {
   const owner = currentSetupOwner(s.state);
   if (s.mode === "remove" && !Object.values(s.state.units).some((u) => u.owner === owner)) s.mode = "place";
   // A chosen build is dropped once it is no longer on offer (step left, counter used up, BRPs spent).
-  if (s.build && !builds(s).some((a) => buildKey({ owner: a.owner, type: a.unit.type, strength: a.unit.strength }) === buildKey(s.build!))) s.build = null;
+  if (s.build && !builds(s).some((a) => buildKey(pickOf(a)) === buildKey(s.build!))) s.build = null;
   // A chosen Siberian counter is dropped once the engine no longer offers it (step left, quota used, armor not yet allowed).
   if (s.siberian && !siberianOffers(s).some((a) => a.unit.type === s.siberian!.type && a.unit.strength === s.siberian!.strength)) s.siberian = null;
   normaliseAttack(s);
