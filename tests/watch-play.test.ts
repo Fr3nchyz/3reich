@@ -41,7 +41,7 @@ describe("a slice of play", () => {
     const log = s.log.length;
     watchSlice(s);
     expect(w(s).actions).toBe(1);
-    expect(s.record!.length).toBe(w(s).setupActions + 1);
+    expect(s.record.length).toBe(w(s).setupActions + 1);
     expect(s.log.length).toBeGreaterThan(log);
     expect(s.log.some((l) => /^Computer \((Axis|Allied)\):/.test(l))).toBe(true);
   });
@@ -172,7 +172,7 @@ describe("take over", () => {
     const mover = state.activeSide;
     takeOver(s, mover === "axis" ? "allies" : "axis");
     expect(s.watch).toBeUndefined();
-    expect(s.record).toBeUndefined();
+    expect(s.record.length).toBeGreaterThan(0); // spec 11 part G: takeover retains the record.
     expect(s.state).toBe(state);
     expect(computerToMove(s)).toBe(true); // the human took the side that is not up: the computer keeps playing the side that is
     expect(computerTick(s)).not.toBe("stuck");

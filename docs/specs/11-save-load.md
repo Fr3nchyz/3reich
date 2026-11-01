@@ -389,6 +389,19 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 6. A game saved by a version whose rules changed is either opened exactly (the fingerprint matches) or offered as a clearly worded rescue, never silently changed.
 7. No rule was added; anything unconfirmed is marked `TODO(verify)`. Lint, type check, unit tests, build and the browser tests pass.
 
+## As built, 11-3
+
+Every session starts recording before setup; accepted actions append in order and refused
+ones do not. Watch mode uses the same record, and takeover keeps it (part G).
+The memory module exports plain entry arrays for targets and hexes left, plus the
+quiet-since and stall-turn policy counters added since this spec was drafted. Import
+copies these values into fresh memory; absent memory starts empty (part B). Distance,
+nearest-objective and staging caches rebuild on demand (E5). Export and import do not
+share mutable visit objects or side counters with their inputs. File validation and
+connecting these helpers to browser saves belong to later tickets.
+
+No game decisions change; the expected comparison is 22 identical games. Existing
+stability hashes and recordings are unchanged. No new verification ids or defaults.
 ## As built, 11-1
 
 Pure, unwired modules now define format 2, read bounded JSON into explicitly untrusted
@@ -450,3 +463,34 @@ in Part H (E7 still requires device measurement). No engine, computer, data, UI,
 storage, fixed-seed hash or recording changes; expected computer-game effect: none.
 Legacy format 1 remains refused for ticket 11-9. Broad computer-played round trips
 and continuation coverage remain ticket 11-10.
+## As built, 11-4
+
+`SaveStore` now has IndexedDB and volatile in-memory implementations (Parts C/D/H),
+with list/get/put/delete, explicit durability, and quota/unavailable results as data.
+`openSaveStore` accepts an injected factory and persistence API; absent, refused or
+blocked storage returns the memory fallback plus an unavailable result. This remains
+unwired: callers must disable autosave and display the Part C notice for a volatile
+store. A later transaction failure is reported without silently switching stores or
+hiding existing entries.
+
+Reads return untrusted values, including damaged entries, for the later loader to
+validate or export. Writes accept format-2 `SaveFile` data and resolve only after
+transaction commit; aborted writes retain the previous entry. Both implementations
+copy values rather than sharing caller-owned objects. Slot naming, the named-save
+limit, replacement confirmation and rotation remain caller policy (tickets 11-5/6/7).
+
+`requestPersistence()` caches its first result, including denial or failure. The
+caller invokes it after the first autosave (Part C, ticket 11-5); writes never depend
+on a grant. A missing persistence API returns false. Connections close explicitly or
+on a version-change request. No new provisional game or product policy, or new
+TODO(verify) id, is introduced. E6/E8 browser facts still require the iPad check.
+
+Tests use an asynchronous injected factory to exercise commit/abort, quota rollback,
+blocked opening, damaged entries and persistence, plus the same basic contract for
+the memory store. Real-browser integration remains for ticket 11-11. No engine,
+computer, data or UI changes; expected effect on computer games: none.
+
+The lint follow-up uses explicit resolved promises in the memory implementation and
+its persistence test double. Database-open errors always reject with an Error,
+including a missing IndexedDB error; cursor keys follow the string slot-id contract.
+The fallback test also covers an open failure with a null error.
