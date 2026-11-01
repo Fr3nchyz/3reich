@@ -149,7 +149,7 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
 
   it("Part D: hide and pagehide flush; visible does not; cleanup removes both listeners", async () => {
     const { autosave, s, store } = harness();
-    const doc = Object.assign(new EventTarget(), { visibilityState: "visible" as DocumentVisibilityState });
+    const doc = Object.assign(new EventTarget(), { visibilityState: "visible" } as { visibilityState: DocumentVisibilityState });
     const win = new EventTarget();
     const unbind = bindAutosaveLifecycle(autosave, doc, win);
     action(s); autosave.observe(s);
