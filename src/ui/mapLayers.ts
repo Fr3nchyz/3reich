@@ -1,3 +1,6 @@
+import type { GameContext } from "../engine/context";
+import type { GameState } from "../engine/types";
+import { minorHexModel } from "./minorView";
 import { hex } from "../engine/hex";
 import type { MapData } from "../engine/map";
 import { citySymbol } from "./mapCities";
@@ -108,6 +111,7 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
   return `
     <svg class="map" viewBox="${box.x} ${box.y} ${box.w} ${box.h}" role="img" aria-label="Map of Europe">
       <g class="hexes">${hexLayers.hexes}</g>
+      <g class="minor-marks" aria-hidden="true" pointer-events="none"></g>
       <g class="bays">${buildBays(map)}</g>
       <g class="front-tint" style="display:${showFronts ? "inline" : "none"}">${hexLayers.fronts}</g>
       <g class="wateredges" aria-hidden="true"><path class="water-band" d="${water}"/><path class="water-ripple" d="${water}"/></g>
@@ -122,9 +126,20 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="cities">${hexLayers.cities}</g>
       <g class="objective-marks" aria-hidden="true"></g>
       <g class="highlights"></g>
+      <g class="minor-placement" aria-hidden="true" pointer-events="none"></g>
       <g class="attack-marks" aria-hidden="true"></g>
       <g class="units"></g>
       <g class="unit-marks" aria-hidden="true"></g>
       <polygon class="hover" points="" />
     </svg>`;
+}
+
+/** Spec 15 R9/R10 D5: state-derived sleeping tint and capital-only labels. */
+export function minorMarksMarkup(ctx: GameContext, state: GameState): string {
+  return Object.keys(ctx.map.hexes).map((id) => {
+    const m = minorHexModel(ctx, state, id);
+    if (!m?.tint) return "";
+    const [x, y] = hexCenter(hex(id));
+    return `<polygon class="minor-sleep-tint" points="${points(hexCorners(x, y))}"/>${m.marker ? `<text class="minor-asleep" x="${fmt(x)}" y="${fmt(y + 8)}">asleep</text>` : ""}`;
+  }).join("");
 }

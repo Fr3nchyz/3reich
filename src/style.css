@@ -232,3 +232,14 @@ button, select, summary { touch-action: manipulation; }
 .hexcard-factors { min-width: 2.2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .hexcard-kind { font-weight: 600; }
 .hexcard-notes { margin-left: auto; color: var(--ink-soft); font-size: .85rem; }
+
+/* Spec 15 D1/D2/D5: readable minor cards, duty chips and sleeping-country marks. */
+.minor-card { border: 2px solid #9a7846; border-radius: .5rem; padding: 1rem; margin-block: 1rem; }
+.minor-card button, button[data-minor] { min-height: 44px; margin: .2rem; }
+button[data-minor] { display: block; text-align: left; width: 100%; }
+.minor-card [aria-pressed="true"] { outline: 3px solid #a66d12; }
+.minor-hexes { display: flex; flex-wrap: wrap; max-height: 12rem; overflow: auto; }
+.minor-duty { color: #9b2020; border: 1px solid currentColor; border-radius: .4rem; padding: .4rem; }
+.minor-sleep-tint { fill: #9d743c; opacity: .23; stroke: none; }
+.minor-asleep { font-size: 3px; text-anchor: middle; fill: #513719; }
+.minor-placement polygon { fill: #ffd44b44; stroke: #d6a400; stroke-width: .8; }

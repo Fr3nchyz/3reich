@@ -1,3 +1,4 @@
+import { minorHexModel } from "./minorView";
 import { airOf } from "../engine/air-record";
 import { combatOf } from "../engine/combat-record";
 import type { GameContext } from "../engine/context";
@@ -108,7 +109,8 @@ export function hexCard(ctx: GameContext, state: GameState, hex: string): HexCar
     hex,
     title: title(ctx, hex),
     terrain: terrain(ctx, state, hex),
-    holder: holder(ctx, state, hex),
+    // Spec 15 R2/R9/R10 D3/D5: include minor status in the existing visible location line.
+    holder: [holder(ctx, state, hex), ...(minorHexModel(ctx, state, hex)?.lines ?? [])].filter(Boolean).join(" "),
     counters,
     count: counters.length === 0 ? "No counters here." : `${counters.length} counter${counters.length === 1 ? "" : "s"}`,
   };
