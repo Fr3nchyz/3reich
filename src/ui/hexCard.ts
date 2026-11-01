@@ -105,12 +105,18 @@ function counter(ctx: GameContext, state: GameState, u: Unit): CardCounter {
 /** The card for `hex`: its counters in the order the position lists them. An id that is not a hex of the map gives a card with no counters. */
 export function hexCard(ctx: GameContext, state: GameState, hex: string): HexCard {
   const counters = Object.values(state.units).filter((u) => u.at === hex).map((u) => counter(ctx, state, u));
+  const minor = minorHexModel(ctx, state, hex);
+  const record = minor && state.countries?.[minor.minor];
+  // Spec 15 R2/R3/R4/R9/R10, D3/D5: show pending declaration/placement
+  // and sleeping-ally information; established wars retain the ordinary holder line.
+  const lines = record?.toPlace || record?.duty ? minor?.lines ?? []
+    : minor?.tint ? minor.lines.slice(-1) : [];
   return {
     hex,
     title: title(ctx, hex),
     terrain: terrain(ctx, state, hex),
     // Spec 15 R2/R9/R10 D3/D5: include minor status in the existing visible location line.
-    holder: [holder(ctx, state, hex), ...(minorHexModel(ctx, state, hex)?.lines ?? [])].filter(Boolean).join(" "),
+    holder: [holder(ctx, state, hex), ...lines].filter(Boolean).join(" "),
     counters,
     count: counters.length === 0 ? "No counters here." : `${counters.length} counter${counters.length === 1 ? "" : "s"}`,
   };

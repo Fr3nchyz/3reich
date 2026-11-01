@@ -122,8 +122,18 @@ describe("minor bindings spec 15 D1/D2/D5", () => {
     s.state.minorAllies = s.state.minorAllies.map((m) => ({ ...m, active: true }));
     expect(hexCard(CTX, s.state, cap).holder).not.toContain("sleeps");
     expect(minorMarksMarkup(CTX, s.state)).toBe("");
-    s.state.countries = { belgium: { status: "attacked", attacker: "germany" } };
+    s.state.countries = { belgium: { status: "attacked", attacker: "germany", toPlace: "allies" } };
     expect(hexCard(CTX, s.state, capitalOf(CTX, "belgium")!).holder).toContain("Belgium is at war with Germany.");
+  });
+  it("R2/R3/R4 D3: established wars retain the holder line; pending duties add status", () => {
+    const s = session();
+    const cap = capitalOf(CTX, "belgium")!;
+    s.state.countries = { belgium: { status: "attacked", attacker: "germany" } };
+    expect(hexCard(CTX, s.state, cap).holder).toBe("Held by Belgium.");
+    s.state.countries.belgium!.duty = { by: "germany", declared: { year: s.state.year, season: s.state.season } };
+    expect(hexCard(CTX, s.state, cap).holder).toContain("Belgium is at war with Germany.");
+    s.state.conquests = [{ country: "belgium", by: "germany", side: "axis", how: "capital", at: { year: 1940, season: "spring" } }];
+    expect(hexCard(CTX, s.state, cap).holder).not.toContain("at war");
   });
   it("R7/R9 D5: conquest suppresses sleeping marks", () => {
     const s = session();
