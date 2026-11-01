@@ -220,3 +220,16 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
   });
 
 });
+
+it("Spec 11 A/B/D: resumed sessions retain a detached snapshot start and shortened record", async () => {
+  const { autosave, s, store } = harness();
+  const snapshot = JSON.parse(JSON.stringify(s.state)) as SaveFile["snapshot"];
+  const original = structuredClone(snapshot);
+  autosave.setStart(s, { kind: "snapshot", state: snapshot }); snapshot.year = 1;
+  action(s); autosave.observe(s); await autosave.flush();
+  const saved = (await entry(store))!;
+  expect(saved.start).toEqual({ kind: "snapshot", state: original }); expect(saved.actions).toHaveLength(1);
+  const next = newSession(SCENARIO_1939, "axis", 2); autosave.observe(next);
+  action(next); autosave.observe(next); await autosave.flush();
+  expect((await entry(store))!.start).toEqual({ kind: "new" });
+});

@@ -24,7 +24,8 @@ import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { bindZoom, canChooseStack, lookedHex, nothingSelectedText } from "./ui/zoomControls";
-import { mountShell } from "./ui/shell";
+import { createSavedGames } from "./ui/savedGames";
+import { mountShell, bindSavedGames } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
 import { createWatchLoop } from "./ui/watchLoop";
@@ -55,6 +56,7 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 
 /** The one game being played; start() replaces it. */
 let session: Session;
+let saveLoading = false;
 /** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
 let wasAttacking = false;
 /** Whether it was the player's step 6f at the last draw: the Next bar and the list of stacks are brought into view when it begins. */
@@ -68,11 +70,12 @@ const computer = createComputerLoop(() => session, () => render());
 const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 // Spec 11 Parts C/D: always-on autosave; notices stay outside the game state.
-const autosave = createAutosave({ store: openSaveStore().then(({ store, error }) => {
-  if (error) shell.live.textContent = "Saves are not kept in this browser window. Use Save to a file.";
+const saveStore = openSaveStore().then(({ store, error }) => {
+  if (error) document.getElementById("save-notice")!.textContent = "Saves are not kept in this browser window. Use Save to a file.";
   return store;
-}), gameVersion: version, onError: error => {
-  shell.live.textContent = error.code === "quota"
+});
+const autosave = createAutosave({ store: saveStore, gameVersion: version, onError: error => {
+  document.getElementById("save-notice")!.textContent = error.code === "quota"
     ? "Could not save: the browser is full. Delete a saved game or save to a file."
     : "Saves are not kept in this browser window. Use Save to a file.";
 } });
@@ -185,10 +188,28 @@ function render(): void {
   const redeploying = atStep9e(session);
   if (redeploying && !wasRedeploying) revealMoveStep(shell.status, "#sr-title");
   wasRedeploying = redeploying;
-  if (session.watch) watcher.kick();
-  else computer.kick();
+  if (!saveLoading) {
+    if (session.watch) watcher.kick();
+    else computer.kick();
+  }
 }
 
 // Test-only loader: compiled in only by the e2e build (`vite build --mode e2e`, used by Playwright); the normal build folds this test to false and drops the module.
 if (import.meta.env.MODE === "e2e") installE2eLoad(document, location.search, SCENARIOS, (scenario, next) => { shell.side.value = next.humanSide; menu.refresh(); begin(scenario, next); });
 start(SCENARIO_1939, "axis");
+
+// Spec 11 E: load in isolation; pause scheduled play until the result is known.
+const savedGames = createSavedGames({ store: saveStore, scenarios: SCENARIOS,
+  timing: { now: () => performance.now(), yield: () => new Promise(resolve => setTimeout(resolve, 0)) },
+  loading: value => {
+    saveLoading = value;
+    autosave.setLoading(value);
+    if (value) { computer.reset(); watcher.reset(); }
+    else if (session) render();
+  },
+  adopt: (next, savedStart) => {
+    autosave.setStart(next, savedStart);
+    shell.side.value = next.humanSide; menu.refresh(); begin(next.ctx.scenario, next);
+  },
+});
+void bindSavedGames(shell, savedGames, () => { shell.newGame.click(); autosave.arm(); }).init();

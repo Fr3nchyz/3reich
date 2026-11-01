@@ -28,13 +28,13 @@ const atBackup = (s: Session): boolean => s.state.position?.part === "player-tur
   s.state.position.step === "10b";
 
 /** Spec 11 Parts B/D: copy at the safe point, before asynchronous storage can yield. */
-function saveOf(s: Session, options: AutosaveOptions): SaveFile {
+function saveOf(s: Session, options: AutosaveOptions, start: SaveFile["start"]): SaveFile {
   const snapshot = JSON.parse(JSON.stringify(s.state)) as JsonObject;
   return {
     format: SAVE_FORMAT, app: "3reich", title: "Autosave",
     savedAt: (options.now?.() ?? new Date()).toISOString(), gameVersion: options.gameVersion,
     stateVersion: STATE_VERSION, scenario: s.ctx.scenario.id, seed: s.seed,
-    humanSide: s.humanSide, start: { kind: "new" },
+    humanSide: s.humanSide, start: JSON.parse(JSON.stringify(start)) as SaveFile["start"],
     actions: JSON.parse(JSON.stringify(s.record)) as JsonObject[],
     setupActions: s.record.filter(a => a.type.startsWith("SETUP_")).length,
     fingerprint: fingerprint(snapshot), snapshot, logTail: s.log.slice(-60).map(line => line.slice(0, MAX_STRING_LENGTH)),
@@ -55,6 +55,7 @@ export function createAutosave(options: AutosaveOptions) {
   let loading = false;
   let dirty = false;
   const rotated = new WeakSet<Session>();
+  const starts = new WeakMap<Session, SaveFile["start"]>();
   let persistenceRequested = false;
   let delay: ReturnType<typeof setTimeout> | undefined;
   let deadline: ReturnType<typeof setTimeout> | undefined;
@@ -70,7 +71,7 @@ export function createAutosave(options: AutosaveOptions) {
     if (!session || !armed || loading || session.watch || !dirty) return queue;
     clearTimers();
     const current = session;
-    const save = saveOf(current, options);
+    const save = saveOf(current, options, starts.get(current) ?? { kind: "new" });
     dirty = false;
     queue = queue.then(async () => {
       const store = await options.store;
@@ -140,6 +141,8 @@ export function createAutosave(options: AutosaveOptions) {
 
   return {
     observe, flush,
+    // Spec 11 A/B: keep the original snapshot start of a shortened restored record.
+    setStart: (s: Session, start: SaveFile["start"]): void => { starts.set(s, JSON.parse(JSON.stringify(start)) as SaveFile["start"]); },
     // Spec 11 D: explicit new-game confirmation can arm without a placement.
     arm: (): void => { if (session && !loading && !session.watch) armed = true; },
     // Spec 11 D/H: a restore must not flush partially loaded data, including on page hide.

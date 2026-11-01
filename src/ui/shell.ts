@@ -1,3 +1,5 @@
+import { continueCard, openingText } from "./continueCard";
+import type { createSavedGames, SavedGameRow } from "./savedGames";
 import { ZOOM_BUTTONS } from "./zoomControls";
 
 /** The page around the game: header controls, the map, the zoom buttons, the hex info overlay and the status area. */
@@ -16,6 +18,8 @@ const SHELL = `
       <span id="menuerror" class="watch-error" role="alert"></span>
     </div>
     <button id="newgame">New game</button>
+    <button id="savedgames">Saved games</button>
+    <p id="save-notice" role="status"></p>
     <label><input type="checkbox" id="fronts"> Show fronts</label>
     <button id="wholemap">Whole map</button>
   </header>
@@ -41,7 +45,10 @@ const SHELL = `
       <p id="w-announce" class="sr-only" role="status" aria-live="polite"></p>
     </div>
   </div>
-  <section id="status" tabindex="-1"></section>
+  <dialog id="saved-sheet" aria-labelledby="saved-title"><h2 id="saved-title">Saved games</h2><button id="saved-close">Close</button><div id="saved-content"></div><p>Your browser may delete saved games. A file saved outside the browser is the safety net.</p></dialog>
+  <div id="status-column"><section id="continue-game" hidden aria-label="Continue your game"></section>
+
+  <section id="status" tabindex="-1"></section></div>
   <p id="a11y-live" class="sr-only" role="status" aria-live="polite"></p>`;
 
 export interface Shell {
@@ -108,5 +115,106 @@ export function mountShell(app: HTMLElement): Shell {
     watchTurns: el<HTMLInputElement>("watchturns"),
     menuError: el("menuerror"),
     watchBar: el("watchbar"),
+  };
+}
+
+
+/** Spec 11 E sketches 2/3/5/6: thin binding; all saved text is inserted as text. */
+export function bindSavedGames(shell: Shell, games: ReturnType<typeof createSavedGames>, fresh: () => void) {
+  const card = document.getElementById("continue-game")!;
+  const sheet = document.getElementById("saved-sheet") as HTMLDialogElement;
+  const content = document.getElementById("saved-content")!;
+  const trigger = document.getElementById("savedgames")!;
+  let returnTo: HTMLElement = trigger;
+  let serial = 0;
+  let rows: SavedGameRow[] = [];
+  const say = (text: string): void => { shell.live.textContent = text; };
+  const text = (parent: HTMLElement, value: string, tag = "p"): HTMLElement => {
+    const el = document.createElement(tag); el.textContent = value; parent.append(el); return el;
+  };
+  const button = (parent: HTMLElement, label: string, action: () => void): HTMLButtonElement => {
+    const el = document.createElement("button"); el.type = "button"; el.textContent = label;
+    el.addEventListener("click", action); parent.append(el); return el;
+  };
+  const close = (): void => {
+    serial++; games.cancel(); sheet.close();
+    (returnTo.isConnected && !returnTo.closest("[hidden]") ? returnTo : trigger).focus();
+  };
+  const show = (): void => {
+    if (!sheet.open) { returnTo = document.activeElement as HTMLElement; sheet.showModal(); }
+    document.getElementById("saved-close")!.focus();
+  };
+  const list = async (): Promise<void> => {
+    const token = ++serial;
+    content.replaceChildren();
+    try {
+      rows = await games.list();
+      if (token !== serial) return;
+      if (!rows.length) text(content, "No saved games yet.");
+      for (const row of rows) {
+        const section = document.createElement("section"); content.append(section);
+        text(section, row.title, "h3"); text(section, row.detail);
+        if (row.problem) text(section, row.problem);
+        if (row.save) button(section, "Open", () => { void open(row.id); });
+        button(section, "Delete", () => {
+          section.replaceChildren(); text(section, `Delete '${row.title}'?`);
+          button(section, "Delete", () => { void (async () => {
+            try {
+              if (await games.delete(row.id, true)) { say("Saved game deleted."); await list(); document.getElementById("saved-close")!.focus(); }
+              else say("Could not delete this saved game.");
+            } catch { say("Could not delete this saved game."); }
+          })(); });
+          button(section, "Cancel", () => { void list(); document.getElementById("saved-close")!.focus(); }).focus();
+        });
+      }
+    } catch (error) { if (token === serial) { text(content, error instanceof Error ? error.message : "Saved games could not be read."); say("Saved games could not be read."); } }
+  };
+  const opened = (): void => {
+    card.hidden = true; sheet.close();
+    const heading = shell.status.querySelector<HTMLElement>("h2, h3") ?? shell.status;
+    heading.tabIndex = -1; heading.focus(); say("Game opened.");
+  };
+  const open = async (id: string): Promise<void> => {
+    show();
+    const token = ++serial;
+    content.replaceChildren();
+    const progress = text(content, "Opening your game..."); progress.setAttribute("role", "status");
+    button(content, "Cancel", () => { games.cancel(); void list(); document.getElementById("saved-close")!.focus(); }).focus();
+    const result = await games.open(id, (done, total) => { if (token === serial) progress.textContent = openingText(done, total); });
+    if (token !== serial) return;
+    if (result.kind === "opened") { opened(); return; }
+    content.replaceChildren();
+    if (result.kind === "rescue") {
+      text(content, "This game was saved by an older version", "h3");
+      text(content, result.message);
+      text(content, "Later turns may go differently from what you expected.");
+      button(content, "Continue from here", () => { if (games.acceptRescue()) opened(); }).focus();
+      button(content, "Keep the file", () => { games.keep(); void list(); document.getElementById("saved-close")!.focus(); });
+      button(content, "Cancel", () => { games.cancel(); void list(); document.getElementById("saved-close")!.focus(); });
+    } else {
+      text(content, result.message); say(`Could not open this game. ${result.message}`);
+      button(content, "Back to saved games", () => { void list(); }).focus();
+    }
+  };
+  trigger.addEventListener("click", () => { show(); void list(); });
+  document.getElementById("saved-close")!.addEventListener("click", close);
+  sheet.addEventListener("cancel", event => { event.preventDefault(); close(); });
+  // Spec 11 E: a new game stays one tap away and dismisses the startup offer.
+  shell.newGame.addEventListener("click", () => { serial++; games.cancel(); card.hidden = true; });
+  return {
+    init: async (): Promise<void> => {
+      const token = serial;
+      try {
+        rows = await games.list();
+        if (token !== serial) return;
+        const row = continueCard(rows);
+        if (!row) return;
+        card.hidden = false;
+        text(card, "Continue your game?", "h2"); text(card, row.detail);
+        button(card, "Continue", () => { void open(row.id); });
+        button(card, "Start a new game", () => { card.hidden = true; fresh(); shell.status.focus(); });
+        button(card, "Saved games", () => { show(); void list(); });
+      } catch { say("Saved games could not be read. Play can continue."); }
+    },
   };
 }
