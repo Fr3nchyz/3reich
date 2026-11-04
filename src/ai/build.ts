@@ -5,6 +5,7 @@ import type { GameContext } from "../engine/context";
 import { POWER_NAMES } from "../engine/nations";
 import { atWar } from "../engine/war";
 import type { GameState, UnitType } from "../engine/types";
+import { isMinorAllyPool } from "../engine/minors-rebuild-wire";
 import { plannedReserve } from "./declare";
 import { best } from "./random";
 import type { AiConfig, Decision } from "./types";
@@ -41,8 +42,9 @@ export function enemyDistance(ctx: GameContext, enemies: readonly Hex[], place: 
 const keyOf = (a: Build) => `${a.owner}:${a.unit.type}:${a.unit.strength}:${a.at}`;
 
 export function chooseBuild(ctx: GameContext, state: GameState, legal: readonly Action[], cfg: AiConfig): Decision | undefined {
+  // Ticket 15-19b: the computer does not rebuild a Minor-Ally's losses (a later computer ticket may); it ends the step instead.
   // Keep the BRPs a planned declaration of war needs (see plannedReserve): a build that would dip into them is not considered.
-  const builds = legal.filter((a): a is Build => a.type === "BUILD" && state.nations[a.owner].brpTotal - (buildCost(a.unit.type, a.unit.strength) ?? 0) >= plannedReserve(ctx, state, a.owner));
+  const builds = legal.filter((a): a is Build => a.type === "BUILD" && !isMinorAllyPool(state, a.pool) && state.nations[a.owner].brpTotal - (buildCost(a.unit.type, a.unit.strength) ?? 0) >= plannedReserve(ctx, state, a.owner));
   if (builds.length === 0) return undefined;
   // Kind first, then the biggest counter, then the place closest to the enemy; the weights keep each criterion ahead of the next.
   const enemies = new Map<Build["owner"], readonly Hex[]>();

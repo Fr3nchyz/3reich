@@ -161,7 +161,7 @@ Counters on the map and the setup screen exist. Each rule phase adds its screen.
 | 8.2 | BRP and status panels, declaration-of-war dialog | 4 |
 | 8.3 | Select, move, see legal destinations | 5 |
 | 8.4 | Combat selection and result display | 6 |
-| 8.5 | Save, load, autosave, export file (spec: [11-save-load](specs/11-save-load.md), proposed) | `replay` already exists |
+| 8.5 | Save, load, autosave, export file (spec: [11-save-load](specs/11-save-load.md): core wired; 11-9 optional/unbuilt, 11-10/11 verification gaps, 11-12 owner-manual/open, 11-13 docs updated) | `replay` already exists |
 | 8.6 | iPad pass: gestures, safe areas, installable | 8.3 |
 
 ---
@@ -202,7 +202,7 @@ Done: the Warsaw fix, tap-to-attack with an odds preview and a hex card, iPad zo
 6. A "Send feedback" button and a short play-test card (French wording only if it helps Frank).
 7. Map clarity pass against the board and DOS looks, after Frank's view.
 8. French interface: not a priority; Frank prefers to communicate in French but is fine with the English game for now.
-9. Save and load (spec: [11-save-load](specs/11-save-load.md), approved): last, by the owner's choice. Until then a game must be played in one sitting.
+9. Save and load (spec: [11-save-load](specs/11-save-load.md), updated 2026-11-04): autosave, named saves and file import/export are wired. Restore/continuation limits and browser verification remain open; optional 11-9 is unbuilt and 11-12 is an open owner-manual iPad check. See the spec for 11-13 status.
 
 ---
 
