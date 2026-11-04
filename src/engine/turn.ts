@@ -16,7 +16,7 @@ import { hasExploitCombatWork, hasExploitMoveWork } from "./exploit-step";
 import { hasMinorPlaceWork } from "./minors-step";
 import { wakeSleepers } from "./minors-wake";
 import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
-import { legalBuilds } from "./construction";
+import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
@@ -216,7 +216,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "8a":
       return legalSiberian(ctx, state).length > 0;
     case "8b":
-      return legalBuilds(ctx, state).length > 0;
+      return legalAllBuilds(ctx, state).length > 0;
     case "10a":
       return surrenderAsking(state);
     case "6h":

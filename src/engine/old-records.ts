@@ -1,5 +1,5 @@
 import { applyAction, type Action, type GameEvent } from "./actions";
-import { legalBuilds } from "./construction";
+import { legalAllBuilds } from "./minors-rebuild-wire";
 import type { GameContext } from "./context";
 import { siberianOptions } from "./siberian";
 import type { GameState } from "./types";
@@ -21,7 +21,7 @@ export function waitsOnlyForReturned(ctx: GameContext, state: GameState): "7a" |
   // Steps 7a and 7p (spec 16 ticket 16-4 wiring): a record made before Attrition was live passed both steps; resolving it is optional, so the step is ended for the record.
   if (p.step === "7a" || p.step === "7p") return p.step;
   if (p.step === "8b") {
-    const builds = legalBuilds(ctx, state);
+    const builds = legalAllBuilds(ctx, state);
     return builds.length > 0 && builds.every((a) => a.unit.returned === true) ? "8b" : null;
   }
   if (p.step === "8a") {
