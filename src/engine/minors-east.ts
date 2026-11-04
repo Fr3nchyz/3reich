@@ -2,7 +2,6 @@ import type { GameContext } from "./context";
 import { isConquered } from "./conquest-record";
 import type { HexId } from "./hex";
 import { minorDeclarationProblem } from "./minors-declare";
-import { MINOR_VALUES } from "./minors-rules";
 import type { GameState, PowerId, Side } from "./types";
 
 // Spec 15 R12, Ref 29.0: repository Eastern Europe zone; tests pin the map-derived partition.
@@ -17,7 +16,8 @@ export const EASTERN_POLISH_HEXES: readonly HexId[] = [
   "J39", "J40", "K38", "K39", "L38", "M37", "N36", "N37", "O36", "P35", "Q35",
 ];
 // Spec 15 R12, Ref 29.0: reuse the value table; Poland and Rumania keep their values.
-export const EASTERN_EUROPE_VALUE = MINOR_VALUES["eastern-europe"];
+// A literal, not `MINOR_VALUES["eastern-europe"]`: this module is now reached from turn.ts, inside an import cycle, so a table read at load time can still be undefined (a test pins it to the table).
+export const EASTERN_EUROPE_VALUE = 25;
 /** TODO(verify) MC13, spec 15 R12: no chart row means no new army. */
 export const MC13_EASTERN_EUROPE_ARMY = [] as const;
 /** TODO(verify) MC13, spec 15 R12: explicit null overrides previous and starting control. */

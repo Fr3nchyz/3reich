@@ -36,6 +36,7 @@ import { CTX } from "./helpers";
 // list is not empty and exactly the right side acts; the computer never stalls at the new prompt; the recorded actions replay to the same state.
 // Since spec 17 (ticket 17-1) the computer here never uses a Russian loss again, neither rebuilding it nor taking it in the Free Siberian Transfer (`withoutRussianRebuilds`, legal choices): with Russia rebuilding, no game reaches the offer.
 // Spec 09 R9 keeps displaced planes alive: seeds 3 and 5 no longer offered surrender; with Attrition live (ticket 16-4 wiring) seeds 1 and 8 stopped offering, 5 and 15 started: the games below use 5, 10, 13 and 15, and 3 and 4 for no offer. Ticket 15-5 (conquered income) moved the games again: 10, 11, 15 and 26 offered (5 and 13 no longer did). Ticket 16-13 (the computer exploits) moved them once more: 8, 9, 10 and 20 offer now (11, 15 and 26 no longer do). Ticket 15-7 (Germany walks into the sleeping Axis allies, so the computer's armies take other routes) moved them again: 3, 8, 10 and 20 offer now (9 no longer does), and 4 and 5 are the no-offer games. Acceptance/refusal coverage uses other surrendering games; those two seeds are checked separately below. Ticket 15-8 (the Axis allies wake in Summer 1941, so the Axis places four armies and the games differ again): seed 20 no longer offers, so 8 and 10 are the surrendering games (seed 3 stopped offering once the merged wake also gave the allies the wars of Germany).
+// Ticket 15-11b (Eastern Europe is created, German units east of the Partition Line go) moved every 1939 game: Russia now offers in seeds 4, 14 and 15 only (of 1 to 20; it was 8 and 10): the games below use 14 and 15, and 3 and 5 for no offer.
 
 type Choose = NonNullable<Hooks["choose"]>;
 
@@ -89,7 +90,7 @@ function playNow(scenario: ScenarioKey, seed: number, policy: "accept" | "refuse
   return { run, ctx, events, state, seen, at };
 }
 
-describe.each([8, 10])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
+describe.each([14, 15])("a whole computer game, 1939 seed %i, in which Russia offers to surrender", (seed) => {
   const accepted = play("1939", seed, "accept");
   it("ends normally with no anomaly, and the replay equals the final state", () => {
     expect(accepted.run.ended).toBe("game-over");
@@ -127,7 +128,7 @@ describe.each([8, 10])("a whole computer game, 1939 seed %i, in which Russia off
 });
 
 describe("displaced planes change whole-game surrender outcomes (spec 09 R9)", () => {
-  for (const seed of [4, 5]) {
+  for (const seed of [3, 5]) {
     it(`1939 seed ${seed}: survives without a surrender offer, ends normally and replays`, () => {
       const g = play("1939", seed, "accept");
       expect(g.run.ended).toBe("game-over");
@@ -141,7 +142,7 @@ describe("displaced planes change whole-game surrender outcomes (spec 09 R9)", (
 });
 
 describe("the same games with the Axis refusing", () => {
-  for (const seed of [10, 8]) {
+  for (const seed of [14, 15]) {
     it(`1939 seed ${seed}: the offer is refused once, nothing is removed, no second offer, the game ends with no anomaly and replays`, () => {
       const g = play("1939", seed, "refuse");
       expect(g.run.anomalies).toEqual([]);
@@ -154,8 +155,8 @@ describe("the same games with the Axis refusing", () => {
     });
   }
   it("the refused game differs from the accepted one at the answer and not before", () => {
-    const a = play("1939", 10, "accept");
-    const r = play("1939", 10, "refuse");
+    const a = play("1939", 14, "accept");
+    const r = play("1939", 14, "refuse");
     const i = a.run.actions.findIndex((x, k) => JSON.stringify(x) !== JSON.stringify(r.run.actions[k]));
     expect(i).toBe(a.at.answer);
   });
@@ -166,14 +167,14 @@ describe("a refused game in which Russia is then wiped out (hazard 1, R7d)", () 
     const ctx = ctxOf("1939");
     const memory = createMemory();
     const seen: Action[] = [];
-    let state = newGame(SCENARIOS["1939"], 10);
+    let state = newGame(SCENARIOS["1939"], 14);
     for (const a of autoSetup(ctx, state)) state = (applyAction(ctx, state, a) as { state: GameState }).state;
     let wiped = false;
     let conquered: GameEvent | undefined;
     for (let i = 0; i < 3000 && state.phase === "player-turn"; i++) {
       const legal = legalActions(ctx, state);
       expect(legal.length).toBeGreaterThan(0);
-      const decision = chooseWithoutRedeploying(ctx, withoutRussianRebuilds(state), { seed: 10, memory });
+      const decision = chooseWithoutRedeploying(ctx, withoutRussianRebuilds(state), { seed: 14, memory });
       expect(decision).not.toBeNull();
       const refuse = surrenderAsking(state) ? legal.find((x) => x.type === "SURRENDER_ANSWER" && !x.accept)! : null;
       const action = refuse ?? decision!.action;
