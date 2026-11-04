@@ -25,6 +25,8 @@ import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { bindZoom, canChooseStack, lookedHex, nothingSelectedText } from "./ui/zoomControls";
+import { bindSaveFiles, sessionSave } from "./ui/saveFile";
+import type { SaveFile } from "./save/format";
 import { createSavedGames } from "./ui/savedGames";
 import { mountShell, bindSavedGames } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
@@ -58,6 +60,7 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 /** The one game being played; start() replaces it. */
 let session: Session;
 let saveLoading = false;
+let fileStart: SaveFile["start"] = { kind: "new" };
 /** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
 let wasAttacking = false;
 /** Whether it was the player's step 6f at the last draw: the Next bar and the list of stacks are brought into view when it begins. */
@@ -117,6 +120,7 @@ const menu = watchMenu(shell, newSeed);
 function begin(scenario: Scenario, next: Session): void {
   computer.reset();
   watcher.reset();
+  if (session !== next) fileStart = { kind: "new" };
   session = next;
   shell.scenario.value = scenario.id;
   view.focus([]);
@@ -217,6 +221,10 @@ const savedGames = createSavedGames({ store: saveStore, scenarios: SCENARIOS,
   adopt: (next, savedStart) => {
     autosave.setStart(next, savedStart);
     shell.side.value = next.humanSide; menu.refresh(); begin(next.ctx.scenario, next);
+    fileStart = savedStart;
   },
 });
 void bindSavedGames(shell, savedGames, () => { shell.newGame.click(); autosave.arm(); }).init();
+
+bindSaveFiles({ games: savedGames, scenarios: SCENARIOS, watching: () => !!session.watch,
+  current: () => sessionSave(session, version, fileStart) });

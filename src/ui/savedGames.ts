@@ -65,8 +65,9 @@ export function createSavedGames(options: SavedGamesOptions) {
   let generation = 0;
   let pending: Exclude<RestoreResult, { kind: "refused" | "opened" }> | undefined;
   let pendingId: string | undefined;
+  let fileOffer: Exclude<RestoreResult, { kind: "refused" }> | undefined;
   const older = new Set<string>();
-  const cancel = (): void => { generation++; pending = undefined; options.loading(false); };
+  const cancel = (): void => { generation++; pending = undefined; fileOffer = undefined; options.loading(false); };
   const adopt = (result: Exclude<RestoreResult, { kind: "refused" }>): void => {
     const scenario = options.scenarios.find(x => x.id === result.save.scenario)!;
     const next = restoredSession(result, scenario);
@@ -81,7 +82,7 @@ export function createSavedGames(options: SavedGamesOptions) {
     },
     open: async (id: string, progress: NonNullable<RestoreOptions["progress"]>): Promise<RestoreResult> => {
       const token = ++generation;
-      pending = undefined;
+      pending = undefined; fileOffer = undefined;
       options.loading(true);
       try {
         const entry = await (await options.store).get(id);
@@ -100,6 +101,44 @@ export function createSavedGames(options: SavedGamesOptions) {
         return result;
       } catch { return { kind: "refused", code: "damaged", message: "This saved game could not be opened." }; }
       finally { if (token === generation) options.loading(false); }
+    },
+    // Spec 11 A/F/H: external files are restored in isolation and offered before adoption or storage.
+    openFile: async (source: () => Promise<string>, progress: NonNullable<RestoreOptions["progress"]>): Promise<RestoreResult> => {
+      const token = ++generation;
+      pending = undefined; fileOffer = undefined;
+      options.loading(true);
+      try {
+        const raw = await source();
+        if (token !== generation) return { kind: "refused", code: "cancelled", message: "Opening was cancelled." };
+        const read = readSave(raw, options.scenarios);
+        if (!read.ok) return { kind: "refused", code: read.code, message: read.message };
+        const scenario = options.scenarios.find(s => s.id === read.save.scenario)!;
+        const result = await restore(raw, newSession(scenario, read.save.humanSide, read.save.seed).ctx, {
+          ...options.timing, progress, cancelled: () => token !== generation, validateSnapshot: createSnapshotValidator(),
+        });
+        if (token === generation && result.kind !== "refused") fileOffer = result;
+        return result;
+      } catch (error) {
+        return { kind: "refused", code: "file", message: error instanceof Error ? error.message : "This file could not be read." };
+      } finally { if (token === generation && !fileOffer) options.loading(false); }
+    },
+    acceptFile: async (): Promise<string> => {
+      const offer = fileOffer;
+      if (!offer) return "Opening was cancelled.";
+      fileOffer = undefined;
+      adopt(offer); options.loading(false);
+      // Spec 11 E/F: retain an opened import in a free named slot; never replace another game.
+      try {
+        const store = await options.store;
+        const entries = await store.list();
+        if (!entries.ok) return "Game opened, but could not be kept in Saved games. Keep the original file.";
+        const named = entries.value.filter(e => !Object.hasOwn(labels, e.id));
+        if (named.length >= 12) return "Game opened. All 12 saved game slots are full; keep the original file.";
+        let index = 1;
+        while (entries.value.some(e => e.id === `named-${index}`)) index++;
+        if (!(await store.put(`named-${index}`, offer.save)).ok) return "Game opened, but could not be kept in Saved games. Keep the original file.";
+        return "Game opened and added to Saved games.";
+      } catch { return "Game opened, but could not be kept in Saved games. Keep the original file."; }
     },
     acceptRescue: (): boolean => {
       if (!pending) return false;

@@ -258,6 +258,10 @@ button[data-minor] { display: block; text-align: left; width: 100%; }
   #status-column > #status { flex: 1; }
 }
 
+/* Spec 11 E/F: file actions remain available while the saved-entry list redraws. */
+.save-file-controls { border-block: 1px solid #888; padding-block: .5rem; }
+.save-file-controls p { overflow-wrap: anywhere; }
+.save-file-controls p:empty { display: none; }
 /* Spec 16 D2: touch-sized Attrition choices and distinct destination marks. */
 .attrition-card { border: 2px solid #9b3932; border-radius: .5rem; padding: 1rem; margin-block: 1rem; }
 .attrition-card button { min-height: 44px; margin: .2rem; }
