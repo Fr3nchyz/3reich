@@ -1,3 +1,5 @@
+import { exploitOverstackBadges } from "./exploitView";
+import { attritionHexTap } from "./attritionView";
 import { minorHexModel } from "./minorView";
 import { airOf } from "../engine/air-record";
 import { combatOf } from "../engine/combat-record";
@@ -111,12 +113,14 @@ export function hexCard(ctx: GameContext, state: GameState, hex: string): HexCar
   // and sleeping-ally information; established wars retain the ordinary holder line.
   const lines = record?.toPlace || record?.duty ? minor?.lines ?? []
     : minor?.tint ? minor.lines.slice(-1) : [];
+  // Spec 16 D2/R5: show the same current-position refusal reason as the target card.
+  const attrition = attritionHexTap(ctx, state, hex);
   return {
     hex,
     title: title(ctx, hex),
     terrain: terrain(ctx, state, hex),
     // Spec 15 R2/R9/R10 D3/D5: include minor status in the existing visible location line.
-    holder: [holder(ctx, state, hex), ...lines].filter(Boolean).join(" "),
+    holder: [holder(ctx, state, hex), ...lines, exploitOverstackBadges(ctx, state).find((b) => b.hex === hex)?.text, attrition?.reason ?? attrition?.text].filter(Boolean).join(" "),
     counters,
     count: counters.length === 0 ? "No counters here." : `${counters.length} counter${counters.length === 1 ? "" : "s"}`,
   };

@@ -516,3 +516,46 @@ The rescue test's injected validator compares unknown input structurally with th
 known fresh fixture before returning a copy (AER55); it does not pass untrusted
 input to the typed fingerprint function. The autosave test wraps the memory-store
 write with its receiver intact and asserts on the local mock (Parts D/H).
+
+## As built, 11-7
+
+Parts B/D/E sketch 4 now provide Save this game as... in the Saved games sheet:
+Axis or Allies plus the current season/year prefill a labelled, 40-character field.
+Native form submission supports Enter. Names are compared exactly and rendered as
+plain text. An existing named title requires an in-page Replace confirmation;
+Cancel retains the original. The 12-slot cap excludes the three automatic slots;
+replacement works even when full. Damaged named entries remain stored and count
+toward the cap. Storage errors are announced, with quota/unavailable errors also
+under the Saved games button. Watch mode disables Save as (Part J).
+
+At step 10b (Ops 5.49b, Part D), the status panel shows Saved only after a durable
+Turn backup write succeeds and its fingerprint matches the current position.
+The first saved turn in each session also carries the once-per-session file
+reminder (decision 6); redraws of that turn retain it. No blocking prompt or new
+game action is added. Named saves reuse the file-save builder, including restored
+snapshot starts. Browser bindings keep their controls outside the refreshed list,
+restore focus after Cancel/success, and discard pending forms on Close, Escape
+or New game.
+
+No new TODO(verify) ids or provisional defaults. Existing E6/E8 device checks
+remain for ticket 11-12; browser save-flow coverage remains ticket 11-11.
+No engine, computer or data changes: expected effect on computer games is none.
+Fixed-seed hashes and recordings are unchanged.
+
+## As built, 11-11
+
+The existing `tests/e2e/save.spec.ts` covers Part I's browser list: movement and
+Continue, fresh-game autosave rotation, named save/load and confirmed deletion,
+download/picker round trip, corrupt-file refusal, cleared and damaged storage,
+and 44 px touch controls in both tablet orientations. The two-tabs notice remains
+out of scope. No browser tests were weakened or changed for the timer fix.
+
+The Part D autosave defaults now wrap the global timer functions so the browser
+does not receive the timers object as their receiver. Injected timers remain
+supported. A unit regression rejects foreign receivers for both scheduling and
+cancellation, checks debounce reset, and verifies that the deadline is cleared.
+
+The browser bundle builds, but the save-only browser run cannot start in this
+environment: connecting to the local preview server returns EPERM. Mouse and
+touch results remain unverified here. No new verification ids or defaults;
+no engine, computer-game, fixed-seed hash or recording changes.

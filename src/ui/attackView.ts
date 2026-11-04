@@ -1,10 +1,11 @@
+import { exploitAttackHeader } from "./exploitView";
 import type { Action } from "../engine/actions";
 import { attackPreview, defaultAttackers, type AirPlane, type AttackerChip, type AttackPreview, type ResultRow } from "./attackPreview";
 import { attackTargets } from "./attackDraft";
 import { defendersLine, nonDefendersLine, rowLines, toBeatLine } from "./attackText";
 import * as T from "./airText";
 import { airWarningHtml } from "./airView";
-import { atStep7h, attacking } from "./attackTap";
+import { atCombatStep, attacking } from "./attackTap";
 import { choiceHtml } from "./choiceView";
 import { escape } from "./mapGeometry";
 import { resultCardHtml } from "./resultView";
@@ -24,8 +25,8 @@ function listHtml(s: Session, targets: readonly string[]): string {
     const { defence, yours } = rowLines(p);
     return `<li><button type="button" class="attack-row" data-target="${e(t)}" aria-pressed="${s.attack?.target === t}"><span class="row-name">${e(p.targetName)}</span><span class="row-defence">${e(defence)}</span><span class="row-yours">${e(yours)}</span></button></li>`;
   });
-  return `<div class="attacklist"><h2 id="attacks-title">Attacks you can make (${targets.length})</h2>
-      <p class="note">Tap a red dashed hex on the map, or its row here. Each hex can be attacked once a turn.</p>
+  return `<div class="attacklist"><h2 id="attacks-title">${e(exploitAttackHeader(s.state) ?? "Attacks you can make")} (${targets.length})</h2>
+      <p class="note">Tap a red dashed hex on the map, or its row here. ${exploitAttackHeader(s.state) ? "Only exploiting armor may attack here." : "Each hex can be attacked once a turn."}</p>
       <ul class="attack-rows" aria-labelledby="attacks-title">${rows.join("")}</ul></div>`;
 }
 
@@ -78,7 +79,7 @@ function cardHtml(s: Session, p: AttackPreview): string {
   const others = nonDefendersLine(p);
   const problems = p.button.disabled && p.problems.length > 1 ? `<ul class="problems">${p.problems.map((x) => `<li>${e(x)}</li>`).join("")}</ul>` : "";
   return `<section class="attackcard" aria-labelledby="attack-title">
-      <div class="card-head"><h2 id="attack-title" tabindex="-1">Attack on ${e(p.targetName)}</h2><button type="button" id="attack-cancel">Cancel</button></div>
+      <div class="card-head"><h2 id="attack-title" tabindex="-1">${e(exploitAttackHeader(s.state) ?? "Attack")} on ${e(p.targetName)}</h2><button type="button" id="attack-cancel">Cancel</button></div>
       <h3>Defending</h3>
       <p class="def">${e(defendersLine(p))}</p>
       ${beat ? `<p class="why">${e(beat)}</p>` : ""}${others ? `<p class="muted">${e(others)}</p>` : ""}
@@ -103,7 +104,7 @@ export function draftPreview(s: Session): AttackPreview | null {
  */
 export function attackHtml(s: Session, actions: readonly Action[]): string {
   // While the computer chooses the losses of an Exchange the player's result card stays, with no list under the step buttons.
-  if (!attacking(s)) return atStep7h(s) && s.battle ? `<section class="attacks">${resultCardHtml(s)}</section>` : "";
+  if (!attacking(s)) return atCombatStep(s) && s.battle ? `<section class="attacks">${resultCardHtml(s)}</section>` : "";
   const targets = attackTargets(actions);
   const p = draftPreview(s);
   const result = !p && s.battle ? resultCardHtml(s) : "";

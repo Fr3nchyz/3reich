@@ -1,3 +1,4 @@
+import { exploitMovementHtml } from "./exploitBind";
 import type { Action } from "../engine/actions";
 import { hexCard, type CardCounter } from "./hexCard";
 import { escape } from "./mapGeometry";
@@ -95,6 +96,8 @@ function undoHtml(s: Session): string {
  * nothing at any other time (and, with no unit able to move and no move to take back, nothing at all).
  */
 export function moveHtml(s: Session, actions: readonly Action[]): string {
+  const exploit = exploitMovementHtml(s, actions);
+  if (exploit) return exploit;
   if (!takeBackShown(s)) return "";
   const moves = actions.some((a) => a.type === "MOVE");
   if (!moves && !lastMoveLine(s)) return "";

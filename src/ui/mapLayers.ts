@@ -127,6 +127,8 @@ export function svgMarkup(map: MapData, box: Box, showFronts: boolean, hexLayers
       <g class="objective-marks" aria-hidden="true"></g>
       <g class="highlights"></g>
       <g class="minor-placement" aria-hidden="true" pointer-events="none"></g>
+      <g class="attrition-marks" aria-hidden="true" pointer-events="none"></g>
+      <g class="exploit-marks" aria-hidden="true" pointer-events="none"></g>
       <g class="attack-marks" aria-hidden="true"></g>
       <g class="units"></g>
       <g class="unit-marks" aria-hidden="true"></g>

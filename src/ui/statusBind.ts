@@ -1,6 +1,9 @@
+import { bindExploit } from "./exploitBind";
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
 import { winterKey } from "../engine/winter-record";
+import { bindAttrition } from "./attritionBind";
+import { bindMinorCards, takeMinorAction } from "./minorCardsBind";
 import { bindMinor } from "./minorBind";
 import { bindAir } from "./airBind";
 import { bindAirMove } from "./airMoveBind";
@@ -9,7 +12,7 @@ import { bindChoice } from "./choiceBind";
 import { bindMove } from "./moveBind";
 import { bindRedeploy } from "./redeployBind";
 import type { Session, SetupView, TapMode } from "./session";
-import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSiberian, pickSpec, placeInBox, setMode, takeAction, takeSiberian, undoLast } from "./sessionActions";
+import { buildInBox, closeLook, fillRest, finishOwner, pickBuild, pickSiberian, pickSpec, placeInBox, setMode, takeSiberian, undoLast } from "./sessionActions";
 import { turnKey } from "../engine/victory";
 
 /** Click handlers for the buttons statusView draws. Each one changes the session, then calls `redraw`. */
@@ -31,7 +34,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   const on = <T extends HTMLElement>(selector: string, handler: (el: T) => void) =>
     root.querySelectorAll<T>(selector).forEach((el) => el.addEventListener("click", () => { handler(el); redraw(); }));
 
-  on<HTMLButtonElement>("button[data-action]", (b) => takeAction(s, actions[Number(b.dataset.action)]!));
+  on<HTMLButtonElement>("button[data-action]", (b) => takeMinorAction(s, actions[Number(b.dataset.action)]!));
   on<HTMLButtonElement>("button[data-winterwhy]", (b) => { s.foldOpen = true; s.toast = b.title; }); // the greyed Offensive Option: a tap says why (the winter, ticket 14-13)
   on("#winter-ok", () => { s.winterSeen = winterKey(s.state); });
   on<HTMLButtonElement>("button[data-mode]", (b) => setMode(s, b.dataset.mode as TapMode));
@@ -42,6 +45,9 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   on<HTMLButtonElement>("button[data-siberian-city]", (b) => takeSiberian(s, b.dataset.siberianCity!));
   on<HTMLButtonElement>("button[data-box]", (b) => { if (owner) placeInBox(s, owner, spec, b.dataset.box as OffMapBox); });
   bindMinor(root, s, actions, redraw);
+  bindMinorCards(root, s, redraw);
+  bindAttrition(root, s, redraw);
+  bindExploit(root, s, redraw);
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
   bindAirMove(root, s, redraw);

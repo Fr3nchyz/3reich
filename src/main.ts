@@ -1,3 +1,4 @@
+import { exploitTap } from "./ui/exploitBind";
 import "./style.css";
 import "./attack.css";
 import "./move.css";
@@ -13,6 +14,8 @@ import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
 import { describeHex, describeUnits } from "./ui/format";
 import type { MapHex } from "./engine/map";
+import { attritionTap } from "./ui/attritionBind";
+import { observeMinorCards, previewMinorMove } from "./ui/minorCardsBind";
 import { minorTap } from "./ui/minorBind";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
@@ -24,7 +27,9 @@ import { captureFocus, restoreFocus } from "./ui/focusKeep";
 import { captureLog, restoreLog } from "./ui/logView";
 import { bindOverlay } from "./ui/overlayToggle";
 import { bindZoom, canChooseStack, lookedHex, nothingSelectedText } from "./ui/zoomControls";
-import { createSavedGames } from "./ui/savedGames";
+import { bindSaveFiles, sessionSave } from "./ui/saveFile";
+import type { SaveFile } from "./save/format";
+import { bindSaveAs, createSavedGames } from "./ui/savedGames";
 import { mountShell, bindSavedGames } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
@@ -45,7 +50,7 @@ import { attacking } from "./ui/attackTap";
 import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
-import { statusHtml } from "./ui/statusView";
+import { statusHtml, turnBackupSaved } from "./ui/statusView";
 import { bindEnd, revealEnd, revealSurrender, revealWinter, syncObjectives } from "./ui/endBind";
 
 import { createAutosave, bindAutosaveLifecycle } from "./ui/autosave";
@@ -57,6 +62,7 @@ const SCENARIOS: Scenario[] = [SCENARIO_1939, SCENARIO_CAMPAIGN, SCENARIO_1942, 
 /** The one game being played; start() replaces it. */
 let session: Session;
 let saveLoading = false;
+let fileStart: SaveFile["start"] = { kind: "new" };
 /** Whether the player was at step 7h with attacks to make at the last draw: the panel scrolls to the list when it begins (spec 07, part D). */
 let wasAttacking = false;
 /** Whether it was the player's step 6f at the last draw: the Next bar and the list of stacks are brought into view when it begins. */
@@ -70,9 +76,16 @@ const computer = createComputerLoop(() => session, () => render());
 const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 // Spec 11 Parts C/D: always-on autosave; notices stay outside the game state.
+let committedBackup: SaveFile | undefined;
+const reminded = new WeakMap<Session, string>();
 const saveStore = openSaveStore().then(({ store, error }) => {
   if (error) document.getElementById("save-notice")!.textContent = "Saves are not kept in this browser window. Use Save to a file.";
-  return store;
+  return { ...store, put: async (id: string, save: SaveFile) => {
+    const result = await store.put(id, save);
+    // Spec 11 D: a queued write is not yet a Saved notice; wait for durable commit.
+    if (result.ok && store.persistent && id === "turn-backup") { committedBackup = save; render(); }
+    return result;
+  } };
 });
 const autosave = createAutosave({ store: saveStore, gameVersion: version, onError: error => {
   document.getElementById("save-notice")!.textContent = error.code === "quota"
@@ -81,8 +94,14 @@ const autosave = createAutosave({ store: saveStore, gameVersion: version, onErro
 } });
 bindAutosaveLifecycle(autosave);
 const view = renderMap(shell.map, MAP, {
-  onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); if (!minorTap(session, h.id)) tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
+  onHover: (h) => { if (h) shell.info.textContent = hexText(h); previewMinorMove(shell.status, session, h?.id); },
+  onHexClick: (h) => {
+    shell.info.textContent = hexText(h);
+    const attrition = exploitTap(session, h.id) || attritionTap(session, h.id);
+    if (!attrition && !minorTap(session, h.id)) tapHex(session, h);
+    render();
+    if (!attrition && !session.moveChosen && !session.redeploy) revealCard(shell.status);
+  },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
@@ -110,6 +129,7 @@ const menu = watchMenu(shell, newSeed);
 function begin(scenario: Scenario, next: Session): void {
   computer.reset();
   watcher.reset();
+  if (session !== next) fileStart = { kind: "new" };
   session = next;
   shell.scenario.value = scenario.id;
   view.focus([]);
@@ -149,6 +169,7 @@ function takeOverAs(side: Side): void {
 }
 
 function render(): void {
+  observeMinorCards(session);
   autosave.observe(session); // Spec 11 Part D: observe accepted actions before the next computer slice.
   normaliseMode(session);
   const setup = setupView(session);
@@ -158,7 +179,9 @@ function render(): void {
   const mark = captureLog(shell.status);
   const focus = captureFocus(shell.status);
   const watchPanel = shell.status.querySelector<HTMLElement>(".watch-panel");
-  shell.status.innerHTML = statusHtml(session, setup, actions);
+  const saved = turnBackupSaved(session, committedBackup);
+  if (saved && !reminded.has(session)) reminded.set(session, committedBackup!.fingerprint);
+  shell.status.innerHTML = statusHtml(session, setup, actions, saved, saved && reminded.get(session) === committedBackup!.fingerprint);
   keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
@@ -210,6 +233,13 @@ const savedGames = createSavedGames({ store: saveStore, scenarios: SCENARIOS,
   adopt: (next, savedStart) => {
     autosave.setStart(next, savedStart);
     shell.side.value = next.humanSide; menu.refresh(); begin(next.ctx.scenario, next);
+    fileStart = savedStart;
   },
 });
 void bindSavedGames(shell, savedGames, () => { shell.newGame.click(); autosave.arm(); }).init();
+
+bindSaveFiles({ games: savedGames, scenarios: SCENARIOS, watching: () => !!session.watch,
+  current: () => sessionSave(session, version, fileStart) });
+
+bindSaveAs({ games: savedGames, watching: () => !!session.watch,
+  current: () => sessionSave(session, version, fileStart) });
