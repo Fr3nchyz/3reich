@@ -19,9 +19,15 @@ export function atStep7h(s: Session): boolean {
   return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7h" && !s.watch;
 }
 
+/** Spec 16 D3/R13: the same attack and post-battle flow also serves Exploitation. */
+export function atCombatStep(s: Session): boolean {
+  const p = s.state.position;
+  return atStep7h(s) || (s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7o" && !s.watch);
+}
+
 /** Whether the player may make an attack now: step 7h of a Player Turn that is theirs, and not a watched game. */
 export function attacking(s: Session): boolean {
-  return atStep7h(s) && !computerToMove(s);
+  return atCombatStep(s) && !computerToMove(s);
 }
 
 /** The legal actions for the attack flow: none unless the player may attack now. */
@@ -37,7 +43,7 @@ export const targetsNow = (s: Session): string[] => attackTargets(attackActions(
 export function normaliseAttack(s: Session, actions?: readonly Action[]): void {
   if (!attacking(s)) {
     s.attack = null;
-    if (s.battle && (s.battle.turn !== turnKey(s.state) || !atStep7h(s))) s.battle = null;
+    if (s.battle && (s.battle.turn !== turnKey(s.state) || !atCombatStep(s))) s.battle = null;
     return;
   }
   if (s.battle && s.battle.turn !== turnKey(s.state)) s.battle = null;

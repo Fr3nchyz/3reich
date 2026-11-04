@@ -1,7 +1,7 @@
 import { legalActions, type Action } from "../engine/actions";
 import { turnKey } from "../engine/combat-record";
 import { advanceModel, advanceOffers, defaultAdvance } from "./advanceOptions";
-import { atStep7h, attacking } from "./attackTap";
+import { atCombatStep, attacking } from "./attackTap";
 import { lossModel, ownPending } from "./lossOptions";
 import { run, type Session } from "./session";
 
@@ -127,7 +127,7 @@ function showResult(s: Session): void {
 
 /** The card that needs the keyboard focus now, if its heading has not had it yet (a key such as "losses:M35" or "advance:M35"); marks it as seen. */
 export function unseenChoice(s: Session): string | null {
-  if (!atStep7h(s)) return null;
+  if (!atCombatStep(s)) return null;
   const loss = lossKeyOf(s);
   const first = loss ? undefined : openOffers(s, actionsNow(s))[0];
   const key = loss ? `losses:${loss}` : first ? `advance:${first}` : null;

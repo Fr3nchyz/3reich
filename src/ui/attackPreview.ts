@@ -1,3 +1,4 @@
+import { exploitAttackers, EXPLOIT_IGNORES_HEX_CAP } from "../engine/exploit-action";
 import { ADVANCE_AFTER_COMBAT, ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, isEnemy, isGroundCombatUnit, lonersAt, neighborIds } from "../engine/attack-rules";
 import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
 import { combatOf } from "../engine/combat-record";
@@ -143,6 +144,8 @@ const NONE_CHOSEN = "No unit is chosen to attack.";
 
 const atStep7h = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && s.position.step === "7h";
 
+const exploiting = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && s.position.step === "7o";
+
 interface Candidate {
   unit: Unit;
   reason: string | null;
@@ -151,10 +154,11 @@ interface Candidate {
 /** Every ground unit of the side to move that stands next to the target, free to attack or with the reason it cannot. */
 function candidatesFor(ctx: GameContext, state: GameState, target: string): Candidate[] {
   const spent = combatOf(state).attacked;
-  return attackerPool(ctx, state, state.activeSide, [])
+  // Spec 16 D3/R13: use the engine's exploiting pool and independent used list.
+  return (exploiting(state) ? exploitAttackers(ctx, state) : attackerPool(ctx, state, state.activeSide, []))
     .filter((u) => neighborIds(ctx, u.at).includes(target))
     .map((unit): Candidate => {
-      if (spent.includes(unit.id)) return { unit, reason: "has already attacked this turn" };
+      if (!exploiting(state) && spent.includes(unit.id)) return { unit, reason: "has already attacked this turn" };
       if (!crossable(ctx, unit.at, target)) return { unit, reason: "cannot attack across the hexside between the two hexes" };
       // The listing of `legalActions` only holds units that meet an enemy here, so a unit at war with nobody in the hex is not offered.
       if (defendersAt(state, [unit], target).length === 0 && lonersAt(state, [unit], target).length === 0) return { unit, reason: noTargetReason(state, unit, target) };
@@ -219,11 +223,11 @@ function describeNumbers(ctx: GameContext, state: GameState, attackers: Unit[], 
 /** The problems that stop any attack on this hex now (the sentences of spec 07 part A). */
 function hexProblems(ctx: GameContext, state: GameState, target: string, cands: Candidate[]): string[] {
   const rec = combatOf(state);
-  if (!atStep7h(state)) return ["Attacks are made at step 7h."];
+  if (!atStep7h(state) && !exploiting(state)) return ["Attacks are made at step 7h."];
   if (rec.pending) return ["An Exchange is waiting for its losses to be chosen first."];
-  if (ONE_ATTACK_PER_HEX && rec.targets.includes(target)) return ["This hex has already been attacked this turn."];
+  if (ONE_ATTACK_PER_HEX && !(exploiting(state) && EXPLOIT_IGNORES_HEX_CAP) && rec.targets.includes(target)) return ["This hex has already been attacked this turn."];
   const front = ctx.map.hexes[target]?.front;
-  if (front && !frontAllowsAttack(ctx, state, state.activeSide, front)) return [`Your side may not attack on the ${front} front now.`];
+  if (front && !frontAllowsAttack(ctx, state, state.activeSide, front, exploiting(state))) return [`Your side may not attack on the ${front} front now.`];
   if (cands.length === 0) return ["None of your units that have not attacked is next to this hex."];
   const here = Object.values(state.units).filter((u) => u.at === target);
   if (here.length > 0 && !here.some((h) => cands.some((c) => isEnemy(state, c.unit.owner, h.owner)))) return [`You are not at war with ${OWNER_NAMES[here[0]!.owner]}.`];
@@ -334,6 +338,6 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
     modifiers: [],
     problems,
     button: buttonFor(place, chosen, numbers, sweep, loners, moving, problems),
-    oneTry: ONE_ATTACK_PER_HEX ? "One try: this hex cannot be attacked again this turn." : null,
+    oneTry: ONE_ATTACK_PER_HEX && !exploiting(state) ? "One try: this hex cannot be attacked again this turn." : null,
   };
 }

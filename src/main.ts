@@ -1,3 +1,4 @@
+import { exploitTap } from "./ui/exploitBind";
 import "./style.css";
 import "./attack.css";
 import "./move.css";
@@ -88,7 +89,7 @@ const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
   onHexClick: (h) => {
     shell.info.textContent = hexText(h);
-    const attrition = attritionTap(session, h.id);
+    const attrition = exploitTap(session, h.id) || attritionTap(session, h.id);
     if (!attrition && !minorTap(session, h.id)) tapHex(session, h);
     render();
     if (!attrition && !session.moveChosen && !session.redeploy) revealCard(shell.status);
