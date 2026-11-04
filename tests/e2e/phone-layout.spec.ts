@@ -45,8 +45,11 @@ test("focusing a control below the map scrolls it clear of the sticky map", asyn
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const first = page.locator("#status button:visible").first();
   await first.focus();
+  // Ticket 11-6 (#289) adds header controls: the dock can still be below the header on the first focus.
+  // Scrolling pins it at a different y; compare the control with the dock at the same instant.
+  const pinnedDock = (await page.locator(".map-dock").boundingBox())!;
   const again = (await first.boundingBox())!;
-  expect(again.y).toBeGreaterThanOrEqual(dock.y + dock.height - 1);
+  expect(again.y).toBeGreaterThanOrEqual(pinnedDock.y + pinnedDock.height - 1);
 });
 
 for (const [width, height] of [[360, 640], [844, 390]] as const) {
