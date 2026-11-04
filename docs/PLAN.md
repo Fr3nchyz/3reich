@@ -12,9 +12,9 @@ Written 2026-10-17 from the specs (09, 11, 12), `docs/ROADMAP.md` and `docs/PROG
 
 ## Where we are
 
-The ground war is playable on the iPad: set up, declare war, build, grants, move (choosing units of a stack), attack with an odds preview, losses, advance. Air support in attacks works. The computer plays either side and can play itself. A game now ends with a result (an Objectives count at the last turn), shown on the screen: a score line under the turn line, a "Victory and objectives" card, marks on the map for who holds each Objective, and a result card when the game ends. The Russian winter is in the game (tickets 14-11 to 14-13): in the first winter of the German-Russian war the game rolls four dice and shows them on a card, Russia may sometimes put the winter off a year, and for that one Game Turn the Axis defence in Russia is not doubled and the Axis cannot take an Offensive Option in the East, with a banner on the turn line and the Offensive button greyed. Germany, Italy and Britain are conquered when an enemy holds their capital through their own Combat Phase (and in the 1944 scenario and the Campaign that can end the game); Poland and the other minor countries fall with their capital, and France falls with Paris and Vichy France appears (ticket 14-7); the Axis capture of Moscow or Leningrad moves 15 BRPs from Russia to Germany, once for each city, and every year while held; a weak Russia offers to surrender and the Axis person answers on a card; the Allies take free Russian units at the Free Siberian Transfer; the computer answers every one of these prompts. Nothing is saved, and fleets, supply penalties, strategic warfare and Italy's surrender are not built. Roughly 40 percent of a complete game exists (a judgement, not a measurement).
+The ground war is playable on the iPad: set up, declare war, build, grants, move (choosing units of a stack), attack with an odds preview, losses, advance. Air support in attacks works. The computer plays either side and can play itself. A game now ends with a result (an Objectives count at the last turn), shown on the screen: a score line under the turn line, a "Victory and objectives" card, marks on the map for who holds each Objective, and a result card when the game ends. The Russian winter is in the game (tickets 14-11 to 14-13): in the first winter of the German-Russian war the game rolls four dice and shows them on a card, Russia may sometimes put the winter off a year, and for that one Game Turn the Axis defence in Russia is not doubled and the Axis cannot take an Offensive Option in the East, with a banner on the turn line and the Offensive button greyed. Germany, Italy and Britain are conquered when an enemy holds their capital through their own Combat Phase (and in the 1944 scenario and the Campaign that can end the game); Poland and the other minor countries fall with their capital, and France falls with Paris and Vichy France appears (ticket 14-7); the Axis capture of Moscow or Leningrad moves 15 BRPs from Russia to Germany, once for each city, and every year while held; a weak Russia offers to surrender and the Axis person answers on a card; the Allies take free Russian units at the Free Siberian Transfer; the computer answers every one of these prompts. Save/load update 2026-11-04: autosave, named saves and JSON files are wired, with verification gaps in section C. Fleets, supply penalties, strategic warfare and Italy's surrender are not built. Roughly 40 percent of a complete game exists (a judgement, not a measurement).
 
-**Fleets so far (updated 2026-10-21).** Tickets 12-0 to 12-4 are built: port facts and sea routes, the naval record, the rules of sea supply, the designation action at steps 6e and 9f, and now a fleet in a captured port moves to the nearest friendly port with room (and Malta, Suda Bay and Famagusta hold 9). Supply penalties are still off, so only the last is visible in play: a fleet is no longer destroyed when its port is taken, and the automatic setups of 1942 and 1944 no longer put 18 and 36 naval factors in Malta. Next: 12-5, 12-6, 12-8, then the gate 12-7. Save and load stays blocked until the playtest. **Is it playable?** Yes: the guide `docs/PLAYTEST-FR.md` describes what to try.
+**Fleets so far (updated 2026-10-21).** Tickets 12-0 to 12-4 are built: port facts and sea routes, the naval record, the rules of sea supply, the designation action at steps 6e and 9f, and now a fleet in a captured port moves to the nearest friendly port with room (and Malta, Suda Bay and Famagusta hold 9). Supply penalties are still off, so only the last is visible in play: a fleet is no longer destroyed when its port is taken, and the automatic setups of 1942 and 1944 no longer put 18 and 36 naval factors in Malta. Next: 12-5, 12-6, 12-8, then the gate 12-7. Save and load is now wired; spec 11 records the remaining restore, browser and owner-device checks. **Is it playable?** Yes: the guide `docs/PLAYTEST-FR.md` describes what to try.
 
 ## The road to Beta, in plain words (2026-10-21)
 
@@ -29,7 +29,7 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 | 2. Minor countries (spec 15) | Poland, Norway, the Low Countries and the Balkans exist as countries that can be attacked, join a side, and give or cost money | 17 |
 | 3. Ground rules still missing (spec 16) | attrition, exploitation (breakthrough), redeploying units by rail, fortress changes, the Offensive Option | 24 |
 | 4. Fleets Release I (spec 12) | supply by sea, so units on islands and cut-off coasts are not abandoned (see below) | 4 left (12-5, 12-6, 12-7, 12-8) |
-| 5. Save and load (spec 11) | close the page and come back; waits for your playtest | 13 |
+| 5. Save and load (spec 11) | autosave, named saves and files built; verification gaps remain | 13 |
 | 6. The computer | defends Berlin, stops stalling, makes the choices it skips today | 3 |
 | plus 09-5 (planes in a captured hex) and the air docs | | 2 |
 
@@ -41,7 +41,7 @@ The ground war is playable on the iPad: set up, declare war, build, grants, move
 
 **None of these four is visible to Frank until the switch is turned on, and the switch also needs the computer to defend Berlin.** They are rule fidelity, not game feel.
 
-**Recommended order (changed from before).** Do group 1 first, starting with the end-of-game result (14-1 to 14-4: four tickets), because a game that can end is the biggest step toward something Frank can really play. Then group 1b (spec 17, lost units come back; added 2026-10-23, once you have reviewed the spec), then groups 3 and 2 (the rules that change how a ground war plays), then the computer fixes, then the rest of fleets and the supply switch, then save and load once you have played.
+**Recommended order (changed from before).** Do group 1 first, starting with the end-of-game result (14-1 to 14-4: four tickets), because a game that can end is the biggest step toward something Frank can really play. Then group 1b (spec 17, lost units come back; added 2026-10-23, once you have reviewed the spec), then groups 3 and 2 (the rules that change how a ground war plays), then the computer fixes, then the rest of fleets and the supply switch, then the remaining save/load verification in section C.
 
 **How the cost comes down.** Small tickets go to the cheap model (`grunt`) with the automatic gates as the check; a review round is spent only on medium and large engine changes; the browser tests run nightly, not on every change (see the CI file).
 
@@ -116,23 +116,23 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 
 Release I: 9 tickets (5 M, 4 S). Release II: 6 (3 M, 2 L, 1 S). Release III: 3 M. Release IV: 3 (1 M, 2 L).
 
-## C. Save and load (spec 11): not started on purpose, until you have played
+## C. Save and load (spec 11): implementation present, verification incomplete (2026-11-04)
 
 | Ticket | What it gives you | Size | Status |
 |---|---|---|---|
-| 11-1 Format, validation, fingerprint | | M | Waits for your playtest |
-| 11-2 Restore | replay a game to where it stood | M | Waits |
-| 11-3 Record every game | | S | Waits |
-| 11-4 Save store (IndexedDB) | | M | Waits |
-| 11-5 Autosave | the game saves itself as you play | M | Waits |
-| 11-6 Continue card and Saved games | "Continue" on opening, a list of saves | M | Waits |
-| 11-7 Save as, and the step 10b hint | | S | Waits |
-| 11-8 Save file and open file | share sheet, Files app | M | Waits |
-| 11-9 Open a recording | optional | S | Waits |
-| 11-10 Test pack | all four scenarios, damaged and old saves | M | Waits |
-| 11-11 Browser tests | | M | Waits |
-| 11-12 iPad check | by hand, on a real iPad | S | Waits |
-| 11-13 Docs | | S | Last |
+| 11-1 Format, validation, fingerprint | | M | Built; AER52–55 remain provisional |
+| 11-2 Restore | replay a game to where it stood | M | Built and wired; snapshot screening limits remain |
+| 11-3 Record every game | | S | Built; browser memory integration remains open (AER53) |
+| 11-4 Save store (IndexedDB) | | M | Built and wired |
+| 11-5 Autosave | the game saves itself as you play | M | Built; default timer receiver regression covered |
+| 11-6 Continue card and Saved games | "Continue" on opening, a list of saves | M | Built; rescue and memory limits in spec 11 |
+| 11-7 Save as, and the step 10b hint | | S | Built |
+| 11-8 Save file and open file | share sheet, Files app | M | Built; real-device share/download unverified (E8) |
+| 11-9 Open a recording | optional | S | Optional, not built; format 1 is refused |
+| 11-10 Test pack | all four scenarios, damaged and old saves | M | Present; eight expected failures and one pending test |
+| 11-11 Browser tests | | M | Present; mouse/touch run blocked by preview listen EPERM; optional two-tabs notice not built |
+| 11-12 iPad check | by hand, on a real iPad | S | Open — owner-manual on a real iPad |
+| 11-13 Docs | | S | Docs updated; remaining gaps recorded |
 
 13 tickets: 8 M, 5 S.
 
@@ -232,7 +232,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 
 - **Planes and fleets in a captured city are displaced:** they move to the nearest friendly base or port, and are lost only if none is in reach. Owner, 2026-10-15 (spec 09, decision D1). Tickets 09-5 and 12-4, ready to build. What Frank remembers of the DOS game would only confirm it.
 - **Two milestones, Beta then Release 1**, as above. Owner, 2026-10-17.
-- **Order of work:** the owner follows the project manager's lead. Your playtest now; meanwhile finish the air screens (09-14 rest, 09-13, 09-16) and write the specs in section D; then fleets Release I and the supply switch; then save and load.
+- **Order of work:** the owner follows the project manager's lead. Your playtest now; meanwhile finish the air screens (09-14 rest, 09-13, 09-16) and write the specs in section D; then fleets Release I and the supply switch; finish the save/load checks listed in section C.
 - **Fleets spec (DF-1, DF-2, DF-3), the gate bound and Malta:** the owner had no view, so the project manager takes the recommended answers, which can be changed at any time:
   - DF-1: build fleets in the order I supply by sea, II fleet movement, III air against ships, IV naval missions. Only Release I is in Beta.
   - DF-2: supply penalties go on only after a measured test, never by editing the switch alone. The bound: no scenario may lose more than about 10 percent of the objectives held with the penalties off.
