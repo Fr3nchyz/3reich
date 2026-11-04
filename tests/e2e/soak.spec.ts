@@ -79,10 +79,12 @@ test("random play at phone size: every scenario, both sides, new games between",
         const turn = await turnLine();
         if (/undefined|NaN|\[object/.test(await page.locator("body").innerText())) problems.push(`${tag}: odd text on the page at "${turn}"`);
         const step = /step (\S+)/.exec(turn)?.[1];
-        const fold = page.locator("details.declarations summary");
+        // Ticket 15-15b (#287), spec 15 D1: Small countries is a separate fold without action buttons.
+        const fold = page.locator("details.declarations").filter({ has: page.locator("button[data-action]") }).first();
         if ((step === "1" || step === "9a") && rnd() < 0.5 && (await fold.count())) {
-          await fold.first().click();
-          const buttons = page.locator("details.declarations button[data-action]");
+          if ((await fold.getAttribute("open")) === null) await fold.locator("summary").click();
+          await expect(fold).toHaveAttribute("open", "");
+          const buttons = fold.locator("button[data-action]");
           await buttons.nth(Math.floor(rnd() * (await buttons.count()))).click();
         } else if (step === "8b" && rnd() < 0.8 && (await page.locator("button[data-build]").count())) {
           const chips = page.locator("button[data-build]");
@@ -94,10 +96,18 @@ test("random play at phone size: every scenario, both sides, new games between",
           if (await toast()) problems.push(`${tag}: toast after a build tap: ${await toast()}`);
           if ((await page.locator("g.units > g").count()) > before) builds++;
         }
+        // Ticket 15-15b (#287), spec 15 R3/D2: newly declared minors must place their forces at step 2.
+        while (await page.locator("#minor-auto").count()) {
+          await page.locator("#minor-auto").click();
+          await expect(page.locator("#minor-done")).toBeEnabled();
+          await page.locator("#minor-done").click();
+        }
         const last = page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last(); // step 8a: the Free Siberian Transfer card's closing button
         if (!(await last.count())) { problems.push(`${tag}: no move-on button at "${turn}"`); break; }
         const label = (await last.innerText()).trim();
         await last.click();
+        // Ticket 15-16b (#295), spec 15 D3: confirm ending combat with an unmet declaration duty.
+        if (await page.locator("#minor-end-combat").count()) await page.locator("#minor-end-combat").click();
         if (await toast()) problems.push(`${tag}: toast after "${label}" at "${turn}": ${await toast()}`);
         if (/^End /.test(label)) { played++; turnsPlayed++; }
       }
