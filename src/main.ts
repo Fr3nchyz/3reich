@@ -28,7 +28,7 @@ import { bindOverlay } from "./ui/overlayToggle";
 import { bindZoom, canChooseStack, lookedHex, nothingSelectedText } from "./ui/zoomControls";
 import { bindSaveFiles, sessionSave } from "./ui/saveFile";
 import type { SaveFile } from "./save/format";
-import { createSavedGames } from "./ui/savedGames";
+import { bindSaveAs, createSavedGames } from "./ui/savedGames";
 import { mountShell, bindSavedGames } from "./ui/shell";
 import { bindStatus } from "./ui/statusBind";
 import { bindBar, bindPanel, drawBar, keepPanel } from "./ui/watchBar";
@@ -49,7 +49,7 @@ import { attacking } from "./ui/attackTap";
 import { unseenChoice } from "./ui/choiceTap";
 import { announceAttack } from "./ui/attackAnnounce";
 import { installE2eLoad } from "./ui/e2eLoad";
-import { statusHtml } from "./ui/statusView";
+import { statusHtml, turnBackupSaved } from "./ui/statusView";
 import { bindEnd, revealEnd, revealSurrender, revealWinter, syncObjectives } from "./ui/endBind";
 
 import { createAutosave, bindAutosaveLifecycle } from "./ui/autosave";
@@ -75,9 +75,16 @@ const computer = createComputerLoop(() => session, () => render());
 const watcher = createWatchLoop(() => session, () => render());
 const shell = mountShell(document.getElementById("app")!);
 // Spec 11 Parts C/D: always-on autosave; notices stay outside the game state.
+let committedBackup: SaveFile | undefined;
+const reminded = new WeakMap<Session, string>();
 const saveStore = openSaveStore().then(({ store, error }) => {
   if (error) document.getElementById("save-notice")!.textContent = "Saves are not kept in this browser window. Use Save to a file.";
-  return store;
+  return { ...store, put: async (id: string, save: SaveFile) => {
+    const result = await store.put(id, save);
+    // Spec 11 D: a queued write is not yet a Saved notice; wait for durable commit.
+    if (result.ok && store.persistent && id === "turn-backup") { committedBackup = save; render(); }
+    return result;
+  } };
 });
 const autosave = createAutosave({ store: saveStore, gameVersion: version, onError: error => {
   document.getElementById("save-notice")!.textContent = error.code === "quota"
@@ -171,7 +178,9 @@ function render(): void {
   const mark = captureLog(shell.status);
   const focus = captureFocus(shell.status);
   const watchPanel = shell.status.querySelector<HTMLElement>(".watch-panel");
-  shell.status.innerHTML = statusHtml(session, setup, actions);
+  const saved = turnBackupSaved(session, committedBackup);
+  if (saved && !reminded.has(session)) reminded.set(session, committedBackup!.fingerprint);
+  shell.status.innerHTML = statusHtml(session, setup, actions, saved, saved && reminded.get(session) === committedBackup!.fingerprint);
   keepPanel(shell.status, watchPanel);
   restoreLog(shell.status, mark);
   restoreFocus(shell.status, focus);
@@ -229,4 +238,7 @@ const savedGames = createSavedGames({ store: saveStore, scenarios: SCENARIOS,
 void bindSavedGames(shell, savedGames, () => { shell.newGame.click(); autosave.arm(); }).init();
 
 bindSaveFiles({ games: savedGames, scenarios: SCENARIOS, watching: () => !!session.watch,
+  current: () => sessionSave(session, version, fileStart) });
+
+bindSaveAs({ games: savedGames, watching: () => !!session.watch,
   current: () => sessionSave(session, version, fileStart) });

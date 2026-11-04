@@ -279,3 +279,8 @@ button[data-minor] { display: block; text-align: left; width: 100%; }
 .minor-income { margin-block: 1rem; }
 .minor-income summary { min-height: 44px; cursor: pointer; padding: .4rem; }
 #minor-intervention-preview:empty { display: none; }
+
+/* Spec 11 E sketch 4: named saves use the sheet's keyboard and touch controls. */
+.save-as-controls input { box-sizing: border-box; min-height: 44px; width: 100%; max-width: 30rem; }
+.save-as-controls label { display: block; }
+.saved-hint { margin-block: .5rem; }

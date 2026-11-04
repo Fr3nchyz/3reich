@@ -14,6 +14,8 @@ export interface SavedGameRow {
   save?: SaveFile;
   problem?: string;
 }
+// Spec 11 D: named slots exclude the three automatic backups.
+export const MAX_NAMED_SAVES = 12;
 const labels: Record<string, string> = { autosave: "Autosave", "turn-backup": "Turn backup", "earlier-game": "Earlier game" };
 
 /** Spec 11 Parts E/H: check each entry independently; damaged entries remain deletable. */
@@ -75,6 +77,23 @@ export function createSavedGames(options: SavedGamesOptions) {
   };
   return {
     cancel,
+    // Spec 11 B/D/E sketch 4: exact title match, explicit replacement, no reserved-slot writes.
+    saveAs: async (save: SaveFile, title: string, replace = false): Promise<"saved" | "replace" | "full" | "invalid" | "quota" | "unavailable"> => {
+      if (title.length > 40) return "invalid";
+      try {
+        const store = await options.store;
+        const entries = await store.list();
+        if (!entries.ok) return entries.code;
+        const named = entries.value.filter(e => !Object.hasOwn(labels, e.id));
+        const match = named.find(e => savedGameRow(e, options.scenarios).save?.title === title);
+        if (match && !replace) return "replace";
+        if (!match && named.length >= MAX_NAMED_SAVES) return "full";
+        let index = 1;
+        while (entries.value.some(e => e.id === `named-${index}`)) index++;
+        const result = await store.put(match?.id ?? `named-${index}`, { ...save, title });
+        return result.ok ? "saved" : result.code;
+      } catch { return "unavailable"; }
+    },
     list: async (): Promise<SavedGameRow[]> => {
       const result = await (await options.store).list();
       if (!result.ok) throw new Error("Saved games could not be read. Play can continue.");
@@ -148,4 +167,80 @@ export function createSavedGames(options: SavedGamesOptions) {
     // Spec 11 E touch flow 7: deletion requires the page's explicit confirmation.
     delete: async (id: string, confirmed: boolean): Promise<boolean> => confirmed && (await (await options.store).delete(id)).ok,
   };
+}
+
+/** Spec 11 E sketch 4: a keyboard form and in-page question, outside the redrawn list. */
+export function bindSaveAs(options: {
+  games: ReturnType<typeof createSavedGames>;
+  current: () => SaveFile;
+  watching: () => boolean;
+  doc?: Document;
+}) {
+  const doc = options.doc ?? document;
+  const content = doc.getElementById("saved-content")!;
+  const controls = doc.createElement("div"); controls.className = "save-as-controls";
+  const form = doc.createElement("form"); form.hidden = true;
+  const label = doc.createElement("label"); label.textContent = "Save this game as...";
+  const input = doc.createElement("input"); input.maxLength = 40; label.append(input);
+  const notice = doc.createElement("p"); notice.setAttribute("role", "status");
+  const question = doc.createElement("div"); question.hidden = true;
+  const prompt = doc.createElement("p"); question.append(prompt);
+  const button = (parent: HTMLElement, text: string, action: () => void): HTMLButtonElement => {
+    const el = doc.createElement("button"); el.type = "button"; el.textContent = text;
+    el.addEventListener("click", action); parent.append(el); return el;
+  };
+  let serial = 0;
+  let pending: { save: SaveFile; title: string } | undefined;
+  const say = (message: string): void => {
+    notice.textContent = message; doc.getElementById("a11y-live")!.textContent = message;
+    if (message.includes("Could not save")) doc.getElementById("save-notice")!.textContent = message;
+  };
+  const reset = (): void => { serial++; pending = undefined; form.hidden = true; question.hidden = true; input.disabled = false; };
+  const launch = button(controls, "Save this game as...", () => {
+    reset(); notice.textContent = "";
+    let save: SaveFile;
+    try { save = options.current(); } catch { say("Could not save this game. Use Save to a file."); return; }
+    const state = save.snapshot;
+    const season = typeof state.season === "string" ? state.season : "spring";
+    input.value = `${save.humanSide === "axis" ? "Axis" : "Allies"}, ${season[0]!.toUpperCase()}${season.slice(1)} ${typeof state.year === "number" ? state.year : ""}`;
+    form.hidden = false; input.focus();
+  });
+  const cancel = (): void => { reset(); launch.focus(); };
+  const write = async (replace: boolean): Promise<void> => {
+    if (!pending) return;
+    const token = ++serial;
+    input.disabled = true; submit.disabled = true; confirm.disabled = true;
+    const result = await options.games.saveAs(pending.save, pending.title, replace);
+    if (token !== serial) return;
+    input.disabled = false; submit.disabled = false; confirm.disabled = false;
+    if (result === "replace") {
+      form.hidden = true; question.hidden = false;
+      prompt.textContent = `A saved game called '${pending.title}' exists. Replace it?`;
+      decline.focus(); return;
+    }
+    if (result === "saved") {
+      reset(); doc.getElementById("savedgames")!.click(); launch.focus(); say("Game saved."); return;
+    }
+    say(result === "full" ? "All 12 saved game slots are full. Delete a saved game or use an existing name."
+      : result === "invalid" ? "Use a name of at most 40 characters."
+      : result === "quota" ? "Could not save: the browser is full. Delete a saved game or save to a file."
+      : "Could not save: storage is unavailable. Use Save to a file.");
+  };
+  const submit = button(form, "Save", () => {});
+  submit.type = "submit";
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    if (submit.disabled) return;
+    try { pending = { save: options.current(), title: input.value }; void write(false); }
+    catch { say("Could not save this game. Use Save to a file."); }
+  });
+  // Spec 11 E: native submission supports Enter as well as a pointer click.
+  button(form, "Cancel", cancel);
+  const confirm = button(question, "Replace", () => { void write(true); });
+  const decline = button(question, "Cancel", cancel);
+  form.prepend(label); controls.append(form, question, notice); content.before(controls);
+  const refresh = (): void => { reset(); submit.disabled = false; confirm.disabled = false; launch.disabled = options.watching(); };
+  for (const id of ["savedgames", "saved-close", "newgame"]) doc.getElementById(id)!.addEventListener("click", refresh);
+  doc.getElementById("saved-sheet")!.addEventListener("cancel", refresh);
+  return { refresh };
 }
