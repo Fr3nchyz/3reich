@@ -1,3 +1,4 @@
+import { escortOptions } from "../engine/sr-escort";
 import type { Action } from "../engine/actions";
 import { escape } from "./mapGeometry";
 import { placeName } from "./names";
@@ -63,7 +64,9 @@ function whereHtml(s: Session, destinations: readonly string[]): string {
 /** The confirm card: what will happen, what the nation will have left, and the buttons. */
 function confirmHtml(s: Session, ids: readonly string[], to: string): string {
   const said = confirmFor(s.ctx, s.state, ids, to);
-  return `<div class="srconfirm" role="group" aria-labelledby="sr-confirm-q"><p id="sr-confirm-q" class="sr-question">${e(said.question)}</p><p class="sr-left">${e(said.left)}</p>
+  const options = ids.length === 1 && s.redeploy?.escort ? escortOptions(s.ctx, s.state, s.state.units[ids[0]!]!).filter(o => o.to === to) : [];
+  const escorts = options.length ? `<p>Sea Escort: the fleet stays in port and is used for this Game Turn.</p><div class="actions controls">${options.map(o => `<button type="button" data-srescort="${e(o.escort)}" aria-pressed="${s.redeploy?.escort === o.escort}">9-factor fleet at ${e(placeName(s.ctx.map, s.state.units[o.escort]!.at))} (${e(o.escort)})</button>`).join("")}</div>` : "";
+  return `<div class="srconfirm" role="group" aria-labelledby="sr-confirm-q"><p id="sr-confirm-q" class="sr-question">${e(said.question)}</p><p class="sr-left">${e(said.left)}</p>${escorts}
       <div class="actions controls"><button type="button" id="sr-confirm">${T.CONFIRM_BUTTON}</button><button type="button" id="sr-change">${T.CHANGE_BUTTON}</button></div></div>`;
 }
 

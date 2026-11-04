@@ -1,3 +1,6 @@
+import { escortOptions } from "../engine/sr-escort";
+import { srProblem } from "../engine/sr-region";
+import { srOf } from "../engine/sr-record";
 import { turnKey } from "../engine/combat-record";
 import type { MapHex } from "../engine/map";
 import { confirmFor, defaultTicks, moverStacks, selectionFor, whyNot, type SrSelection } from "./redeployModel";
@@ -27,6 +30,8 @@ export interface SrChoice {
   focus: boolean;
   /** The fold-out "Where they can go" is open. */
   whereOpen?: boolean;
+  /** Spec 16 R22: fleet chosen for this destination. */
+  escort?: string;
 }
 
 export { atStep9e };
@@ -70,7 +75,7 @@ export function chooseStack(s: Session, hex: string, fromList = false): boolean 
   return true;
 }
 
-const withTicks = (c: SrChoice, ticked: string[]): SrChoice => ({ ...c, ticked, to: null, fresh: false, focus: false });
+const withTicks = (c: SrChoice, ticked: string[]): SrChoice => ({ ...c, ticked, to: null, escort: undefined, fresh: false, focus: false });
 
 /** A unit line: ticked if free, free if ticked. A unit that cannot go is left as it is. */
 export function toggleTick(s: Session, id: string): void {
@@ -109,7 +114,10 @@ export function pickDestination(s: Session, to: string): void {
   else if (!sel.destinations.includes(to)) s.toast = sel.why ?? whyNot(s.ctx, s.state, sel.ticked, to);
   else {
     s.toast = "";
-    s.redeploy = { ...s.redeploy!, to, fresh: false, focus: false };
+    const rec = srOf(s.state);
+    const land = srProblem(s.ctx, s.state, sel.ticked, to, { used: rec.used, redeployed: rec.moved }) === null;
+    const escort = land ? undefined : escortOptions(s.ctx, s.state, s.state.units[sel.ticked[0]!]!).find(o => o.to === to)?.escort;
+    s.redeploy = { ...s.redeploy!, to, escort, fresh: false, focus: false };
   }
 }
 
@@ -126,7 +134,7 @@ export function confirmRedeploy(s: Session): void {
   if (!sel || !to || sel.ticked.length === 0 || !sel.destinations.includes(to)) return;
   const said = confirmFor(s.ctx, s.state, sel.ticked, to);
   const line = `${T.redeployedLine(said.units, said.from, said.to)} ${said.left}`.trim();
-  const action = { type: "SR_UNITS" as const, side: s.state.activeSide, units: sel.ticked, to };
+  const action = { type: "SR_UNITS" as const, side: s.state.activeSide, units: sel.ticked, to, ...(s.redeploy?.escort ? { escort: s.redeploy.escort } : {}) };
   const [before, logLen] = [s.state, s.log.length];
   if (!run(s, action)) return;
   noteRedeploy(s, before, logLen, action, line);
@@ -155,4 +163,13 @@ export function tapToRedeploy(s: Session, h: MapHex): boolean {
   if (selectionNow(s)) pickDestination(s, h.id);
   else s.toast = T.CHOOSE_FIRST;
   return true;
+}
+
+/** Spec 16 R22: only a fleet the engine offers for this unit and destination can be selected. */
+export function chooseEscort(s: Session, escort: string): void {
+  const c = s.redeploy;
+  if (!c?.to || c.ticked.length !== 1) return;
+  const u = s.state.units[c.ticked[0]!];
+  if (u && escortOptions(s.ctx, s.state, u).some(o => o.to === c.to && o.escort === escort))
+    s.redeploy = { ...c, escort };
 }
