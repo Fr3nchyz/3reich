@@ -20,8 +20,8 @@ import { atWar, sideOfPower } from "./war";
  * 11.64). Supply, control and ZOC are not modelled, so a build here is allowed in any hex of the
  * nation's home territory (the countries and zones it controlled at the start of the scenario) that
  * has no enemy ground unit in it or next to it. Also not built: the "rebuilt fleet is unusable for a
- * year" rule (spec 17 R5, ticket 17-3), the home-territory exceptions (East Prussia, Ulster, Sicily; no builds in Corsica) and
- * the builds of Minor-Allies (ticket 15-19).
+ * year" rule (spec 17 R5, ticket 17-3) and the home-territory exceptions (East Prussia, Ulster, Sicily; no builds in Corsica).
+ * An active Minor-Ally's rebuilds are in minors-rebuild-wire.ts (ticket 15-19b).
  *
  * Spec 17 R2: a counter lost in play comes back to its pool (losses.ts) as an entry marked `returned`, with no date, and is bought here like any other,
  * at the chart price and inside the spending limit, as soon as the next step 8b (TODO(verify) RB2), with no other limit (TODO(verify) RB13).
@@ -67,7 +67,7 @@ type BuildAction = Extract<Action, { type: "BUILD" }>;
 
 /**
  * The pools a Major Power builds from at step 8b, with the entries it may take from each: its own, and for Britain the Free French counters that came back
- * (TODO(verify) RB10: Britain pays for them and builds them in Britain; they stay Free French). Ticket 15-19 adds the active Minor-Allies' pools here (RB9).
+ * (TODO(verify) RB10: Britain pays for them and builds them in Britain; they stay Free French). The active Minor-Allies' pools are built through minors-rebuild-wire.ts (ticket 15-19b, RB9).
  */
 export function buildSources(state: GameState, power: PowerId): { pool: ForceOwner; entries: ForceEntry[] }[] {
   const own = { pool: power as ForceOwner, entries: availableBuilds(state, power) };
