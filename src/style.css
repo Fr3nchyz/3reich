@@ -257,3 +257,8 @@ button[data-minor] { display: block; text-align: left; width: 100%; }
   #continue-game { flex-shrink: 0; }
   #status-column > #status { flex: 1; }
 }
+
+/* Spec 11 E/F: file actions remain available while the saved-entry list redraws. */
+.save-file-controls { border-block: 1px solid #888; padding-block: .5rem; }
+.save-file-controls p { overflow-wrap: anywhere; }
+.save-file-controls p:empty { display: none; }
