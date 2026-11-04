@@ -1,5 +1,7 @@
 import type { SaveFile } from "../save/format";
 import { fingerprint } from "../save/fingerprint";
+import { exploitArmorHtml } from "./exploitBind";
+import { atCombatStep } from "./attackTap";
 import type { Action } from "../engine/actions";
 import { initiativeTotals } from "../engine/game";
 import { POWER_NAMES, spendingLimit } from "../engine/nations";
@@ -147,15 +149,18 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   const { folds, rest, winter, surrender, siberian } = turnButtons(actions, s.foldOpen, s.ctx, s.state, siberianShown(s));
   const toast = `<p class="toast" role="status">${s.toast}</p>`;
   // Step 7h: the bar, the message and the cards come first, so the next thing to do is in view; everything else follows.
-  const lead = leadsStatus(s);
+  const lead = leadsStatus(s) || (atCombatStep(s) && !!s.battle);
+  // Spec 16 D3/R13: keep the shared combat bar's closing prompt at the current step.
+  const bar = s.state.position?.part === "player-turn" && s.state.position.step === "7o"
+    ? nextBarHtml(s, actions, rest).replace("finish step 7h", "finish step 7o") : nextBarHtml(s, actions, rest);
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
       ${saved ? `<p class="saved-hint" role="status">Saved.${remind ? " Save to a file now and then to keep a backup outside the browser." : ""}</p>` : ""}
       ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
       ${scoreHtml(s)}${minorCardsHtml(s, actions)}
-      ${attritionHtml(s)}
-      ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${redeployHtml(s, actions)}${airMoveHtml(s)}` : ""}
+      ${attritionHtml(s)}${exploitArmorHtml(s)}
+      ${lead ? `${bar}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${redeployHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
       ${setup ? setupPanel(s, setup) : ""}
       ${lead ? "" : toast}
@@ -165,6 +170,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${frontPrompt(s, actions)}
       ${buildPanel(s, actions)}
       ${minorHtml(s, actions)}
+      ${lead ? "" : moveHtml(s, actions)}
       ${folds}${lead ? "" : `<div class="actions controls">${rest}</div>`}
       ${hexCardHtml(s)}
       ${logHtml(s.log, s.logSides)}

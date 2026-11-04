@@ -1,3 +1,4 @@
+import { exploitOverstackBadges } from "./exploitView";
 import { attritionHexTap } from "./attritionView";
 import { minorHexModel } from "./minorView";
 import { airOf } from "../engine/air-record";
@@ -119,7 +120,7 @@ export function hexCard(ctx: GameContext, state: GameState, hex: string): HexCar
     title: title(ctx, hex),
     terrain: terrain(ctx, state, hex),
     // Spec 15 R2/R9/R10 D3/D5: include minor status in the existing visible location line.
-    holder: [holder(ctx, state, hex), ...lines, attrition?.reason ?? attrition?.text].filter(Boolean).join(" "),
+    holder: [holder(ctx, state, hex), ...lines, exploitOverstackBadges(ctx, state).find((b) => b.hex === hex)?.text, attrition?.reason ?? attrition?.text].filter(Boolean).join(" "),
     counters,
     count: counters.length === 0 ? "No counters here." : `${counters.length} counter${counters.length === 1 ? "" : "s"}`,
   };
