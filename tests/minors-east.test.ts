@@ -7,6 +7,8 @@ import { createEasternEurope, easternEuropeCountryOf, easternEuropeDeclarationPr
 import { MINOR_VALUES } from "../src/engine/minors-rules";
 import { controllerOf } from "../src/engine/control";
 import type { GameState } from "../src/engine/types";
+import { advance } from "../src/engine/turn";
+import { partitionAtTurnEnd } from "../src/engine/minors-east-wire";
 import { CTX } from "./helpers";
 import { at6f, inf } from "./helpers-move";
 
@@ -29,6 +31,7 @@ describe("spec 15 R12: pure Eastern Europe", () => {
     const next = createEasternEurope(state);
     expect(next.countries).toEqual({ ...state.countries, "eastern-europe": { status: "neutral" } });
     expect(EASTERN_EUROPE_VALUE).toBe(25);
+    expect(EASTERN_EUROPE_VALUE).toBe(MINOR_VALUES["eastern-europe"]);
     expect(MINOR_VALUES.poland).toBe(20);
     expect(MINOR_VALUES.rumania).toBe(15);
     expect(MC13_EASTERN_EUROPE_ARMY).toEqual([]);
@@ -113,5 +116,31 @@ describe("spec 15 R12: pure Eastern Europe", () => {
     expect(easternEuropeDeclarationProblem(CTX, conquered, "germany")).not.toBeNull();
     expect(easternEuropeCountryOf(CTX, conquered, "R35")).toBe("eastern-europe");
     expect(easternEuropeDeclarationProblem(CTX, { ...state, wars: [["germany", "eastern-europe"]] } as unknown as GameState, "germany")).not.toBeNull();
+  });
+});
+
+describe("spec 15 R12, 15-11b: the end of Axis Fall 1939", () => {
+  const atEnd = (units: ReturnType<typeof inf>[], tweak: Partial<GameState> = {}): GameState => {
+    const s = at6f(units, "axis", undefined, { year: 1939, season: "fall", ...tweak });
+    return { ...s, position: { part: "player-turn", turn: 1, step: "10b" } };
+  };
+  it("eliminates German units east of the line, creates Eastern Europe and removes eastern Polish units", () => {
+    const state = atEnd([inf("g-east", "germany", "K38"), inf("g-west", "germany", "L37"), inf("p-east", "poland", "J39")]);
+    const next = advance(CTX, state);
+    expect(next.state.units["g-east"]).toBeUndefined();
+    expect(next.state.units["g-west"]).toBeDefined();
+    expect(next.state.units["p-east"]).toBeUndefined();
+    expect(next.state.countries?.["eastern-europe"]).toEqual({ status: "neutral" });
+    expect(next.events.some((e) => e.type === "UNIT_ELIMINATED" && e.unitId === "g-east")).toBe(true);
+  });
+  it("does nothing at the end of the Allied turn, in another season or year, or twice", () => {
+    const g = inf("g-east", "germany", "K38");
+    for (const t of [{ activeSide: "allies" as const }, { season: "summer" as const }, { year: 1940 }]) {
+      const r = partitionAtTurnEnd(CTX, atEnd([g], t));
+      expect(r.state.units["g-east"]).toBeDefined();
+      expect(r.state.countries?.["eastern-europe"]).toBeUndefined();
+    }
+    const once = partitionAtTurnEnd(CTX, atEnd([g])).state;
+    expect(partitionAtTurnEnd(CTX, once).state).toBe(once);
   });
 });

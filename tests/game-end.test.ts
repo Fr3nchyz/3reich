@@ -33,11 +33,11 @@ function playOut(scenario: Scenario, stop?: (s: GameState) => boolean) {
 }
 
 describe("the last turn ends the game with a result", () => {
-  it("1939: nothing is held differently at the end, so the Allies' 23 Objectives are an Allied Decisive Victory; GameState.result and GAME_OVER carry it", () => {
+  it("1939: nothing is held differently at the end, so the Allies' 22 Objectives are an Allied Decisive Victory; GameState.result and GAME_OVER carry it", () => {
     const { state, events } = playOut(SCENARIO_1939);
     expect(state.phase).toBe("game-over");
     expect(state.result).toEqual({
-      winner: "allies", level: "decisive", basis: "objectives", objectives: { axis: 9, allies: 23, nobody: 10 },
+      winner: "allies", level: "decisive", basis: "objectives", objectives: { axis: 9, allies: 22, nobody: 11 }, // ticket 15-11b: an Objective inside Eastern Europe (created at the end of Axis Fall 1939) belongs to nobody (was allies 23, nobody 10)
       at: { year: 1942, season: "summer" }, early: false, siberian: false,
     });
     const over = events.filter((e) => e.type === "GAME_OVER");
