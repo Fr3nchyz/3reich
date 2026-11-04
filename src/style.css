@@ -262,3 +262,14 @@ button[data-minor] { display: block; text-align: left; width: 100%; }
 .save-file-controls { border-block: 1px solid #888; padding-block: .5rem; }
 .save-file-controls p { overflow-wrap: anywhere; }
 .save-file-controls p:empty { display: none; }
+/* Spec 16 D2: touch-sized Attrition choices and distinct destination marks. */
+.attrition-card { border: 2px solid #9b3932; border-radius: .5rem; padding: 1rem; margin-block: 1rem; }
+.attrition-card button { min-height: 44px; margin: .2rem; }
+.attrition-card [aria-pressed="true"] { outline: 3px solid #a66d12; }
+.attrition-hexes { display: flex; flex-wrap: wrap; }
+.attrition-result { font-weight: bold; }
+.attrition-overstack { border: 1px solid currentColor; padding: .4rem; }
+.attrition-marks polygon { fill: none; stroke: #b52b25; stroke-width: 1; }
+.attrition-marks .attrition-target-mark { fill: #b52b2522; stroke-dasharray: 2 1; }
+.attrition-marks .attrition-retreat { fill: #ffd44b44; stroke: #d6a400; }
+.attrition-marks .attrition-move-in { fill: #69a35644; stroke: #387527; }

@@ -13,6 +13,7 @@ import { setupStatus } from "./engine/requirements";
 import type { Scenario, Side } from "./engine/types";
 import { describeHex, describeUnits } from "./ui/format";
 import type { MapHex } from "./engine/map";
+import { attritionTap } from "./ui/attritionBind";
 import { minorTap } from "./ui/minorBind";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
@@ -85,7 +86,13 @@ const autosave = createAutosave({ store: saveStore, gameVersion: version, onErro
 bindAutosaveLifecycle(autosave);
 const view = renderMap(shell.map, MAP, {
   onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
-  onHexClick: (h) => { shell.info.textContent = hexText(h); if (!minorTap(session, h.id)) tapHex(session, h); render(); if (!session.moveChosen && !session.redeploy) revealCard(shell.status); },
+  onHexClick: (h) => {
+    shell.info.textContent = hexText(h);
+    const attrition = attritionTap(session, h.id);
+    if (!attrition && !minorTap(session, h.id)) tapHex(session, h);
+    render();
+    if (!attrition && !session.moveChosen && !session.redeploy) revealCard(shell.status);
+  },
 });
 shell.fronts.addEventListener("change", (e) => view.setFronts((e.target as HTMLInputElement).checked));
 shell.wholeMap.addEventListener("click", () => view.focus([]));
