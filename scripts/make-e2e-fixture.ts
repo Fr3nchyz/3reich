@@ -89,8 +89,8 @@ const warnCtx = { map: MAP, scenario: SCENARIO_1939 };
 let shortfall = 0;
 const [buildSeed, build] = cutAt(1, (st) => {
   const n = st.position?.part === "player-turn" && st.position.step === "8b" && st.activeSide === "allies" ? surrenderShortfall(warnCtx, st) : null;
-  if (n !== null) shortfall = n;
-  return n !== null;
+  if (n !== null && n > 1) shortfall = n; // more than 1, so the browser spec can watch the number fall after one build
+  return n !== null && n > 1;
 }, false);
 console.log("surrender build fixture: seed", buildSeed, ",", build.length, "actions, shortfall", shortfall);
 writeFileSync("tests/e2e/fixtures/surrender-build.json", JSON.stringify({ scenario: SCENARIO_1939.id, seed: buildSeed, shortfall, actions: build }));
