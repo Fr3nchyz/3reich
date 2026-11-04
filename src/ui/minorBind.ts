@@ -6,7 +6,8 @@ import { sideOfOwner } from "../engine/setup";
 import { POWER_NAMES, isGone } from "../engine/nations";
 import { computerToMove } from "./computerPlay";
 import { escape as e, cornersOf, points } from "./mapGeometry";
-import { minorDeclareModel, minorDutyMarks, minorPlacementModel } from "./minorView";
+import { minorDeclareModel, minorPlacementModel } from "./minorView";
+import { dutyChips } from "./minorCards";
 import { refreshMinorMarks } from "./mapView";
 import type { Session } from "./session";
 import { takeAction } from "./sessionActions";
@@ -28,7 +29,7 @@ function placement(s: Session, actions: readonly Action[]) {
 /** Spec 15 R1/R2/R4 D1: inspect every minor, confirm only the supplied legal action. */
 export function minorHtml(s: Session, actions: readonly Action[]): string {
   const d = draft(s);
-  let html = minorDutyMarks(s.state).map((m) => `<p class="minor-duty">${e(m.text)}</p>`).join("");
+  let html = dutyChips(s.state, s.humanSide).map((m) => `<span class="minor-duty" role="status">${e(m.text)}</span>`).join("");
   const powers = !computerToMove(s) && s.state.position?.part === "player-turn" && s.state.position.step === "1"
     ? Object.values(s.state.nations).filter((n) => sideOfOwner(n.id) === s.humanSide && !isGone(n)).map((n) => n.id) : [];
   if (powers.length) html += `<details class="declarations"><summary>Small countries</summary>${powers.map((by) => `<h3>${POWER_NAMES[by]}</h3>${MINOR_COUNTRIES.map((minor) => {

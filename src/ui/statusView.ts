@@ -31,6 +31,7 @@ import { airHtml } from "./airCardView";
 import { airMoveHtml } from "./airMoveView";
 import { endHtml, statusText } from "./endCard";
 import { attritionHtml } from "./attritionBind";
+import { minorCardsHtml, nextYearHtml } from "./minorCardsBind";
 import { minorHtml } from "./minorBind";
 import { scoreHtml } from "./objectivesCard";
 
@@ -143,7 +144,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
     <main>
       <p class="turn">${turnLine(s)}</p>
       ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
-      ${scoreHtml(s)}
+      ${scoreHtml(s)}${minorCardsHtml(s, actions)}
       ${attritionHtml(s)}
       ${lead ? `${nextBarHtml(s, actions, rest)}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${redeployHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}
@@ -151,7 +152,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${lead ? "" : toast}
       ${computerToMove(s) && !s.watch ? `<p class="computer-status" role="status">Computer is playing the ${sideName(computerSide(s))} turn...</p>` : ""}
       <p>Axis BRPs: ${totals.axis} &middot; Allied BRPs: ${totals.allies}</p>
-      ${nationTable(s)}
+      ${nationTable(s)}${nextYearHtml(s)}
       ${frontPrompt(s, actions)}
       ${buildPanel(s, actions)}
       ${minorHtml(s, actions)}
