@@ -213,9 +213,10 @@ describe("step 3: the Axis Offensive Option on the Eastern Front (Ref 28.0)", ()
   });
 });
 
+// Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved every 1939 game: the winter is now postponed in 14 of seeds 1 to 16 (dice); seed 14 is one of the two that play it (with 11, which has no winter battle on Axis defenders in Russia), so the game is seed 14.
 // Ticket 16-20 (the computer redeploys): seed 1 no longer fought a winter battle on Axis defenders in Russia, seed 2 did. Ticket 16-13 (the computer exploits): seed 2 no longer does, seed 3 does.
-describe("whole computer games: the winter in a game the computer plays (1939 seed 3, to its end)", () => {
-  const r = runGame({ scenario: "1939", seed: 3, turns: "end", verify: true });
+describe("whole computer games: the winter in a game the computer plays (1939 seed 14, to its end)", () => {
+  const r = runGame({ scenario: "1939", seed: 14, turns: "end", verify: true });
   it("has no anomaly and the winter starts in Winter 1941", () => {
     expect(r.anomalies).toEqual([]);
     expect(r.final.winter).toMatchObject({ stage: "over", inForce: KEY });

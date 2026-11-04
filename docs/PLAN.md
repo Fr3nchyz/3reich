@@ -182,6 +182,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 15-8 status | | Built (#264); pure slice 15-8a built (#252). |
 | 15-9 status | | Built: 15-9a pure income (#249), 15-9b Year Start wiring (#273). |
 | 15-11 status | | 15-11a pure slice built (#250); 15-11b wired (creation and German elimination at the end of Axis Fall 1939). |
+| 15-14 status | | 15-14-1 pure policy built; 15-14-2 wired (the computer declares on minor countries when the date has come and the duty is feasible, and keeps their price back in builds and Front Options). Moves every 1939, Campaign and 1942 computer game. Left for 15-14: defender placement lines, self-play lines and anomalies. |
 | 15-12 status | | Built (#230). |
 | 15-19 status | | 15-19a pure slice built (#266); wiring pending. |
 | 15-20 status | | 15-20a pure slice built (#265); wiring pending. |
