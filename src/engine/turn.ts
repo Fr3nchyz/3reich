@@ -3,6 +3,7 @@ import type { GameContext } from "./context";
 import { resetSpending } from "./brps";
 import { settleConquests } from "./conquest";
 import { checkMinorDuties } from "./minors-duty";
+import { partitionAtTurnEnd } from "./minors-east-wire";
 import { releaseKept } from "./conquest-kept";
 import { fortressChanges, refreshFortresses } from "./fortress";
 import { eliminateUnsupplied, recordUnsupplied } from "./supply-effects";
@@ -15,7 +16,7 @@ import { hasExploitCombatWork, hasExploitMoveWork } from "./exploit-step";
 import { hasMinorPlaceWork } from "./minors-step";
 import { wakeSleepers } from "./minors-wake";
 import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
-import { legalBuilds } from "./construction";
+import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
@@ -133,7 +134,9 @@ export function advance(ctx: GameContext, state: GameState): Transition {
         return { state: woke.state, events: [...lost.events, ...fell.events, ...offered.events, ...checked.events, ...woke.events] };
       }
       const lapsed = lapsedDesignations(ctx, state); // a sea supply that no longer holds is reported before the units it fed are judged
-      const eliminated = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
+      const eliminated0 = eliminateUnsupplied(ctx, state); // Ref 19.4, 11.74: the Player Turn is over
+      const split = partitionAtTurnEnd(ctx, eliminated0.state); // Ref 29.0: the end of Axis Fall 1939 (spec 15 R12, 15-11b)
+      const eliminated = { state: split.state, events: [...eliminated0.events, ...split.events] };
       // After a refusal, the last Russian factor inside Russia may just have gone (spec 14 R7d, V20); a conquest that decides the game ends it here.
       const russia = settleSoviet(ctx, eliminated.state);
       const ended = { state: russia.state, events: [...eliminated.events, ...russia.events] };
@@ -213,7 +216,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "8a":
       return legalSiberian(ctx, state).length > 0;
     case "8b":
-      return legalBuilds(ctx, state).length > 0;
+      return legalAllBuilds(ctx, state).length > 0;
     case "10a":
       return surrenderAsking(state);
     case "6h":

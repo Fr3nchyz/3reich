@@ -21,7 +21,8 @@ import { applyEliminateOverstack, hasOverstackWork, legalOverstack, OVERSTACK_ST
 import { applyAttrition, ATTRITION_STEPS, attritionRun, legalAttrition } from "./attrition-step";
 import { applyMove, legalMoves } from "./move-action";
 import { applySr, legalSr, SR_STEP } from "./sr-action";
-import { applyBuild, legalBuilds } from "./construction";
+import { applyBuild } from "./construction";
+import { applyMinorBuild, isMinorAllyPool, legalAllBuilds } from "./minors-rebuild-wire";
 import { applyFrontOption, legalFrontOptions } from "./frontoptions";
 import { applyGrant, legalGrants } from "./grants";
 import { applyDeclaration, legalDeclarations } from "./war";
@@ -56,7 +57,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "2") return legalMinorPlaceActions(ctx, state);
   if (step === "3") return legalFrontOptions(ctx, state);
   if (step === "8a") return legalSiberian(ctx, state);
-  if (step === "8b") return legalBuilds(ctx, state);
+  if (step === "8b") return legalAllBuilds(ctx, state);
   if (step === "9a") return legalGrants(ctx, state);
   return [];
 }
@@ -220,7 +221,7 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     case "SIBERIAN_TRANSFER":
       return atStep(state, "8a", "The Free Siberian Transfer is made", () => applySiberian(ctx, state, action));
     case "BUILD":
-      return atStep(state, "8b", "Units are built", () => applyBuild(ctx, state, action));
+      return atStep(state, "8b", "Units are built", () => (isMinorAllyPool(state, action.pool) ? applyMinorBuild(ctx, state, action) : applyBuild(ctx, state, action)));
     case "GRANT_BRPS":
       return atStep(state, "9a", "BRP grants are made", () => applyGrant(ctx, state, action));
     default:

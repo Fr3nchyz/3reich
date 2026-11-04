@@ -1,6 +1,6 @@
 # 11. Save and load: autosave, saved games, a save file
 
-Status: approved 2026-10-15 with the decisions below (nothing built yet); first proposed 2026-10-15. ROADMAP phase 8.5 ("Save, load, autosave, export file") and part of Release 1 ("autosave, save slots and a save file, iPad"). Builds on spec 01 (the steps, step 10b), spec 05 (the computer) and spec 06 (watch mode saves a record file already). Words and sketches only; the build plan (part K) is the next step. Nothing here changes a game rule.
+Status: approved 2026-10-15; implementation checked against this checkout on 2026-11-04. Tickets 11-1 to 11-8 and the 11-10/11-11 test packs are present, with the limitations below. Optional 11-9 is not implemented; 11-12 is owner-manual and open; 11-13 updates these docs. ROADMAP phase 8.5 ("Save, load, autosave, export file") and part of Release 1 ("autosave, save slots and a save file, iPad"). Builds on spec 01 (the steps, step 10b), spec 05 (the computer) and spec 06 (watch mode saves a record file already). Parts A to K describe the approved design; the status table and As built sections distinguish implemented behavior from remaining work. Nothing here changes a game rule.
 
 
 ## Decisions (product owner, 2026-10-15)
@@ -27,7 +27,7 @@ The engine and platform facts (E1 to E8) stay `TODO(verify)`.
 - **Named saved games** (up to 12) and **a save file** (download on iPad to the Files app, or the share sheet; open with a file picker). The file is the real safety net, because Safari may delete stored data.
 - **Stored in the browser's IndexedDB**, on the device only. No account, no sync, no network.
 - **Files are treated as untrusted**: size and length caps, a strict check of every field, a time budget with a progress bar and a Cancel button, nothing is ever run as code, and nothing is written to storage until a load has fully worked.
-- **Open for the owner:** 8 questions (Open questions). **Engine facts to confirm:** 8, marked `TODO(verify)`.
+- **Owner decisions:** the eight choices above are approved. **Engine and platform facts:** E1 to E8 retain the verification limits recorded below.
 
 ## Goal
 
@@ -47,7 +47,7 @@ The engine and platform facts (E1 to E8) stay `TODO(verify)`.
 - **Storage**: the room the browser gives this site. **Evict**: the browser deletes that room's contents.
 - **Home Screen app**: the game added to the iPad Home Screen with Safari's Share > Add to Home Screen.
 
-## What exists today (checked in the code)
+## Before implementation (historical baseline)
 
 | Question | Answer | Where |
 |---|---|---|
@@ -61,7 +61,7 @@ The engine and platform facts (E1 to E8) stay `TODO(verify)`.
 | Step 10b "Save-Game prompt" | A step the engine waits at: the only action there is "End turn". The engine does nothing else with it. What the PC game does at this step is not written down here. | `sequence.ts` (Ops 5.49b), `TODO(verify)` |
 | Take over (watch mode) | Clears `record`, so the new single-player game would have no record. | `watchPlay.ts` `takeOver` |
 
-Measured on `main` (653 and 848 actions; a headless computer-against-computer game to the end of the scenario, seed 1):
+Measured for the original proposal on `main` (653 and 848 actions; a headless computer-against-computer game to the end of the scenario, seed 1):
 
 | Scenario | Record | Snapshot | Replay on a development machine |
 |---|---|---|---|
@@ -312,21 +312,21 @@ Online sync or accounts; cloud storage; undo and redo (the record makes "take ba
 
 Difficulty and size as in earlier specs (S under half a day, M about a day). Files under `src/` stay at 300 lines or fewer. New pure code goes in `src/save/` (no DOM); browser parts in `src/ui/`.
 
-| # | Ticket | Difficulty | Size | Needs | Files |
-|---|---|---|---|---|---|
-| 11-1 | **Format, validation, fingerprint.** Types, strict reader, caps, sorted-key fingerprint, shape check from a fresh game. | medium | M | none | `src/save/format.ts`, `validate.ts`, `fingerprint.ts` (new), tests |
-| 11-2 | **Restore.** Replay in slices with a budget and Cancel, rescue by snapshot, every result as data (opened / rescue / refused + words). | medium | M | 11-1 | `src/save/restore.ts` (new), tests |
-| 11-3 | **Record every game; computer memory out and in.** `record` always on; `takeOver` keeps it; `exportMemory` / `importMemory` in the computer's memory module. | easy | S | none | `session.ts`, `watchPlay.ts`, `ai/memory.ts` (small edits) |
-| 11-4 | **SaveStore.** IndexedDB wrapper, in-memory version, quota and "unavailable" handling, `persist()` request. | medium | M | 11-1 | `src/save/store.ts`, `memoryStore.ts` (new) |
-| 11-5 | **Autosave.** The policy of part D, arming, Turn backup, Earlier game. | medium | M | 11-1, 11-3, 11-4 | `src/ui/autosave.ts` (new), a few lines in `main.ts` |
-| 11-6 | **Continue card and Saved games sheet.** Sketches 1 to 3, 5, 6; load, delete; focus and announcements. | medium | M | 11-2, 11-4, 11-5 | `src/ui/savedGames.ts`, `continueCard.ts`, `shell.ts`, `style.css` |
-| 11-7 | **Save as and the step 10b hint.** Sketch 4; the Replace question; a one-line "Saved" at step 10b. | easy | S | 11-6 | `savedGames.ts`, `statusView.ts` |
-| 11-8 | **Save file and open file.** Share sheet or download; picker and drop; file name rule. | medium | M | 11-2, 11-6 | `src/ui/saveFile.ts` (new) |
-| 11-9 | **Open a `format: 1` record** (watch or self-play) and Take over from it. Optional. | easy | S | 11-2 | `restore.ts`, `watchPlay.ts` |
-| 11-10 | **Test pack.** Round trip over all four scenarios, corrupt and old inputs, continuation, fake-timer autosave. | medium | M | 11-2, 11-3, 11-5 | `tests/save-*.test.ts` |
-| 11-11 | **Browser tests** (part I list) and the two-tabs notice (optional). | medium | M | 11-6, 11-8 | `tests/e2e/save.spec.ts` |
-| 11-12 | **iPad check.** The manual list of part I; measure replay time and fix the constants. | easy | S | 11-8 | notes in this spec |
-| 11-13 | **Docs.** "As built" here, ROADMAP and PROGRESS rows, RULES.md open questions. | easy | S | all | docs only |
+| # | Ticket | Difficulty | Size | Needs | Files | Status in this checkout |
+|---|---|---|---|---|---|---|
+| 11-1 | **Format, validation, fingerprint.** Types, strict reader, caps, sorted-key fingerprint, shape check from a fresh game. | medium | M | none | `src/save/format.ts`, `validate.ts`, `fingerprint.ts` (new), tests | Built; AER52–55 remain provisional |
+| 11-2 | **Restore.** Replay in slices with a budget and Cancel, rescue by snapshot, every result as data (opened / rescue / refused + words). | medium | M | 11-1 | `src/save/restore.ts` (new), tests | Built and wired; snapshot screening limits remain |
+| 11-3 | **Record every game; computer memory out and in.** `record` always on; `takeOver` keeps it; `exportMemory` / `importMemory` in the computer's memory module. | easy | S | none | `session.ts`, `watchPlay.ts`, `ai/memory.ts` (small edits) | Built; browser memory integration remains open (AER53) |
+| 11-4 | **SaveStore.** IndexedDB wrapper, in-memory version, quota and "unavailable" handling, `persist()` request. | medium | M | 11-1 | `src/save/store.ts`, `memoryStore.ts` (new) | Built and wired |
+| 11-5 | **Autosave.** The policy of part D, arming, Turn backup, Earlier game. | medium | M | 11-1, 11-3, 11-4 | `src/ui/autosave.ts` (new), a few lines in `main.ts` | Built; default timer receiver regression covered |
+| 11-6 | **Continue card and Saved games sheet.** Sketches 1 to 3, 5, 6; load, delete; focus and announcements. | medium | M | 11-2, 11-4, 11-5 | `src/ui/savedGames.ts`, `continueCard.ts`, `shell.ts`, `style.css` | Built; see rescue and memory limits below |
+| 11-7 | **Save as and the step 10b hint.** Sketch 4; the Replace question; a one-line "Saved" at step 10b. | easy | S | 11-6 | `savedGames.ts`, `statusView.ts` | Built |
+| 11-8 | **Save file and open file.** Share sheet or download; picker and drop; file name rule. | medium | M | 11-2, 11-6 | `src/ui/saveFile.ts` (new) | Built; real-device share/download unverified (E8) |
+| 11-9 | **Open a `format: 1` record** (watch or self-play) and Take over from it. Optional. | easy | S | 11-2 | `restore.ts`, `watchPlay.ts` | Optional, not built; format 1 is refused |
+| 11-10 | **Test pack.** Round trip over all four scenarios, corrupt and old inputs, continuation, fake-timer autosave. | medium | M | 11-2, 11-3, 11-5 | `tests/save-*.test.ts` | Present; eight expected failures and one pending test |
+| 11-11 | **Browser tests** (part I list) and the two-tabs notice (optional). | medium | M | 11-6, 11-8 | `tests/e2e/save.spec.ts` | Present; mouse/touch run blocked by preview listen EPERM; optional two-tabs notice not built |
+| 11-12 | **iPad check.** The manual list of part I; measure replay time and fix the constants. | easy | S | 11-8 | notes in this spec | Open — owner-manual on a real iPad |
+| 11-13 | **Docs.** "As built" here, ROADMAP and PROGRESS rows, RULES.md open questions. | easy | S | all | docs; approved timer fix and unit regression exception | Docs updated; remaining gaps recorded |
 
 ```mermaid
 flowchart LR
@@ -357,7 +357,7 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 
 ## Open questions
 
-**For the product owner (decisions that are yours)**
+**Historical owner questions (answered by the Decisions table above)**
 
 1. **Old saves after an update.** Proposed: offer to continue from where the game stood, with today's rules, and say it plainly (sketch 5). The alternative is to refuse. Early on, releases will change rules often, so refusing would lose Frank's game almost every update.
 2. **Autosave: always on, no switch?** Proposed yes. A switch means a way to lose a game by accident.
@@ -388,6 +388,9 @@ None. Saving adds no rule. Ops 5.49b names step 10b "Save-Game prompt" (`sequenc
 5. Every damaged, oversize, hostile, too-old or too-new file gets the plain message of part H, writes nothing, and never freezes the page for more than the time budget.
 6. A game saved by a version whose rules changed is either opened exactly (the fingerprint matches) or offered as a clearly worded rescue, never silently changed.
 7. No rule was added; anything unconfirmed is marked `TODO(verify)`. Lint, type check, unit tests, build and the browser tests pass.
+
+The ticket notes below retain their original delivery scope. The current integration
+notes at the end supersede statements that a module is unwired or awaits a later ticket.
 
 ## As built, 11-3
 
@@ -556,6 +559,85 @@ supported. A unit regression rejects foreign receivers for both scheduling and
 cancellation, checks debounce reset, and verifies that the deadline is cleared.
 
 The browser bundle builds, but the save-only browser run cannot start in this
-environment: connecting to the local preview server returns EPERM. Mouse and
+environment: binding the local preview server returns EPERM. Mouse and
 touch results remain unverified here. No new verification ids or defaults;
 no engine, computer-game, fixed-seed hash or recording changes.
+
+## As built, 11-5
+
+`src/ui/autosave.ts` and `src/main.ts` implement Part D: observe accepted batches
+before the next computer slice, arm on human progress or explicit new-game consent,
+debounce for 1,000 ms with a 5,000 ms deadline, flush on step changes and hidden/pagehide,
+and copy completed step 10b to Turn backup. Writes capture detached data and queue in
+order. Switching sessions flushes pending old progress; Earlier game rotates before
+the first replacement. A failed rotation prevents replacement. Unreadable prior
+autosaves are preserved by refusing replacement. Watch, loading and volatile storage
+do not autosave. `tests/autosave.test.ts` covers these policies and injected/default
+timers. Default timers use the global receiver; injected timer methods retain theirs.
+
+## As built, 11-6
+
+`src/ui/continueCard.ts`, `savedGames.ts`, `shell.ts` and `src/main.ts` wire Part E's
+nonblocking Continue card and Saved games dialog to IndexedDB and sliced restore.
+Only an autosave with actions or a snapshot start offers Continue. Reserved slots
+come first; damaged entries remain listed and deletable after confirmation. Loading
+pauses computer play and autosave; cancellation invalidates pending offers. Successful
+adoption restores the side, seed, state, record, snapshot start and log tail, and
+returns focus to status. `tests/saved-games.test.ts` checks orchestration, errors,
+consent and cancellation; browser controls are exercised by the 11-11 spec.
+
+`src/save/snapshotInvariants.ts` supplies the previously missing validator: explicit
+schemas, scenario/phase consistency, allocated references and counter budgets, with
+historical ids and temporary movement overstacks allowed (AER55). Tests in
+`tests/save-invariants.test.ts` cover setup and played snapshots in all four scenarios
+and rejection cases. Restore still applies `fresh-fields-only` shape screening first:
+optional play fields absent from a fresh game can therefore block rescue even when
+the invariant validator accepts them. A failed replay does not guarantee recovery.
+
+## As built, 11-8
+
+`src/ui/saveFile.ts` implements Parts B/F/H: format-2 JSON from the current session,
+metadata-only filenames, file sharing when supported, otherwise a generated download,
+and picker or single-file drop. Byte size is checked before reading. External files
+restore in isolation and require Continue before adoption or storage. Accepted imports
+use a free named slot; a full store or failed write still permits play and says to keep
+the file. Snapshot starts survive subsequent saves. Watch export keeps its separate
+record-file flow. `tests/save-file.test.ts` covers export, share cancellation/fallback,
+size limits, import consent, refusal and storage errors.
+
+Existing E8 defaults are `FILE_URL_LIFETIME_MS = 1000` and
+`DOWNLOAD_AFTER_SHARE_CANCEL = false`: delay generated-URL cleanup by one second and
+respect cancelled sharing without downloading. Both remain device-unverified; no new
+verification id is introduced.
+
+## As built, 11-9 (optional, not implemented)
+
+No legacy import path exists in this checkout. `src/save/validate.ts` returns `legacy`
+for format 1; restore and file-import tests pin that refusal. Live watch Take over
+retains its record (11-3), but opening an exported watch/self-play recording is still
+unavailable. This ticket must not be described as complete solely because 11-1 to
+11-11 were the intended merged range.
+
+## Current integration and remaining verification, 11-10 to 11-13
+
+The targeted save tests retain eight `it.fails` cases (four scenario round trips and
+four continuations) plus one pending AER53 envelope-memory continuation test. Passing
+the test command does not establish the assertions beyond their expected failures.
+AER54 still rejects undefined values in live engine states; save builders fingerprint
+a JSON copy, while replay fingerprints the live result. Full played-game restore and
+continuation are not established. No source change to that boundary is included here.
+The browser save builders omit optional computer memory and restored sessions get a
+fresh browser memory cache; helper export/import alone does not prove identical
+computer continuation (AER53/E5).
+
+The 11-11 save browser spec is retained unchanged. In this environment the preview
+server cannot listen on `127.0.0.1:4789` (`EPERM`), so neither project's results can be
+claimed. The default-timer receiver regression and injectable-timer cleanup are covered
+by unit tests. The optional two-tabs notice is absent.
+
+11-12 remains **open, owner-manual**: follow Part I on a real iPad, exchange files with
+the desktop (E2), measure replay and tune the 40 ms / 20 s defaults (E7), and verify
+background-write completion, eviction, persistence, Home Screen storage and file
+share/download behavior (E6/E8). Browser emulation does not close this check.
+11-13 updates the status, implementation notes and verification register from code
+and tests; it adds no game rule. Expected effect on computer games: none.

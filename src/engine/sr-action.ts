@@ -3,6 +3,7 @@ import { markUsed } from "./naval-record";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
+import { airRedeployProblem, airRedeployReach } from "./sr-air";
 import { srOf } from "./sr-record";
 import { srDestinations, srProblem, srView, type SrSoFar, type SrView } from "./sr-region";
 import { srLeft, srNationOf, srUnitCost, SR_UNIT_TYPES } from "./sr-rules";
@@ -12,10 +13,17 @@ import type { GameState, PowerId, Unit } from "./types";
  * SR_UNITS at step 9e (spec 16 R18 to R20, C3, C5; Ref 11.72, Ops 5.48e): the side to move redeploys ground units and Replacements, one use
  * of their nation's allowance each, to any hex of the region they can reach (sr-region.ts). The step waits only while some unit of the
  * side can still be redeployed; redeploying is optional, so END_STEP stays legal there (actions.ts adds it, as at 6f).
- * Not here: grants (16-18), air units, airbases and fleets (16-22, 16-23), the computer's policy (16-20).
+ * Air units and airbases (R23, 16-22b) are listed one counter at a time. Not here: grants (16-18), fleets (16-23), the computer's policy (16-20).
  */
 
 type Redeploy = Extract<Action, { type: "SR_UNITS" }>;
+
+/** Air units and airbases (R23, 16-22b): redeployed one counter at a time by `airRedeployProblem`, never in a stack with ground units. */
+const isAirKind = (u: Pick<Unit, "type">): boolean => u.type === "air" || u.type === "airbase";
+
+/** Where one candidate may go now: air by R23 (sr-air.ts), the rest by the region rules. */
+const destinationsOf = (ctx: GameContext, state: GameState, u: Unit, so: SrSoFar, view: SrView): HexId[] =>
+  isAirKind(u) ? airRedeployReach(ctx, state, state.activeSide, u) : srDestinations(ctx, state, u, so, view);
 
 /** The step that waits for this action. */
 export const SR_STEP = "9e";
@@ -26,14 +34,14 @@ const soFar = (state: GameState): SrSoFar => ({ used: srOf(state).used, redeploy
 /** The side's units that could be redeployed, in id order (a cheap filter; `srDestinations` has the final say). */
 const candidates = (state: GameState): Unit[] =>
   Object.values(state.units)
-    .filter((u) => SR_UNIT_TYPES.includes(u.type) && srNationOf(state, u) !== null)
+    .filter((u) => (SR_UNIT_TYPES.includes(u.type) || isAirKind(u)) && srNationOf(state, u) !== null)
     .sort((a, b) => (a.id < b.id ? -1 : 1));
 
 /** Whether any unit of the side to move can be redeployed to some hex: the step waits only while this is true. */
 export function hasSrWork(ctx: GameContext, state: GameState): boolean {
   const view = srView(ctx, state);
   const so = soFar(state);
-  return candidates(state).some((u) => srDestinations(ctx, state, u, so, view).length > 0 || escortOptions(ctx, state, u, view).length > 0);
+  return candidates(state).some((u) => destinationsOf(ctx, state, u, so, view).length > 0 || escortOptions(ctx, state, u, view).length > 0);
 }
 
 const listed = new WeakMap<GameState, WeakMap<GameContext, Action[]>>();
@@ -51,14 +59,16 @@ function computeSr(ctx: GameContext, state: GameState): Action[] {
   const so = soFar(state);
   const dests = new Map<string, HexId[]>();
   for (const u of candidates(state)) {
-    const d = srDestinations(ctx, state, u, so, view);
+    const d = destinationsOf(ctx, state, u, so, view);
     if (d.length > 0) dests.set(u.id, d);
   }
   // Spec 16 C3 / B5: a list of every unit and every subset to every hex is far over the size an iPad can take (about 35,000 actions in a 1944 position), so the list
   // holds the stack-level actions only: the whole stack of a hex, or the units of it that can go together, to each hex all of them can reach. Any subset
   // or single unit is still accepted by `applySr` (it checks `srProblem`), and `srDestinations` answers where one unit can go.
   const out: Action[] = [];
-  for (const group of groups([...dests.keys()].map((id) => state.units[id]!))) {
+  const movers = [...dests.keys()].map((id) => state.units[id]!);
+  for (const u of movers.filter(isAirKind)) for (const to of dests.get(u.id)!) out.push({ type: "SR_UNITS", side, units: [u.id], to });
+  for (const group of groups(movers.filter((u) => !isAirKind(u)))) {
     const ids = group.map((u) => u.id);
     for (const to of dests.get(ids[0]!)!) {
       if (ids.every((id) => dests.get(id)!.includes(to)) && (ids.length === 1 || srProblem(ctx, state, ids, to, so, view) === null)) out.push({ type: "SR_UNITS", side, units: ids, to });
@@ -86,8 +96,10 @@ export function legalSr(ctx: GameContext, state: GameState): Action[] {
 export function applySr(ctx: GameContext, state: GameState, action: Redeploy): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (!Array.isArray(action.units) || action.units.some((id) => typeof id !== "string") || typeof action.to !== "string") return { ok: false, error: "SR_UNITS needs a list of unit ids and a destination hex." };
-  const problem = action.escort === undefined ? srProblem(ctx, state, action.units, action.to, soFar(state))
-    : escortProblem(ctx, state, action.units, action.to, action.escort);
+  const air = action.units.map((id) => state.units[id]).filter((u): u is Unit => !!u && isAirKind(u));
+  if (air.length > 0 && action.units.length > 1) return { ok: false, error: "An air unit or airbase is redeployed alone, not with other units." };
+  const problem = action.escort !== undefined ? escortProblem(ctx, state, action.units, action.to, action.escort)
+    : air.length === 1 ? airRedeployProblem(ctx, state, action.side, air[0]!, action.to) : srProblem(ctx, state, action.units, action.to, soFar(state));
   if (problem) return { ok: false, error: problem };
   const units = action.units.map((id) => state.units[id]!);
   const rec = srOf(state);

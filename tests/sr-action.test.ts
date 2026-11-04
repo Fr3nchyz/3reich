@@ -161,3 +161,43 @@ describe("the record (C1)", () => {
     expect(a.state.sr!.used).toEqual({ germany: 2 });
   });
 });
+
+// Spec 16 R23 / 16-22b: air units and airbases join step 9e one counter at a time (Ref 11.72, 20.1, 20.2).
+describe("air units and airbases at step 9e (R23)", () => {
+  const plane = (id: string, at: string, strength = 2): Unit => counter(id, "germany", "air", strength, at);
+  const base = (id: string, at: string): Unit => counter(id, "germany", "airbase", 1, at);
+  it("R23: an air unit is listed alone to each reachable base, costs one redeployment and cannot move twice", () => {
+    const s = at9e([plane("a1", "L31"), base("b1", "L31"), base("b2", "Q27")]);
+    expect(hasSrWork(CTX, s)).toBe(true);
+    const legal = legalActions(CTX, s);
+    expect(legal).toContainEqual(sr(s, ["a1"], "Q27"));
+    const r = applyAction(CTX, s, sr(s, ["a1"], "Q27"));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.state.units.a1!.at).toBe("Q27");
+    expect(srOf(r.state).used.germany).toBe(1);
+    expect(srOf(r.state).moved).toContain("a1");
+    expect(legalActions(CTX, r.state).filter(isSr).some((a) => a.type === "SR_UNITS" && a.units[0] === "a1")).toBe(false);
+  });
+  it("R23: an air unit is refused a hex without room, and never joins a stack of other units", () => {
+    const s = at9e([plane("a1", "L31", 6), plane("a2", "Q27", 6), base("b1", "L31"), base("b2", "Q27"), inf("g1", "germany", "L31")]);
+    const full = applyAction(CTX, s, sr(s, ["a1"], "Q27"));
+    expect(full.ok).toBe(false);
+    const mixed = applyAction(CTX, s, sr(s, ["a1", "g1"], "M27"));
+    expect(mixed).toMatchObject({ ok: false, error: expect.stringMatching(/alone/) });
+  });
+  it("R23: air counters are not listed inside ground stacks", () => {
+    const s = at9e([plane("a1", "L31"), base("b1", "L31"), base("b2", "Q27"), inf("g1", "germany", "L31")]);
+    for (const a of legalActions(CTX, s)) if (a.type === "SR_UNITS" && a.units.includes("a1")) expect(a.units).toEqual(["a1"]);
+  });
+  it("R23: an airbase carrying excess factors is held until they leave (AER32)", () => {
+    const s = at9e([base("b1", "L31"), plane("a1", "L31", 6), plane("a2", "L31", 6), base("b2", "Q27")]);
+    expect(applyAction(CTX, s, sr(s, ["b1"], "Q27"))).toMatchObject({ ok: false, error: expect.stringMatching(/excess air factors/) });
+    expect(legalActions(CTX, s)).not.toContainEqual(sr(s, ["b1"], "Q27"));
+  });
+  it("R23: the step is passed when only air units remain but none can go", () => {
+    const s = at9e([plane("a1", "L33"), inf("p1", "poland", "M33")]);
+    expect(hasSrWork(CTX, s)).toBe(false);
+    expect(legalActions(CTX, s).filter(isSr)).toEqual([]);
+  });
+});
