@@ -1,3 +1,4 @@
+import { bindExploit } from "./exploitBind";
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
 import { winterKey } from "../engine/winter-record";
@@ -46,6 +47,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   bindMinor(root, s, actions, redraw);
   bindMinorCards(root, s, redraw);
   bindAttrition(root, s, redraw);
+  bindExploit(root, s, redraw);
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
   bindAirMove(root, s, redraw);
