@@ -1,3 +1,5 @@
+import type { SaveFile } from "../save/format";
+import { fingerprint } from "../save/fingerprint";
 import { exploitArmorHtml } from "./exploitBind";
 import { atCombatStep } from "./attackTap";
 import type { Action } from "../engine/actions";
@@ -136,7 +138,13 @@ function frontPrompt(s: Session, actions: Action[]): string {
 }
 
 /** The whole status area. `setup` is set while a nation of yours is setting up. */
-export function statusHtml(s: Session, setup: SetupView | null, actions: Action[]): string {
+/** Spec 11 D / Ops 5.49b: claim Saved only for the committed current turn backup. */
+export function turnBackupSaved(s: Session, backup?: SaveFile): boolean {
+  return !s.watch && s.state.phase === "player-turn" && s.state.position?.part === "player-turn" &&
+    s.state.position.step === "10b" && backup?.fingerprint === fingerprint(JSON.parse(JSON.stringify(s.state)) as SaveFile["snapshot"]);
+}
+
+export function statusHtml(s: Session, setup: SetupView | null, actions: Action[], saved = false, remind = false): string {
   const totals = initiativeTotals(s.state);
   const { folds, rest, winter, surrender, siberian } = turnButtons(actions, s.foldOpen, s.ctx, s.state, siberianShown(s));
   const toast = `<p class="toast" role="status">${s.toast}</p>`;
@@ -148,6 +156,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
   return `
     <main>
       <p class="turn">${turnLine(s)}</p>
+      ${saved ? `<p class="saved-hint" role="status">Saved.${remind ? " Save to a file now and then to keep a backup outside the browser." : ""}</p>` : ""}
       ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
       ${scoreHtml(s)}${minorCardsHtml(s, actions)}
       ${attritionHtml(s)}${exploitArmorHtml(s)}
