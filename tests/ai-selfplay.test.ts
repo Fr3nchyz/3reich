@@ -1,3 +1,4 @@
+import { MINOR_PLANS } from "../src/ai/minors";
 import { describe, expect, it } from "vitest";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
@@ -75,7 +76,10 @@ describe("computer declarations over a long game (Ref 13.0)", () => {
     const stop = turnIndex({ year: 1941, season: "summer" }) + 1;
     const out = playFrom(ctx, setUp(ctx, 1), 1, stop);
     const declared = out.played.filter((a) => a.type === "DECLARE_WAR");
-    expect(declared).toEqual([{ type: "DECLARE_WAR", by: "germany", on: "ussr" }]);
+    // Germany declares on the Soviet Union and, by its minor plans (spec 15 Part E, ticket 15-14-2), only on minors its units can reach; nobody else declares.
+    expect(declared).toContainEqual({ type: "DECLARE_WAR", by: "germany", on: "ussr" });
+    expect(declared.every((a) => a.type === "DECLARE_WAR" && a.by === "germany")).toBe(true);
+    expect(declared.every((a) => a.type === "DECLARE_WAR" && (a.on === "ussr" || MINOR_PLANS.some((p) => p.on === a.on)))).toBe(true);
     expect(out.state.wars).toContainEqual(["germany", "ussr"]);
   }, 120_000);
 

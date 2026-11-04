@@ -35,7 +35,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   const legal = step === "6f" || step === "7b" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
-    step === FIRST_STEP ? chooseDeclaration(state, legal)
+    step === FIRST_STEP ? chooseDeclaration(ctx, state, legal)
     : step === "2" ? choosePlacement(legal) // 2: the computer sets up an attacked minor's army as the engine suggests it (spec 15 R16, ticket 15-3b)
     : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)

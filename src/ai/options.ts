@@ -76,8 +76,8 @@ export function chooseOptions(ctx: GameContext, state: GameState, legal: readonl
       const mayPay = cost === 0 || paid < OFFENSIVE_MAX_FRONTS;
       const pick = mayPay
         ? best(
-            offers.filter((a) => a.option === "offensive" && (cost === 0 || (a.payer !== undefined && state.nations[a.payer].brpTotal - cost >= plannedReserve(state, a.payer)))),
-            (a) => (a.payer ? state.nations[a.payer].brpTotal - plannedReserve(state, a.payer) : 0),
+            offers.filter((a) => a.option === "offensive" && (cost === 0 || (a.payer !== undefined && state.nations[a.payer].brpTotal - cost >= plannedReserve(ctx, state, a.payer)))),
+            (a) => (a.payer ? state.nations[a.payer].brpTotal - plannedReserve(ctx, state, a.payer) : 0),
             cfg.seed,
             (a) => a.payer ?? "free",
           )

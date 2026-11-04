@@ -47,7 +47,10 @@ describe("the computer's Front Options (spec 16 E, 16-1)", () => {
   });
 
   it("pays for the Offensive Option from a Major Power that can afford it", () => {
-    const s = board([unit("g1", "germany", E(40), OFFENSIVE_MIN_FACTORS), unit("p1", "poland", E(41), 2)], { year: 1940 });
+    const base = board([unit("g1", "germany", E(40), OFFENSIVE_MIN_FACTORS), unit("p1", "poland", E(41), 2)], { year: 1940 });
+    // Germany also keeps back the price of its plans against minor countries (spec 15 Part E): give it that much on top.
+    const reserve = plannedReserve(CTX, base, "germany");
+    const s: GameState = { ...base, nations: { ...base.nations, germany: { ...base.nations.germany, brpTotal: 100 + reserve } } };
     let t = s;
     for (let i = 0; i < 6; i++) {
       const d = chooseAction(CTX, t, cfg)!;
@@ -55,7 +58,7 @@ describe("the computer's Front Options (spec 16 E, 16-1)", () => {
       t = ok(applyAction(CTX, t, d.action));
     }
     expect(t.frontOptions.eastern).toEqual({ option: "offensive", paidBy: "germany" });
-    expect(t.nations.germany.brpTotal).toBe(100 - BRP_COSTS.offensiveOption);
+    expect(t.nations.germany.brpTotal).toBe(100 + reserve - BRP_COSTS.offensiveOption);
   });
 
   it("does not take Offensive when no Major Power can pay, and falls back to Attrition", () => {
@@ -77,7 +80,7 @@ describe("the computer's Front Options (spec 16 E, 16-1)", () => {
 
   it("leaves a Major Power its plannedReserve for a declaration of war: it pays only if the BRPs after the cost still cover it", () => {
     const s = board([unit("g1", "germany", E(40), OFFENSIVE_MIN_FACTORS), unit("p1", "poland", E(41), 2)], { year: 1940 });
-    const reserve = plannedReserve(s, "germany");
+    const reserve = plannedReserve(CTX, s, "germany");
     expect(reserve).toBeGreaterThan(0);
     const withTotal = (brpTotal: number): GameState => ({ ...s, nations: { ...s.nations, germany: { ...s.nations.germany, brpTotal } } });
     expect(play(withTotal(BRP_COSTS.offensiveOption + reserve - 1)).eastern).toBe("attrition");
