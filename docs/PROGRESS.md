@@ -1,6 +1,6 @@
 # Progress baseline (2026-10-15)
 
-Measured on `main` after the merge of PR #65 (choosing which units of a stack move). "The plan" is `docs/ROADMAP.md`; "the designs" are the specs in `docs/specs/`. This page is the checkpoint to compare against next time. The previous baseline (2026-10-13) said about 15% of a game existed.
+Measured on `main` after the merge of PR #65 (choosing which units of a stack move). "The plan" is `docs/ROADMAP.md`; "the designs" are the specs in `docs/specs/`. This page is the checkpoint to compare against next time; only the spec 11 entries below have been refreshed on 2026-11-04. The previous baseline (2026-10-13) said about 15% of a game existed.
 
 ## In one paragraph
 
@@ -16,7 +16,7 @@ You can open the game in a browser, pick any of the four scenarios (1939, Campai
 | Automated tests | 1,387 unit tests and about 320 browser runs (mouse and touch). A sampled mutation test of the engine (`docs/MUTATION.md`) catches about 86 to 90 percent of deliberate breakages; weakest: control, movement, supply, grants |
 | Checks on every change | lint (300-line file limit), type check, tests with a coverage floor, production build, browser tests |
 | Code size | engine about 4,300 lines, screens about 2,600, computer opponent about 600 |
-| Specs | 01 turn steps (built), 02 economy (mostly built), 03 movement and supply (partly), 04 combat and victory (ground combat built), 05 computer opponent (partly), 06 watch mode (built), 07 tap-to-attack (approved; tickets 07-1 to 07-7 merged, 07-9 layout and browser pass and 07-10 docs remain), 08 iPad zoom (built), 09 air units (approved with decision D1: displace; tickets 09-1 bases and range queries and 09-6 pure air combat resolver built, nothing wired; the rest not built), 10 stack unit selection (approved; tickets 10-1 engine query, 10-2 selection model, 10-3 session and tap flow, 10-4 Move card, 10-5 unit badges and 10-6 take back built; 10-7 why-not sentences and destination list, 10-8 layout and keyboard checks, 10-9 docs remain), 13 zones of control as the PC manual prints them (built: armor-only ZOC, exit cost 2), 11 save and load (approved; not built) |
+| Specs | 01 turn steps (built), 02 economy (mostly built), 03 movement and supply (partly), 04 combat and victory (ground combat built), 05 computer opponent (partly), 06 watch mode (built), 07 tap-to-attack (approved; tickets 07-1 to 07-7 merged, 07-9 layout and browser pass and 07-10 docs remain), 08 iPad zoom (built), 09 air units (approved with decision D1: displace; tickets 09-1 bases and range queries and 09-6 pure air combat resolver built, nothing wired; the rest not built), 10 stack unit selection (approved; tickets 10-1 engine query, 10-2 selection model, 10-3 session and tap flow, 10-4 Move card, 10-5 unit badges and 10-6 take back built; 10-7 why-not sentences and destination list, 10-8 layout and keyboard checks, 10-9 docs remain), 13 zones of control as the PC manual prints them (built: armor-only ZOC, exit cost 2), 11 save and load (updated 2026-11-04: 11-1 to 11-8 wired; optional 11-9 unbuilt; 11-10 has expected failures; 11-11 browser verification blocked; 11-12 owner-manual and open; 11-13 docs updated) |
 
 ## Against the plan (`docs/ROADMAP.md`)
 
@@ -29,7 +29,7 @@ You can open the game in a browser, pick any of the four scenarios (1939, Campai
 | 5 Movement, ZOC, supply, control | Built: control, stacking, zones of control, ground movement. Supply is calculated (pure queries) but not wired into the turn. Not built: supply penalties, strategic redeployment, fortress changes, air movement |
 | 6 Combat, air, naval | Ground combat built (odds, Exchange losses, advance). Not built: attrition, exploitation, air, naval, strategic warfare, Russian winter, surrender, victory |
 | 7 Computer opponent | Declares, builds, grants, moves toward objectives, attacks at good odds; setup is still a placeholder; no evaluator, no strength levels |
-| 8 Play screens | Setup, map, movement, attack, log, watch mode done. Hex card, odds preview, tap-to-attack with loss and advance cards, iPad zoom buttons and choosing which units of a stack move are built. Not done: take back a move, save and load (last in the queue by the owner's choice), a pass on a real iPad |
+| 8 Play screens | Setup, map, movement, attack, log, watch mode done. Hex card, odds preview, tap-to-attack with loss and advance cards, iPad zoom buttons and choosing which units of a stack move are built. Save/load update 2026-11-04: autosave, Continue, named slots and JSON files are wired; full restore/continuation and mouse/touch verification remain incomplete (spec 11). Not done at this baseline: take back a move, a pass on a real iPad (11-12 remains open) |
 | Release 1 (1939 vs the computer) | Not reached |
 
 ## Known gaps and risks
