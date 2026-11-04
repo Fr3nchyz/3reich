@@ -46,7 +46,11 @@ function saveOf(s: Session, options: AutosaveOptions, start: SaveFile["start"]):
  * Part B permits absent computer memory; its private browser cache is not exposed here.
  */
 export function createAutosave(options: AutosaveOptions) {
-  const timers = options.timers ?? { setTimeout, clearTimeout };
+  // Spec 11 Part D: call browser globals without using the timers object as their receiver.
+  const timers: NonNullable<AutosaveOptions["timers"]> = options.timers ?? {
+    setTimeout: (callback, delay) => setTimeout(callback, delay),
+    clearTimeout: timer => clearTimeout(timer),
+  };
   let session: Session | undefined;
   let count = 0;
   let step = "";

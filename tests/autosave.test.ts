@@ -33,6 +33,40 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
 
 describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
+  it("Part D: default browser timers schedule, reset and flush without a foreign receiver", async () => {
+    const schedule = setTimeout;
+    const cancel = clearTimeout;
+    // Browser timer globals reject a receiver other than the global object or undefined.
+    vi.stubGlobal("setTimeout", function (this: unknown, callback: () => void, delay: number) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      return schedule(callback, delay);
+    });
+    vi.stubGlobal("clearTimeout", function (this: unknown, timer: ReturnType<typeof setTimeout>) {
+      if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
+      cancel(timer);
+    });
+    const memory = createMemoryStore();
+    const store = { ...memory, persistent: true };
+    const onError = vi.fn();
+    const autosave = createAutosave({ store, gameVersion: "test", onError });
+    try {
+      const s = newSession(SCENARIO_1939, "axis", 1);
+      autosave.observe(s);
+      action(s); autosave.observe(s);
+      await vi.advanceTimersByTimeAsync(500);
+      action(s); autosave.observe(s);
+      await vi.advanceTimersByTimeAsync(999);
+      expect(await entry(store)).toBeUndefined();
+      await vi.advanceTimersByTimeAsync(1);
+      expect((await entry(store))!.actions).toHaveLength(2);
+      expect(vi.getTimerCount()).toBe(0);
+      expect(onError).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      autosave.dispose();
+    }
+  });
+
   it("Part D: no save before the first human action, including computer setup and refused taps", async () => {
     const { autosave, s, store } = harness();
     action(s, "allies"); autosave.observe(s);

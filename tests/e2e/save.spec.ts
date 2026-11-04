@@ -176,7 +176,7 @@ test("save file downloads JSON and opens through the picker at the same position
   const downloading = page.waitForEvent("download");
   await sheet(page).getByRole("button", { name: "Save to a file", exact: true }).click();
   const download = await downloading;
-  expect(download.suggestedFilename()).toBe("3reich-1939-axis-summer1939.json");
+  expect(download.suggestedFilename()).toBe("3reich-1939-axis-fall1939.json");
   const path = await download.path();
   expect(path).not.toBeNull();
   const buffer = await readFile(path);
