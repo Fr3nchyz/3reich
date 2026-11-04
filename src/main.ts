@@ -15,6 +15,7 @@ import type { Scenario, Side } from "./engine/types";
 import { describeHex, describeUnits } from "./ui/format";
 import type { MapHex } from "./engine/map";
 import { attritionTap } from "./ui/attritionBind";
+import { observeMinorCards, previewMinorMove } from "./ui/minorCardsBind";
 import { minorTap } from "./ui/minorBind";
 import { renderMap } from "./ui/mapView";
 import { syncMap } from "./ui/mapSync";
@@ -86,7 +87,7 @@ const autosave = createAutosave({ store: saveStore, gameVersion: version, onErro
 } });
 bindAutosaveLifecycle(autosave);
 const view = renderMap(shell.map, MAP, {
-  onHover: (h) => { if (h) shell.info.textContent = hexText(h); },
+  onHover: (h) => { if (h) shell.info.textContent = hexText(h); previewMinorMove(shell.status, session, h?.id); },
   onHexClick: (h) => {
     shell.info.textContent = hexText(h);
     const attrition = exploitTap(session, h.id) || attritionTap(session, h.id);
@@ -161,6 +162,7 @@ function takeOverAs(side: Side): void {
 }
 
 function render(): void {
+  observeMinorCards(session);
   autosave.observe(session); // Spec 11 Part D: observe accepted actions before the next computer slice.
   normaliseMode(session);
   const setup = setupView(session);

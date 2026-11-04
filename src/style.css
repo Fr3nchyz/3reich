@@ -279,3 +279,9 @@ button[data-minor] { display: block; text-align: left; width: 100%; }
 .exploit-card button { min-height: 44px; min-width: 44px; }
 .exploit-reach { fill: #ffd84d55; stroke: #e3b82e; stroke-width: 1.2; }
 .exploit-overstack { fill: #a32918; stroke: #fff; stroke-width: .7; paint-order: stroke; font-size: 4px; font-weight: bold; text-anchor: middle; }
+/* Spec 15 D3–D7: duty, confirmation and income explanations keep text and 44 px targets. */
+.minor-duty { display: inline-block; margin-block: .3rem; }
+.minor-warning { border-color: #9b2020; }
+.minor-income { margin-block: 1rem; }
+.minor-income summary { min-height: 44px; cursor: pointer; padding: .4rem; }
+#minor-intervention-preview:empty { display: none; }
