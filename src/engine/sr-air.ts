@@ -57,13 +57,18 @@ function routes(ctx: GameContext, state: GameState, side: Side, unit: Unit, view
 
 /** R18–R20, R23: pure, unwired query. Airbases use land only; no escort is selected by this API. */
 export function airRedeployProblem(ctx: GameContext, state: GameState, side: Side, unit: Unit, to: HexId): string | null {
+  return problemVia(ctx, state, side, unit, to);
+}
+
+/** `airRedeployProblem`, with the route set optionally shared across destinations (one search for a whole reach query). */
+function problemVia(ctx: GameContext, state: GameState, side: Side, unit: Unit, to: HexId, shared?: { reachable: Set<HexId>; view: SrView }): string | null {
   if (unit.type !== "air" && unit.type !== "airbase") return "Choose an air unit or airbase.";
   if (side !== state.activeSide || sideInWar(state, unit.owner) !== side) return "This unit cannot redeploy for this side now.";
   if (srNationOf(state, unit) === null) return "This unit has no redeployment allowance.";
   const record = srOf(state);
   if (record.moved.includes(unit.id)) return "This unit has already redeployed this Player Turn.";
   if (unit.at === to) return "The unit is already in this hex.";
-  const view = srView(ctx, state, side);
+  const view = shared?.view ?? srView(ctx, state, side);
   const fault = srHexProblem(ctx, state, view, unit, unit.at) ?? srHexProblem(ctx, state, view, unit, to) ??
     srAllowanceProblem(record.used, srUnitCost(state, [unit]));
   if (fault) return fault;
@@ -76,10 +81,14 @@ export function airRedeployProblem(ctx: GameContext, state: GameState, side: Sid
     const without = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([id]) => id !== unit.id)) };
     if (airFactorsAt(state, unit.at) > airCapacity(ctx, without, unit.at)) return "Redeploy excess air factors before moving this airbase.";
   }
-  return routes(ctx, state, side, unit, view).has(to) ? null : "No land route or eligible eight-hex base chain reaches this destination; airbases need an escort over water.";
+  return (shared?.reachable ?? routes(ctx, state, side, unit, view)).has(to) ? null : "No land route or eligible eight-hex base chain reaches this destination; airbases need an escort over water.";
 }
 
 /** R23: legal destinations in hex-id order; queries never move or eliminate counters. */
 export function airRedeployReach(ctx: GameContext, state: GameState, side: Side, unit: Unit): HexId[] {
-  return Object.keys(ctx.map.hexes).sort().filter((to) => airRedeployProblem(ctx, state, side, unit, to) === null);
+  if (unit.type !== "air" && unit.type !== "airbase") return [];
+  if (side !== state.activeSide || sideInWar(state, unit.owner) !== side) return [];
+  const view = srView(ctx, state, side);
+  const shared = { reachable: routes(ctx, state, side, unit, view), view };
+  return [...shared.reachable].sort().filter((to) => problemVia(ctx, state, side, unit, to, shared) === null);
 }
