@@ -56,6 +56,7 @@ function snapshot(scenario: ScenarioKey, seed: number, turns: number): { positio
 // Ticket 15-7 (spec 15 R10: the capitals of the four sleeping Axis allies are Axis supply sources, their land carries Axis lines, and the computer's armies cross them) changed 1939 seed 2 only: 98 positions, hash 3546749625 to 99 positions, hash 2830968417. 1942 is unchanged (the allies are awake).
 describe("supplyStatus gives the same answers as before the search was made faster", () => {
   // Ticket 15-11b (Eastern Europe, the German units east of the Partition Line eliminated) changed 1939 seed 2 only: 99 positions, hash 2830968417 to 101 positions, hash 3529324769.
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 101, hash: 3529324769 }), 120_000);
-  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 110, hash: 2794420972 }), 120_000);
+  // Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved both: 1939 seed 2 101 positions, hash 3529324769 to 89 positions, hash 586035881; 1942 seed 1 110 positions, hash 2794420972 to 108 positions, hash 4054339153.
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 89, hash: 586035881 }), 120_000);
+  it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 108, hash: 4054339153 }), 120_000);
 });

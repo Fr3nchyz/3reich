@@ -1,3 +1,4 @@
+import { plannedReserve } from "../src/ai/declare";
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
@@ -67,7 +68,9 @@ describe("BRPs kept back for a planned declaration (spec 05)", () => {
     const tight = at8b({ brpTotal: 35, spent: 0, spendLimit: 100 }, noWar);
     expect(builtGermany(tight)).toBe(false);
     // With the war already declared there is no plan waiting, and the same BRPs may be built with.
-    const declared = at8b({ brpTotal: 35, spent: 0, spendLimit: 100 }, s0.wars);
+    // (Germany's plans against minor countries, spec 15 Part E, still wait: their reserve is kept back too.)
+    const minorReserve = plannedReserve(ctx, at8b({ brpTotal: 35, spent: 0, spendLimit: 100 }, s0.wars), "germany");
+    const declared = at8b({ brpTotal: 35 + minorReserve, spent: 0, spendLimit: 100 }, s0.wars);
     expect(s0.wars.some((w) => w.includes("germany") && w.includes("ussr"))).toBe(true);
     expect(builtGermany(declared)).toBe(true);
   });
