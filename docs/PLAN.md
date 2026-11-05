@@ -202,7 +202,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-10 status | | Built: pure slice 16-10a (#216), Exploitation wiring (#228). |
 | 16-11 status | | Built: pure slice 16-11a (#223), Exploitation wiring (#228). |
 | 16-13 status | | Built (#229). |
-| 16-14 status | | 16-14a pure slice built (#251); wiring pending. |
+| 16-14 status | | 16-14a pure slice built (#251); 16-14b wired (action `VACANT_HEX_ATTACK`, not in `legalActions`, computer unchanged). |
 | 16-20 status | | Built (#166). |
 | 16-22 status | | 16-22a pure slice built (#267); wiring pending. |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
