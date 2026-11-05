@@ -4,6 +4,7 @@ import { chooseAction } from "../src/ai";
 import { WINTER_POSTPONE_WHEN_ALLOWED } from "../src/ai/winter";
 import { applyAction, legalActions, type Action, type GameEvent } from "../src/engine/actions";
 import { sideToAct } from "../src/engine/actor";
+import { turnIndex } from "../src/engine/game";
 import type { GameState } from "../src/engine/types";
 import { winterAsking } from "../src/engine/winter-record";
 import { runGame, type Hooks } from "../scripts/selfplay/runner";
@@ -47,15 +48,30 @@ function replayChecked(r: ReturnType<typeof runGame>, prepare: Hooks["prepare"] 
   return { events, asked };
 }
 
+/** The six-turn postponing game of seed 1 is played once and shared: its first two Game Turns are the two-turn game the first test used to play again. */
+let postponing: ReturnType<typeof runGame> | undefined;
+const postponingGame = () => (postponing ??= runGame({ scenario: "1939", seed: 1, turns: 6, verify: true }, { prepare: warWithRussia }));
+
 describe("the computer at II.A", () => {
   it("answers with the postponement the policy names, from the legal list", () => {
     expect(WINTER_POSTPONE_WHEN_ALLOWED).toBe(true);
-    const r = runGame({ scenario: "1939", seed: 1, turns: 2, verify: true }, { prepare: warWithRussia });
-    // the run stops after two Game Turns: the question was asked at the start of the second, answered, and the game went on
+    const r = postponingGame();
+    // the question was asked at the start of the second Game Turn, answered, and the game went on: all of it inside the first two Game Turns of the six
     expect(r.anomalies).toEqual([]);
     const { events } = replayChecked(r);
     expect(events.filter((e) => e.type === "WINTER_ROLLED")).toHaveLength(1);
     expect(r.actions.filter((a) => a.type === "CHOOSE_WINTER")).toEqual([{ type: "CHOOSE_WINTER", side: "allies", postpone: true }]);
+    let state = r.initial;
+    const turnAt: number[] = [];
+    r.actions.forEach((a, i) => {
+      if (i === r.setupActions) state = warWithRussia(state);
+      turnAt.push(turnIndex(state));
+      state = (applyAction(r.ctx, state, a) as { state: GameState }).state;
+    });
+    const first = turnIndex(r.initial);
+    const answeredAt = r.actions.findIndex((a) => a.type === "CHOOSE_WINTER");
+    expect(turnAt[answeredAt]! - first, "answered within the first two Game Turns").toBeLessThan(2);
+    expect(turnAt.some((t) => t - first >= 2), "and the game went on").toBe(true);
   });
   it("chooseAction at the question is the policy's answer, for either side's turn having been the last", () => {
     const r = runGame({ scenario: "1939", seed: 1, turns: 1, verify: false }, { prepare: warWithRussia });
@@ -77,7 +93,7 @@ describe("the computer at II.A", () => {
 
 describe("whole computer games with the winter question", () => {
   it("1939, postponing: Winter 1939 asks, the Allies wait, Winter 1940 starts with no question, and the winter is never rolled again; six Game Turns, no anomaly", () => {
-    const r = runGame({ scenario: "1939", seed: 1, turns: 6, verify: true }, { prepare: warWithRussia });
+    const r = postponingGame();
     expect(r.anomalies).toEqual([]);
     const { events, asked } = replayChecked(r);
     const w = events.filter((e) => e.type.startsWith("WINTER"));

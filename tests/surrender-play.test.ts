@@ -8,7 +8,6 @@ import { applyAction, legalActions, replay, type Action } from "../src/engine/ac
 import type { GameEvent } from "../src/engine/action-types";
 import { sideToAct } from "../src/engine/actor";
 import { OPEN_SET_ACTIONS } from "../src/engine/attrition-step";
-import { autoSetup } from "../src/engine/autosetup";
 import type { GameContext } from "../src/engine/context";
 import { newGame } from "../src/engine/game";
 import { objectiveStandings } from "../src/engine/objectives";
@@ -172,9 +171,16 @@ describe("a refused game in which Russia is then wiped out (hazard 1, R7d)", () 
     const ctx = ctxOf(OFFERING);
     const memory = createMemory();
     const seen: Action[] = [];
-    let state = newGame(SCENARIOS[OFFERING], 16);
-    for (const a of autoSetup(ctx, state)) state = (applyAction(ctx, state, a) as { state: GameState }).state;
-    let wiped = false;
+    // Starts from the refused game's own position just after the Axis answer (the cached refused game above, replayed through its answer at the engine alone: the Axis answer is
+    // the same, so the position is the one this test used to play its way to), instead of playing the 16 first Game Turns again.
+    const refused = play(OFFERING, 16, "refuse");
+    let state = refused.run.initial;
+    for (const a of refused.run.actions.slice(0, refused.at.answer! + 1)) state = (applyAction(ctx, state, a) as { state: GameState }).state;
+    expect(state.soviet?.offer).toBe("refused");
+    // The Russian army inside Russia is wiped out (what a long war would do), at once after the answer as before; one unit outside Russia is left.
+    const keep = Object.values(state.units).find((u) => u.owner === "ussr" && MAP.hexes[u.at]?.country !== "ussr");
+    state = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([, u]) => u.owner !== "ussr" || u.id === keep?.id)) };
+    const wiped = true;
     let conquered: GameEvent | undefined;
     for (let i = 0; i < 3000 && state.phase === "player-turn"; i++) {
       const legal = legalActions(ctx, state);
@@ -189,12 +195,6 @@ describe("a refused game in which Russia is then wiped out (hazard 1, R7d)", () 
       seen.push(action);
       conquered ??= r.events.find((e) => e.type === "COUNTRY_CONQUERED" && e.country === "ussr");
       state = r.state;
-      if (!wiped && state.soviet?.offer === "refused") {
-        // The Russian army inside Russia is wiped out (what a long war would do); one unit outside Russia is left.
-        const keep = Object.values(state.units).find((u) => u.owner === "ussr" && MAP.hexes[u.at]?.country !== "ussr");
-        state = { ...state, units: Object.fromEntries(Object.entries(state.units).filter(([, u]) => u.owner !== "ussr" || u.id === keep?.id)) };
-        wiped = true;
-      }
     }
     expect(wiped).toBe(true);
     expect(state.phase).toBe("game-over");
