@@ -450,3 +450,10 @@ For minor countries (spec 15, questions P1 to P8): whether the game places an at
 | E6 | spec 11 Parts C/D/I | Background write completion | Start IndexedDB writes on hidden/pagehide; no synchronous mirror is implemented. | Owner-manual, open (11-12). |
 | E7 | spec 11 Parts H/I | Device replay budget | `RESTORE_SLICE_MS = 40`, `RESTORE_BUDGET_MS = 20000`; tune only after measuring on the iPad. | Owner-manual, open (11-12). |
 | E8 | spec 11 Parts C/F/I | Browser storage and file behavior | `FILE_URL_LIFETIME_MS = 1000`; `DOWNLOAD_AFTER_SHARE_CANCEL = false`. Prefer supported file sharing, otherwise download; cancel does not download. Request persistence once after successful autosave; do not depend on a grant. | Owner-manual, open (11-12): Safari/Home Screen storage, eviction, persistence, share and download. |
+
+## Capital defence policy (spec 05, Defend Berlin)
+
+| Id | Source | Subject | Current default and reason | Status |
+| --- | --- | --- | --- | --- |
+| AER56 | spec 05, Defend Berlin; Ref 19.2 | Recall threshold | `CAPITAL_THREAT_RATIO = 1`: recall when one-turn enemy ground factors exceed terrain/fortress/winter-adjusted defending factors, to protect the main supply source before advancing. | TODO(verify), computer policy to assess by self-play; listed in RULES.md Open questions. |
+| AER57 | spec 05, Defend Berlin | Defensive ring | `CAPITAL_DEFENSE_RADIUS = 1`: include crossable immediate neighbours so reserves can shield a full capital from a legal adjacent defensive hex. | TODO(verify), computer policy to assess by self-play; listed in RULES.md Open questions. |
