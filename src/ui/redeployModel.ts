@@ -1,3 +1,4 @@
+import { escortOptions } from "../engine/sr-escort";
 import type { GameContext } from "../engine/context";
 import { sideInWar } from "../engine/control";
 import { parseHexId, distance, type HexId } from "../engine/hex";
@@ -69,7 +70,7 @@ function unitReason(problem: string): string {
 /** Whether some hex of the unit's region other than its own takes it alone: a cheap `srDestinations(...).length > 0`. */
 function hasPlace(ctx: GameContext, state: GameState, unit: Unit, view: SrView): boolean {
   for (const h of srRegion(ctx, state, unit, view)) if (h !== unit.at && endProblem(ctx, state, [unit], h) === null) return true;
-  return false;
+  return escortOptions(ctx, state, unit, view).length > 0;
 }
 
 function build(ctx: GameContext, state: GameState): Env {
@@ -87,7 +88,7 @@ function build(ctx: GameContext, state: GameState): Env {
     const problem = srUnitProblem(ctx, state, u, rec.moved, view);
     let note: string | null = problem ? unitReason(problem) : null;
     if (!note && srLeft(rec.used, nation) === 0) note = T.reasonNone(nation);
-    if (!note && !hasPlace(ctx, state, u, view)) note = T.REASON_NOWHERE;
+    if (!note && !hasPlace(ctx, state, u, view)) note = "Needs a Sea Escort and none is free, or no receiving port is legal.";
     const line: SrLine = { id: u.id, name: unitName(u, true), nation, can: note === null, note: note ?? (u.type === "replacement" ? T.REPLACEMENTS_NOTE : null) };
     by.set(u.at, [...(by.get(u.at) ?? []), line]);
   }
@@ -146,7 +147,8 @@ export function selectionFor(ctx: GameContext, state: GameState, hex: HexId, tic
     why = overAllowance(state, units, so);
     if (!why) {
       const from = parseHexId(hex);
-      const first = srDestinations(ctx, state, units[0]!, so, view);
+      const land = srDestinations(ctx, state, units[0]!, so, view);
+      const first = units.length === 1 ? [...new Set([...land, ...escortOptions(ctx, state, units[0]!, view).map(o => o.to)])] : land;
       destinations = (units.length === 1 ? first : first.filter((to) => srProblem(ctx, state, ticked, to, so, view) === null)).sort((a, b) => {
         const [pa, pb] = [parseHexId(a), parseHexId(b)];
         const [da, db] = from && pa && pb ? [distance(from, pa), distance(from, pb)] : [0, 0];
@@ -171,7 +173,7 @@ export function whyNot(ctx: GameContext, state: GameState, ids: readonly string[
   if (fault.includes("not controlled")) return T.WHY_NOT_CONTROL;
   if (fault.includes("enemy")) return T.WHY_NOT_ENEMY;
   if (fault.includes("cut off")) return T.WHY_NOT_SUPPLY;
-  return T.whyNotReached(placeName(ctx.map, out.at));
+  return "Needs a Sea Escort and none is free for this destination. Choose one ground unit or Replacement.";
 }
 
 export interface SrConfirm {

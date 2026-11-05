@@ -1,3 +1,5 @@
+import { escortOptions, escortProblem } from "./sr-escort";
+import { markUsed } from "./naval-record";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import type { HexId } from "./hex";
@@ -11,7 +13,7 @@ import type { GameState, PowerId, Unit } from "./types";
  * SR_UNITS at step 9e (spec 16 R18 to R20, C3, C5; Ref 11.72, Ops 5.48e): the side to move redeploys ground units and Replacements, one use
  * of their nation's allowance each, to any hex of the region they can reach (sr-region.ts). The step waits only while some unit of the
  * side can still be redeployed; redeploying is optional, so END_STEP stays legal there (actions.ts adds it, as at 6f).
- * Air units and airbases (R23, 16-22b) are listed one counter at a time. Not here: grants (16-18), Sea Escort (16-21), fleets (16-23), the computer's policy (16-20).
+ * Air units and airbases (R23, 16-22b) are listed one counter at a time. Not here: grants (16-18), fleets (16-23), the computer's policy (16-20).
  */
 
 type Redeploy = Extract<Action, { type: "SR_UNITS" }>;
@@ -39,7 +41,7 @@ const candidates = (state: GameState): Unit[] =>
 export function hasSrWork(ctx: GameContext, state: GameState): boolean {
   const view = srView(ctx, state);
   const so = soFar(state);
-  return candidates(state).some((u) => destinationsOf(ctx, state, u, so, view).length > 0);
+  return candidates(state).some((u) => destinationsOf(ctx, state, u, so, view).length > 0 || escortOptions(ctx, state, u, view).length > 0);
 }
 
 const listed = new WeakMap<GameState, WeakMap<GameContext, Action[]>>();
@@ -72,6 +74,9 @@ function computeSr(ctx: GameContext, state: GameState): Action[] {
       if (ids.every((id) => dests.get(id)!.includes(to)) && (ids.length === 1 || srProblem(ctx, state, ids, to, so, view) === null)) out.push({ type: "SR_UNITS", side, units: ids, to });
     }
   }
+  // Spec 16 R22: each escort choice carries one counter, even when land actions group a stack.
+  for (const u of candidates(state)) for (const option of escortOptions(ctx, state, u, view))
+    out.push({ type: "SR_UNITS", side, units: [u.id], ...option });
   return out;
 }
 
@@ -91,20 +96,23 @@ export function legalSr(ctx: GameContext, state: GameState): Action[] {
 export function applySr(ctx: GameContext, state: GameState, action: Redeploy): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (!Array.isArray(action.units) || action.units.some((id) => typeof id !== "string") || typeof action.to !== "string") return { ok: false, error: "SR_UNITS needs a list of unit ids and a destination hex." };
-  if (action.escort !== undefined) return { ok: false, error: "Redeployment across the sea by Sea Escort is not built yet." };
   const air = action.units.map((id) => state.units[id]).filter((u): u is Unit => !!u && isAirKind(u));
   if (air.length > 0 && action.units.length > 1) return { ok: false, error: "An air unit or airbase is redeployed alone, not with other units." };
-  const problem = air.length === 1 ? airRedeployProblem(ctx, state, action.side, air[0]!, action.to) : srProblem(ctx, state, action.units, action.to, soFar(state));
+  const problem = action.escort !== undefined ? escortProblem(ctx, state, action.units, action.to, action.escort)
+    : air.length === 1 ? airRedeployProblem(ctx, state, action.side, air[0]!, action.to) : srProblem(ctx, state, action.units, action.to, soFar(state));
   if (problem) return { ok: false, error: problem };
   const units = action.units.map((id) => state.units[id]!);
   const rec = srOf(state);
   const used = { ...rec.used };
   for (const [power, n] of Object.entries(srUnitCost(state, units)) as [PowerId, number][]) used[power] = (used[power] ?? 0) + n;
-  const next: GameState = {
+  let next: GameState = {
     ...state,
     units: { ...state.units, ...Object.fromEntries(units.map((u) => [u.id, { ...u, at: action.to }])) },
-    sr: { ...rec, used, moved: [...rec.moved, ...units.map((u) => u.id)] },
+    sr: { ...rec, used, moved: [...rec.moved, ...units.map((u) => u.id)],
+      escorted: action.escort ? { ...rec.escorted, [units[0]!.id]: action.escort } : rec.escorted },
   };
+  // Spec 16 R22 / spec 12 R5: a Sea Escort exhausts the fleet for both Player Turns.
+  if (action.escort) next = markUsed(next, [action.escort], "escort");
   // One event for each nation and starting hex, so every event names one nation and one place the units left.
   const events: GameEvent[] = [];
   const seen = new Set<string>();

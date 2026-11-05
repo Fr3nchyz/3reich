@@ -1,4 +1,4 @@
-import { cancelRedeploy, changeDestination, chooseStack, confirmRedeploy, pickDestination, setWhereOpen, tickAll, tickNone, toggleTick } from "./redeployTap";
+import { chooseEscort, cancelRedeploy, changeDestination, chooseStack, confirmRedeploy, pickDestination, setWhereOpen, tickAll, tickNone, toggleTick } from "./redeployTap";
 import { takeBackReason, takeBackRedeploy } from "./redeployUndo";
 import type { Session } from "./session";
 
@@ -18,6 +18,7 @@ export function bindRedeploy(root: HTMLElement, s: Session, redraw: () => void):
   on<HTMLButtonElement>("button.sr-line[data-srunit]", (b) => toggleTick(s, b.dataset.srunit!));
   on<HTMLButtonElement>("button.sr-dest", (b) => pickDestination(s, b.dataset.srdest!));
   root.querySelector<HTMLDetailsElement>("#sr-where")?.addEventListener("toggle", (ev) => setWhereOpen(s, (ev.currentTarget as HTMLDetailsElement).open)); // no redraw: the page already shows it
+  on<HTMLButtonElement>("button[data-srescort]", b => chooseEscort(s, b.dataset.srescort!));
   on("#sr-all", () => tickAll(s));
   on("#sr-none", () => tickNone(s));
   on("#sr-cancel", () => cancelRedeploy(s));
