@@ -64,7 +64,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run --coverage --shard=${{ matrix.shard }}/2 --reporter=blob --outputFile=.vitest-reports/blob-${{ matrix.shard }}.json
+      # A half of the tests cannot meet the floor alone: thresholds are off here and enforced on the merged result in `check`.
+      - run: npx vitest run --coverage --coverage.thresholds.statements=0 --coverage.thresholds.lines=0 --coverage.thresholds.branches=0 --coverage.thresholds.functions=0 --shard=${{ matrix.shard }}/2 --reporter=blob --outputFile=.vitest-reports/blob-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v6
         with:
           name: vitest-blob-${{ matrix.shard }}
