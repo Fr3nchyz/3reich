@@ -261,8 +261,9 @@ type VacantAction = Extract<Action, { type: "VACANT_HEX_ATTACK" }>;
 /**
  * VACANT_HEX_ATTACK (Ref 12.32; spec 16 R16, 16-14b): the legality is `vacantHexAttackProblem`. No die is rolled. The attackers are used and the hex
  * attacked; the first armor advances in under the ordinary advance rules (supply cut-off, stacking, Anglo-French stop, minors), taking control as an
- * advance does. When `vacantHexAttackPlan` allows Exploitation the hex becomes a Breakthrough hex; otherwise none is recorded (16-14a's open item,
- * decided: the attack is legal and the hex is simply not a Breakthrough hex). Not in `legalActions`, so the computer never makes it.
+ * advance does. When `vacantHexAttackPlan` allows Exploitation the hex becomes a Breakthrough hex. R16 says the armor creates one, but bars
+ * Exploitation from it next to an enemy ground unit or with no supply line; when barred, this code does not record the hex (a judgment call:
+ * a recorded non-exploitable hex changes nothing observable today; AER20 stays open for the owner to confirm). Not in `legalActions`, so the computer never makes it.
  */
 export function applyVacantHexAttack(ctx: GameContext, state: GameState, action: VacantAction): ActionResult {
   const ids = action.units;

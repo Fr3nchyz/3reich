@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { applyAction, legalActions } from "../src/engine/actions";
+import { ACTION_FIELDS } from "../src/save/format";
 import { combatOf } from "../src/engine/combat-record";
 import { exploitOf } from "../src/engine/exploit-record";
 import { movesOf } from "../src/engine/move-record";
@@ -69,7 +70,43 @@ describe("spec 16 R16 (16-14b): the vacant-hex attack action", () => {
     const crowd = Array.from({ length: 6 }, (_, i) => INF(`f${i}`, "M31")).map((u) => ({ ...u, owner: "germany" as const }));
     const s = at7h();
     s.units = { ...s.units, ...Object.fromEntries(crowd.map((u) => [u.id, u])) };
-    s.control.M31 = "poland"; // own units on an enemy-controlled hex is not vacant for the enemy, but friendly stack fills the hex
+    // Six friendly counters already stand in M31, so the armor cannot advance in under the stacking limit.
     expect(go(s)).toMatchObject({ ok: false });
+  });
+  it("a target with no supply line allows the attack but records no Breakthrough", () => {
+    const s = at7h();
+    s.fortresses.M32 = true;
+    for (const h of Object.keys(s.control)) if (h !== "M32") s.control[h] = "poland";
+    const r = ok(go(s));
+    expect(r.state.units.a!.at).toBe("M31");
+    expect(exploitOf(r.state).groups).toEqual([]);
+  });
+  it("the Anglo-French stop bars a British advance into Paris", () => {
+    const s = at7h();
+    s.activeSide = "allies";
+    s.units = { br: { id: "br", at: "O21", owner: "britain", type: "armor", strength: 4 } };
+    for (const h of Object.keys(s.control)) s.control[h] = "britain";
+    s.control.O22 = "germany";
+    s.frontOptions = { [CTX.map.hexes.O22!.front]: { option: "offensive" } };
+    const r = applyAction(CTX, s, { type: "VACANT_HEX_ATTACK", side: "allies", units: ["br"], target: "O22" });
+    expect(r.ok ? "ok" : r.error).toMatch(/British units may not stop/);
+    expect(r.ok).toBe(false);
+  });
+  it("France's limits while Paris is Axis-held apply (not adjacent to Paris)", () => {
+    const s = at7h();
+    s.activeSide = "allies";
+    s.units = { fr: { id: "fr", at: "M32", owner: "france", type: "armor", strength: 4 } };
+    for (const h of Object.keys(s.control)) s.control[h] = "france";
+    s.control.O22 = "germany";
+    s.control.M31 = "germany";
+    s.frontOptions = { [CTX.map.hexes.M31!.front]: { option: "offensive" } };
+    const r = applyAction(CTX, s, { type: "VACANT_HEX_ATTACK", side: "allies", units: ["fr"], target: "M31" });
+    expect(r.ok ? "ok" : r.error).toMatch(/Paris|adjacent|odds|supply/i);
+  });
+  it("the action survives a JSON (save) round trip and the field list names its fields", () => {
+    const a = JSON.parse(JSON.stringify({ type: "VACANT_HEX_ATTACK", side: "axis", units: ["a", "b"], target: "M31" })) as Parameters<typeof applyAction>[2];
+    expect(ACTION_FIELDS.VACANT_HEX_ATTACK).toBe("side units target");
+    const r = applyAction(CTX, at7h(), a);
+    expect(r.ok && r.state).toEqual(win.state);
   });
 });
