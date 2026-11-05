@@ -95,11 +95,13 @@ describe("step 6f: movement toward the nearest enemy objective", () => {
 
   it("does not end a move next to enemy ground factors worth more than twice its own there", () => {
     // 12 Polish factors in M34. From L33 the only gains are L34 and M33, both beside them: a weak unit stays, a strong stack goes.
+    // Spec 05 Defend Berlin: a sufficient garrison isolates ordinary advancing safety from capital recalls.
+    const garrison = inf("capital", "germany", "L31", 12, 0);
     const pol = [inf("p1", "poland", "M34", 6, 3), inf("p2", "poland", "M34", 6, 3)];
-    const weak = at6f([inf("u1", "germany", "L33", 1, 1), ...pol]);
+    const weak = at6f([inf("u1", "germany", "L33", 1, 1), garrison, ...pol]);
     expect(legalActions(CTX, weak).some((a) => a.type === "MOVE" && adjacentHexes(CTX, "M34").includes(dest(a)))).toBe(true);
     expect(decide(weak).action).toEqual({ type: "END_STEP", side: "axis", step: "6f" });
-    const strong = at6f([inf("u1", "germany", "L33", 7, 1), ...pol]);
+    const strong = at6f([inf("u1", "germany", "L33", 7, 1), garrison, ...pol]);
     expect(adjacentHexes(CTX, "M34")).toContain(dest(decide(strong).action as Move));
   });
 
