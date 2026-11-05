@@ -348,11 +348,12 @@ describe("the events and the log", () => {
 });
 
 describe("whole games of the computer", () => {
-  it("1939 seed 3: Paris falls in Spring 1940, France becomes Vichy, the colonies are decided by the dice, and the computer plays to the end without an anomaly; the same game twice is the same", () => {
+  // Spec 05 capital defence reinforces Paris: seed 3 now falls in Summer rather than Spring 1940; spec 14 R5 conquest and replay checks remain the same.
+  it("1939 seed 3: Paris falls in Summer 1940, France becomes Vichy, the colonies are decided by the dice, and the computer plays to the end without an anomaly; the same game twice is the same", () => {
     const r = runGame({ scenario: "1939", seed: 3, turns: "end", verify: true });
     expect(r.anomalies).toEqual([]);
     expect(r.ended).toBe("game-over");
-    expect(r.final.conquests!.find((c) => c.country === "france")).toMatchObject({ by: "germany", side: "allies", how: "capital", at: { year: 1940, season: "spring" }, startingBrps: 85 });
+    expect(r.final.conquests!.find((c) => c.country === "france")).toMatchObject({ by: "germany", side: "allies", how: "capital", at: { year: 1940, season: "summer" }, startingBrps: 85 });
     expect(r.final.nations.france).toMatchObject({ status: "vichy", brpTotal: 0 });
     expect(r.final.minorAllies).toContainEqual({ owner: "vichy-france", of: "germany", active: false });
     expect(owned(r.final, "france")).toEqual([]);
