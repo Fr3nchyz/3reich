@@ -48,8 +48,7 @@ jobs:
           changed=$(git diff --name-only "origin/$BASE...HEAD")
           echo "$changed"
           if echo "$LABELS" | grep -q '"run-e2e"' || echo "$changed" | grep -qE '^(package(-lock)?\.json|vite\.config\.ts|playwright\.config\.ts|index\.html|\.github/workflows/)'; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
-  # Unit tests, split in two halves by file (vitest hashes the path, which puts the two slowest files, tests/winter-play.test.ts in shard 1 and
-  # tests/surrender-play.test.ts in shard 2, in different jobs). Each shard uploads a blob report with its raw coverage; `check` merges them.
+  # Unit tests, split in two halves by file (scripts/ci-shard.mjs: vitest's own hash split with the slow files pinned by hand so both halves take about the same time). Each shard uploads a blob report with its raw coverage; `check` merges them.
   test-shard:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -65,7 +64,7 @@ jobs:
           cache: npm
       - run: npm ci
       # A half of the tests cannot meet the floor alone: thresholds are off here and enforced on the merged result in `check`.
-      - run: npx vitest run --coverage --coverage.thresholds.statements=0 --coverage.thresholds.lines=0 --coverage.thresholds.branches=0 --coverage.thresholds.functions=0 --shard=${{ matrix.shard }}/2 --reporter=blob --outputFile=.vitest-reports/blob-${{ matrix.shard }}.json
+      - run: node scripts/ci-shard.mjs ${{ matrix.shard }} --coverage --coverage.thresholds.statements=0 --coverage.thresholds.lines=0 --coverage.thresholds.branches=0 --coverage.thresholds.functions=0 --reporter=blob --outputFile=.vitest-reports/blob-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v6
         with:
           name: vitest-blob-${{ matrix.shard }}
