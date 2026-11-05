@@ -19,6 +19,7 @@ Checks that CI also runs:
 npm run lint       # ESLint (flat config); src/ files stay at or under 300 lines of code
 npm run typecheck  # app, engine (no DOM, no Node) and e2e configs
 npm run coverage   # unit tests plus the coverage floor for src/engine
+# CI runs the same tests as two shards (`vitest --shard=i/2` with blob reports) and merges the coverage in the `check` job
 npm run e2e        # builds a test bundle (dist-e2e, with the test-only game loader), then Playwright browser tests against `vite preview` (mouse and touch)
 npm run selfplay -- --scenario 1939 --turns end --seed 1   # headless computer-against-computer game with reports (docs/SELFPLAY.md)
 ```

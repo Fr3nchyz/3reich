@@ -48,7 +48,33 @@ jobs:
           changed=$(git diff --name-only "origin/$BASE...HEAD")
           echo "$changed"
           if echo "$LABELS" | grep -q '"run-e2e"' || echo "$changed" | grep -qE '^(package(-lock)?\.json|vite\.config\.ts|playwright\.config\.ts|index\.html|\.github/workflows/)'; then echo "e2e=true" >> "$GITHUB_OUTPUT"; else echo "e2e=false" >> "$GITHUB_OUTPUT"; fi
+  # Unit tests, split in two halves by file (vitest hashes the path, which puts the two slowest files, tests/winter-play.test.ts in shard 1 and
+  # tests/surrender-play.test.ts in shard 2, in different jobs). Each shard uploads a blob report with its raw coverage; `check` merges them.
+  test-shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --coverage --shard=${{ matrix.shard }}/2 --reporter=blob --outputFile=.vitest-reports/blob-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: .vitest-reports/
+          include-hidden-files: true
+          if-no-files-found: error
+  # The one check that branch protection requires ("check"): the two
+  # blob reports are merged and the coverage floor for src/engine (thresholds in vite.config.ts) is enforced on the merged result.
   check:
+    needs: test-shard
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -58,10 +84,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: vitest-blob-*
+          path: .vitest-reports
+          merge-multiple: true
+      - run: npx vitest run --merge-reports --coverage
       - run: npm run lint
       - run: npm run typecheck
-      # Unit tests with the coverage floor for src/engine (thresholds in vite.config.ts).
-      - run: npm run coverage
       - run: npm run build
   # Informational only; branch protection continues to use the existing checks.
   compare-games:
