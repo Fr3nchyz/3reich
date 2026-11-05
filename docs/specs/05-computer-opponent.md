@@ -124,3 +124,34 @@ Every side in every scenario holds more and loses far fewer units to supply with
 **What still looks weak** (why the effects stay off): (1) Berlin. The computer does not defend its capital, and with capitals as the only main sources (19.2) the fall of Berlin cuts off every German unit outside a special net, which dies within a turn. Berlin falls in 14 of the 30 1939 games with the effects on (5 with them off, where the cut-off army lives on) and in 28 of 30 Campaign games either way; in the 1939 games 289 of the 390 Axis units lost to supply died in Summer 1942, the last Game Turn, after it fell. So the Campaign with the effects on ends with the Axis holding about 2 objectives a game against 9 with them off. Whether the original gives Germany another source is open (docs/RULES.md). (2) The Axis advance is slower, since it no longer slips through gaps it cannot hold: 1939 objectives by Fall 1940 are 245 against 255 before (summed), and some seeds stall in front of the French line (the old "West stall", spec above). (3) Idle Player Turns stay high in the 1939 and Campaign scenarios (cut-off units cannot move). (4) Sea supply (19.31) is not built, so the island garrisons above are lost every game; the computer is not asked to solve that.
 - Tests: `tests/ai-supply.test.ts` (the prediction on hand-built positions: German land next to Poland, East Prussia, Warsaw, Paris, a Maginot Fortress, enemy armor ZOC and the source exception, source sets serving one owner; the 6f choice with and without the rule; the loss and attack rules at 7h), `tests/ai-lines.test.ts` (prediction against the engine along real games), `tests/ai-supply-play.test.ts` (four Game Turns of each scenario with the effects on and every choice checked against `legalActions`; the rules inert with the effects off), `tests/supply-network.test.ts` (the network gives `supplyStatus`'s answer), `tests/supply-snapshot.test.ts` (hashes of `supplyStatus` along two games, taken with the search before it was made faster: unchanged), `tests/selfplay.test.ts` (`--supply-effects`; recordings store the setting and replay in it, `recordingContext`). Mutation checks: each rule's constant switched off, the fallback removed, the pool unused, each step of the prediction removed (ZOC, the source exception, the pair rule, the hexside, the Fortress, the capital, the friendly-control check, which owners a set serves), the network cache, the loss and attack rules unwired: each made at least one test fail. One survivor is equivalent (taking any serving set first in `supplyStatus` instead of the main one: the main sets come first in the list).
 
+## Defend Berlin
+
+At movement step 6f, before advancing, the computer checks each of its Major Power capitals that its side still holds. This protects the main supply source (Ref 19.2), using the same policy for both sides and with supply effects on or off. A captured capital or a minor country's capital does not trigger a recall.
+
+The threat is the sum of visible enemy ground factors that can reach the capital or a crossable immediate neighbour within one Game Turn, counting each unit once. The engine's movement search respects movement allowance, occupied hexes, neutral borders and armor ZOC costs (Ref 5.45f, 7.0); off-map reserves, future orders, spending and dice are not read. Local defence sums friendly ground factors in that ring with the combat rules' terrain, active-fortress and winter multipliers (Ref 4.5–4.9, 12.1, 28.0). A future river approach is unknown, so no river benefit is projected.
+
+When threat exceeds the named ratio of defence, recall the nearest movable reserve along a legal route into the ring. Reserves already in the ring, in contact with enemy ground units, or recorded as having attacked are excluded. Reject a recall if removing the unit opens a new one-turn enemy entry or attack route to any held objective. Rank routes by length, then prefer the capital, stronger defensive terrain, unit id and destination id; destination stacking and other movement restrictions remain the engine's. Recheck after each move and stop recalling once defence meets the threshold. The existing movement cap and capital-garrison policy still apply (`src/ai/geo.ts`, `src/ai/move.ts`).
+
+These are computer policy defaults, not additional game rules:
+
+| Exported constant | Value | Verification id | Reason |
+| --- | --- | --- | --- |
+| `CAPITAL_THREAT_RATIO` | 1 | TODO(verify) AER56 | Reinforce when one-turn enemy factors exceed multiplied local defence. |
+| `CAPITAL_DEFENSE_RADIUS` | 1 | TODO(verify) AER57 | Include crossable immediate neighbours as places to shield the capital. |
+
+Both ids are listed in the Open questions of `docs/RULES.md` and in `docs/TODO-VERIFY.md`. Hand-built positions in `tests/ai-defend-capital.test.ts` cover legal recalls, an absent or blocked threat, defence multipliers, reserve ordering, stopping after reinforcement, front protection, attacked units, public information, other Major Powers, captured/minor capitals, stacking and determinism.
+
+### Fixed-seed hashes and first recalls
+
+The owner approved the symmetric trigger, including threatened Paris and Moscow, in round 4. All five pins in `tests/ai-stability.test.ts` change from `origin/main` (`dbc43d9`). These games use supply effects off: Paris or Moscow is nevertheless threatened, so the capital policy intentionally applies. The first recalls below count decisions after automatic setup, starting at zero; they identify the first capital-defence decision, rather than a whole-game recording index.
+
+| Hash case | Before | After | First recall causing later play to change |
+| --- | --- | --- | --- |
+| 1939 seed 1, four Game Turns | 2373083227 | 2875132212 | Fall 1939, decision 52: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1942 seed 1, two Game Turns | 499761129 | 4013645292 | Spring 1942, decision 78: Moscow H47; u67 from F48 to G47; 30 enemy factors versus 16 defence. |
+| 1939 seed 5, four Game Turns | 314446180 | 2808569953 | Fall 1939, decision 51: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1939 seed 2, four Game Turns | 432526852 | 4099648217 | Fall 1939, decision 51: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1939 seed 5, every step-7h legal-action list over four Game Turns | 2053152029 | 2124377022 | The same Paris recall at decision 51 changes subsequent positions and their combat menus. |
+
+No fixture or browser recording is changed. The unthreatened-capital tests pin the absence of recalls when no enemy can reach the ring; Berlin being safe alone does not suppress a recall for another threatened Major Power capital.
+
