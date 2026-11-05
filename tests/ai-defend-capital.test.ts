@@ -105,6 +105,23 @@ describe("capital recall safeguards (spec 05)", () => {
     expect(opensObjective(ctx, s, s.units.u2!)).toBe(true);
     expect(defendCapital(ctx, s)).toBeUndefined();
   });
+  it("ignores a force whose route to the defensive ring is blocked", () => {
+    const s = position();
+    s.units.blocker = inf("blocker", "germany", "L33", 1);
+    expect(capitalThreat(corridor(), s, "L31").enemies).toEqual([]);
+    expect(defendCapital(corridor(), s)).toBeUndefined();
+  });
+  it("respects neutral borders in a potential enemy approach", () => {
+    const s = position();
+    s.control.L33 = "italy";
+    s.nations.italy.status = "neutral";
+    expect(capitalThreat(corridor(), s, "L31").enemies).toEqual([]);
+  });
+  it("counts armor ZOC exit cost in the one-turn threat", () => {
+    const s = position();
+    s.units.blocker = inf("blocker", "germany", "L33", 1, 3, "armor");
+    expect(capitalThreat(corridor(), s, "L31").enemies).toEqual([]);
+  });
   it("takes the nearest reserve first and stops recalling once reinforced", () => {
     const ctx = corridor();
     const s = position();
