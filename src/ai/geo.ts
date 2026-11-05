@@ -122,7 +122,7 @@ export function capitalThreat(ctx: GameContext, state: GameState, capital: HexId
   const fields = new Map<string, Map<HexId, number>>();
   const enemies = Object.values(state.units).filter((u) => {
     const side = sideInWar(state, u.owner);
-    if (!isGroundCombatUnit(u) || side === null || side === state.activeSide) return false;
+    if (!ctx.map.hexes[u.at] || !isGroundCombatUnit(u) || side === null || side === state.activeSide) return false;
     let field = fields.get(u.owner);
     if (!field) fields.set(u.owner, (field = groundDistances(ctx, state, u.owner, area)));
     return (field.get(u.at) ?? Infinity) <= movementFactor(u);
@@ -142,7 +142,7 @@ export function opensObjective(ctx: GameContext, state: GameState, unit: Unit): 
   delete after.units[unit.id];
   for (const enemy of Object.values(state.units)) {
     const side = sideInWar(state, enemy.owner);
-    if (!isGroundCombatUnit(enemy) || side === null || side === state.activeSide || movementFactor(enemy) === 0) continue;
+    if (!ctx.map.hexes[enemy.at] || !isGroundCombatUnit(enemy) || side === null || side === state.activeSide || movementFactor(enemy) === 0) continue;
     // Only removing a last ground blocker can create an entry route (Ref 5.45f); friendly armor ZOC remains engine-owned.
     const beforeReach = reachableHexes(ctx, state, [enemy]);
     const afterReach = reachableHexes(ctx, after, [enemy]);
@@ -155,7 +155,7 @@ export function opensObjective(ctx: GameContext, state: GameState, unit: Unit): 
 /** Spec 05 Defend Berlin, Ref 19.2: reinforce own Major Power capitals before ordinary advances. */
 export function defendCapital(ctx: GameContext, state: GameState): Decision | undefined {
   const side = state.activeSide;
-  const ground = Object.values(state.units).filter(isGroundCombatUnit);
+  const ground = Object.values(state.units).filter((u) => ctx.map.hexes[u.at] && isGroundCombatUnit(u));
   const used = combatOf(state).attacked;
   for (const capital of objectiveHexes(ctx)) {
     const h = ctx.map.hexes[capital]!;
@@ -169,7 +169,7 @@ export function defendCapital(ctx: GameContext, state: GameState): Decision | un
     for (const unit of reserves) {
       for (const [to, path] of reachableHexes(ctx, state, [unit])) {
         if (!area.includes(to) || endProblem(ctx, state, [unit], to) !== null) continue;
-        const multiplier = defenseMultiplier({ terrain: ctx.map.hexes[to]!.land ?? "plain", fortress: state.fortresses[to] === true, winter: winterDefence(ctx, state, [{ ...unit, at: to }], to) });
+        const multiplier = defenseMultiplier({ terrain: ctx.map.hexes[to]!.land ?? "plain", fortress: state.fortresses[to] === true, winter: winterDefence(ctx, state, [unit], to) });
         candidates.push({ unit, to, path, multiplier });
       }
     }
