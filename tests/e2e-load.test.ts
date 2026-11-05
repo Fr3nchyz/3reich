@@ -4,6 +4,7 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { Action } from "../src/engine/actions";
 import { targetsNow } from "../src/ui/attackTap";
 import { installE2eLoad, sessionFromRecord, type E2eLoad } from "../src/ui/e2eLoad";
+import { endCard } from "../src/ui/endCard";
 
 /** The recorded game the browser tests load (tests/e2e/fixtures/axis-at-7h.json, made by scripts/make-e2e-fixture.ts) must still reach step 7h with Warsaw and Krakow to attack. */
 const fixture = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "utf8")) as { scenario: string; seed: number; actions: Action[] };
@@ -35,6 +36,14 @@ describe("the recorded game for the browser tests (test-only hook)", () => {
 
 describe("the finished game for the browser tests (ticket 14-4)", () => {
   const ended = JSON.parse(readFileSync("tests/e2e/fixtures/ended-1939.json", "utf8")) as { scenario: string; seed: number; end: { year: number; season: "spring" | "summer" | "fall" | "winter" }; actions: Action[] };
+  it("pins the finished fixture's Objective counts in the result card and log (spec 15 R12, ticket 15-11b, #294)", () => {
+    const scenario = { ...SCENARIO_1939, end: ended.end };
+    const s = sessionFromRecord(scenario, "axis", ended.seed, ended.actions);
+    // #294 creates Eastern Europe at Axis Fall 1939 end: one Allied Objective becomes neutral.
+    expect(s.state.result?.objectives).toEqual({ axis: 9, allies: 22, nobody: 11 });
+    expect(endCard(s.ctx, s.state)?.counts).toBe("Objectives held: Axis 9, Allies 22, nobody 11");
+    expect(s.log.filter((line) => line === "The scenario ends after Fall 1939. Allied Decisive Victory. Objectives held: Axis 9, Allies 22, nobody 11.")).toHaveLength(1);
+  });
   it("replays to the end of the scenario cut to its first Game Turn, with a result (made by scripts/make-e2e-fixture.ts)", () => {
     const got: { end: unknown; phase: string; verdict: string | undefined }[] = [];
     const target = new EventTarget();

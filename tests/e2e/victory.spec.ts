@@ -125,7 +125,8 @@ for (const size of SIZES) {
     await expect(page.locator("#end-title")).toHaveText("Allied Decisive Victory");
     await expect(dialog).toContainText("(a complete win for the Allies)");
     await expect(dialog).toContainText("The scenario ended after Fall 1939.");
-    await expect(dialog).toContainText("Objectives held: Axis 9, Allies 23, nobody 10");
+    // Ticket 15-11b (#294), spec 15 R12: Eastern Europe makes one Allied Objective neutral at Axis Fall 1939 end.
+    await expect(dialog).toContainText("Objectives held: Axis 9, Allies 22, nobody 11");
     await expect(dialog).toContainText("The Allies needed 17 for a Decisive victory.");
     const box = (await dialog.boundingBox())!;
     expect(box.x, "inside the screen, left").toBeGreaterThanOrEqual(0);
@@ -173,7 +174,8 @@ test("'Read the log' puts the card away and takes the reader to the log, which n
   await page.locator("#end-log").click();
   await expect(page.locator("#end-card")).toHaveCount(0);
   await expect(page.locator("ol.log")).toBeFocused();
-  await expect(page.locator("ol.log li", { hasText: "Allied Decisive Victory. Objectives held: Axis 9, Allies 23, nobody 10." })).toHaveCount(1);
+  // Ticket 15-11b (#294), spec 15 R12: the finished game's counts include neutral Eastern Europe.
+  await expect(page.locator("ol.log li", { hasText: "Allied Decisive Victory. Objectives held: Axis 9, Allies 22, nobody 11." })).toHaveCount(1);
 });
 
 test("'New game' starts again from the title screen's own button", async ({ page }) => {
