@@ -116,7 +116,7 @@ export const CAPITAL_THREAT_RATIO = 1;
 /** TODO(verify) AER57, spec 05 Defend Berlin: include the capital's immediate defensive ring. */
 export const CAPITAL_DEFENSE_RADIUS = 1;
 
-/** Public-board estimate like move.ts enemyNear, extended by printed movement over open ground; no dice or future orders. */
+/** Spec 05: public-board one-turn reach, respecting blockers, neutral borders and armor ZOC (Ref 5.45f, 7.0). */
 export function capitalThreat(ctx: GameContext, state: GameState, capital: HexId): { enemies: Unit[]; area: HexId[]; defense: number } {
   const area = [capital, ...(CAPITAL_DEFENSE_RADIUS > 0 ? neighborIds(ctx, capital).filter((h) => attackCrossable(ctx, capital, h)) : [])];
   const fields = new Map<string, Map<HexId, number>>();
@@ -125,7 +125,10 @@ export function capitalThreat(ctx: GameContext, state: GameState, capital: HexId
     if (!ctx.map.hexes[u.at] || !isGroundCombatUnit(u) || side === null || side === state.activeSide) return false;
     let field = fields.get(u.owner);
     if (!field) fields.set(u.owner, (field = groundDistances(ctx, state, u.owner, area)));
-    return (field.get(u.at) ?? Infinity) <= movementFactor(u);
+    if ((field.get(u.at) ?? Infinity) > movementFactor(u)) return false;
+    if (area.includes(u.at)) return true;
+    const reach = reachableHexes(ctx, state, [u]);
+    return area.some((h) => reach.has(h));
   });
   // Ref 4.5-4.9, 12.1, 28.0: reuse combat terrain/fortress/winter multipliers; future river approaches are unknown.
   const defense = area.reduce((n, h) => {

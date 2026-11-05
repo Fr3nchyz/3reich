@@ -100,7 +100,7 @@ function corridor(owner: ForceOwner = "germany"): GameContext {
 describe("capital recall safeguards (spec 05)", () => {
   it("keeps a non-contact reserve blocking the only route to an objective", () => {
     const ctx = corridor();
-    const s = at6f([inf("u1", "germany", "L31", 1), inf("u2", "germany", "L28", 4), inf("e1", "france", "L26", 8, 4)]);
+    const s = at6f([inf("u1", "germany", "L31", 1), inf("u2", "germany", "L28", 4), inf("e1", "france", "L26", 8, 4), inf("e2", "france", "L34", 8)]);
     expect(capitalThreat(ctx, s, "L31").enemies).toHaveLength(1);
     expect(opensObjective(ctx, s, s.units.u2!)).toBe(true);
     expect(defendCapital(ctx, s)).toBeUndefined();
@@ -110,7 +110,7 @@ describe("capital recall safeguards (spec 05)", () => {
     const s = position();
     s.units.u3 = inf("u3", "germany", "L29", 4);
     const d = defendCapital(ctx, s)!;
-    expect(d.action).toMatchObject({ type: "MOVE", units: ["u3"], path: ["L29", "L30"] });
+    expect(d.action).toMatchObject({ type: "MOVE", units: ["u3"], path: ["L30"] });
     const r = applyAction(ctx, s, d.action);
     expect(r.ok).toBe(true);
     if (r.ok) expect(defendCapital(ctx, r.state)).toBeUndefined();
@@ -131,6 +131,7 @@ describe("capital recall safeguards (spec 05)", () => {
     const s = position();
     const mountains = { ...ctx, map: { ...ctx.map, hexes: { ...ctx.map.hexes, L31: { ...ctx.map.hexes.L31!, land: "mountains" as const } } } };
     expect(capitalThreat(mountains, s, "L31").defense).toBe(3);
+    s.units = { ...s.units };
     for (const h of ["L30", "L31", "L32"]) {
       s.units[h + "a"] = inf(h + "a", "germany", h, 0);
       s.units[h + "b"] = inf(h + "b", "germany", h, 0);
