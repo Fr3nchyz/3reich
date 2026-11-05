@@ -9,6 +9,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 type Pt = readonly [number, number];
 const FIXTURE = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "utf8")) as { scenario: string; seed: number; actions: { type: string }[] };
+// Ticket 15-7 (#235), spec 15 R10: the German armor at Helsinki (D41) can move within sleeping Finland.
 const TO_6F = FIXTURE.actions.slice(0, FIXTURE.actions.findIndex((a) => a.type === "MOVE"));
 
 async function load(page: Page, size?: Pt): Promise<string[]> {
@@ -18,6 +19,8 @@ async function load(page: Page, size?: Pt): Promise<string[]> {
   await page.goto("/?e2e");
   await page.evaluate((detail) => document.dispatchEvent(new CustomEvent("e2e-load", { detail })), { scenario: FIXTURE.scenario, side: "axis", seed: FIXTURE.seed, actions: TO_6F });
   await expect(page.locator(".turn")).toContainText("step 6f");
+  await expect(page.locator("button.stack-row")).toHaveCount(7);
+  expect(await stackHexes(page)).toEqual(["D41", "J36", "K33", "L31", "M27", "N26", "O32"]);
   return errors;
 }
 
@@ -64,7 +67,7 @@ async function emptyYellow(page: Page, avoid: readonly string[]): Promise<{ id: 
 
 test("tap a stack, untick one unit, tap a yellow hex: only the ticked unit moves, the other stays and the hex stays chosen", async ({ page, hasTouch }) => {
   const errors = await load(page);
-  await expect(page.locator("#stacks-title")).toHaveText("Stacks that can move (6)");
+  await expect(page.locator("#stacks-title")).toHaveText("Stacks that can move (7)");
   await expect(page.locator(".nextbar")).toContainText("Next: tap a stack of yours to move, or finish step 6f.");
   const stacks = await stackHexes(page);
   await tapHexId(page, hasTouch, "J36");
@@ -111,7 +114,7 @@ test("the old two taps still move a whole stack; the card is gone afterwards and
   await expect(moveLog(page).first()).toHaveText(new RegExp(`^2 x 4-6 German armor move from .*O32\\) to .*${dest.id}`));
   await expect(card(page)).toHaveCount(0);
   await expect(yellow(page)).toHaveCount(0);
-  await expect(page.locator("#stacks-title")).toHaveText("Stacks that can move (5)");
+  await expect(page.locator("#stacks-title")).toHaveText("Stacks that can move (6)");
 });
 
 test("None leaves no yellow hex and says to tick; All brings the ticks back", async ({ page, hasTouch }) => {
@@ -354,6 +357,8 @@ async function arriveAt6f(page: Page, size: Pt): Promise<void> {
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await page.locator(".actions button[data-action]").last().click();
   await expect(page.locator(".turn")).toContainText("step 6f");
+  await expect(page.locator("button.stack-row")).toHaveCount(7);
+  expect(await stackHexes(page)).toEqual(["D41", "J36", "K33", "L31", "M27", "N26", "O32"]);
 }
 
 for (const size of [[1024, 768], [1180, 820], [768, 1024], [390, 844], [844, 390], [1366, 1024], [1400, 1000]] as const) {

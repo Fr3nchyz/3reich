@@ -8,6 +8,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 
 type Pt = readonly [number, number];
 const FIXTURE = JSON.parse(readFileSync("tests/e2e/fixtures/axis-at-7h.json", "utf8")) as { scenario: string; seed: number; actions: { type: string }[] };
+// Ticket 15-7 (#235), spec 15 R10: the German armor at Helsinki (D41) can move within sleeping Finland.
 const TO_6F = FIXTURE.actions.slice(0, FIXTURE.actions.findIndex((a) => a.type === "MOVE"));
 
 async function load(page: Page, size?: Pt): Promise<string[]> {
@@ -17,6 +18,8 @@ async function load(page: Page, size?: Pt): Promise<string[]> {
   await page.goto("/?e2e");
   await page.evaluate((detail) => document.dispatchEvent(new CustomEvent("e2e-load", { detail })), { scenario: FIXTURE.scenario, side: "axis", seed: FIXTURE.seed, actions: TO_6F });
   await expect(page.locator(".turn")).toContainText("step 6f");
+  await expect(page.locator("button.stack-row")).toHaveCount(7);
+  expect(await stackHexes(page)).toEqual(["D41", "J36", "K33", "L31", "M27", "N26", "O32"]);
   return errors;
 }
 const press = (loc: Locator, touch: boolean, force = false) => (touch ? loc.tap({ force }) : loc.click({ force }));
@@ -86,7 +89,7 @@ test("the button is there and greyed with its reason; a move lights it; a press 
   await expect(page.locator(".toast")).toHaveText(new RegExp(`^Took back: Moved 4-6 German armor from .*J36\\) to .*${dest}`));
   await expect(page.locator("#maptoast")).toContainText("Took back: Moved 4-6 German armor");
   await expect(page.locator("#a11y-live")).toContainText("Took back: Moved 4-6 German armor");
-  await expect(stacksTitle(page)).toHaveText("Stacks that can move (6)");
+  await expect(stacksTitle(page)).toHaveText("Stacks that can move (7)");
   await expect(page.locator(".movecard")).toHaveCount(0);
   await expect(undo(page)).toBeDisabled();
   await expect(page.locator("g.units g[data-at='J36']")).toHaveCount(2); // both counters are home again
@@ -101,17 +104,17 @@ test("each press takes back one more move, the same move can be made again, and 
   await expect(moveLog(page)).toHaveCount(1);
   await oneMove(page, hasTouch, "J36", false);
   await expect(moveLog(page)).toHaveCount(2);
-  await expect(stacksTitle(page)).toHaveText("Stacks that can move (4)");
+  await expect(stacksTitle(page)).toHaveText("Stacks that can move (5)");
   const full = await page.locator(".log li").allInnerTexts();
 
   await press(undo(page), hasTouch);
   await expect(moveLog(page)).toHaveCount(1);
-  await expect(stacksTitle(page)).toHaveText("Stacks that can move (5)");
+  await expect(stacksTitle(page)).toHaveText("Stacks that can move (6)");
   await expect(undo(page)).toBeEnabled();
   await press(undo(page), hasTouch);
   await expect(moveLog(page)).toHaveCount(0);
   await expect(page.locator(".log li")).toHaveCount(logBefore);
-  await expect(stacksTitle(page)).toHaveText("Stacks that can move (6)");
+  await expect(stacksTitle(page)).toHaveText("Stacks that can move (7)");
   await expect(undo(page)).toBeDisabled();
 
   // Redo exactly the same two moves: the game and the log are the same as before the take backs.
