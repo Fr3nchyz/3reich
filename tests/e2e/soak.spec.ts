@@ -102,8 +102,20 @@ test("random play at phone size: every scenario, both sides, new games between",
           await expect(page.locator("#minor-done")).toBeEnabled();
           await page.locator("#minor-done").click();
         }
+        // The computer's attacks can leave the player an Attrition loss to choose (step 7p) before play goes on.
+        const choose = page.getByRole("button", { name: "Choose for me", exact: true });
+        if (await choose.count()) {
+          await choose.first().click();
+          const confirm = page.getByRole("button", { name: "Confirm losses" });
+          if (await confirm.count()) await confirm.first().click();
+        }
         const last = page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last(); // step 8a: the Free Siberian Transfer card's closing button
-        if (!(await last.count())) { problems.push(`${tag}: no move-on button at "${turn}"`); break; }
+        // The computer may still be finishing its own step: look again before calling the page stuck.
+        if (!(await last.count())) {
+          if (guard >= TURNS * 12 - 2) { problems.push(`${tag}: no move-on button at "${turn}"`); break; }
+          await page.waitForTimeout(1500);
+          continue;
+        }
         const label = (await last.innerText()).trim();
         await last.click();
         // Ticket 15-16b (#295), spec 15 D3: confirm ending combat with an unmet declaration duty.

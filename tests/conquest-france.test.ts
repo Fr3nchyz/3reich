@@ -348,17 +348,17 @@ describe("the events and the log", () => {
 });
 
 describe("whole games of the computer", () => {
-  // Spec 05 capital defence reinforces Paris: seed 3 now falls in Summer rather than Spring 1940; spec 14 R5 conquest and replay checks remain the same.
-  it("1939 seed 3: Paris falls in Summer 1940, France becomes Vichy, the colonies are decided by the dice, and the computer plays to the end without an anomaly; the same game twice is the same", () => {
-    const r = runGame({ scenario: "1939", seed: 3, turns: "end", verify: true });
+  // Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved every 1939 game: seed 3 now takes Paris in Summer 1940; seed 10 still takes it in Spring 1940 (of seeds 1 to 12, seeds 10 and 11 do).
+  it("1939 seed 10: Paris falls in Spring 1940, France becomes Vichy, the colonies are decided by the dice, and the computer plays to the end without an anomaly; the same game twice is the same", () => {
+    const r = runGame({ scenario: "1939", seed: 10, turns: "end", verify: true });
     expect(r.anomalies).toEqual([]);
     expect(r.ended).toBe("game-over");
-    expect(r.final.conquests!.find((c) => c.country === "france")).toMatchObject({ by: "germany", side: "allies", how: "capital", at: { year: 1940, season: "summer" }, startingBrps: 85 });
+    expect(r.final.conquests!.find((c) => c.country === "france")).toMatchObject({ by: "germany", side: "allies", how: "capital", at: { year: 1940, season: "spring" }, startingBrps: 85 });
     expect(r.final.nations.france).toMatchObject({ status: "vichy", brpTotal: 0 });
     expect(r.final.minorAllies).toContainEqual({ owner: "vichy-france", of: "germany", active: false });
     expect(owned(r.final, "france")).toEqual([]);
     expect(r.final.pools.france).toBeUndefined();
-    expect(runGame({ scenario: "1939", seed: 3, turns: "end", verify: false }).final).toEqual(r.final);
+    expect(runGame({ scenario: "1939", seed: 10, turns: "end", verify: false }).final).toEqual(r.final);
   });
   it("the Campaign, seed 3: France falls, and Germany later (the Campaign counts both)", () => {
     const r = runGame({ scenario: "campaign", seed: 3, turns: "end", verify: false });

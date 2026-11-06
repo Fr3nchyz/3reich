@@ -11,3 +11,4 @@ test-results
 selfplay-out/
 .stryker-tmp
 reports/
+.vitest-reports

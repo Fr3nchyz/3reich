@@ -111,16 +111,17 @@ function playOnce(key: ScenarioKey, seed: number, scenario?: Scenario) {
 describe("whole computer games", () => {
   // Spec 17 (ticket 17-1): a Russian infantry lost before Summer 1942 is back in the pool, so the computer takes two infantry in Summer 1942 where it took an infantry
   // and an armor before (the armor rule lets armor in only behind infantry, V60).
-  it("1942 seed 1: three units in Spring 1942, two in Summer, none in Fall, and every rule holds", () => {
+  it("1942 seed 1: three units in Spring 1942, two in Summer, one in Fall, and every rule holds", () => {
     expect(SIBERIAN_TAKE_ALL).toBe(true);
     const { seen, result } = play("1942", 1);
     expect(result.anomalies).toEqual([]);
     expect(result.final.phase).toBe("game-over");
     const a = audit(SCENARIOS["1942"], 1, result.actions);
     expectRules(SCENARIOS["1942"], a);
-    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 } });
+    // Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved the game: Summer 1942 takes an infantry and an armor, and Fall 1942 one infantry (a Russian loss was back in the pool; was 2 infantry in Summer, none in Fall)
+    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 1, armor: 1 }, "1942-fall": { infantry: 1, armor: 0 } });
     expect(seen.at8a, "the game waited at 8a in Spring and Summer, and after the quota").toBeGreaterThanOrEqual(2);
-    expect(result.final.siberian).toMatchObject({ used: true, taken: { "1942-spring": 3, "1942-summer": 2 } });
+    expect(result.final.siberian).toMatchObject({ used: true, taken: { "1942-spring": 3, "1942-summer": 2, "1942-fall": 1 } });
     expect(result.final.result!.siberian).toBe(true);
     expect(seen.sides.has("allies") && seen.sides.has("axis")).toBe(true);
   }, 240_000);
@@ -132,7 +133,7 @@ describe("whole computer games", () => {
     expect(result.anomalies).toEqual([]);
     const a = audit(SCENARIOS.campaign, 1, result.actions);
     expectRules(SCENARIOS.campaign, a);
-    expect(a.perTurn["1941-winter"]).toEqual({ infantry: 4, armor: 0 }); // ticket 15-11b moved the game (was 3 infantry, 1 armor)
+    expect(a.perTurn["1941-winter"]).toEqual({ infantry: 2, armor: 0 }); // ticket 15-14-2 moved the game (2 Russian losses back in the pool; was 4 infantry, ticket 15-11b; 3 infantry and 1 armor before)
     for (const t of a.taken.filter((x) => x.turn === "1941-winter")) expect(takenEntry(t)?.returned, `${t.turn}: a counter that came back`).toBe(true);
     expect(a.perTurn["1942-spring"]).toEqual({ infantry: 3, armor: 0 });
     expect(result.final.siberian?.used).toBe(true);
@@ -146,9 +147,7 @@ describe("whole computer games", () => {
     expect(result.anomalies).toEqual([]);
     const a = audit(SCENARIOS["1939"], 1, result.actions);
     expectRules(SCENARIOS["1939"], a);
-    // Spec 05 capital recalls change the losses available in seed 1: Summer now takes two returned infantry,
-    // rather than one infantry and one armor. Spec 14 R11 quotas and spec 17 returned-pool checks below still apply.
-    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 4, armor: 0 }, "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 } }); // ticket 15-11b moved the game (Winter 1941 was 3 infantry and 1 armor, no Summer 1942 take); // Ticket 15-8 (merged with 15-8a: the allies also inherit the wars; Winter 1941 takes 3 infantry and 1 armor)
+    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 2, armor: 0 }, "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 } }); // ticket 15-14-2 moved the game again (Winter 1941 takes 2 infantry, Summer 1942 2 infantry; was 4 and 1 infantry with 1 armor); ticket 15-11b moved the game (Winter 1941 was 3 infantry and 1 armor, no Summer 1942 take); // Ticket 15-8 (merged with 15-8a: the allies also inherit the wars; Winter 1941 takes 3 infantry and 1 armor)
     // Ticket 15-8 (the Axis allies wake in Summer 1941): the game changed and Spring 1942 takes the whole quota of three. // Ticket 16-13 (the computer exploits): the game changed and Spring 1942 has two Russian losses back in the pool to take (it took 3 before). // Ticket 15-5 (conquered income): the game changed and Summer 1942 has no Russian loss left to take (it took 2 before). // Summer 1942 takes 2 since Attrition is live (ticket 16-4 wiring; the game differs after the first Attrition runs); Spring 1942 took 1 before ticket 16-1; with the Front Options paid for the computer has the units to take the whole quota of three (no seed of 1 to 12 gives 1 now)
     for (const t of a.taken) {
       expect(availableBuilds(t.before, "ussr").filter((e) => !e.returned && (e.type === "infantry" || e.type === "armor")), "the scenario's builds are used up").toEqual([]);
@@ -210,7 +209,7 @@ describe("in the browser's session", () => {
     const { result } = play("1942", 1);
     const events: GameEvent[] = replay({ map: MAP, scenario: SCENARIOS["1942"] }, newGame(SCENARIOS["1942"], 1), result.actions).events;
     const used = events.filter((e): e is Extract<GameEvent, { type: "SIBERIAN_TRANSFER_USED" }> => e.type === "SIBERIAN_TRANSFER_USED");
-    expect(used.map((e) => e.left)).toEqual([2, 1, 0, 1, 0]);
-    expect(used.map((e) => e.firstUse)).toEqual([true, false, false, false, false]);
+    expect(used.map((e) => e.left)).toEqual([2, 1, 0, 1, 0, 0]); // ticket 15-14-2: one more unit, in Fall 1942
+    expect(used.map((e) => e.firstUse)).toEqual([true, false, false, false, false, false]);
   }, 240_000);
 });

@@ -61,7 +61,15 @@ for (const [id, label] of SCENARIOS) {
       // Play into the next Game Turn: always the last button, which moves the game on.
       const turn = async () => (await page.locator(".turn").innerText()).split("—")[0]!.trim();
       const start = await turn();
-      for (let i = 0; i < 14 && (await turn()) === start; i++) await page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last().click(); // the Free Siberian Transfer card (step 8a) has its own closing button
+      for (let i = 0; i < 14 && (await turn()) === start; i++) {
+        // Ticket 15-14-2 (#304): the computer may declare on a minor country; its army must be placed before play goes on.
+        while (await page.locator("#minor-auto").count()) {
+          await page.locator("#minor-auto").click();
+          await expect(page.locator("#minor-done")).toBeEnabled();
+          await page.locator("#minor-done").click();
+        }
+        await page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last().click(); // the Free Siberian Transfer card (step 8a) has its own closing button
+      }
       expect(await turn()).not.toBe(start);
 
       expect(errors).toEqual([]);
