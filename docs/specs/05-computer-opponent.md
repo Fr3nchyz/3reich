@@ -143,15 +143,15 @@ Both ids are listed in the Open questions of `docs/RULES.md` and in `docs/TODO-V
 
 ### Fixed-seed hashes and first recalls
 
-The owner approved the symmetric trigger, including threatened Paris and Moscow, in round 4. All five pins in `tests/ai-stability.test.ts` change from `origin/main` (`dbc43d9`). These games use supply effects off: Paris or Moscow is nevertheless threatened, so the capital policy intentionally applies. The first recalls below count decisions after automatic setup, starting at zero; they identify the first capital-defence decision, rather than a whole-game recording index.
+The owner approved the symmetric trigger, including threatened Paris and Moscow, in round 4. All five pins in `tests/ai-stability.test.ts` change from `origin/main` (`6d3ff41`, including minor-country declarations). These games use supply effects off: Paris or Moscow is nevertheless threatened, so the capital policy intentionally applies. The first recalls below count decisions after automatic setup, starting at zero; they identify the first capital-defence decision, rather than a whole-game recording index.
 
 | Hash case | Before | After | First recall causing later play to change |
 | --- | --- | --- | --- |
-| 1939 seed 1, four Game Turns | 2373083227 | 2875132212 | Fall 1939, decision 52: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
-| 1942 seed 1, two Game Turns | 499761129 | 4013645292 | Spring 1942, decision 78: Moscow H47; u67 from F48 to G47; 30 enemy factors versus 16 defence. |
-| 1939 seed 5, four Game Turns | 314446180 | 2808569953 | Fall 1939, decision 51: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
-| 1939 seed 2, four Game Turns | 432526852 | 4099648217 | Fall 1939, decision 51: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
-| 1939 seed 5, every step-7h legal-action list over four Game Turns | 2053152029 | 2124377022 | The same Paris recall at decision 51 changes subsequent positions and their combat menus. |
+| 1939 seed 1, four Game Turns | 1607796020 | 2069234498 | Fall 1939, decision 39: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1942 seed 1, two Game Turns | 1721158845 | 3177376110 | Spring 1942, decision 83: Moscow H47; u67 from F48 to G47; 30 enemy factors versus 16 defence. |
+| 1939 seed 5, four Game Turns | 1532399823 | 225822269 | Fall 1939, decision 38: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1939 seed 2, four Game Turns | 2980562296 | 207167790 | Fall 1939, decision 38: Paris O22; u33 from S21 via R21, Q21 to P21; 12 enemy factors versus 8 defence. |
+| 1939 seed 5, every step-7h legal-action list over four Game Turns | 1114500997 | 2631958356 | The same Paris recall at decision 38 changes subsequent positions and their combat menus. |
 
 No fixture or browser recording is changed. The unthreatened-capital tests pin the absence of recalls when no enemy can reach the ring; Berlin being safe alone does not suppress a recall for another threatened Major Power capital.
 

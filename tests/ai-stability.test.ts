@@ -67,14 +67,16 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // 3614890892 -> 2654150903, seed 2 changes 675559916 -> 915112679, and seed-5 7h menus change 3846847444 -> 620107077.
 // npm run rehash confirms seed 1 of 1939 and 1942 remain unchanged; with AIR_DISPLACED_ON_CAPTURE false every original hash returns.
 // Ticket 15-5 (income from conquered countries): 1939 seed 1 278484573 -> 2077938289, seed 5 2654150903 -> 2772694060, seed 2 915112679 -> 4000575119, the 7h list hash 620107077 -> 794928805; 1942 seed 1 unchanged. Checked with npm run compare-games: 16 of 22 games differ from the first conquered-income Year Start on.
+// Defend Berlin on top of minor-country declarations: Paris (1939) and Moscow (1942) recall reserves before advancing.
+// The changed positions alter all five pins; spec 05 lists origin/main values and the first recall for each.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1607796020));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(1721158845));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2069234498));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3177376110));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1532399823);
-    expect(hashOf("1939", 2, 4)).toBe(2980562296);
+    expect(hashOf("1939", 5, 4)).toBe(225822269);
+    expect(hashOf("1939", 2, 4)).toBe(207167790);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));
 });
@@ -152,6 +154,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(1114500997);
+    expect(h).toBe(2631958356);
   });
 });
