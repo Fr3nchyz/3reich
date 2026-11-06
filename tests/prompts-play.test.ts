@@ -52,8 +52,8 @@ function play(scenario: ScenarioKey, seed: number, view: (s: GameState) => GameS
 // played with a computer that never rebuilds a Russian loss nor takes one in the Transfer (legal choices); 1939 seed 14 then reaches the offer (seed 10 until ticket 15-11b) (seed 1 did until Attrition went live, ticket 16-4 wiring; seed 5 until conquered income, ticket 15-5).
 // Spec 05 capital recalls change seed 14's campaign: it no longer offers surrender.
 // Seed 15 still reaches that prompt with the same legal no-rebuild choices (spec 14 R7b).
-// Seed 1 replaces seed 7 to retain the winter question (spec 14 II.A) after recalls alter the Axis advance.
-const MATRIX: [ScenarioKey, number, string][] = [["1939", 1, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["1939", 15, " (Russian losses not used again)"]];
+// Spec 05 capital recalls leave seed 1 with no winter question; seed 5 reaches it (spec 14 II.A).
+const MATRIX: [ScenarioKey, number, string][] = [["1939", 5, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["1939", 15, " (Russian losses not used again)"]];
 const all: Seen[] = [];
 
 describe.each(MATRIX)("a whole computer game, %s seed %i%s", (scenario, seed, variant) => {
