@@ -38,6 +38,12 @@ describe("spec 15 R2 / MC21: a neutral Major Power declares on minors only", () 
     expect(neutral.every((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(true);
   });
 
+  it("a minor attacked by a Vichy declarer takes no side", () => {
+    const s = axis();
+    const vichy: GameState = { ...s, nations: { ...s.nations, france: { ...s.nations.france, status: "vichy" } }, countries: { denmark: { status: "attacked", attacker: "france" } } };
+    expect(sideInWar(vichy, "denmark")).toBeNull();
+  });
+
   it("a neutral Power declares only on its alignment side's turn", () => {
     expect(declarationTargets(CTX, allies(), "italy")).toEqual([]);
     expect(declarationTargets(CTX, axis(), "ussr")).toEqual([]);
