@@ -142,7 +142,7 @@ const RISKY: readonly OddsColumn[] = ODDS_COLUMNS.slice(0, ODDS_COLUMNS.indexOf(
 
 const NONE_CHOSEN = "No unit is chosen to attack.";
 
-const atStep7h = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && s.position.step === "7h";
+const atStep7h = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && (s.position.step === "7h" || s.position.step === "4");
 
 const exploiting = (s: GameState): boolean => s.phase === "player-turn" && s.position?.part === "player-turn" && s.position.step === "7o";
 

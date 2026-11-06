@@ -656,7 +656,8 @@ TODO(verify) MC12: `UNREAD_CONQUERED_VALUE = 0` pays nothing for unread/blank va
 - Movement before combat inside the one step: `minorHasAttacked` (an attack is recorded in the combat record at step 4) refuses further MOVE. Leaving step 4 (`closeMinorTurn`, `turn.ts`) forgets the hexes attacked and the advances left, so the controller's 7h starts clean.
 - Computer: `choose.ts` step "4": losses, advance, its normal mover, then its normal attacker, then END_STEP. A human can always Pass through the existing step button (`statusView.ts` lists END_STEP); the MOVE/ATTACK taps are not there yet (slice B).
 - TODO(verify): MC26 `MC26_POLAND_OWN_TURN = false`; MC15b `MC15_MINOR_OPTION_IMPLICIT = true` (see docs/TODO-VERIFY.md).
-- Left: slice B (UI taps for MOVE/ATTACK/ADVANCE at step 4, a card naming the minor), slice C (MC16 air and naval limits of the invasion turn), per-minor Options (MC15b off).
+- Slice B (UI, same PR): the tap flows work at step 4: `atMoveStep` (`step6f.ts`) for the move taps and `atStep7h` (`attackTap.ts`, `attackPreview.ts`) for the attack, advance and losses flow; the zoom controls too. The Next bar names the minor (`src/ui/minorTurn.ts`, `minorNext` in `nextBar.ts`: "Belgium: own turn. Next: tap a stack to move (moves come before the attack), or attack a red hex, or pass."). Air moves, airbases and Take back stay at 6f only. The duty warning stays keyed to 7h. `tests/e2e/minor-turn.spec.ts` with `tests/e2e/fixtures/minor-step4.json`.
+- Left: slice C (MC16 air and naval limits of the invasion turn), per-minor Options (MC15b off).
 - `tests/minors-turn.test.ts` (14 tests). Hashes re-pinned: 1939 seed 1, 1942 seed 1, 1939 seed 5 of `tests/ai-stability.test.ts` and the 1939 seed 2 supply snapshot; the recordings surrender-question.json and surrender-build.json regenerated (the others still replay and are kept).
 
 ## As built, 15-17

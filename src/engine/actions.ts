@@ -244,7 +244,7 @@ function atStep(state: GameState, step: string, what: string, apply: () => Actio
 /** Like `atStep`, for an action that belongs to more than one step (ground moves and attacks are made at 6f/7h and, for an attacked minor, at step 4). */
 function atSteps(state: GameState, steps: readonly string[], what: string, apply: () => ActionResult): ActionResult {
   const at = waitingStep(state);
-  return at !== undefined && steps.includes(at) ? atStep(state, at, what, apply) : atStep(state, steps[0]!, what, apply);
+  return at !== undefined && steps.includes(at) ? atStep(state, at, what, apply) : { ok: false, error: `${what} in step ${steps.map(describeStep).join(" or ")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
 }
 
 /** Done with the step the game waits at (END_STEP) or with the whole Player Turn (END_PLAYER_TURN, at its last step). */

@@ -112,3 +112,20 @@ writeFileSync("tests/e2e/fixtures/surrender-build.json", JSON.stringify({ scenar
   console.log("siberian fixture:", cut.length, "actions");
   writeFileSync("tests/e2e/fixtures/siberian-card.json", JSON.stringify({ scenario: "1942", seed: 1, actions: cut }));
 }
+
+// tests/e2e/fixtures/minor-step4.json (spec 15 R15, ticket 15-18 slice B): a whole game of the computer (1939, seed 1) cut where the Allied Player Turn reaches step 4 with an attacked,
+// un-helped minor (Belgium) that has units to move: the human Allies play the minor's own turn from there.
+{
+  const r = runGame({ scenario: "1939", seed: 1, turns: "end", verify: false });
+  let state = r.initial;
+  let cut: unknown[] | null = null;
+  for (let i = 0; i < r.actions.length && !cut; i++) {
+    const res = applyAction(r.ctx, state, r.actions[i]!);
+    if (!res.ok) throw new Error(`action ${i} refused: ${res.error}`);
+    state = res.state;
+    if (state.position?.part === "player-turn" && state.position.step === "4" && state.activeSide === "allies" && legalActions(r.ctx, state).some((a) => a.type === "MOVE")) cut = r.actions.slice(0, i + 1);
+  }
+  if (!cut) throw new Error("the 1939 game never reached step 4 with a minor to move");
+  console.log("minor step 4 fixture:", cut.length, "actions");
+  writeFileSync("tests/e2e/fixtures/minor-step4.json", JSON.stringify({ scenario: "1939", seed: 1, actions: cut }));
+}
