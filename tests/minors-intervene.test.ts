@@ -123,7 +123,7 @@ describe("R6: Intervention", () => {
 });
 
 describe("R8: a minor's units stay home", () => {
-  const s = withUnits(attacked(), unit("m1", "belgium", BELGIUM[0]!));
+  const s = withUnits(attacked("4"), unit("m1", "belgium", BELGIUM[0]!)); // an attacked minor's units move at step 4 (15-18)
   it("refuse any hex outside the country, ground (entryProblem) and air (neutralLandProblem)", () => {
     const out = next(BELGIUM[0]!);
     expect(entryProblem(CTX, s, ["belgium"], out)).toMatch(/R8/);
@@ -138,7 +138,7 @@ describe("R8: a minor's units stay home", () => {
   it("after a cross-border attack it may not advance over the border", () => {
     const at = BELGIUM.find((b) => adjacentHexes(CTX, b).some((n) => CTX.map.hexes[n]?.country === "germany" && CTX.map.hexes[n]?.land))!;
     const target = adjacentHexes(CTX, at).find((n) => CTX.map.hexes[n]?.country === "germany" && CTX.map.hexes[n]?.land)!;
-    const st: GameState = { ...withUnits(attacked("7h"), unit("m1", "belgium", at), unit("g1", "germany", target)), combat: { turn: "1939-fall-allies", attacked: [], targets: [], pending: null, advances: [{ to: target, units: ["m1"] }] } };
+    const st: GameState = { ...withUnits(attacked("4"), unit("m1", "belgium", at), unit("g1", "germany", target)), combat: { turn: "1939-fall-allies", attacked: [], targets: [], pending: null, advances: [{ to: target, units: ["m1"] }] } };
     expect(legalActions(CTX, st).some((a) => a.type === "ADVANCE")).toBe(false);
     const r = applyAction(CTX, st, { type: "ADVANCE", side: "allies", units: ["m1"], to: target });
     expect(r.ok).toBe(false);

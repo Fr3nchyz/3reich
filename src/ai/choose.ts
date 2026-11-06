@@ -42,6 +42,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "9a" ? chooseGrant(state, legal, cfg)
     : step === "6e" || step === "9f" ? chooseSeaSupply(ctx, state, legal)
     : step === "3" ? chooseOptions(ctx, state, legal, cfg) // 3: the Front Options, per Front by the policy constants in options.ts (ticket 16-1)
+    : step === "4" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseMove(ctx, state, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 4: an attacked minor's own turn: its normal mover, then its normal attacker, then a Pass (spec 15 R15, ticket 15-18)
     : step === "6f" ? chooseMove(ctx, state, cfg)
     : step === "9e" ? chooseRedeploy(ctx, state, cfg) // 9e: Strategic Redeployment (ticket 16-20); the list is not enumerated, only the way on is
     : step === "10a" ? chooseSurrender(legal) // 10a: the Axis are asked about Russia's offer to surrender, whoever's Player Turn it is (ticket 14-15)
@@ -72,6 +73,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     [FIRST_STEP]: "No declaration of war is planned for now.",
     "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
+    "4": "No unit of an attacked minor can move closer to an enemy objective or attack at the odds on offer: the minor Passes.",
     "7b": "The computer does not commit air to ground support yet.",
     "7k": "The computer does not commit air to ground support yet.",
     "7j": "Every exploiter has moved.",

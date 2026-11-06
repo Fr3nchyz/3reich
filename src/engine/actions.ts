@@ -47,6 +47,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
+  if (step === "4") return [...legalMoves(ctx, state), ...legalCombatActions(ctx, state)]; // spec 15 R15: an attacked minor's own Movement Phase, then its combat (a Pass is END_STEP); no move once it has attacked
   if (OVERSTACK_STEPS.includes(step)) return legalOverstack(ctx, state);
   if (step === SR_STEP) return legalSr(ctx, state);
   if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
@@ -89,7 +90,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return stepActions(ctx, state, step);
   // A running Attrition holds the step too, and is settled by the side its stage names (spec 16 C5, C6).
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return stepActions(ctx, state, step);
-  return combatOf(state).pending && (step === "7h" || step === "7o") ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
+  return combatOf(state).pending && (step === "7h" || step === "7o" || step === "4") ? stepActions(ctx, state, step) : [...stepActions(ctx, state, step), moveOn];
 }
 
 /**
@@ -154,7 +155,7 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return { ok: true, state: settled.state, events: [...named.events, ...settled.events] };
     }
     case "MOVE":
-      return atStep(state, "6f", "Ground units are moved", () => applyMove(ctx, state, action));
+      return atSteps(state, ["6f", "4"], "Ground units are moved", () => applyMove(ctx, state, action));
     case "ELIMINATE_OVERSTACK": {
       const at = waitingStep(state);
       if (at === undefined || !OVERSTACK_STEPS.includes(at)) return { ok: false, error: `Overstacked units are eliminated in step ${describeStep("6g")} or ${describeStep("9j")}; the game is at step ${at === undefined ? "none" : describeStep(at)}.` };
@@ -195,13 +196,13 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     case "DESIGNATE_AIR":
       return atStep(state, waitingStep(state) === EXPLOIT_AIR_STEP ? EXPLOIT_AIR_STEP : "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
-      return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
+      return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atSteps(state, ["7h", "4"], "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "VACANT_HEX_ATTACK":
-      return atStep(state, "7h", "Ground attacks are made", () => applyVacantHexAttack(ctx, state, action));
+      return atSteps(state, ["7h", "4"], "Ground attacks are made", () => applyVacantHexAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":
-      return waitingStep(state) === "7o" ? applyAllocation(ctx, state, action) : atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
+      return waitingStep(state) === "7o" ? applyAllocation(ctx, state, action) : atSteps(state, ["7h", "4"], "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
     case "ADVANCE":
-      return waitingStep(state) === "7o" ? applyAdvance(ctx, state, action) : atStep(state, "7h", "Advances after combat are made", () => applyAdvance(ctx, state, action));
+      return waitingStep(state) === "7o" ? applyAdvance(ctx, state, action) : atSteps(state, ["7h", "4"], "Advances after combat are made", () => applyAdvance(ctx, state, action));
     case "EXPLOIT_MOVE": {
       const done = atStep(state, "7j", "Exploiting armor moves", () => applyExploitMoveAction(ctx, state, action));
       if (!done.ok) return done;
@@ -240,6 +241,12 @@ function atStep(state: GameState, step: string, what: string, apply: () => Actio
   return apply();
 }
 
+/** Like `atStep`, for an action that belongs to more than one step (ground moves and attacks are made at 6f/7h and, for an attacked minor, at step 4). */
+function atSteps(state: GameState, steps: readonly string[], what: string, apply: () => ActionResult): ActionResult {
+  const at = waitingStep(state);
+  return at !== undefined && steps.includes(at) ? atStep(state, at, what, apply) : atStep(state, steps[0]!, what, apply);
+}
+
 /** Done with the step the game waits at (END_STEP) or with the whole Player Turn (END_PLAYER_TURN, at its last step). */
 function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action, { type: "END_PLAYER_TURN" | "END_STEP" }>): ActionResult {
   if (state.phase !== "player-turn") return { ok: false, error: "Setup is not finished yet." };
@@ -256,7 +263,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };
-  if ((step === "7h" || step === "7o") && combatOf(state).pending) return { ok: false, error: `An Exchange in step ${step} is waiting for its losses to be chosen.` };
+  if ((step === "7h" || step === "7o" || step === "4") && combatOf(state).pending) return { ok: false, error: `An Exchange in step ${step} is waiting for its losses to be chosen.` };
   if (action.type === "END_STEP" && action.step !== step) {
     return { ok: false, error: `Step ${describeStep(action.step)} is not the current step; the game is at step ${describeStep(step)}.` };
   }

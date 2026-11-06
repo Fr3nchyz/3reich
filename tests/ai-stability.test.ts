@@ -67,14 +67,15 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // Ticket 09-5 (spec 09 D1 / R9): displaced planes survive captures, changing later actions and menus. The seed-5 action hash changes
 // 3614890892 -> 2654150903, seed 2 changes 675559916 -> 915112679, and seed-5 7h menus change 3846847444 -> 620107077.
 // npm run rehash confirms seed 1 of 1939 and 1942 remain unchanged; with AIR_DISPLACED_ON_CAPTURE false every original hash returns.
+// Ticket 15-18 slice A (spec 15 R15: an attacked, un-helped minor plays its own turn at step 4, and its units no longer move at 6f or attack at 7h; the computer's list gains an END_STEP at step 4 whenever one of those minors can still move or attack): 1939 seed 1 2915501468 -> 2096804617, 1942 seed 1 3013005840 -> 520271834, seed 5 1958821328 -> 2238696329. Seed 2 and the 7h list hash of seed 5 are unchanged. Checked with npm run compare-games: removing the step-4 END_STEPs from the new 1939 seed 1 list leaves it identical to the old one up to the first Yugoslav move at step 4.
 // Ticket 15-5 (income from conquered countries): 1939 seed 1 278484573 -> 2077938289, seed 5 2654150903 -> 2772694060, seed 2 915112679 -> 4000575119, the 7h list hash 620107077 -> 794928805; 1942 seed 1 unchanged. Checked with npm run compare-games: 16 of 22 games differ from the first conquered-income Year Start on.
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2915501468));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3013005840));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2096804617));
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(520271834));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1958821328);
+    expect(hashOf("1939", 5, 4)).toBe(2238696329);
     expect(hashOf("1939", 2, 4)).toBe(2980562296);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));

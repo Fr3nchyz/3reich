@@ -58,6 +58,7 @@ describe("supplyStatus gives the same answers as before the search was made fast
   // Ticket 15-11b (Eastern Europe, the German units east of the Partition Line eliminated) changed 1939 seed 2 only: 99 positions, hash 2830968417 to 101 positions, hash 3529324769.
   // Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved both: 1939 seed 2 101 positions, hash 3529324769 to 89 positions, hash 586035881; 1942 seed 1 110 positions, hash 2794420972 to 108 positions, hash 4054339153.
   // Ticket 15-17 (the computer intervenes in an attacked minor) changed 1939 seed 2 only (Allied moves into Luxembourg and Belgium): 89 positions, hash 586035881 to 97 positions, hash 1698957747. 1942 seed 1 is unchanged here (two Game Turns).
-  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 97, hash: 1698957747 }), 120_000);
+  // Ticket 15-18 slice A (the minors' own turn at step 4) changed 1939 seed 2 only: 97 positions, hash 1698957747 to 96 positions, hash 3355342370.
+  it("1939 seed 2, six Game Turns", () => expect(snapshot("1939", 2, 6)).toEqual({ positions: 96, hash: 3355342370 }), 120_000);
   it("1942 seed 1, two Game Turns", () => expect(snapshot("1942", 1, 2)).toEqual({ positions: 108, hash: 4054339153 }), 120_000);
 });

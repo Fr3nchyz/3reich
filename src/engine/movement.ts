@@ -12,6 +12,7 @@ import type { LandTerrain } from "./terrain";
 import type { ForceOwner, GameState, Side, Unit, UnitType } from "./types";
 import { atWar } from "./war";
 import { hasMoved } from "./move-record";
+import { minorHasAttacked, minorTurnProblem } from "./minors-turn";
 import { UNSUPPLIED_CANNOT_MOVE, wasCutOff } from "./supply-effects";
 import { adjacentHexes, canCross, enemyZocFor, ZOC_EXIT_COST, zocExitCost } from "./zoc";
 
@@ -69,6 +70,9 @@ export function movableProblem(ctx: GameContext, state: GameState, u: Unit): str
   if (movementFactor(u) === 0) return `${u.id} has no ground movement factor.`;
   if (!Object.hasOwn(ctx.map.hexes, u.at)) return `${u.id} is not on the map.`;
   if (sideInWar(state, u.owner) !== state.activeSide) return `${u.id} does not move for the ${state.activeSide} side now.`;
+  const split = minorTurnProblem(state, u); // spec 15 R15: an attacked minor moves at step 4 only, and only the minors act there
+  if (split) return split;
+  if (minorHasAttacked(state)) return `${u.id} cannot move: the minor's Movement Phase comes before its combat (R15).`;
   if (ONE_MOVE_PER_TURN && hasMoved(state, u.id)) return `${u.id} has already moved this Player Turn.`;
   if (UNSUPPLIED_CANNOT_MOVE && wasCutOff(state, u.id)) return `${u.id} is out of supply and cannot move (Ref 19.4).`;
   return null;
