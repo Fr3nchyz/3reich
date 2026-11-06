@@ -14,7 +14,7 @@ import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalEx
 import { combatOf } from "./combat-record";
 import { applyPlaceAirbase } from "./air-actions";
 import { applySeaSupply, legalSeaSupply } from "./naval-actions";
-import { applyDesignate, legalDesignations } from "./air-missions";
+import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
 import { applyEliminateOverstack, hasOverstackWork, legalOverstack, OVERSTACK_STEPS } from "./overstack-action";
@@ -50,7 +50,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (OVERSTACK_STEPS.includes(step)) return legalOverstack(ctx, state);
   if (step === SR_STEP) return legalSr(ctx, state);
   if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
-  if (step === "7b") return legalDesignations(ctx, state);
+  if (step === "7b" || step === EXPLOIT_AIR_STEP) return legalDesignations(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
@@ -193,7 +193,7 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
     case "DESIGNATE_AIR":
-      return atStep(state, "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
+      return atStep(state, waitingStep(state) === EXPLOIT_AIR_STEP ? EXPLOIT_AIR_STEP : "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
       return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
     case "VACANT_HEX_ATTACK":

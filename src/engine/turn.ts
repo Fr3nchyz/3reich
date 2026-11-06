@@ -118,7 +118,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       const step = nextStepId(pos.step);
       if (step) {
         // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
-        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : { state, events: [] };
+        // Leaving 7o: ground support committed at 7k to a hex the exploiters did not attack is lost the same way (spec 16 R17, AER56).
+        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : pos.step === "7o" ? loseUnusedGroundSupport(state) : { state, events: [] };
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
@@ -202,6 +203,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7p":
       return hasAttritionWork(ctx, state);
     case "7b":
+    case "7k":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
       return hasCombatWork(ctx, state) || hasPlaceWork(ctx, state);

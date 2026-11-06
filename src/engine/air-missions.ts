@@ -1,4 +1,5 @@
 import { attackables } from "./attack";
+import { exploitAttackers, exploitTargets } from "./exploit-action";
 import { defendersAt } from "./attack-rules";
 import { airOf, hasFlown, markFlown } from "./air-record";
 import { clearGroundSupport, committedAt } from "./air-support";
@@ -17,6 +18,9 @@ import type { GameState, Unit } from "./types";
  * eliminated when step 7h ends (`loseUnusedGroundSupport`). A unit flies one mission a Game Turn and a unit built this Game Turn flies none (`air-record.ts`).
  */
 
+/** The step where the side commits ground support for its Exploitation attacks (Ops 5.46k); the same `DESIGNATE_AIR` as 7b. */
+export const EXPLOIT_AIR_STEP = "7k";
+
 type Designate = Extract<Action, { type: "DESIGNATE_AIR" }>;
 
 /** No list of units is longer than this: a bound before any loop runs over it. */
@@ -28,6 +32,12 @@ const MAX_UNITS = 100;
  */
 export function groundSupportTargets(ctx: GameContext, state: GameState): Map<HexId, Unit[]> {
   const out = new Map<HexId, Unit[]>();
+  if (state.position?.part === "player-turn" && state.position.step === EXPLOIT_AIR_STEP) {
+    // Step 7k (spec 16 R17, ticket 16-15): the hexes the exploiting armor that has not attacked could attack at 7o, each with those units (the cap counts only them).
+    for (const u of exploitAttackers(ctx, state)) for (const hex of exploitTargets(ctx, state, u.id)) out.set(hex, [...(out.get(hex) ?? []), u]);
+    for (const [hex, from] of [...out]) if (defendersAt(state, from, hex).length === 0) out.delete(hex);
+    return out;
+  }
   for (const [hex, from] of attackables(ctx, state)) if (defendersAt(state, from, hex).length > 0) out.set(hex, from);
   return out;
 }
@@ -46,7 +56,7 @@ export const airInRangeOf = (ctx: GameContext, state: GameState, target: HexId):
 /** The most air factors that may be committed at the hex: three times every ground factor that could attack it (the exact cap is applied at step 7h, R8 option a). */
 export const commitCap = (ground: readonly Unit[]): number => GS_CAP_MULTIPLE * ground.reduce((n, u) => n + u.strength, 0);
 
-/** Whether step 7b has anything to wait for: some designation is possible (a free air unit within reach of a hex that can be attacked, and room under the cap). */
+/** Whether step 7b or 7k has anything to wait for: some designation is possible (a free air unit within reach of a hex that can be attacked, and room under the cap). */
 export const hasAirWork = (ctx: GameContext, state: GameState): boolean => designations(ctx, state).length > 0;
 
 /** The first reason these air units may not all be committed to ground support at `target`, or null. */
