@@ -3,7 +3,7 @@ import { MAP } from "../src/data/map";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { MC21_USSR_BORDER_MINORS, minorDeclarationProblem } from "../src/engine/minors-declare";
 import { sideInWar } from "../src/engine/control";
-import { applyDeclaration, declarationTargets } from "../src/engine/war";
+import { applyDeclaration, declarationTargets, legalDeclarations, legalNeutralDeclarations } from "../src/engine/war";
 import type { GameState, Unit } from "../src/engine/types";
 import { CTX, atStart } from "./helpers";
 
@@ -28,6 +28,14 @@ describe("spec 15 R2 / MC21: a neutral Major Power declares on minors only", () 
     expect(r.state.countries?.greece).toMatchObject({ status: "attacked", attacker: "italy", toPlace: "allies" });
     expect(sideInWar(r.state, "greece")).toBe("allies");
     expect(applyDeclaration(CTX, s, { type: "DECLARE_WAR", by: "italy", on: "britain" }).ok).toBe(false);
+  });
+
+  it("neutral declarations are listed apart, so step 1 and the computer games stay as they were", () => {
+    const s = axis();
+    expect(legalDeclarations(CTX, s).some((a) => a.type === "DECLARE_WAR" && (a.by === "italy" || a.by === "ussr"))).toBe(false);
+    const neutral = legalNeutralDeclarations(CTX, s);
+    expect(neutral).toContainEqual({ type: "DECLARE_WAR", by: "italy", on: "greece" });
+    expect(neutral.every((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(true);
   });
 
   it("a neutral Power declares only on its alignment side's turn", () => {

@@ -81,7 +81,8 @@ const MINOR_ALLIES: readonly ForceOwner[] = ["finland", "rumania", "hungary", "b
 function sideOfMinor(state: GameState, owner: ForceOwner): Side | null {
   const record = state.countries?.[owner as MinorCountry];
   if (record?.status === "attacked" && record.attacker) {
-    const declarer = sideOfPower(state.nations[record.attacker]) ?? ALIGNMENT[record.attacker]; // MC21: a neutral declarer fights for its alignment side
+    const nation = state.nations[record.attacker];
+    const declarer = sideOfPower(nation) ?? (nation.status === "neutral" ? ALIGNMENT[record.attacker] : null); // MC21: a neutral declarer fights for its alignment side
     return declarer === "axis" ? "allies" : "axis";
   }
   const helper = record?.status === "allied" ? record.helpers?.[0] : undefined;

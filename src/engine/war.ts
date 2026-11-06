@@ -66,9 +66,18 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
   return targets.filter((t) => declarationCost(ctx, state, by, t) <= spendable(me));
 }
 
-/** Every declaration the side to move may make now. */
+/**
+ * Every declaration the side to move may make now, by a Major Power that is in the war. A neutral Power's declarations on minors (MC21) are left out on purpose: listing them
+ * would make step 1 a stop for every Axis turn (`hasWork` in turn.ts) and move the computer games. They are legal for `applyDeclaration` and listed by `legalNeutralDeclarations`,
+ * for the screen to offer when a ticket wires it.
+ */
 export function legalDeclarations(ctx: GameContext, state: GameState): Action[] {
-  return (Object.keys(state.nations) as PowerId[]).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) !== null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+}
+
+/** TODO(verify) MC21: the declarations on minors a neutral Major Power may make now (not in `legalDeclarations`; see there). */
+export function legalNeutralDeclarations(ctx: GameContext, state: GameState): Action[] {
+  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) === null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
 }
 
 export function applyDeclaration(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DECLARE_WAR" }>): ActionResult {
