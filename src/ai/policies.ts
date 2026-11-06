@@ -13,3 +13,10 @@ export const ACCEPT_SURRENDER = true;
 
 /** 8a, the Allies: take every unit on offer in the Free Siberian Transfer, infantry first. It does not weigh that the first unit taken raises the Allied target by one Objective. TODO(verify) V61: policy only. */
 export const SIBERIAN_TAKE_ALL = true;
+
+/**
+ * 6f, either side: send ground units into an attacked, unconquered minor of its own side to Intervene (spec 15 R6, Q4, ticket 15-17). The mover sends the biggest stack that can end a
+ * legal move in the minor (`minorEntryProblem` and `endProblem` decide), once per minor until a power of its side is recorded as a helper; it does not weigh the odds there.
+ * Off: the computer never goes in on purpose (a normal move may still do so). TODO(verify) MC33: policy only, spec 15 Q4 gives no rule for when or how much.
+ */
+export const AI_INTERVENES_IN_ATTACKED_MINORS = true;
