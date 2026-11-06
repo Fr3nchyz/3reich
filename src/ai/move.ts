@@ -11,6 +11,7 @@ import { enemyZocFor } from "../engine/zoc";
 import { defendCapital, distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective, stagingTargets } from "./geo";
 import { preferSupplied } from "./lines";
 import type { AiMemory } from "./memory";
+import { chooseIntervention } from "./minors";
 import { best } from "./random";
 import type { AiConfig, Decision } from "./types";
 
@@ -51,6 +52,8 @@ export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): D
   if (movesOf(state).moved.length >= MOVE_MAX_UNITS_PER_TURN) return undefined;
   const defense = defendCapital(ctx, state);
   if (defense) return defense;
+  const help = chooseIntervention(ctx, state, cfg);
+  if (help) return help;
   const side = state.activeSide;
   const mem = cfg.memory;
   const turn = turnIndex(state);

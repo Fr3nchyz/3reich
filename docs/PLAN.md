@@ -182,6 +182,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 15-8 status | | Built (#264); pure slice 15-8a built (#252). |
 | 15-9 status | | Built: 15-9a pure income (#249), 15-9b Year Start wiring (#273). |
 | 15-11 status | | 15-11a pure slice built (#250); 15-11b wired (creation and German elimination at the end of Axis Fall 1939). |
+| 15-17 status | | Built (draft PR): the computer's mover Intervenes in an attacked minor of its side (`chooseIntervention`, policy `AI_INTERVENES_IN_ATTACKED_MINORS`, MC33). Moves 1939 seeds 1, 2, 5, 9, Campaign seeds 1, 2 and 1942 seeds 1, 2. |
 | 15-14 status | | 15-14-1 pure policy built; 15-14-2 wired (the computer declares on minor countries when the date has come and the duty is feasible, and keeps their price back in builds and Front Options). Moves every 1939, Campaign and 1942 computer game. Left for 15-14: defender placement lines, self-play lines and anomalies. |
 | 15-12 status | | Built (#230). |
 | 15-19 status | | 15-19a pure slice built (#266); 15-19b wired into step 8b (draft PR), computer unchanged. |
@@ -203,6 +204,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 16-11 status | | Built: pure slice 16-11a (#223), Exploitation wiring (#228). |
 | 16-13 status | | Built (#229). |
 | 16-14 status | | 16-14a pure slice built (#251); 16-14b wired (action `VACANT_HEX_ATTACK`, not in `legalActions`, computer unchanged). |
+| 16-15 status | | 7k slice built (ground support for the Exploitation attacks); 7l and 7m wait for spec 09's 09-8 and 09-10, 7n for 09-11. |
 | 16-20 status | | Built (#166). |
 | 16-22 status | | 16-22a pure slice built (#267); wiring pending. |
 | Strategic warfare, Murmansk and U.S. boxes | 6.6 | L (a guess; the last section of spec 16 recommends Release 1 and a separate spec, owner's Q6; it will take the next free number, 18, since 17 is now the lost-units spec) |
