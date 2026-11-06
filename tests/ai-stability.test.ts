@@ -16,7 +16,7 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 // short games: THEY CHANGE ON PURPOSE whenever the computer's policy (src/ai) changes; then take the new value from the failure
 // message after checking the play with `npm run selfplay` (docs/SELFPLAY.md). They guard against an accidental change, not against a change.
 // Ticket 15-11b (Eastern Europe is created and the German units east of the Partition Line are eliminated at the end of Axis Fall 1939): 1939 seed 1 3553260422 to 2373083227; seeds 5 and 2: 1328485314 to 314446180 and 84129622 to 432526852; the 7h list hash 2398356580 to 2053152029. The Axis idle guard watches seed 14 instead of 13 (seed 13, like 16 and 19, now has an idle Spring 1941 on its own game).
-// Ticket 15-14-2 (the computer declares on minor countries and keeps their price back; spec 15 part E) moved every 1939, Campaign and 1942 game: 1939 seed 1 2373083227 to 1607796020; 1942 seed 1 499761129 to 1721158845; seeds 5 and 2: 314446180 to 1532399823 and 432526852 to 2980562296; the 7h list hash 2053152029 to 1114500997.
+// Ticket 15-14-2 (the computer declares on minor countries and keeps their price back; spec 15 part E) moved every 1939, Campaign and 1942 game: 1939 seed 1 2373083227 to 2915501468; 1942 seed 1 499761129 to 1721158845; seeds 5 and 2: 314446180 to 1958821328 and 432526852 to 2980562296; the 7h list hash 2053152029 to 1114500997.
 // Hashes of ticket 16-13 (the computer places, moves, attacks and advances exploiters; AER51): all five hashes changed on purpose (1939 seed 1: 2608239176 to 71469326; 1942 seed 1: 2060812987 to 499761129; 1939 seeds 5 and 2: 1273200678 to 1328485314 and 1411623926 to 84129622; the 7h list hash: 1571766906 to 2398356580), as the computer now plays the Exploitation steps 7h, 7j and 7o; see the PR for the compare-games summary.
 // Ticket 14-9b (France while Paris is Axis-held, spec 14 R5): the 1939 seed 1 hash moved from 71469326 to 3553260422, because French moves, attacks and supply are now limited and the computer plays on from there.
 // Hashes of 2026-10-16 (ticket 09-14): step 7b now waits for a side with air in range of an attackable hex, so the computer's list gains one END_STEP at 7b
@@ -70,10 +70,10 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(1607796020));
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2915501468));
   it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(1721158845));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1532399823);
+    expect(hashOf("1939", 5, 4)).toBe(1958821328);
     expect(hashOf("1939", 2, 4)).toBe(2980562296);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));
@@ -152,6 +152,6 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(1114500997);
+    expect(h).toBe(951793489);
   });
 });
