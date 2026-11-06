@@ -32,7 +32,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   const step = state.position.step;
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
   // At 7b the computer commits no air yet, so the designations are not worked out either; nor are the redeployments at 9e (the policy asks `srDestinations` per unit, ticket 16-20).
-  const legal = step === "6f" || step === "7b" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
+  const legal = step === "6f" || step === "7b" || step === "7k" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(ctx, state, legal)
@@ -73,6 +73,7 @@ function endTheStep(legal: readonly Action[], step: string): Decision | null {
     "3": "Every Front has its Option.",
     "6f": "No ground move brings a stack closer to an enemy objective, and the computer does not move planes or place airbases yet.",
     "7b": "The computer does not commit air to ground support yet.",
+    "7k": "The computer does not commit air to ground support yet.",
     "7j": "Every exploiter has moved.",
     "7o": "No Exploitation attack is worth making at the odds on offer.",
     "7h": "No ground attack is worth making at the odds on offer.",
