@@ -42,7 +42,7 @@ export const ACTION_FIELDS: Record<string, string> = {
   PLACE_MINOR_FORCES: "side minor placements", SELECT_FRONT_OPTION: "side front option payer",
   BUILD: "owner pool unit at", GRANT_BRPS: "from to amount", CHOOSE_WINTER: "side postpone",
   SIBERIAN_TRANSFER: "side unit at", SURRENDER_ANSWER: "side accept", OCCUPATION_CONCEDE: "side hex",
-  ATTACK: "side units target", ALLOCATE_LOSSES: "side units", ADVANCE: "side units to",
+  ATTACK: "side units target", VACANT_HEX_ATTACK: "side units target", ALLOCATE_LOSSES: "side units", ADVANCE: "side units to",
   PLACE_EXPLOITERS: "side hex units", EXPLOIT_MOVE: "side unit path", MOVE: "side units path",
   PLACE_AIRBASE: "owner at", STAGE_AIR: "side units to", SPLIT_AIR: "side unit parts", COMBINE_AIR: "side units",
   DESIGNATE_SEA_SUPPLY: "side fleets to units", DESIGNATE_AIR: "side mission units target",

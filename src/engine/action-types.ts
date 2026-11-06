@@ -45,6 +45,8 @@ export type Action =
   | { type: "OCCUPATION_CONCEDE"; side: "axis"; hex: HexId }
   /** Step 7h: ground units attack an adjacent enemy hex (Ref 12.1; each unit attacks one hex, PC README 14.23). */
   | { type: "ATTACK"; side: Side; units: string[]; target: HexId }
+  /** Step 7h: an armor unit (named first), with optional ground companions, attacks an adjacent enemy-controlled hex with no enemy counter in it and the armor advances in (Ref 12.32; spec 16 R16). Not listed in `legalActions`: the computer does not make it. */
+  | { type: "VACANT_HEX_ATTACK"; side: Side; units: string[]; target: HexId }
   /** Step 7h: the side that must lose factors after an Exchange chooses which of its units go (Ref 12.2). */
   | { type: "ALLOCATE_LOSSES"; side: Side; units: string[] }
   /** Step 7h: attackers advance into the hex the defenders left (TODO(verify) in attack.ts). */
@@ -167,6 +169,8 @@ export type GameEvent =
   | { type: "UNITS_ADVANCED"; units: string[]; from: HexId[]; to: HexId }
   /** Step 7h: an advance after a won attack with armor in it made `hex` a Breakthrough hex (Ref 12.31; spec 16 R10); `placeable` is the armor that may move in now. */
   | { type: "BREAKTHROUGH"; side: Side; hex: HexId; placeable: string[] }
+  /** Step 7h: a vacant-hex attack (Ref 12.32; spec 16 R16): `attackers` attacked the empty `target`, `advanced` moved in, and `breakthrough` says whether it is a Breakthrough hex. */
+  | { type: "VACANT_HEX_ATTACKED"; side: Side; attackers: string[]; target: HexId; advanced: string[]; breakthrough: boolean }
   /** Step 7h: armor units moved into the Breakthrough hex `hex` from the hexes `from`, free; they are its exploiting units (spec 16 R11). */
   | { type: "EXPLOITERS_PLACED"; side: Side; units: string[]; from: HexId[]; hex: HexId }
   /** Step 7j: an exploiting unit left the Breakthrough hex `from` along `path` (empty: it stayed; spec 16 R12, C4). */
