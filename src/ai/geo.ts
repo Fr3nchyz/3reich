@@ -1,9 +1,15 @@
+import { crossable as attackCrossable, isGroundCombatUnit, neighborIds } from "../engine/attack-rules";
+import { defenseMultiplier } from "../engine/terrain";
+import { winterDefence } from "../engine/winter-effects";
+import { combatOf } from "../engine/combat-record";
+import { endProblem, movableUnits, movementFactor, reachableHexes } from "../engine/movement";
+import type { Decision } from "./types";
 import { controllerOf, controllingSide, sideInWar } from "../engine/control";
 import type { GameContext } from "../engine/context";
 import type { HexId } from "../engine/hex";
 import { MINOR_COUNTRY_FORCES } from "../engine/tables";
 import type { HexFeature } from "../engine/terrain";
-import type { ForceOwner, GameState, Side } from "../engine/types";
+import type { ForceOwner, GameState, Side, Unit } from "../engine/types";
 import { atWar } from "../engine/war";
 import { adjacentHexes, canCross } from "../engine/zoc";
 import { plannedTargets } from "./declare";
@@ -103,4 +109,81 @@ export function distanceToEnemyObjective(ctx: GameContext, state: GameState, own
 export function stagingTargets(ctx: GameContext, state: GameState, side: Side): { sources: HexId[]; open: Set<string> } {
   const open = new Set<string>(plannedTargets(state, side));
   return { sources: objectiveHexes(ctx).filter((h) => open.has(controllerOf(ctx, state, h) ?? "")), open };
+}
+
+/** TODO(verify) AER56, spec 05 Defend Berlin: recall before a plausible one-turn force exceeds local multiplied defence. */
+export const CAPITAL_THREAT_RATIO = 1;
+/** TODO(verify) AER57, spec 05 Defend Berlin: include the capital's immediate defensive ring. */
+export const CAPITAL_DEFENSE_RADIUS = 1;
+
+/** Spec 05: public-board one-turn reach, respecting blockers, neutral borders and armor ZOC (Ref 5.45f, 7.0). */
+export function capitalThreat(ctx: GameContext, state: GameState, capital: HexId): { enemies: Unit[]; area: HexId[]; defense: number } {
+  const area = [capital, ...(CAPITAL_DEFENSE_RADIUS > 0 ? neighborIds(ctx, capital).filter((h) => attackCrossable(ctx, capital, h)) : [])];
+  const fields = new Map<string, Map<HexId, number>>();
+  const enemies = Object.values(state.units).filter((u) => {
+    const side = sideInWar(state, u.owner);
+    if (!ctx.map.hexes[u.at] || !isGroundCombatUnit(u) || side === null || side === state.activeSide) return false;
+    let field = fields.get(u.owner);
+    if (!field) fields.set(u.owner, (field = groundDistances(ctx, state, u.owner, area)));
+    if ((field.get(u.at) ?? Infinity) > movementFactor(u)) return false;
+    if (area.includes(u.at)) return true;
+    const reach = reachableHexes(ctx, state, [u]);
+    return area.some((h) => reach.has(h));
+  });
+  // Ref 4.5-4.9, 12.1, 28.0: reuse combat terrain/fortress/winter multipliers; future river approaches are unknown.
+  const defense = area.reduce((n, h) => {
+    const defenders = Object.values(state.units).filter((u) => u.at === h && isGroundCombatUnit(u) && sideInWar(state, u.owner) === state.activeSide);
+    return n + defenseMultiplier({ terrain: ctx.map.hexes[h]!.land ?? "plain", fortress: state.fortresses[h] === true, winter: winterDefence(ctx, state, defenders, h) }) * defenders.reduce((v, u) => v + u.strength, 0);
+  }, 0);
+  return { enemies, area, defense };
+}
+
+/** Spec 05 Defend Berlin: a reserve must not open a new one-turn entry/attack route to any held objective. */
+export function opensObjective(ctx: GameContext, state: GameState, unit: Unit): boolean {
+  const objectives = objectiveHexes(ctx).filter((h) => controllingSide(ctx, state, h) === state.activeSide);
+  const after = { ...state, units: { ...state.units } };
+  delete after.units[unit.id];
+  for (const enemy of Object.values(state.units)) {
+    const side = sideInWar(state, enemy.owner);
+    if (!ctx.map.hexes[enemy.at] || !isGroundCombatUnit(enemy) || side === null || side === state.activeSide || movementFactor(enemy) === 0) continue;
+    // Only removing a last ground blocker can create an entry route (Ref 5.45f); friendly armor ZOC remains engine-owned.
+    const beforeReach = reachableHexes(ctx, state, [enemy]);
+    const afterReach = reachableHexes(ctx, after, [enemy]);
+    const access = (reach: Map<HexId, HexId[]>, h: HexId) => reach.has(h) || neighborIds(ctx, h).some((n) => attackCrossable(ctx, n, h) && (n === enemy.at || reach.has(n)));
+    if (objectives.some((h) => !access(beforeReach, h) && access(afterReach, h))) return true;
+  }
+  return false;
+}
+
+/** Spec 05 Defend Berlin, Ref 19.2: reinforce own Major Power capitals before ordinary advances. */
+export function defendCapital(ctx: GameContext, state: GameState): Decision | undefined {
+  const side = state.activeSide;
+  const ground = Object.values(state.units).filter((u) => ctx.map.hexes[u.at] && isGroundCombatUnit(u));
+  const used = combatOf(state).attacked;
+  for (const capital of objectiveHexes(ctx)) {
+    const h = ctx.map.hexes[capital]!;
+    if (!h.features.some((f) => f === "capital" || f === "capital-port") || !h.country || !(h.country in state.nations) ||
+      sideInWar(state, h.country as ForceOwner) !== side || controllingSide(ctx, state, capital) !== side) continue;
+    const { enemies, area, defense } = capitalThreat(ctx, state, capital);
+    if (enemies.reduce((n, u) => n + u.strength, 0) <= CAPITAL_THREAT_RATIO * defense) continue;
+    const reserves = movableUnits(ctx, state).filter((u) => !area.includes(u.at) && !used.includes(u.id) &&
+      !ground.some((e) => sideInWar(state, e.owner) !== null && sideInWar(state, e.owner) !== side && attackCrossable(ctx, u.at, e.at)));
+    const candidates: { unit: Unit; to: HexId; path: HexId[]; multiplier: number }[] = [];
+    for (const unit of reserves) {
+      for (const [to, path] of reachableHexes(ctx, state, [unit])) {
+        if (!area.includes(to) || endProblem(ctx, state, [unit], to) !== null) continue;
+        const multiplier = defenseMultiplier({ terrain: ctx.map.hexes[to]!.land ?? "plain", fortress: state.fortresses[to] === true, winter: winterDefence(ctx, state, [unit], to) });
+        candidates.push({ unit, to, path, multiplier });
+      }
+    }
+    // Nearest reserve first; prefer the capital, then the strongest adjacent terrain, with stable ties.
+    candidates.sort((a, b) => a.path.length - b.path.length || Number(b.to === capital) - Number(a.to === capital) || b.multiplier - a.multiplier || a.unit.id.localeCompare(b.unit.id) || a.to.localeCompare(b.to));
+    const checked = new Map<string, boolean>();
+    for (const c of candidates) {
+      if (!checked.has(c.unit.id)) checked.set(c.unit.id, opensObjective(ctx, state, c.unit));
+      if (checked.get(c.unit.id)) continue;
+      return { action: { type: "MOVE", side, units: [c.unit.id], path: c.path }, why: `Defends capital ${capital}: recalls ${c.unit.id} from ${c.unit.at} to ${c.to} against a one-turn ground threat.` };
+    }
+  }
+  return undefined;
 }

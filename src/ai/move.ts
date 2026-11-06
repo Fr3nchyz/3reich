@@ -8,7 +8,7 @@ import { movesOf } from "../engine/move-record";
 import { endProblem, movableUnits, reachableHexes } from "../engine/movement";
 import type { GameState, Unit } from "../engine/types";
 import { enemyZocFor } from "../engine/zoc";
-import { distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective, stagingTargets } from "./geo";
+import { defendCapital, distanceToEnemyObjective, enemyObjectives, groundDistances, isObjective, stagingTargets } from "./geo";
 import { preferSupplied } from "./lines";
 import type { AiMemory } from "./memory";
 import { chooseIntervention } from "./minors";
@@ -50,6 +50,8 @@ function targetOf(u: Unit, nearest: Map<HexId, HexId>, held: ReadonlySet<HexId>,
 
 export function chooseMove(ctx: GameContext, state: GameState, cfg: AiConfig): Decision | undefined {
   if (movesOf(state).moved.length >= MOVE_MAX_UNITS_PER_TURN) return undefined;
+  const defense = defendCapital(ctx, state);
+  if (defense) return defense;
   const help = chooseIntervention(ctx, state, cfg);
   if (help) return help;
   const side = state.activeSide;

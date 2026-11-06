@@ -133,13 +133,14 @@ describe("RB13: no nation ends with more counters of a kind than its scenario li
 
 describe("whole games", () => {
   it("a played game has a rebuild section and no counter-excess; the same game replays to the same numbers", () => {
-    const r = runGame({ scenario: "1939", seed: 1, turns: 6, verify: false });
+    // seed changed for Defend Berlin
+    const r = runGame({ scenario: "1939", seed: 2, turns: 6, verify: false });
     expect(r.anomalies.filter((a) => a.kind === "counter-excess")).toEqual([]);
     const n = r.rebuild.nations;
     expect(Object.values(n).reduce((a, x) => a + x.returned, 0)).toBeGreaterThan(0);
     expect(Object.values(n).reduce((a, x) => a + x.rebuilt, 0)).toBeGreaterThan(0);
     expect(gameReport(r)).toContain("## Lost units and rebuilds");
-    expect(runGame({ scenario: "1939", seed: 1, turns: 6, verify: false }).rebuild).toEqual(r.rebuild);
+    expect(runGame({ scenario: "1939", seed: 2, turns: 6, verify: false }).rebuild).toEqual(r.rebuild);
   });
   it("the rebuilds counted are the UNIT_BUILT events marked returned", () => {
     const r = runGame({ scenario: "1939", seed: 2, turns: 8, verify: false });

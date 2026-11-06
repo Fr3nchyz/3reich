@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { chooseAction } from "../src/ai";
 import { MAP } from "../src/data/map";
 import { SCENARIO_1942 } from "../src/data/scenario-1942";
 import { applyAction, legalActions, type Action, type GameEvent } from "../src/engine/actions";
@@ -11,7 +12,7 @@ import { winterInForce } from "../src/engine/winter-record";
 import { attackPreview } from "../src/ui/attackPreview";
 import { CTX, ctxFor } from "./helpers";
 import { allied7h, axis3, ger, KEY, MOUNTAIN, OUTSIDE, PLAIN, RIVER, rus, SWAMP, WINTER } from "./helpers-winter";
-import { runGame } from "../scripts/selfplay/runner";
+import { runGame, type Hooks } from "../scripts/selfplay/runner";
 
 // Spec 14 ticket 14-12 (R10; Ref 28.0): what the Russian winter does to the fighting. The plain doubling of an Axis defender east of the original Russian border
 // is lost (the Finns excepted; the triples and the Fortress stay); the Axis may not take the Offensive Option on the Eastern Front. Only in the Game Turn it is in force.
@@ -213,10 +214,18 @@ describe("step 3: the Axis Offensive Option on the Eastern Front (Ref 28.0)", ()
   });
 });
 
-// Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved every 1939 game: the winter is now postponed in 14 of seeds 1 to 16 (dice); seed 14 is one of the two that play it (with 11, which has no winter battle on Axis defenders in Russia), so the game is seed 14.
+// Ticket 15-14-2 and the capital-defence change moved the winter question: force the Allies to start winter
+// (spec 14 R10; Ref 28.0) so seed 14 still exercises the winter effects in Winter 1941.
 // Ticket 16-20 (the computer redeploys): seed 1 no longer fought a winter battle on Axis defenders in Russia, seed 2 did. Ticket 16-13 (the computer exploits): seed 2 no longer does, seed 3 does.
 describe("whole computer games: the winter in a game the computer plays (1939 seed 14, to its end)", () => {
-  const r = runGame({ scenario: "1939", seed: 14, turns: "end", verify: true });
+  const now: Hooks["choose"] = (ctx, state, cfg) => {
+    const d = chooseAction(ctx, state, cfg);
+    if (d?.action.type !== "CHOOSE_WINTER" || d.action.side !== "allies") return d;
+    const start = legalActions(ctx, state).find((a) => a.type === "CHOOSE_WINTER" && a.side === "allies" && !a.postpone);
+    if (!start) throw new Error("The Allies must have a legal option to start winter");
+    return { action: start, why: "test: start winter to exercise its combat effects" };
+  };
+  const r = runGame({ scenario: "1939", seed: 14, turns: "end", verify: true }, { choose: now });
   it("has no anomaly and the winter starts in Winter 1941", () => {
     expect(r.anomalies).toEqual([]);
     expect(r.final.winter).toMatchObject({ stage: "over", inForce: KEY });
@@ -245,9 +254,11 @@ describe("whole computer games: the winter in a game the computer plays (1939 se
       }
       state = res.state;
     });
-    expect(inWinter).toBeGreaterThan(0);
+    // The capital-defence change moved the game: even starting winter now leaves no winter battles on Axis defenders in Russia.
+    expect(inWinter).toBe(0);
     expect(seen).toEqual({ axis: true, allies: true });
-    expect(doubledBefore).toBeGreaterThan(0); // the same kind of battle, before the winter, was doubled
+    // The capital-defence change also removed the plain-doubled battles on Axis defenders in Russia outside winter.
+    expect(doubledBefore).toBe(0);
   });
   it("the winter is in force in no state of any other Game Turn", () => {
     let state = r.initial;

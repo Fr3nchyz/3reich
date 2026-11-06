@@ -71,11 +71,15 @@ import type { ScenarioKey } from "../scripts/selfplay/scenarios";
 const hashOf = (scenario: ScenarioKey, seed: number, turns: number): number => fnv(JSON.stringify(runGame({ scenario, seed, turns, verify: false }).actions));
 
 describe("fixed-seed play is stable", () => {
-  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2915501468));
-  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(3013005840));
+  // Defend Berlin + minor intervention
+  it("1939, seed 1, four Game Turns", () => expect(hashOf("1939", 1, 4)).toBe(2069234498));
+  // Defend Berlin + minor intervention
+  it("1942, seed 1, two Game Turns", () => expect(hashOf("1942", 1, 2)).toBe(1487940790));
   it("1939, seed 5 and seed 2, four Game Turns (the Spring 1940 battle with a dozen survivors)", () => {
-    expect(hashOf("1939", 5, 4)).toBe(1958821328);
-    expect(hashOf("1939", 2, 4)).toBe(2980562296);
+    // Defend Berlin + minor intervention
+    expect(hashOf("1939", 5, 4)).toBe(225822269);
+    // Defend Berlin + minor intervention
+    expect(hashOf("1939", 2, 4)).toBe(207167790);
   });
   it("another seed plays another game", () => expect(hashOf("1939", 2, 4)).not.toBe(1857619474));
 });
@@ -153,6 +157,7 @@ describe("the actions listed at step 7h are unchanged (1939, seed 5, four Game T
       state = r.state;
     }
     expect(lists).toBeGreaterThan(15); // 22 before ticket 14-7, 18 once France falls in Spring 1940
-    expect(h).toBe(951793489);
+    // Defend Berlin + minor intervention
+    expect(h).toBe(2631958356);
   });
 });
