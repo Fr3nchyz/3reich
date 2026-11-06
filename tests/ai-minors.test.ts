@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { chooseDeclaration, plannedReserve as declareReserve } from "../src/ai/declare";
-import { dutyFeasible, MINOR_PLANS, plannedReserve } from "../src/ai/minors";
+import { chooseIntervention, dutyFeasible, MINOR_PLANS, plannedReserve } from "../src/ai/minors";
 import type { Action } from "../src/engine/actions";
 import { BRP_COSTS } from "../src/engine/tables";
+import { chooseMove } from "../src/ai/move";
+import * as policies from "../src/ai/policies";
 import { newGame } from "../src/engine/game";
 import { hex, hexsideId } from "../src/engine/hex";
 import type { GameContext } from "../src/engine/context";
@@ -123,5 +125,52 @@ describe("spec 15 Part E, ticket 15-14-2: the reserve the builds and options kee
     expect(declareReserve(CTX, s, "germany")).toBe(BRP_COSTS.declareWarOnMajorPower + 60);
     s.nations.germany.spendLimit = BRP_COSTS.declareWarOnMajorPower - 1;
     expect(declareReserve(CTX, s, "germany")).toBe(0);
+  });
+});
+
+// Ticket 15-17 (Q4, R6): the computer's mover sends ground units into an attacked minor of its own side.
+const cfg = { seed: 1 } as Parameters<typeof chooseIntervention>[2];
+const attacked = (units: Record<string, Unit>, extra: Partial<GameState> = {}): GameState => ({ ...state(), activeSide: "allies", units,
+  wars: [...state().wars, ["germany", "denmark"]], countries: { denmark: { status: "attacked", attacker: "germany" } }, ...extra });
+const ally = (overrides: Partial<Unit> = {}): Unit => unit({ id: "b1", owner: "britain", at: "A2", movement: 2, ...overrides });
+
+describe("spec 15 R6, Q4, ticket 15-17: chooseIntervention", () => {
+  it("moves a Major Power's ground unit into an attacked minor of its side", () => {
+    const d = chooseIntervention(context(), attacked({ b1: ally() }), cfg);
+    expect(d?.action).toEqual({ type: "MOVE", side: "allies", units: ["b1"], path: ["A3", "A4"] });
+    expect(d?.why).toContain("Intervenes in denmark");
+  });
+  it("sends the biggest stack, and the whole stack when it can all reach", () => {
+    const d = chooseIntervention(context(), attacked({ b1: ally(), b2: ally({ id: "b2", strength: 2 }) }), cfg);
+    expect(d?.action).toMatchObject({ units: ["b1", "b2"] });
+  });
+  it("does nothing out of reach, for a unit of the attacker's side, or for a minor's own unit", () => {
+    expect(chooseIntervention(context(), attacked({ b1: ally({ movement: 1 }) }), cfg)).toBeUndefined();
+    expect(chooseIntervention(context(), attacked({ g1: unit({ id: "g1", at: "A2" }) }), cfg)).toBeUndefined();
+    expect(chooseIntervention(context(), attacked({ d1: ally({ id: "d1", owner: "denmark", at: "A3", movement: 3 }) }), cfg)).toBeUndefined();
+  });
+  it("sends only the units that can all reach: a slow unit stays behind", () => {
+    const d = chooseIntervention(context(), attacked({ b1: ally(), b2: ally({ id: "b2", movement: 1, strength: 9 }) }), cfg);
+    expect(d?.action).toMatchObject({ units: ["b1"] });
+  });
+  it("takes only a move the engine lets end there (British and French units are kept apart before 1942)", () => {
+    expect(chooseIntervention(context(), attacked({ b1: ally(), f1: ally({ id: "f1", owner: "france", at: "A4" }) }), cfg)).toBeUndefined();
+  });
+  it("does nothing for a minor that is neutral, conquered or already helped by this side", () => {
+    expect(chooseIntervention(context(), attacked({ b1: ally() }, { countries: {} }), cfg)).toBeUndefined();
+    expect(chooseIntervention(context(), attacked({ b1: ally() }, { conquests: [{ country: "denmark" }] as never }), cfg)).toBeUndefined();
+    expect(chooseIntervention(context(), attacked({ b1: ally() }, { countries: { denmark: { status: "allied", attacker: "germany", helpers: ["france"] } } }), cfg)).toBeUndefined();
+  });
+  it("does nothing when the minor is on the active side's enemy (the Axis does not help the minor its own side attacked)", () => {
+    expect(chooseIntervention(context(), attacked({ g1: unit({ id: "g1", at: "A2" }) }, { activeSide: "axis" }), cfg)).toBeUndefined();
+  });
+  it("does nothing for air counters or when the policy is off", () => {
+    expect(chooseIntervention(context(), attacked({ b1: ally({ type: "air" }) }), cfg)).toBeUndefined();
+    const spy = vi.spyOn(policies, "AI_INTERVENES_IN_ATTACKED_MINORS", "get").mockReturnValue(false as never);
+    expect(chooseIntervention(context(), attacked({ b1: ally() }), cfg)).toBeUndefined();
+    spy.mockRestore();
+  });
+  it("chooseMove takes the Intervention before any ordinary move", () => {
+    expect(chooseMove(context(), attacked({ b1: ally() }), cfg)?.why).toContain("Intervenes in denmark");
   });
 });
