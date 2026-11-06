@@ -39,6 +39,9 @@ test("step 4: the bar names the minor, a minor's stack moves by tap, and Done wi
   const errors = await load(page);
   await expect(page.locator(".next-text")).toContainText("Belgium");
   await expect(page.locator(".next-text")).toContainText("own turn");
+  await expect(page.locator(".movelist")).toContainText("Stacks that can move"); // the list of stacks is drawn at step 4
+  await expect(page.locator("#move-undo")).toHaveCount(0);
+  await expect(page.getByText(/Planes at \d+ bases?/)).toHaveCount(0); // no air moves at step 4
   // Choosing a stack outlines yellow hexes (only the minor's own stacks can be chosen at this step).
   await page.evaluate(() => window.scrollTo(0, 0));
   let chosen = false;
@@ -47,6 +50,9 @@ test("step 4: the bar names the minor, a minor's stack moves by tap, and Done wi
     if ((await page.locator("g.highlights polygon").count()) > 0) { chosen = true; break; }
   }
   expect(chosen, "a stack of Belgium can be chosen at step 4").toBe(true);
+  await expect(page.locator(".movecard #move-cancel")).toBeVisible(); // the Move card (tick lines, Cancel) is drawn at step 4
+  await expect(page.locator(".movecard .move-lines")).not.toHaveCount(0);
+  await expect(page.locator("#move-undo")).toHaveCount(0); // Take back last move is step 6f's
   const dest = (await visibleCentres(page, "g.highlights polygon"))[0];
   if (!dest) throw new Error("no yellow hex is visible");
   await tapAt(page, hasTouch, dest);
@@ -54,5 +60,19 @@ test("step 4: the bar names the minor, a minor's stack moves by tap, and Done wi
   // A human can always pass: the step button moves on to the controller's own turn.
   await page.getByRole("button", { name: "Done with step 4" }).first().click();
   await expect(page.locator(".turn")).not.toContainText("step 4");
+  expect(errors).toEqual([]);
+});
+
+test("step 4: a tap on a red hex opens the attack while the minor can still move", async ({ page, hasTouch }) => {
+  test.setTimeout(120_000);
+  const errors = await load(page);
+  await expect(page.locator(".movelist")).toBeVisible(); // moves are still on offer
+  await expect(page.locator("g.attack-marks .mk-target")).not.toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const target = (await visibleCentres(page, "g.attack-marks .mk-target"))[0];
+  if (!target) throw new Error("no red hex is visible");
+  await tapAt(page, hasTouch, target);
+  await expect(page.locator(".attackcard")).toBeVisible();
+  await expect(page.locator("#maptoast")).not.toContainText("Tap one of your stacks");
   expect(errors).toEqual([]);
 });

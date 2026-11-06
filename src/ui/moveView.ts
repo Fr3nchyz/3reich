@@ -4,6 +4,7 @@ import { hexCard, type CardCounter } from "./hexCard";
 import { escape } from "./mapGeometry";
 import { LAYER_TITLES, LAYERS, type MoveLine, type MoveSelection } from "./moveSelection";
 import { movableStacks, selectionNow } from "./moveTap";
+import { atMoveStep } from "./step6f";
 import * as T from "./moveText";
 import { lastMoveLine, takeBackReason, takeBackShown } from "./moveUndo";
 import { placeName } from "./names";
@@ -98,11 +99,12 @@ function undoHtml(s: Session): string {
 export function moveHtml(s: Session, actions: readonly Action[]): string {
   const exploit = exploitMovementHtml(s, actions);
   if (exploit) return exploit;
-  if (!takeBackShown(s)) return "";
+  if (!atMoveStep(s)) return "";
   const moves = actions.some((a) => a.type === "MOVE");
-  if (!moves && !lastMoveLine(s)) return "";
+  const undo = takeBackShown(s); // the take-back line is step 6f's only
+  if (!moves && !(undo && lastMoveLine(s))) return "";
   const sel = selectionNow(s);
-  return `<section class="moves">${undoHtml(s)}${!moves ? "" : sel ? cardHtml(s, sel) : listHtml(s)}</section>`;
+  return `<section class="moves">${undo ? undoHtml(s) : ""}${!moves ? "" : sel ? cardHtml(s, sel) : listHtml(s)}</section>`;
 }
 
 /** The sentence a screen reader hears after each change of the open card ("2 of 2 ticked. They can go up to 3 hexes."), or none. */

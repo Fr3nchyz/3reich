@@ -59,6 +59,7 @@ export function nextText(s: Session, actions: readonly Action[]): string {
     return !sel ? R.NEXT_CHOOSE : s.redeploy?.to ? R.NEXT_CONFIRM : R.NEXT_TICK(sel.ticked.length);
   }
   if (atStep7b(s)) return s.airDraft ? "Next: check the planes, then commit them." : actions.some((a) => a.type === "DESIGNATE_AIR") ? "Next: choose planes for a hex you will attack, or finish step 7b." : "Next: finish step 7b.";
+  if (s.state.position?.part === "player-turn" && s.state.position.step === "4" && !s.watch) return `${minorLead(s)} The computer plays it.`;
   if (!attacking(s)) return "Waiting for the computer to choose its losses.";
   if (ownPending(s.state, s.humanSide)) return "Next: choose your losses.";
   const offers = openOffers(s, actions);

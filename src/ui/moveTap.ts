@@ -9,6 +9,7 @@ import { whyNot } from "./moveWhy";
 import { noteMove } from "./moveUndo";
 import { run, type Session } from "./session";
 import { atMoveStep, atStep6f } from "./step6f";
+import { targetsNow } from "./attackTap";
 
 /**
  * The tap flow of ground movement at step 6f (spec 10, ticket 10-3): tap a stack of yours (or its row in the list) and it is chosen with every
@@ -159,6 +160,8 @@ export function tapToMove(s: Session, h: MapHex): boolean {
     return true;
   }
   const sel = selectionNow(s);
+  // Step 4: a minor may move and attack in the one window, so a tap on a red attack hex (not a yellow hex of the chosen stack) is the attack's, not a refused move.
+  if (s.state.position?.part === "player-turn" && s.state.position.step === "4" && targetsNow(s).includes(h.id) && !sel?.destinations.some((d) => d.to === h.id)) return false;
   if (sel) moveTicked(s, sel, h.id);
   else s.toast = T.CHOOSE_FIRST;
   return true;
