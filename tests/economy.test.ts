@@ -162,7 +162,7 @@ describe("declarations of war (Ref 13.0)", () => {
   it("are made only by the side whose Player Turn it is, and by a Major Power that is in the war", () => {
     const s = atStart(SCENARIO_1939, 1);
     expect(declarationTargets(CTX, s, "britain")).toEqual([]);
-    expect(declarationTargets(CTX, s, "italy")).toEqual([]); // neutral at the start
+    expect(declarationTargets(CTX, s, "italy").some(isMajorPower)).toBe(false); // neutral at the start: minors only (MC21)
     expect(sideOfPower(s.nations.italy)).toBeNull();
     expect(sideOfPower(s.nations.germany)).toBe("axis");
   });
