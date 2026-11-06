@@ -1,5 +1,6 @@
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import { angloFrenchStopProblem } from "./anglo-french";
+import { vacantHexAttackPlan, vacantHexAttackProblem } from "./vacant-attack";
 import { applyOutcome, applySweep, legalAllocations } from "./attack-losses";
 import { franceOccupied } from "./france-occupied";
 import { occupiedAttackFor } from "./occupied-wiring";
@@ -249,6 +250,56 @@ export function applyAdvance(ctx: GameContext, state: GameState, action: Advance
   // A won attack with armor in it, advanced into: the hex is a Breakthrough hex (Ref 12.31; spec 16 R10).
   if (!exploiting && breakthroughAfter(chance)) { // an Exploitation advance is not a new Breakthrough (spec 16 R13)
     const opened = openBreakthrough(ctx, next, chance);
+    next = opened.state;
+    events.push(...opened.events);
+  }
+  return { ok: true, state: next, events };
+}
+
+type VacantAction = Extract<Action, { type: "VACANT_HEX_ATTACK" }>;
+
+/**
+ * VACANT_HEX_ATTACK (Ref 12.32; spec 16 R16, 16-14b): the legality is `vacantHexAttackProblem`. No die is rolled. The attackers are used and the hex
+ * attacked; the first armor advances in under the ordinary advance rules (supply cut-off, stacking, Anglo-French stop, minors), taking control as an
+ * advance does. When `vacantHexAttackPlan` allows Exploitation the hex becomes a Breakthrough hex. R16 says the armor creates one, but bars
+ * Exploitation from it next to an enemy ground unit or with no supply line; when barred, this code does not record the hex (a judgment call:
+ * a recorded non-exploitable hex changes nothing observable today; AER20 stays open for the owner to confirm). Not in `legalActions`, so the computer never makes it.
+ */
+export function applyVacantHexAttack(ctx: GameContext, state: GameState, action: VacantAction): ActionResult {
+  const ids = action.units;
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string" || !Object.hasOwn(state.units, id))) return { ok: false, error: "A vacant-hex attack names distinct units on the map." };
+  if (typeof action.target !== "string" || !Object.hasOwn(ctx.map.hexes, action.target)) return { ok: false, error: `${String(action.target)} is not a hex on the map.` };
+  const problem = vacantHexAttackProblem(ctx, state, action.side, ids, action.target);
+  if (problem) return { ok: false, error: problem };
+  const plan = vacantHexAttackPlan(ctx, state, action.side, ids, action.target)!;
+  const blocked = advanceProblem(ctx, state, plan.advancing, action.target);
+  if (blocked) return { ok: false, error: blocked };
+  const limited = occupiedAttackFor(ctx, state, ids.map((id) => state.units[id]!), action.target); // spec 14 R5 (Ref 18.3)
+  if (limited) return { ok: false, error: limited };
+  const rec = combatOf(state);
+  const from = [...new Set(ids.map((id) => state.units[id]!.at))];
+  const attackers = ids.map((id) => state.units[id]!);
+  let next: GameState = noteMinorEntry(ctx, state, attackers, [action.target]);
+  const units = { ...next.units };
+  for (const id of plan.advancing) units[id] = { ...units[id]!, at: action.target };
+  const moves = movesOf(next);
+  next = { ...next, units, combat: { ...rec, attacked: [...rec.attacked, ...ids], targets: [...rec.targets, action.target] }, moves: { ...moves, moved: [...new Set([...moves.moved, ...plan.advancing])] } };
+  const events: GameEvent[] = [{ type: "VACANT_HEX_ATTACKED", side: action.side, attackers: [...ids], target: action.target, advanced: [...plan.advancing], breakthrough: plan.breakthrough !== null }, { type: "UNITS_ADVANCED", units: [...plan.advancing], from: [...new Set(plan.advancing.map((id) => state.units[id]!.at))], to: action.target }];
+  if (MC5_ADVANCE_INTERVENES) {
+    const helped = noteIntervention(ctx, next, plan.advancing.map((id) => next.units[id]!), [action.target]);
+    next = helped.state;
+    events.push(...helped.events);
+  }
+  const garrisoned = noteGarrison(ctx, next, plan.advancing.map((id) => next.units[id]!), [action.target]);
+  next = garrisoned.state;
+  events.push(...garrisoned.events);
+  for (const id of plan.advancing) {
+    const entered = enterHexes(ctx, next, next.units[id]!, [action.target]);
+    next = entered.state;
+    events.push(...entered.events);
+  }
+  if (plan.breakthrough) {
+    const opened = openBreakthrough(ctx, next, { to: action.target, units: [...ids], armor: true, from });
     next = opened.state;
     events.push(...opened.events);
   }

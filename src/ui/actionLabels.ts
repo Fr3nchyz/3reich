@@ -47,6 +47,8 @@ export function combatLabel(a: Action, ctx: GameContext, state: GameState): stri
   switch (a.type) {
     case "ATTACK":
       return `Attack ${placeName(ctx.map, a.target)} with ${unitsWhere(ctx, state, a.units)}`;
+    case "VACANT_HEX_ATTACK":
+      return `Attack the empty ${placeName(ctx.map, a.target)} with ${unitsWhere(ctx, state, a.units)}`;
     case "ALLOCATE_LOSSES":
       return `Lose ${unitsWhere(ctx, state, a.units)}`;
     case "ADVANCE":

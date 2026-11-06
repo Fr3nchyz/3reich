@@ -97,6 +97,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} advance into ${placeName(ctx.map, e.to)}.`;
     case "BREAKTHROUGH":
       return `Breakthrough at ${placeName(ctx.map, e.hex)}${e.placeable.length > 0 ? `: ${e.placeable.length} armor unit${e.placeable.length === 1 ? "" : "s"} can move in free` : ""}.`;
+    case "VACANT_HEX_ATTACKED":
+      return `${stackSummary(unitsWithIds(before, e.attackers))} attack the empty ${placeName(ctx.map, e.target)}; ${stackSummary(unitsWithIds(before, e.advanced))} advance in${e.breakthrough ? " (Breakthrough)" : ""}.`;
     case "EXPLOITERS_PLACED":
       return `${stackSummary(unitsWithIds(before, e.units))} move into the Breakthrough at ${placeName(ctx.map, e.hex)}.`;
     case "EXPLOIT_MOVED":

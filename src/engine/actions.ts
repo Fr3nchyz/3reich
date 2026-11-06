@@ -7,7 +7,7 @@ import { winterAsking } from "./winter-record";
 import { occupationAsking, surrenderAsking } from "./soviet-record";
 import { applyConcede, legalConcede } from "./occupation-step";
 import { applySiberian, applySurrenderAnswer, legalSiberian, legalSurrenderActions } from "./victory-actions";
-import { applyAdvance, applyAttack, legalCombatActions } from "./attack";
+import { applyAdvance, applyAttack, applyVacantHexAttack, legalCombatActions } from "./attack";
 import { applyAllocation } from "./attack-losses";
 import { applyPlaceExploiters } from "./breakthrough";
 import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalExploitMoves } from "./exploit-step";
@@ -196,6 +196,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return atStep(state, "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
       return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atStep(state, "7h", "Ground attacks are made", () => applyAttack(ctx, state, action));
+    case "VACANT_HEX_ATTACK":
+      return atStep(state, "7h", "Ground attacks are made", () => applyVacantHexAttack(ctx, state, action));
     case "ALLOCATE_LOSSES":
       return waitingStep(state) === "7o" ? applyAllocation(ctx, state, action) : atStep(state, "7h", "Exchange losses are chosen", () => applyAllocation(ctx, state, action));
     case "ADVANCE":
