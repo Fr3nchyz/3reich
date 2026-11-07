@@ -33,6 +33,9 @@ export const ATTACK_MAX_PER_TURN = 40;
  */
 export const ATTACK_STALL_TURNS = 2;
 export const ATTACK_STALL_MAX_EXCHANGE_FACTORS = 16;
+/** TODO(verify) AER70: spec 05 "Stall breaker"; computer policy for full fortified hexes, same quietSince and odds floor. */
+export const ATTACK_DEEP_STALL_TURNS = 4;
+export const ATTACK_DEEP_STALL_MAX_EXCHANGE_FACTORS = 24;
 /** Base score of a sweep of a hex with only air units or the like: below any real attack, so the units are first offered to real attacks. */
 export const SWEEP_SCORE = -1000;
 
@@ -47,6 +50,7 @@ function exchangeLimit(state: GameState, cfg: AiConfig): number {
   const turn = turnIndex(state);
   mem.quietSince[side] ??= turn;
   if (turn - mem.quietSince[side] >= ATTACK_STALL_TURNS) mem.stallTurn[side] = turn;
+  if (turn - mem.quietSince[side] >= ATTACK_DEEP_STALL_TURNS) return ATTACK_DEEP_STALL_MAX_EXCHANGE_FACTORS;
   return mem.stallTurn[side] === turn ? ATTACK_STALL_MAX_EXCHANGE_FACTORS : ATTACK_MAX_EXCHANGE_FACTORS;
 }
 
