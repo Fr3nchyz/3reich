@@ -96,7 +96,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-5 Computer: sea supply | the computer answers the prompts | S | In progress (Codex, #146) |
 | 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | In progress (Codex, #147) |
 | 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | In progress (Codex, #145) |
-| 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended |
+| 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended; the [supply gate measurement](measurements/12-7-supply-gate.md) finds a 1939 Axis Objective loss above the bound in the available reports and recommends keeping penalties off. |
 | **Release II: fleets move and fight** | | | |
 | 12-9 Naval combat resolver (pure) | every branch of the naval table | S | In progress (Codex, #132) |
 | 12-10 Base-change rules (pure) | straits, Suez, which side of Italy | M | In progress (Codex, #176) |
