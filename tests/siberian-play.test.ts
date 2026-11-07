@@ -118,8 +118,8 @@ describe("whole computer games", () => {
     expect(result.final.phase).toBe("game-over");
     const a = audit(SCENARIOS["1942"], 1, result.actions);
     expectRules(SCENARIOS["1942"], a);
-    // Ticket 15-14-2 (the computer declares on minor countries and keeps their price back) moved the game: Summer 1942 takes an infantry and an armor, and Fall 1942 one infantry (a Russian loss was back in the pool; was 2 infantry in Summer, none in Fall)
-    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 1, armor: 1 }, "1942-fall": { infantry: 1, armor: 0 } });
+    // Defend Berlin combined with minor-country declarations changes the losses: Summer 1942 takes two infantry instead of one infantry and one armor; the quotas are unchanged.
+    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 }, "1942-fall": { infantry: 1, armor: 0 } });
     expect(seen.at8a, "the game waited at 8a in Spring and Summer, and after the quota").toBeGreaterThanOrEqual(2);
     expect(result.final.siberian).toMatchObject({ used: true, taken: { "1942-spring": 3, "1942-summer": 2, "1942-fall": 1 } });
     expect(result.final.result!.siberian).toBe(true);
@@ -129,11 +129,12 @@ describe("whole computer games", () => {
   // Spec 17 (ticket 17-1): the scenario's Russian builds are all built by Winter 1941, as before, but lost Russian units are back in the pool, so Winter 1941 now has
   // four to take (TODO(verify) RB12; it answers V58).
   it("the Campaign: in Winter 1941 the units taken are Russian losses back in the pool (the scenario's builds are all built), and Spring 1942 takes three more", () => {
-    const { result } = play("campaign", 1);
+    // Defend Berlin with minor-country declarations: seed 1 no longer takes Winter losses; seed 3 still exercises R11 and returned counters.
+    const { result } = play("campaign", 3);
     expect(result.anomalies).toEqual([]);
-    const a = audit(SCENARIOS.campaign, 1, result.actions);
+    const a = audit(SCENARIOS.campaign, 3, result.actions);
     expectRules(SCENARIOS.campaign, a);
-    expect(a.perTurn["1941-winter"]).toEqual({ infantry: 2, armor: 0 }); // ticket 15-14-2 moved the game (2 Russian losses back in the pool; was 4 infantry, ticket 15-11b; 3 infantry and 1 armor before)
+    expect(a.perTurn["1941-winter"]).toEqual({ infantry: 4, armor: 0 }); // Seed 3 has four returned infantry available, versus two in the old seed-1 pin.
     for (const t of a.taken.filter((x) => x.turn === "1941-winter")) expect(takenEntry(t)?.returned, `${t.turn}: a counter that came back`).toBe(true);
     expect(a.perTurn["1942-spring"]).toEqual({ infantry: 3, armor: 0 });
     expect(result.final.siberian?.used).toBe(true);
@@ -147,7 +148,8 @@ describe("whole computer games", () => {
     expect(result.anomalies).toEqual([]);
     const a = audit(SCENARIOS["1939"], 1, result.actions);
     expectRules(SCENARIOS["1939"], a);
-    expect(a.perTurn).toEqual({ "1941-winter": { infantry: 2, armor: 0 }, "1942-spring": { infantry: 3, armor: 0 }, "1942-summer": { infantry: 2, armor: 0 } }); // ticket 15-14-2 moved the game again (Winter 1941 takes 2 infantry, Summer 1942 2 infantry; was 4 and 1 infantry with 1 armor); ticket 15-11b moved the game (Winter 1941 was 3 infantry and 1 armor, no Summer 1942 take); // Ticket 15-8 (merged with 15-8a: the allies also inherit the wars; Winter 1941 takes 3 infantry and 1 armor)
+    // Defend Berlin combined with minor-country declarations leaves returned losses available only in Spring 1942 (previously 2 Winter, 3 Spring and 2 Summer infantry).
+    expect(a.perTurn).toEqual({ "1942-spring": { infantry: 3, armor: 0 } });
     // Ticket 15-8 (the Axis allies wake in Summer 1941): the game changed and Spring 1942 takes the whole quota of three. // Ticket 16-13 (the computer exploits): the game changed and Spring 1942 has two Russian losses back in the pool to take (it took 3 before). // Ticket 15-5 (conquered income): the game changed and Summer 1942 has no Russian loss left to take (it took 2 before). // Summer 1942 takes 2 since Attrition is live (ticket 16-4 wiring; the game differs after the first Attrition runs); Spring 1942 took 1 before ticket 16-1; with the Front Options paid for the computer has the units to take the whole quota of three (no seed of 1 to 12 gives 1 now)
     for (const t of a.taken) {
       expect(availableBuilds(t.before, "ussr").filter((e) => !e.returned && (e.type === "infantry" || e.type === "armor")), "the scenario's builds are used up").toEqual([]);

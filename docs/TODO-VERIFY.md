@@ -460,3 +460,12 @@ For minor countries (spec 15, questions P1 to P8): whether the game places an at
 | E6 | spec 11 Parts C/D/I | Background write completion | Start IndexedDB writes on hidden/pagehide; no synchronous mirror is implemented. | Owner-manual, open (11-12). |
 | E7 | spec 11 Parts H/I | Device replay budget | `RESTORE_SLICE_MS = 40`, `RESTORE_BUDGET_MS = 20000`; tune only after measuring on the iPad. | Owner-manual, open (11-12). |
 | E8 | spec 11 Parts C/F/I | Browser storage and file behavior | `FILE_URL_LIFETIME_MS = 1000`; `DOWNLOAD_AFTER_SHARE_CANCEL = false`. Prefer supported file sharing, otherwise download; cancel does not download. Request persistence once after successful autosave; do not depend on a grant. | Owner-manual, open (11-12): Safari/Home Screen storage, eviction, persistence, share and download. |
+
+## Capital defence policy (spec 05, Defend Berlin)
+
+| Id | Source | Subject | Current default and reason | Status |
+| --- | --- | --- | --- | --- |
+| AER56 | spec 05, Defend Berlin; Ref 19.2 | Recall threshold | `CAPITAL_THREAT_RATIO = 1`: recall when one-turn enemy ground factors exceed terrain/fortress/winter-adjusted defending factors, to protect the main supply source before advancing. | TODO(verify), computer policy to assess by self-play; listed in RULES.md Open questions. |
+| AER57 | spec 05, Defend Berlin | Defensive ring | `CAPITAL_DEFENSE_RADIUS = 1`: include crossable immediate neighbours so reserves can shield a full capital from a legal adjacent defensive hex. | TODO(verify), computer policy to assess by self-play; listed in RULES.md Open questions. |
+| AER68 | `air-port-attack.ts`; spec 12 R14, spec 09 R5; Ref 20.3/20.45; Ops 5.46b/i | Port attack mission period | TODO(verify): `PORT_ATTACK_MISSION_PERIOD = "game-turn"` inherits the existing Game Turn ledger, including new planes, over Operations Manual Player Turn wording. Caller supplies other commitments and Counter-Air aborts. | Listed ("Air attacks on ports, pure slice"); ticket 12-15a. |
+| AER69 | `air-port-attack.ts`; Ref 20.6/20.45; spec 09 R6 | Port attack air breakdown | TODO(verify): `PORT_ATTACK_AIR_RULES = AIR_COMBAT_RULES` inherits sizes 1/2/3/5 and breakdown beyond rolled losses. Losses stay with the counter whose factors rolled 5/6. Fleet breakdown reuses N1/N2; explicit fleet allocations reuse N29. | Listed ("Air attacks on ports, pure slice"); ticket 12-15a; pure/unwired. |

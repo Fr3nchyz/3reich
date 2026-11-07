@@ -50,7 +50,8 @@ function play(scenario: ScenarioKey, seed: number, view: (s: GameState) => GameS
 
 // The last row since spec 17 (ticket 17-1): with lost units rebuilt no plain game reaches Russia's offer to surrender (tests/helpers-surrender.ts), so one game is
 // played with a computer that never rebuilds a Russian loss nor takes one in the Transfer (legal choices); the Campaign seed 16 then reaches the offer (1939 seed 14 until ticket 15-14-2, whose games no longer press Russia: no 1939 game of seeds 1 to 70 reaches it; 1939 seed 10 until ticket 15-11b) (seed 1 did until Attrition went live, ticket 16-4 wiring; seed 5 until conquered income, ticket 15-5).
-const MATRIX: [ScenarioKey, number, string][] = [["1939", 7, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 1, ""], ["campaign", 16, " (Russian losses not used again)"]];
+// Ticket 15-18 moves the surrender prompt again, from Campaign seed 1 to seed 15. Defend Berlin combined with minor-country declarations moves the surrender prompt from Campaign seed 16 to seed 1; keep all three prompt kinds covered (spec 14, 14-19).
+const MATRIX: [ScenarioKey, number, string][] = [["1939", 7, ""], ["1942", 1, ""], ["1944", 1, ""], ["campaign", 15, ""], ["campaign", 15, " (Russian losses not used again)"]];
 const all: Seen[] = [];
 
 describe.each(MATRIX)("a whole computer game, %s seed %i%s", (scenario, seed, variant) => {
