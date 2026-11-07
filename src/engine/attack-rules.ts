@@ -4,6 +4,7 @@ import { defenseBasis, type DefenseBasis } from "./terrain";
 import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
 import type { Front } from "./map";
 import { sideOfOwner } from "./setup";
+import { minorTurnProblem } from "./minors-turn";
 import { countedAir } from "./air-support";
 import { oddsColumn, type OddsColumn } from "./combat";
 import type { ForceOwner, GameState, PowerId, Side, Unit, UnitType } from "./types";
@@ -119,7 +120,7 @@ const takesPart = (state: GameState, o: ForceOwner): boolean => !isMajorPower(o)
 /** Ground units of the side that could attack now: on a hex, not yet used this turn, supplied; Replacements only in a Counterattack (not built). */
 export function attackerPool(ctx: GameContext, state: GameState, side: Side, used: readonly string[]): Unit[] {
   return Object.values(state.units).filter(
-    (u) => isGroundCombatUnit(u) && !(REPLACEMENTS_ONLY_COUNTERATTACK && u.type === "replacement") && sideOfOwner(u.owner) === side && takesPart(state, u.owner) && ctx.map.hexes[u.at] !== undefined && !used.includes(u.id) && isSupplied(ctx, state, u),
+    (u) => isGroundCombatUnit(u) && !(REPLACEMENTS_ONLY_COUNTERATTACK && u.type === "replacement") && sideOfOwner(u.owner) === side && takesPart(state, u.owner) && minorTurnProblem(state, u) === null && ctx.map.hexes[u.at] !== undefined && !used.includes(u.id) && isSupplied(ctx, state, u),
   );
 }
 

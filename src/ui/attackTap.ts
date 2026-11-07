@@ -16,7 +16,7 @@ import { run, type Session } from "./session";
 /** Whether it is step 7h of a Player Turn in a game the player plays (not watched), whoever is to move. */
 export function atStep7h(s: Session): boolean {
   const p = s.state.position;
-  return s.state.phase === "player-turn" && p?.part === "player-turn" && p.step === "7h" && !s.watch;
+  return s.state.phase === "player-turn" && p?.part === "player-turn" && (p.step === "7h" || p.step === "4") && !s.watch; // step 4: an attacked minor attacks in its own turn (spec 15 R15)
 }
 
 /** Spec 16 D3/R13: the same attack and post-battle flow also serves Exploitation. */

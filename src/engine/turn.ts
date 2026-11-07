@@ -14,6 +14,7 @@ import type { GameState, TurnPosition } from "./types";
 import { hasCombatWork } from "./attack";
 import { hasExploitCombatWork, hasExploitMoveWork } from "./exploit-step";
 import { hasMinorPlaceWork } from "./minors-step";
+import { closeMinorTurn, hasMinorTurnWork } from "./minors-turn-step";
 import { wakeSleepers } from "./minors-wake";
 import { hasPlaceWork, lapseBreakthroughs } from "./breakthrough";
 import { legalAllBuilds } from "./minors-rebuild-wire";
@@ -119,7 +120,8 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       if (step) {
         // Leaving 7h: ground support committed to a hex that was not attacked is lost (Ref 20.41), and armor not placed into a Breakthrough hex no longer can be (spec 16 R11).
         // Leaving 7o: ground support committed at 7k to a hex the exploiters did not attack is lost the same way (spec 16 R17, AER56).
-        const lost = pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : pos.step === "7o" ? loseUnusedGroundSupport(state) : { state, events: [] };
+        // Leaving 4: the attacked minors' own turn is over; its hexes attacked and advances left do not carry into the controller's combat (spec 15 R15).
+        const lost = pos.step === "4" ? { state: closeMinorTurn(state), events: [] } : pos.step === "7h" ? loseUnusedGroundSupport(lapseBreakthroughs(state)) : pos.step === "7o" ? loseUnusedGroundSupport(state) : { state, events: [] };
         // Leaving 6e: supply is read again, after the fleets have been named (Ref 19.1; spec 12 R8): the new list of the units cut off replaces
         // the one taken when the turn began. Nothing changes while the supply effects are off. TODO(verify) (N14, N34): the end-of-turn elimination then reads this list.
         const read = pos.step === "6e" ? recordUnsupplied(ctx, lost.state) : lost.state;
@@ -189,6 +191,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
   switch (id) {
     case FIRST_STEP:
       return legalDeclarations(ctx, state).length > 0;
+    case "4":
+      return hasMinorTurnWork(ctx, state);
     case "6f":
       return hasMoveWork(ctx, state) || hasAirMoveWork(ctx, state);
     case "6e":

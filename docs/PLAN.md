@@ -183,6 +183,7 @@ Each of these needs a short spec first (docs only, size S to M, reviewed), then 
 | 15-9 status | | Built: 15-9a pure income (#249), 15-9b Year Start wiring (#273). |
 | 15-11 status | | 15-11a pure slice built (#250); 15-11b wired (creation and German elimination at the end of Axis Fall 1939). |
 | 15-17 status | | Built (draft PR): the computer's mover Intervenes in an attacked minor of its side (`chooseIntervention`, policy `AI_INTERVENES_IN_ATTACKED_MINORS`, MC33). Moves 1939 seeds 1, 2, 5, 9, Campaign seeds 1, 2 and 1942 seeds 1, 2. |
+| 15-18 status | | Slices A and B built (draft PR): engine, computer and UI. Step 4 is implemented: an attacked, un-helped minor (not Poland, MC26) moves and attacks only there, and no longer at 6f or 7h. Slice B (UI taps, Next bar naming the minor, Playwright spec) is in the same PR. Left: slice C (MC16 air and naval limits of the invasion turn). Moves every game in which a minor is attacked; hashes re-pinned. |
 | 15-14 status | | 15-14-1 pure policy built; 15-14-2 wired (the computer declares on minor countries when the date has come and the duty is feasible, and keeps their price back in builds and Front Options). Moves every 1939, Campaign and 1942 computer game. Left for 15-14: defender placement lines, self-play lines and anomalies. |
 | 15-12 status | | Built (#230). |
 | 15-19 status | | 15-19a pure slice built (#266); 15-19b wired into step 8b (draft PR), computer unchanged. |
