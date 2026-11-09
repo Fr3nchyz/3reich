@@ -22,8 +22,8 @@ function start(seed = 13, a = 5, d = 5): GameState {
   return at6f([inf("g", "germany", "M32"), inf("p", "poland", "M33"), air("a", "J32", a), air("d", "M33", d, "britain")], "axis", undefined,
     { rngState: seed, airbasesPlaced: NO_AIRBASES_LEFT });
 }
-const end = (step: string): Action => ({ type: "END_STEP", side: "axis", step });
-const commit = (units = ["a"], target = "M33"): Action => ({ type: "DESIGNATE_AIR", side: "axis", mission: "counter-air", units, target });
+const end = (step: string): Extract<Action, { type: "END_STEP" }> => ({ type: "END_STEP", side: "axis", step });
+const commit = (units = ["a"], target = "M33"): Extract<Action, { type: "DESIGNATE_AIR" }> => ({ type: "DESIGNATE_AIR", side: "axis", mission: "counter-air", units, target });
 const resolve: Action = { type: "RESOLVE_COUNTER_AIR", side: "axis" };
 const at7b = (s = start()) => okOf(applyAction(CTX, s, end("6f"))).state;
 const assigned = (s = start()) => okOf(applyAction(CTX, at7b(s), commit())).state;
@@ -56,7 +56,7 @@ describe("09-9b: counter-air through the real turn flow", () => {
     expect(done.state.rngState).toBe(b.rngState);
     expect(applyAction(CTX, done.state, resolve).ok).toBe(false);
     // Even a hand-built 7c with no work does not list resolution.
-    const empty = { ...b, position: { part: "player-turn" as const, turn: 1, step: "7c" } };
+    const empty: GameState = { ...b, position: { part: "player-turn", turn: 1, step: "7c" } };
     expect(legalActions(CTX, empty)).toEqual([end("7c")]);
     expect(applyAction(CTX, empty, resolve).ok).toBe(false);
     expect(chooseAction(CTX, at7c(), { seed: 1 })?.action.type).not.toBe("RESOLVE_COUNTER_AIR");
@@ -103,7 +103,12 @@ describe("09-9b: counter-air through the real turn flow", () => {
     expect(counterAirOf(legacy)).toEqual([]);
     expect(legalActions(CTX, legacy)).toEqual(legalActions(CTX, b));
     const continued = replay(CTX, legacy, [end("7b")]);
-    expect(continued).toEqual(replay(CTX, b, [end("7b")]));
+    const withoutRecord = replay(CTX, b, [end("7b")]);
+    // Spec 09 C1/AER73: preserve the old air record without adding assignments or work.
+    expect(continued.events).toEqual(withoutRecord.events);
+    expect(continued.state).toEqual({ ...withoutRecord.state, air: legacy.air });
+    expect(counterAirOf(continued.state)).toEqual([]);
+    expect(continued.state.rngState).toBe(legacy.rngState);
     expect(continued.state.position).toMatchObject({ step: "7h" });
     expect(JSON.stringify(legacy)).toBe(before);
   });
@@ -124,7 +129,7 @@ describe("09-9b: counter-air through the real turn flow", () => {
   it("R12/R4/R5: refuses wrong side, step, kind, range, neutral target and missing enemy base", () => {
     const b = at7b();
     const cases: Action[] = [
-      { ...commit(), side: "allies" } as Action, commit(["g"]), commit(["d"]), commit(["missing"]),
+      { ...commit(), side: "allies" }, commit(["g"]), commit(["d"]), commit(["missing"]),
       commit([], "M33"), commit(["a", "a"]), commit(["a"], "ZZ99"), commit(["a"], "M32"),
       commit(["a"], "Q27"), commit(["a"], "I32"),
     ];
@@ -166,7 +171,7 @@ describe("09-9b: counter-air through the real turn flow", () => {
 
   it("R7/AER74: automatic losses choose the same counter by id regardless of unit insertion order", () => {
     const s = start(13, 2, 1);
-    const withTwo = { ...s, units: { ...s.units, e: air("e", "M33", 1, "britain") } };
+    const withTwo: GameState = { ...s, units: { ...s.units, e: air("e", "M33", 1, "britain") } };
     const done = okOf(applyAction(CTX, at7c(withTwo), resolve));
     expect(done.state.units.d).toBeUndefined();
     expect(done.state.units.e).toEqual(withTwo.units.e);
@@ -193,7 +198,7 @@ describe("09-9b: counter-air through the real turn flow", () => {
   });
 
   it("R15/AER74: deterministic JSON replay, immutable input, tie die and two targets in designation order", () => {
-    const initial = { ...start(14, 5, 5), units: { ...start(14, 5, 5).units, base: inf("base", "germany", "J32", 0, 0, "airbase"), b: air("b", "K32", 2), e: air("e", "N33", 3, "britain") } };
+    const initial: GameState = { ...start(14, 5, 5), units: { ...start(14, 5, 5).units, base: inf("base", "germany", "J32", 0, 0, "airbase"), b: air("b", "K32", 2), e: air("e", "N33", 3, "britain") } };
     const actions = [end("6f"), commit(), commit(["b"], "N33"), end("7b"), resolve];
     const snapshot = JSON.stringify(initial);
     Object.values(initial.units).forEach(Object.freeze);
@@ -203,7 +208,7 @@ describe("09-9b: counter-air through the real turn flow", () => {
     expect(replay(CTX, JSON.parse(snapshot) as GameState, JSON.parse(JSON.stringify(actions)) as Action[])).toEqual(first);
     expect(JSON.stringify(initial)).toBe(snapshot);
     const pure1 = resolveCounterAir({ target: "M33", attacker: [initial.units.a!], defender: [initial.units.d!], rngState: 14 }, (_s, p, n) => autoAirLosses(p, n));
-    const pure2 = resolveCounterAir({ target: "N33", attacker: [initial.units.b], defender: [initial.units.e], rngState: pure1.rngState }, (_s, p, n) => autoAirLosses(p, n));
+    const pure2 = resolveCounterAir({ target: "N33", attacker: [initial.units.b!], defender: [initial.units.e!], rngState: pure1.rngState }, (_s, p, n) => autoAirLosses(p, n));
     expect(first.events.filter((e) => e.type === "AIR_COMBAT_RESOLVED")).toEqual([...pure1.events, ...pure2.events]);
     expect(first.state.rngState).toBe(pure2.rngState);
     expect(pure1.events[0]!.combat.tieRoll).not.toBeNull();
