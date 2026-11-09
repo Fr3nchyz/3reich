@@ -94,10 +94,23 @@ describe("fleet movement at 6b (spec 12 R10, Ref 21.2)", () => {
 
   it("bars a second change, but expires the moved list at a new Player Turn (Ref 21.2; N19)", () => {
     const s = moved().state;
+    const before = structuredClone(s);
     expect(problem(s, { to: "C33" })).toMatch(/already changed base/);
+    expect(moveFleet(CTX, s, { ...move, to: "C33" })).toEqual({ ok: false, error: problem(s, { to: "C33" }) });
+    expect(s).toEqual(before);
     expect(fleetMoveOptions(CTX, s, "b1")).toEqual([]);
     const stale = { ...position(), naval: { ...s.naval!, turn: "old-turn" } };
     expect(moved(stale).state.naval!.moved).toEqual(["b1"]);
+  });
+
+  it("keeps Game Turn uses across Player Turns and expires them in the next Game Turn (Ref 21.3; spec 12 R5, N7)", () => {
+    const s = markUsed(position(), ["b2"], "intercept");
+    const old = { ...navalOf(s), turn: "previous-player-turn", moved: ["b1"], triedIntercept: ["b2"] };
+    const result = moved({ ...s, naval: old }).state.naval!;
+    expect(result.used).toEqual({ b2: "intercept" });
+    expect(result.moved).toEqual(["b1"]);
+    expect(result.triedIntercept).toEqual([]);
+    expect(moved({ ...s, naval: { ...old, gameTurn: "previous-game-turn" } }).state.naval!.used).toEqual({});
   });
 
   it("checks initial and current destination ownership separately (Ref 21.2, 21.1)", () => {

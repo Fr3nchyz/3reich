@@ -63,7 +63,7 @@ export function moveFleet(ctx: GameContext, state: GameState, move: FleetMove): 
     state: {
       ...state,
       units: { ...state.units, [move.fleet]: { ...fleet, at: move.to } },
-      naval: { ...rec, used: {}, moved: [...rec.moved, move.fleet] },
+      naval: { ...rec, moved: [...rec.moved, move.fleet] },
     },
     course: [...course],
   };
