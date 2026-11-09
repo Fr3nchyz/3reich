@@ -5,6 +5,9 @@ import { MC21_USSR_BORDER_MINORS, minorDeclarationProblem } from "../src/engine/
 import { sideInWar } from "../src/engine/control";
 import { applyDeclaration, declarationTargets, legalDeclarations, legalNeutralDeclarations } from "../src/engine/war";
 import type { GameState, Unit } from "../src/engine/types";
+import { legalActions } from "../src/engine/actions";
+import { settle } from "../src/engine/turn";
+import { minorDeclareModel } from "../src/ui/minorView";
 import { CTX, atStart } from "./helpers";
 
 const start = () => atStart(SCENARIO_1939, 1);
@@ -41,6 +44,24 @@ describe("spec 15 R2 / MC21: a neutral Major Power declares on minors only", () 
     const ussr = legalDeclarations(CTX, allies());
     expect(ussr).toContainEqual({ type: "DECLARE_WAR", by: "ussr", on: "finland" });
     expect(ussr.some((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(false);
+  });
+
+  it("step 1 is a stop when only a neutral Power can declare, and its declarations are among the legal actions", () => {
+    const s = axis();
+    const spent: GameState = { ...s, nations: { ...s.nations, germany: { ...s.nations.germany, spent: s.nations.germany.spendLimit } } };
+    expect(legalDeclarations(CTX, spent).every((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(true);
+    const settled = settle(CTX, spent).state;
+    expect(settled.position).toMatchObject({ step: "1" });
+    expect(legalActions(CTX, settled)).toContainEqual({ type: "DECLARE_WAR", by: "italy", on: "greece" });
+  });
+
+  it("the declaration screen enables Italy's Declare war on a minor, and keeps the U.S.S.R.'s disabled on the Axis turn", () => {
+    const s = axis();
+    const actions = legalActions(CTX, s);
+    const italy = minorDeclareModel(CTX, s, "italy", "greece", actions);
+    expect(italy.buttons[0]).toMatchObject({ disabled: false, action: { type: "DECLARE_WAR", by: "italy", on: "greece" } });
+    const ussr = minorDeclareModel(CTX, s, "ussr", "finland", actions);
+    expect(ussr.buttons[0]).toMatchObject({ disabled: true, action: null });
   });
 
   it("a neutral Power with too few BRPs is not offered a declaration", () => {
