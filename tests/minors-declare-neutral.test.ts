@@ -30,12 +30,23 @@ describe("spec 15 R2 / MC21: a neutral Major Power declares on minors only", () 
     expect(applyDeclaration(CTX, s, { type: "DECLARE_WAR", by: "italy", on: "britain" }).ok).toBe(false);
   });
 
-  it("neutral declarations are listed apart, so step 1 and the computer games stay as they were", () => {
+  it("step 1 offers neutral declarations: legalDeclarations lists them, and so does the step's action list", () => {
     const s = axis();
-    expect(legalDeclarations(CTX, s).some((a) => a.type === "DECLARE_WAR" && (a.by === "italy" || a.by === "ussr"))).toBe(false);
-    const neutral = legalNeutralDeclarations(CTX, s);
-    expect(neutral).toContainEqual({ type: "DECLARE_WAR", by: "italy", on: "greece" });
-    expect(neutral.every((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(true);
+    const all = legalDeclarations(CTX, s);
+    expect(all).toContainEqual({ type: "DECLARE_WAR", by: "italy", on: "greece" });
+    expect(all.some((a) => a.type === "DECLARE_WAR" && a.by === "ussr")).toBe(false); // the U.S.S.R. declares on the Allied turn
+    expect(legalNeutralDeclarations(CTX, s).every((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(true);
+    expect(legalNeutralDeclarations(CTX, s).length).toBeGreaterThan(0);
+    expect(all.filter((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toEqual(legalNeutralDeclarations(CTX, s));
+    const ussr = legalDeclarations(CTX, allies());
+    expect(ussr).toContainEqual({ type: "DECLARE_WAR", by: "ussr", on: "finland" });
+    expect(ussr.some((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(false);
+  });
+
+  it("a neutral Power with too few BRPs is not offered a declaration", () => {
+    const s = axis();
+    const poor: GameState = { ...s, nations: { ...s.nations, italy: { ...s.nations.italy, brpTotal: 5 } } };
+    expect(legalDeclarations(CTX, poor).some((a) => a.type === "DECLARE_WAR" && a.by === "italy")).toBe(false);
   });
 
   it("a minor attacked by a Vichy declarer takes no side", () => {

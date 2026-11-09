@@ -67,17 +67,16 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
 }
 
 /**
- * Every declaration the side to move may make now, by a Major Power that is in the war. A neutral Power's declarations on minors (MC21) are left out on purpose: listing them
- * would make step 1 a stop for every Axis turn (`hasWork` in turn.ts) and move the computer games. They are legal for `applyDeclaration` and listed by `legalNeutralDeclarations`,
- * for the screen to offer when a ticket wires it.
+ * Every declaration the side to move may make now: by a Major Power in the war, and (TODO(verify) MC21, owner-approved option A) by a neutral Major Power on a minor,
+ * which stays neutral. So step 1 is a stop (`hasWork` in turn.ts) and the screen offers them whenever a neutral Italy or U.S.S.R. can afford one on its side's turn.
  */
 export function legalDeclarations(ctx: GameContext, state: GameState): Action[] {
-  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) !== null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+  return (Object.keys(state.nations) as PowerId[]).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
 }
 
-/** TODO(verify) MC21: the declarations on minors a neutral Major Power may make now (not in `legalDeclarations`; see there). */
+/** TODO(verify) MC21: only the declarations on minors a neutral Major Power may make now (a subset of `legalDeclarations`). */
 export function legalNeutralDeclarations(ctx: GameContext, state: GameState): Action[] {
-  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) === null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+  return legalDeclarations(ctx, state).filter((a) => a.type === "DECLARE_WAR" && sideOfPower(state.nations[a.by]) === null);
 }
 
 export function applyDeclaration(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DECLARE_WAR" }>): ActionResult {
