@@ -112,3 +112,26 @@ writeFileSync("tests/e2e/fixtures/surrender-build.json", JSON.stringify({ scenar
   console.log("siberian fixture:", cut.length, "actions");
   writeFileSync("tests/e2e/fixtures/siberian-card.json", JSON.stringify({ scenario: "1942", seed: 1, actions: cut }));
 }
+
+// tests/e2e/fixtures/minor-step4.json (spec 15 R15, ticket 15-18 slice B): the first computer game (1939, seeds 1 to 14) cut where the Allied Player Turn reaches step 4 with an attacked,
+// un-helped minor, Belgium and only Belgium, that can both move and attack: the human Allies play the minor's own turn from there.
+{
+  let found: { seed: number; cut: unknown[] } | null = null;
+  for (let seed = 1; seed <= 14 && !found; seed++) {
+    const r = runGame({ scenario: "1939", seed, turns: "end", verify: false });
+    let state = r.initial;
+    for (let i = 0; i < r.actions.length && !found; i++) {
+      const res = applyAction(r.ctx, state, r.actions[i]!);
+      if (!res.ok) throw new Error(`action ${i} refused: ${res.error}`);
+      state = res.state;
+      if (state.position?.part === "player-turn" && state.position.step === "4" && state.activeSide === "allies") {
+        const legal = legalActions(r.ctx, state);
+        const owners = new Set(legal.flatMap((a) => (a.type === "MOVE" || a.type === "ATTACK" ? a.units.map((u) => state.units[u]!.owner) : [])));
+        if (legal.some((a) => a.type === "MOVE") && legal.some((a) => a.type === "ATTACK") && owners.size === 1 && owners.has("belgium")) found = { seed, cut: r.actions.slice(0, i + 1) };
+      }
+    }
+  }
+  if (!found) throw new Error("no 1939 game of seeds 1 to 14 reaches step 4 with Belgium able to move and attack");
+  console.log("minor step 4 fixture: seed", found.seed, found.cut.length, "actions");
+  writeFileSync("tests/e2e/fixtures/minor-step4.json", JSON.stringify({ scenario: "1939", seed: found.seed, actions: found.cut }));
+}

@@ -5,6 +5,7 @@ import { airbaseOwners, airMoveNow } from "./airMoveTap";
 import * as A from "./airMoveText";
 import { atStep7b } from "./airView";
 import { atStep7h, attacking } from "./attackTap";
+import { atMinorStep, minorLead } from "./minorTurn";
 import { openOffers } from "./choiceTap";
 import { atStep6f, selectionNow } from "./moveTap";
 import { atStep9e, selectionNow as redeployNow } from "./redeployTap";
@@ -35,14 +36,30 @@ function moveNext(s: Session, actions: readonly Action[]): string {
   return air ? A.NEXT_AIR_ONLY : T.NEXT_NOTHING_TO_MOVE;
 }
 
+/** The bar's sentence at step 4, the own turn of an attacked minor: move first, then attack, or pass. */
+function minorNext(s: Session, actions: readonly Action[]): string {
+  const lead = minorLead(s);
+  const sel = selectionNow(s);
+  if (sel) return `${lead} ${T.nextTick(sel.ticked.length)}`;
+  if (ownPending(s.state, s.humanSide)) return `${lead} Next: choose your losses.`;
+  const offers = openOffers(s, actions);
+  if (offers.length > 0) return `${lead} Next: advance into ${placeName(s.ctx.map, offers[0]!)}, or stay.`;
+  if (s.attack) return `${lead} Next: check the odds, then attack.`;
+  const move = actions.some((a) => a.type === "MOVE"), hit = attackTargets(actions).length > 0;
+  if (move) return `${lead} Next: tap a stack to move (moves come before the attack)${hit ? ", or attack a red hex" : ""}, or pass.`;
+  return hit ? `${lead} Next: attack a red hex, or pass.` : `${lead} Next: pass.`;
+}
+
 /** What the game waits for, in one sentence. */
 export function nextText(s: Session, actions: readonly Action[]): string {
   if (atStep6f(s)) return moveNext(s, actions);
+  if (atMinorStep(s)) return minorNext(s, actions);
   if (atStep9e(s)) {
     const sel = redeployNow(s);
     return !sel ? R.NEXT_CHOOSE : s.redeploy?.to ? R.NEXT_CONFIRM : R.NEXT_TICK(sel.ticked.length);
   }
   if (atStep7b(s)) return s.airDraft ? "Next: check the planes, then commit them." : actions.some((a) => a.type === "DESIGNATE_AIR") ? "Next: choose planes for a hex you will attack, or finish step 7b." : "Next: finish step 7b.";
+  if (s.state.position?.part === "player-turn" && s.state.position.step === "4" && !s.watch) return `${minorLead(s)} The computer plays it.`;
   if (!attacking(s)) return "Waiting for the computer to choose its losses.";
   if (ownPending(s.state, s.humanSide)) return "Next: choose your losses.";
   const offers = openOffers(s, actions);

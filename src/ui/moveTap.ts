@@ -8,7 +8,8 @@ import { placeName, stackSummary, unitsWithIds } from "./names";
 import { whyNot } from "./moveWhy";
 import { noteMove } from "./moveUndo";
 import { run, type Session } from "./session";
-import { atStep6f } from "./step6f";
+import { atMoveStep, atStep6f } from "./step6f";
+import { targetsNow } from "./attackTap";
 
 /**
  * The tap flow of ground movement at step 6f (spec 10, ticket 10-3): tap a stack of yours (or its row in the list) and it is chosen with every
@@ -24,7 +25,7 @@ export { atStep6f };
 /** The moves on offer now, or none outside step 6f. */
 export function movesNow(s: Session): Move[] {
   const p = s.state.position;
-  if (s.state.phase !== "player-turn" || p?.part !== "player-turn" || p.step !== "6f") return [];
+  if (s.state.phase !== "player-turn" || p?.part !== "player-turn" || (p.step !== "6f" && p.step !== "4")) return [];
   return legalActions(s.ctx, s.state).filter((a): a is Move => a.type === "MOVE");
 }
 
@@ -45,7 +46,7 @@ let cached: { state: unknown; ctx: unknown; hex: string; key: string; sel: MoveS
 /** The card of the chosen stack, or null when nothing is chosen or it is not the player's step 6f. Computed once per state and set of ticks. */
 export function selectionNow(s: Session): MoveSelection | null {
   const c = s.moveChosen;
-  if (!c || !atStep6f(s)) return null;
+  if (!c || !atMoveStep(s)) return null;
   const key = c.ticked.join(",");
   if (cached && cached.state === s.state && cached.ctx === s.ctx && cached.hex === c.hex && cached.key === key) return cached.sel;
   const sel = selectionFor(s.ctx, s.state, c.hex, c.ticked);
@@ -66,7 +67,7 @@ export const moveFurther = (s: Session): string[] => selectionNow(s)?.alone ?? [
 export function normaliseMove(s: Session): void {
   const c = s.moveChosen;
   if (!c) return;
-  if (!atStep6f(s) || c.turn !== turnKey(s.state)) {
+  if (!atMoveStep(s) || c.turn !== turnKey(s.state)) {
     s.moveChosen = null;
     return;
   }
@@ -77,7 +78,7 @@ export function normaliseMove(s: Session): void {
 
 /** Chooses the stack in `hex` with every unit that can move ticked (decision 1). False, and no change, when no unit there can move. */
 export function chooseStack(s: Session, hex: string, fromList = false): boolean {
-  if (!atStep6f(s)) return false;
+  if (!atMoveStep(s)) return false;
   const ticked = defaultTicks(s.ctx, s.state, hex);
   if (ticked.length === 0) return false;
   s.toast = "";
@@ -159,6 +160,8 @@ export function tapToMove(s: Session, h: MapHex): boolean {
     return true;
   }
   const sel = selectionNow(s);
+  // Step 4: a minor may move and attack in the one window, so a tap on a red attack hex (not a yellow hex of the chosen stack) is the attack's, not a refused move.
+  if (s.state.position?.part === "player-turn" && s.state.position.step === "4" && targetsNow(s).includes(h.id) && !sel?.destinations.some((d) => d.to === h.id)) return false;
   if (sel) moveTicked(s, sel, h.id);
   else s.toast = T.CHOOSE_FIRST;
   return true;
