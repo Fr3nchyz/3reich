@@ -38,16 +38,22 @@ export function sideOfPower(n: Nation): Side | null {
   return n.status === "axis" ? "axis" : n.status === "allied" ? "allies" : null;
 }
 
+/**
+ * The side whose turn a Major Power declares on: the side it fights on, or (MC21, option A) its ALIGNMENT side while it is neutral, when it may declare on minors only
+ * and stays neutral. TODO(verify) MC21: a neutral Power's declaration on a minor does not bring it into the war.
+ */
+const declaringSide = (me: Nation): Side | null => sideOfPower(me) ?? (me.status === "neutral" ? ALIGNMENT[me.id] : null);
+
 /** Who `by` may declare war on now: not already at war, not on its own side, and the scenario allows it. */
 export function declarationTargets(ctx: GameContext, state: GameState, by: PowerId): Combatant[] {
   const me = state.nations[by];
   // A recorded action can name anyone; an unknown nation has nothing to declare (applyAction must not throw).
   if (!me) return [];
-  const side = sideOfPower(me);
+  const side = declaringSide(me);
   if (side === null || side !== state.activeSide || occupiedDeclareProblem(ctx, state, by) !== null) return []; // spec 14 R5 (Ref 18.3)
   const noNeutrals = ctx.scenario.rules.some((r) => r.kind === "no-war-on-neutrals");
   const targets: Combatant[] = [];
-  for (const other of Object.values(state.nations)) {
+  for (const other of sideOfPower(me) === null ? [] : Object.values(state.nations)) { // a neutral declarer may declare on minors only
     if (other.id === by || atWar(state, by, other.id) || isGone(other) || other.status === "vichy") continue;
     if (ALIGNMENT[other.id] === side) continue;
     if (sideOfPower(other) === null && noNeutrals) continue;
@@ -60,15 +66,24 @@ export function declarationTargets(ctx: GameContext, state: GameState, by: Power
   return targets.filter((t) => declarationCost(ctx, state, by, t) <= spendable(me));
 }
 
-/** Every declaration the side to move may make now. */
+/**
+ * Every declaration the side to move may make now, by a Major Power that is in the war. A neutral Power's declarations on minors (MC21) are left out on purpose: listing them
+ * would make step 1 a stop for every Axis turn (`hasWork` in turn.ts) and move the computer games. They are legal for `applyDeclaration` and listed by `legalNeutralDeclarations`,
+ * for the screen to offer when a ticket wires it.
+ */
 export function legalDeclarations(ctx: GameContext, state: GameState): Action[] {
-  return (Object.keys(state.nations) as PowerId[]).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) !== null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
+}
+
+/** TODO(verify) MC21: the declarations on minors a neutral Major Power may make now (not in `legalDeclarations`; see there). */
+export function legalNeutralDeclarations(ctx: GameContext, state: GameState): Action[] {
+  return (Object.keys(state.nations) as PowerId[]).filter((by) => sideOfPower(state.nations[by]) === null).flatMap((by) => declarationTargets(ctx, state, by).map((on): Action => ({ type: "DECLARE_WAR", by, on })));
 }
 
 export function applyDeclaration(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DECLARE_WAR" }>): ActionResult {
   const nation = state.nations[action.by];
   if (!nation) return { ok: false, error: `${String(action.by)} is not a Major Power in this game.` };
-  if (sideOfPower(nation) !== state.activeSide) return { ok: false, error: `${action.by} is not on the ${state.activeSide} side, so it cannot declare war now.` };
+  if (declaringSide(nation) !== state.activeSide) return { ok: false, error: `${action.by} is not on the ${state.activeSide} side, so it cannot declare war now.` };
   if (atWar(state, action.by, action.on)) return { ok: false, error: `${action.by} is already at war with ${action.on}.` };
   const occupied = occupiedDeclareProblem(ctx, state, action.by);
   if (occupied) return { ok: false, error: occupied };
