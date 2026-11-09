@@ -12,6 +12,7 @@ import { applyAllocation } from "./attack-losses";
 import { applyPlaceExploiters } from "./breakthrough";
 import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalExploitMoves } from "./exploit-step";
 import { combatOf } from "./combat-record";
+import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
 import { applyPlaceAirbase } from "./air-actions";
 import { applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
@@ -52,6 +53,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === SR_STEP) return legalSr(ctx, state);
   if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
   if (step === "7b" || step === EXPLOIT_AIR_STEP) return legalDesignations(ctx, state);
+  if (step === "7c") return legalCounterAir(state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
@@ -83,6 +85,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
+  if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return stepActions(ctx, state, step);
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
@@ -193,7 +196,10 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return applySplitAir(state, action);
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
+    case "RESOLVE_COUNTER_AIR":
+      return atStep(state, "7c", "Counter-air is resolved", () => applyResolveCounterAir(ctx, state, action));
     case "DESIGNATE_AIR":
+      if (action.mission === "counter-air") return atStep(state, "7b", "Counter-air is designated", () => applyCounterAirDesignation(ctx, state, action));
       return atStep(state, waitingStep(state) === EXPLOIT_AIR_STEP ? EXPLOIT_AIR_STEP : "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
       return waitingStep(state) === "7o" ? applyExploitAttack(ctx, state, action) : atSteps(state, ["7h", "4"], "Ground attacks are made", () => applyAttack(ctx, state, action));
@@ -263,6 +269,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (step === "7c" && hasCounterAirWork(state)) return { ok: false, error: "Step 7c waits for assigned counter-air to resolve (spec 09 R12)." };
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };

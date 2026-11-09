@@ -21,6 +21,7 @@ import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { hasCounterAirWork } from "./air-counter-wire";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
@@ -206,6 +207,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7a":
     case "7p":
       return hasAttritionWork(ctx, state);
+    case "7c":
+      return hasCounterAirWork(state); // spec 09 Wiring, 09-9b / AER73: no assignments, no work
     case "7b":
     case "7k":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);

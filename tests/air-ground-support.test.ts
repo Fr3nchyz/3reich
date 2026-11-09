@@ -53,7 +53,7 @@ describe("DESIGNATE_AIR at step 7b", () => {
     expect(errorOf(applyAction(CTX, s, commit(["a1", "a2"])))).toMatch(/at most 3 air factors/); // 3 x the 1 ground factor that could attack
     expect(errorOf(applyAction(CTX, at7h(s), commit(["a1"])))).toMatch(/step/);
     expect(errorOf(applyAction(CTX, s, { ...commit(["a1"]), side: "allies" }))).toMatch(/player turn/);
-    expect(errorOf(applyAction(CTX, s, { ...commit(["a1"]), mission: "counter-air" as "ground-support" }))).toMatch(/ground-support mission/);
+    expect(errorOf(applyAction(CTX, s, { ...commit(["a1"]), mission: "counter-air" }))).toMatch(/enemy planes based/);
   });
 
   it("refuses malformed input without throwing", () => {

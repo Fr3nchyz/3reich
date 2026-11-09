@@ -248,6 +248,11 @@ All dice come from `state.rngState` through `rollD6` in a fixed order (missions 
 
 Listed with the rest in part J. The five that most change what Frank sees are: R5 (Game Turn or Player Turn), R7 (who chooses air losses), R8 (what "legal odds" means), R9 (destroy or displace), R10 (what a "potential attack" is).
 
+### Wiring, 09-9b
+
+1. **TODO(verify) AER73:** Counter-air resolves through an explicit `RESOLVE_COUNTER_AIR` action at step 7c, never automatically when leaving 7b. It is listed only when at least one side has planes assigned to counter-air; with no assignment (the computer never assigns), no step work appears and computer play is unchanged.
+2. **TODO(verify) AER74:** Losses use automatic allocation by the pure resolver's fixed deterministic order, using the existing `autoAirLosses` chooser. Owner choice through `ALLOCATE_AIR_LOSSES` is not built now and remains an open item under AER74. The computer never has to answer a loss prompt.
+
 ## Part C. Engine design
 
 ### C1. State (all additive; an old saved state without `air` still works)

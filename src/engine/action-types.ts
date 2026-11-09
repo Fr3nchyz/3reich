@@ -1,3 +1,4 @@
+import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
 import type { Front } from "./map";
@@ -71,7 +72,9 @@ export type Action =
   /** Step 6e or 9f: fleets of one port carry supply to a port or island for units cut off from their sources (Ref 19.31); `from` is where the fleets stand. */
   | { type: "DESIGNATE_SEA_SUPPLY"; side: Side; fleets: string[]; to: HexId; units: string[] }
   /** Step 7b: air units are committed to ground support of a hex that will be attacked (Ref 20.41). */
-  | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support"; units: string[]; target: HexId }
+  | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
+  /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
+  | { type: "RESOLVE_COUNTER_AIR"; side: Side }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
   | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
   /** Step 9e: ground units and Replacements are redeployed to a hex of their region, one use of their nation's allowance each (Ref 11.72; spec 16 R18 to R20). `escort` (a Sea Escort fleet) is ticket 16-21 and is refused until then. */
@@ -100,13 +103,14 @@ export type Action =
 export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
+  | CounterAirEvent
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
   | { type: "AIRBASE_PLACED"; unitId: string; owner: PowerId; at: HexId }
   /** Step 7b: air units were committed to ground support of a hex (Ref 20.41); they have flown their mission for the Game Turn. */
-  | { type: "AIR_MISSION_DESIGNATED"; mission: "ground-support"; units: string[]; target: HexId }
+  | { type: "AIR_MISSION_DESIGNATED"; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
   /** Step 7h ended and the hex was not attacked: its committed ground support is eliminated (Ref 20.41). Each unit also has a UNIT_ELIMINATED event. */
   | { type: "GROUND_SUPPORT_LOST"; hex: HexId; units: { id: string; owner: ForceOwner; strength: number }[] }
   /** Air counters were split or combined: the counters before and after, in one hex (Ref 20.6). */
