@@ -60,6 +60,19 @@ describe("one moving interception force (spec 12 R10/R11/R12; TODO(verify) AER11
     expect(s).toEqual(before);
   });
 
+  it("replays both moves through declarations and combat from 6b with individual events (AER119/AER120)", () => {
+    const s = position(), before = structuredClone(s);
+    const actions: Action[] = [move("b1"), move("b2"), end, declare,
+      { type: "PASS_INTERCEPT", side: "axis" }, { type: "PASS_INTERCEPT", side: "allies" }, resolve];
+    const done = replay(CTX, s, actions);
+    expect(done.events.filter(e => e.type === "FLEET_MOVED").map(e => e.fleet)).toEqual(["b1", "b2"]);
+    expect(done.events.find(e => e.type === "NAVAL_COMBAT_RESOLVED")).toMatchObject({
+      intercepted: ["b1", "b2"], result: { intercepted: { factors: 18 } },
+    });
+    expect(replay(CTX, JSON.parse(JSON.stringify(s)) as GameState, actions)).toEqual(done);
+    expect(s).toEqual(before);
+  });
+
   it("groups nonconsecutive moves but keeps different origins and destinations separate with stable indices (AER119)", () => {
     const actions = [move("b1"), move("b3", "C33"), move("b2"), move("b4")];
     const s = actions.reduce((s, a) => apply(s, a).state, position());
@@ -108,6 +121,23 @@ describe("one moving interception force (spec 12 R10/R11/R12; TODO(verify) AER11
     expect(ids.reduce((n, id) => n + continued.state.units[id]!.strength, 0)).toBe(18);
     expect(continued.state.naval!.seaAirForces!["move:1"]).toBeUndefined();
     expect(apply(s, { ...resolve, turnBack: ["move:0"] }).state.naval!.seaAirForces!["move:0"]).toEqual([]);
+  });
+
+  it("resolves a queued air mission against both moved fleets through the real turn flow (AER120/R15)", () => {
+    const base = moved();
+    const s = { ...base, units: { ...base.units, p: counter("p", "germany", "air", 1, "N19"),
+      pb: counter("pb", "germany", "airbase", 0, "N19") }, control: { ...base.control, N19: "germany" as const },
+      naval: { ...base.naval!, manualSeaAir: true } };
+    let next = apply(s, end).state;
+    const mission: Action = { type: "DESIGNATE_SEA_AIR", side: "axis", target: "move:0", point: "N18", units: ["p"] };
+    expect(legalActions(CTX, next)).toContainEqual(mission);
+    expect(applyAction(CTX, next, { ...mission, target: "move:1" }).ok).toBe(false);
+    next = apply(next, mission).state;
+    next = apply(next, { type: "PASS_INTERCEPT", side: "axis" }).state;
+    next = apply(next, { type: "PASS_INTERCEPT", side: "allies" }).state;
+    const done = apply(next, { type: "RESOLVE_SEA_AIR", side: "allies" });
+    expect(done.state.naval!.seaAirResults![0]!.result!.fleets.map(f => f.id)).toEqual(["b1", "b2"]);
+    expect(done.state.naval!.seaAirForces!["move:1"]).toBeUndefined();
   });
 
   it.each([undefined, false])("preserves ungrouped opt-out records (%s) and expires groups with the turn (AER119/AER120)", flag => {
