@@ -185,3 +185,31 @@ it("AER116: optional future airdrop marker replays, and malformed start markers 
     expect(readSave(JSON.stringify({ ...save, start: { kind: "new", [key]: value } }), [CTX.scenario]).ok).toBe(false);
   }
 });
+
+it("AER116: every manual action envelope retains its fields through the save reader", () => {
+  const save = sessionSave(newSession(CTX.scenario, "axis", 1), "test", { kind: "new" });
+  save.actions = [
+    { type: "DECLARE_INTERCEPT", side: "axis", target: "move:0", fleets: ["u1"], meetingPoint: "N18", breakOff: true },
+    { type: "PASS_INTERCEPT", side: "allies" },
+    { type: "RESOLVE_INTERCEPTIONS", side: "allies", turnBack: ["move:0"] },
+    { type: "DESIGNATE_SEA_AIR", side: "axis", target: "move:0", point: "N18", units: ["u2"] },
+    { type: "RESOLVE_SEA_AIR", side: "allies" },
+    { type: "DESIGNATE_DAS_INTERCEPT", side: "axis", units: ["u2"], hex: "N18" },
+    { type: "RESOLVE_COUNTER_AIR", side: "axis" },
+    { type: "RESOLVE_PORT_ATTACKS", side: "axis" },
+  ];
+  const read = readSave(JSON.stringify(save), [CTX.scenario]);
+  expect(read.ok && read.save.actions).toEqual(save.actions);
+});
+
+it("AER116/AER96: rescue rejects malformed and nested drop records, retaining valid optional records", () => {
+  const s = newSession(CTX.scenario, "axis", 1, false);
+  const start = JSON.parse(JSON.stringify(s.state)) as JsonObject;
+  const snapshot = { ...start, airDrop: { manual: true, record: { start, dropped: {} } } };
+  expect(validateSnapshotInvariants(snapshot, CTX)).toEqual({ ok: true });
+  for (const airDrop of [null, { manual: "true" }, { record: { start: {}, dropped: {} } },
+    { record: { start: { ...start, airDrop: {} }, dropped: {} } },
+    { record: { start, dropped: { u1: -1 } } }]) {
+    expect(validateSnapshotInvariants({ ...start, airDrop }, CTX).ok).toBe(false);
+  }
+});
