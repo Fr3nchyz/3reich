@@ -101,6 +101,8 @@ describe("one moving interception force (spec 12 R10/R11/R12; TODO(verify) AER11
     expect(returned.map(e => e.unit)).toContain("b2");
     expect(returned.length).toBeGreaterThan(2);
     for (const e of returned) expect(done.state.units[e.unit]!.at).toBe("K21");
+    expect(returned.reduce((n, e) => n + done.state.units[e.unit]!.strength, 0)).toBe(16);
+    expect(Object.values(done.state.units).filter(u => u.owner === "britain" && u.at === "N18")).toEqual([]);
     expect(done.state.units.b3).toEqual(s.units.b3);
   });
 
@@ -111,6 +113,8 @@ describe("one moving interception force (spec 12 R10/R11/R12; TODO(verify) AER11
     const returned = done.events.filter(e => e.type === "FLEET_RETURNED");
     expect(returned.map(e => e.unit)).toContain("b2");
     for (const e of returned) expect(done.state.units[e.unit]!.at).toBe("K21");
+    expect(returned.reduce((n, e) => n + done.state.units[e.unit]!.strength, 0)).toBe(18);
+    expect(done.state.units.b3).toEqual(s.units.b3);
   });
 
   it("exposes combined continuing survivors and cancels the whole returned force for sea-air (AER120/AER100)", () => {
