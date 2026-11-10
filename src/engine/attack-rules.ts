@@ -5,6 +5,8 @@ import { adjacent, hex, hexsideId, neighbors, hexId, type HexId } from "./hex";
 import type { Front } from "./map";
 import { sideOfOwner } from "./setup";
 import { minorTurnProblem } from "./minors-turn";
+import { countedDas } from "./air-defense-wire";
+import { defensiveAirNumbers } from "./air-defense";
 import { countedAir } from "./air-support";
 import { oddsColumn, type OddsColumn } from "./combat";
 import type { ForceOwner, GameState, PowerId, Side, Unit, UnitType } from "./types";
@@ -143,6 +145,9 @@ export interface AttackNumbers {
   airFactors: number;
   /** The air units those factors come from, in designation order (empty when no air is committed). */
   air: Unit[];
+  /** Ref 20.51 / spec 09 C4: basic DAS added after terrain. */
+  dasFactors: number;
+  das: Unit[];
   defenseFactors: number;
   multiplier: number;
   /** Why the defence is multiplied that much (terrain.ts `defenseBasis`): for the preview to say in words. */
@@ -162,5 +167,8 @@ export function attackNumbers(ctx: GameContext, state: GameState, attackers: rea
   const support = countedAir(state, target, ground);
   const attackFactors = ground + support.factors;
   const defenseFactors = defenders.reduce((n, u) => n + u.strength, 0);
-  return { attackFactors, airFactors: support.factors, air: support.units, defenseFactors, multiplier, basis, column: oddsColumn(attackFactors, defenseFactors * multiplier) };
+  // Ref 20.51: DAS helps the defender, without multiplying its air factors.
+  const das = countedDas(state, target, defenseFactors);
+  const column = das.factors > 0 ? defensiveAirNumbers(attackFactors, defenseFactors, multiplier, das.factors).column : oddsColumn(attackFactors, defenseFactors * multiplier);
+  return { attackFactors, airFactors: support.factors, air: support.units, dasFactors: das.factors, das: das.units, defenseFactors, multiplier, basis, column };
 }

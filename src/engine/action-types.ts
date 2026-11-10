@@ -80,6 +80,8 @@ export type Action =
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
   /** Spec 12 R14, AER80: explicit resolution at 7i, only with assigned work. */
   | { type: "RESOLVE_PORT_ATTACKS"; side: Side }
+  /** Ref 20.51: explicit Non-Phasing commitment at 7d. */
+  | { type: "DESIGNATE_DAS"; side: Side; units: string[]; hex: HexId }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
   | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
   /** Step 9e: ground units and Replacements are redeployed to a hex of their region, one use of their nation's allowance each (Ref 11.72; spec 16 R18 to R20). `escort` (a Sea Escort fleet) is ticket 16-21 and is refused until then. */
@@ -108,6 +110,7 @@ export type Action =
 export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
+  | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
   | CounterAirEvent
@@ -166,7 +169,7 @@ export type GameEvent =
   | { type: "UNIT_BUILT"; unitId: string; owner: PowerId; unitType: UnitType; strength: number; at: HexId | OffMapBox; cost: number; returned?: true; pool?: ForceOwner }
   | { type: "BRPS_GRANTED"; from: PowerId; to: PowerId; amount: number }
   /** One ground attack resolved: the odds, every die roll and how it ended (Ref 12.1-12.2). */
-  | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** An Exploitation battle at step 7o (spec 16 C4, R13). */ exploitation?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number }
+  | { type: "COMBAT_RESOLVED"; side: Side; target: HexId; attackers: string[]; attackFactors: number; defenseFactors: number; multiplier: number; rounds: CombatRound[]; outcome: "attacker-eliminated" | "defender-eliminated" | "exchange"; sweep?: true; /** An Exploitation battle at step 7o (spec 16 C4, R13). */ exploitation?: true; /** Air factors of ground support inside `attackFactors`. */ airFactors?: number; /** Ref 20.51: basic DAS after terrain. */ dasFactors?: number }
   /** Counters left alone were destroyed by the legacy sweep (ALONE_NONGROUND_DESTROYED). Each also has UNIT_ELIMINATED. Air, airbases and fleets instead have displacement events while their capture switches are on (spec 09 R9 / R2, spec 12 R9). */
   | { type: "UNITS_SWEPT"; hex: HexId; units: { id: string; owner: ForceOwner; type: UnitType; strength: number }[] }
   | { type: "UNIT_ELIMINATED"; unitId: string; owner: ForceOwner; at: HexId; reason?: "unsupplied" }

@@ -14,6 +14,7 @@ import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalEx
 import { combatOf } from "./combat-record";
 import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
 import { applyPortDesignation, applyResolvePortAttacks, legalPortAttacks, hasPortAttackWork } from "./air-port-wire";
+import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
 import { applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
@@ -57,6 +58,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "7b" || step === EXPLOIT_AIR_STEP) return legalDesignations(ctx, state);
   if (step === "7c") return legalCounterAir(state);
   if (step === "7i") return legalPortAttacks(state);
+  if (step === "7d") return legalDas(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
@@ -75,7 +77,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
 export function moveOnAction(state: GameState): Action[] {
   const step = state.phase === "player-turn" ? waitingStep(state) : undefined;
   if (step === undefined) return [];
-  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step }];
+  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step }];
 }
 
 /** All actions the active player may take now. Empty when the game is over. */
@@ -87,7 +89,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (occupationAsking(state)) return legalConcede(ctx, state); // step 6h or 9k: the Axis names the Objective it hands back; nothing else is legal
   const step = waitingStep(state);
   if (step === undefined) return [];
-  const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
+  const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step };
   if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
   if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER80
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
@@ -202,6 +204,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return applySplitAir(state, action);
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
+    case "DESIGNATE_DAS":
+      return atStep(state, "7d", "Defensive air support is designated", () => applyDas(ctx, state, action));
     case "RESOLVE_COUNTER_AIR":
       return atStep(state, "7c", "Counter-air is resolved", () => applyResolveCounterAir(ctx, state, action));
     case "RESOLVE_PORT_ATTACKS":
@@ -271,7 +275,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   const step = waitingStep(state);
   if (winterAsking(state)) return { ok: false, error: "The game waits at step II.A for the Allies to say whether the Russian winter waits." };
   if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
-  if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
+  if (action.side !== (step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide)) return { ok: false, error: step === "7d" && manualDas(state) ? "Only the Non-Phasing side may end DAS." : `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {
     return { ok: false, error: `The Player Turn ends at step ${describeStep(LAST_STEP)}; the game is at step ${describeStep(step)}.` };
   }

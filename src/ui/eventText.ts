@@ -57,7 +57,7 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return sweepLine(ctx, e);
     case "COMBAT_RESOLVED":
       if (e.sweep) return null; // the line of the sweep says it
-      return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
+      return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}${e.dasFactors ? ` + ${e.dasFactors} defensive air` : ""}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
       if (swept.has(e.unitId) || routed.has(e.unitId)) return null; // the line of its fate says it (lossText.ts); a game saved before spec 17 has none, so keeps this one
       return `Eliminated${e.reason === "unsupplied" ? " (out of supply)" : ""}: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
@@ -78,6 +78,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       const status = { resolved: "resolved", "no-fleets": "canceled, the fleets left the port", "counter-air-blocked": "blocked by defending air", "no-air": "canceled, no attacking planes remain" }[e.status];
       return `Port attack on ${placeName(ctx.map, e.target)}: ${status}; rolls ${e.rolls.map((r) => r.roll).join(", ") || "none"}; losses ${e.airLost} air, ${e.navalLost} naval factors (${e.navalHits} hits).`;
     }
+    case "DAS_COMMITTED":
+      return `${stackSummary(unitsWithIds(before, e.units))} fly defensive air support to ${placeName(ctx.map, e.hex)}.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : e.mission === "port-attack" ? "a port attack" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
     case "FLEET_MOVED": // spec 12 R10
