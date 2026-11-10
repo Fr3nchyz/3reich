@@ -76,6 +76,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `Counter-air on ${placeName(ctx.map, e.hex)}: ${e.combat.attacker.factors} against ${e.combat.defender.factors} air factors; rolls ${e.rolls[0]} (${e.combat.attacker.modifiedRoll} modified) and ${e.rolls[1]} (${e.combat.defender.modifiedRoll} modified)${e.combat.tieRoll === null ? "" : `; tie die ${e.combat.tieRoll}`}; losses ${e.lost.attacker} attacking, ${e.lost.defender} defending.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
+    case "FLEET_MOVED": // spec 12 R10
+      return `${stackSummary(unitsWithIds(before, [e.fleet]))} changes base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} on the ${cap(e.front)} Front.`;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":
