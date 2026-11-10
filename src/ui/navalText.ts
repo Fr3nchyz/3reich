@@ -47,3 +47,19 @@ export function navalProblemText(state: GameState, problem: string): string {
   const escaped = ids.map((id) => id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
   return problem.replace(new RegExp(`(?<![\\w-])(?:${escaped.join("|")})(?![\\w-])`, "g"), (id) => navalUnitName(state.units[id]!));
 }
+
+/** Spec 12 R15/D5, AER98–103: sea-air card vocabulary. */
+export const SEA_AIR_TEXT = {
+  title: "Air against fleets at sea", planes: "Choose planes", target: "Choose a fleet course", point: "Attack point",
+  note: "Choose planes, a fleet course and an attack point, then confirm. Assigning uses their air mission immediately; dice follow naval interceptions.",
+  confirm: "Confirm sea-air attack", resolve: "Resolve sea-air attacks", cancel: "Cancel selection",
+  assigned: "Assigned sea-air attacks", results: "Sea-air results", close: "Close results", fleet: "Fleet course",
+  noAir: "No attacking planes remain. No dice rolled.", noFleets: "No participating fleets remain. No dice rolled.",
+  at: (name: string, place: string) => `${name} at ${place}`,
+  course: FLEET_TEXT.course,
+  chosen: (n: number) => `${n} air factors chosen`,
+  assignment: (target: string, point: string, planes: string[]) => `${target}; attack at ${point}: ${planes.join(", ")}`,
+  resultTitle: (side: string, target: string, point: string) => `${side}: ${target}; attack at ${point}`,
+  rolls: (rolls: number[]) => `Factor dice: ${rolls.join(", ")}.`,
+  losses: (air: number, hits: number, naval: number) => `Actual losses: ${air} air factors; ${hits} naval hits, ${naval} naval factors lost.`,
+};

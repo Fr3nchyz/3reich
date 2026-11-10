@@ -1,3 +1,4 @@
+import { bindAirSea } from "./airSeaView";
 import { bindAirMission } from "./airMissionView";
 import { bindFleet } from "./fleetView";
 import { bindExploit } from "./exploitBind";
@@ -54,6 +55,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
   bindAirMission(root, s, redraw);
+  bindAirSea(root, s, redraw);
   bindAirMove(root, s, redraw);
   bindChoice(root, s, redraw);
   bindMove(root, s, redraw);
