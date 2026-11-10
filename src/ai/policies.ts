@@ -20,3 +20,6 @@ export const SIBERIAN_TAKE_ALL = true;
  * Off: the computer never goes in on purpose (a normal move may still do so). TODO(verify) MC33: policy only, spec 15 Q4 gives no rule for when or how much.
  */
 export const AI_INTERVENES_IN_ATTACKED_MINORS = true;
+
+/** TODO(verify) AER110, spec 12 Computer wiring 12-13: fleet policy is opt-in; never sets the independent human movement flag. */
+export const AI_USES_FLEETS = false;
