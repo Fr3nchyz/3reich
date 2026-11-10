@@ -30,7 +30,11 @@ const designate: Extract<Action, { type: "DESIGNATE_DAS" }> = { type: "DESIGNATE
 const at7b = (s = start()) => okOf(applyAction(CTX, s, end("6f"))).state;
 const at7d = (s = start()) => okOf(applyAction(CTX, at7b(setManualDas(s, true)), end("7b"))).state;
 const committed = (s = start()) => okOf(applyAction(CTX, at7d(s), designate)).state;
-const battle = (s = start()) => okOf(applyAction(CTX, committed(s), end("7d", "allies"))).state;
+const battle = (s = start()) => {
+  const next = okOf(applyAction(CTX, committed(s), end("7d", "allies"))).state;
+  // AER92: pass optional interception before testing the DAS ground battle.
+  return next.position?.part === "player-turn" && next.position.step === "7e" ? okOf(applyAction(CTX, next, end("7e"))).state : next;
+};
 const attack: Action = { type: "ATTACK", side: "axis", units: ["g"], target: "M33" };
 
 describe("09-8b DAS through the real turn flow", () => {
@@ -183,7 +187,7 @@ describe("09-8b DAS through the real turn flow", () => {
   it("R15/C1: JSON replay is deterministic and does not mutate its initial state", () => {
     const initial = setManualDas(start(), true);
     const before = JSON.stringify(initial);
-    const actions = [end("6f"), end("7b"), designate, end("7d", "allies"), attack];
+    const actions = [end("6f"), end("7b"), designate, end("7d", "allies"), end("7e"), attack];
     expect(replay(CTX, initial, actions)).toEqual(replay(CTX, JSON.parse(before) as GameState, JSON.parse(JSON.stringify(actions)) as Action[]));
     expect(JSON.stringify(initial)).toBe(before);
   });
