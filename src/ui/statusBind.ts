@@ -1,3 +1,4 @@
+import { bindFleet } from "./fleetView";
 import { bindExploit } from "./exploitBind";
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
@@ -48,6 +49,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   bindMinorCards(root, s, redraw);
   bindAttrition(root, s, redraw);
   bindExploit(root, s, redraw);
+  bindFleet(root, s, redraw);
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
   bindAirMove(root, s, redraw);

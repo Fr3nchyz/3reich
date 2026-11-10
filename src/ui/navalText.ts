@@ -2,6 +2,23 @@ import type { GameContext } from "../engine/context";
 import type { GameState, Unit } from "../engine/types";
 import { placeName, unitName } from "./names";
 
+/** Spec 12 D3/D5: fleet cards use the same names and log vocabulary as sea supply. */
+export const FLEET_TEXT = {
+  move: "Move a fleet", select: "Choose a fleet in port, then a destination. Confirm to sail.",
+  confirm: "Confirm fleet move", cancel: "Cancel", done: "Done with fleet moves",
+  intercept: "Interception", declare: "Intercept", pass: "Pass this interception round",
+  breakOff: "Break off before combat", resolve: "Resolve interceptions", results: "Naval results",
+  close: "Close results", automaticLosses: "Losses are allocated automatically, smaller fleets first.",
+  noTargets: "No legal interception is available. Pass to finish this round.",
+  target: "Target course", meeting: "Meeting point",
+  answering: (side: string) => `${side} answer this interception round.`,
+  at: (fleet: string, port: string) => `${fleet} at ${port}`,
+  course: (fleets: string, from: string, to: string) => `${fleets}: ${from} → ${to}`,
+  reach: (distance: number, needed: number[] | "automatic") => `${distance} hexes; ${needed === "automatic" ? "automatic" : `needs ${needed.join(" or ")} on a die`}`,
+  roll: (side: string, die: number, nationality: number, advantage: number, modified: number, loss: number) =>
+    `${side === "interceptor" ? "Interceptors" : "Intercepted force"}: die ${die}, nationality ${nationality >= 0 ? "+" : ""}${nationality}, advantage +${advantage} = ${modified}; ${loss} naval factors lost.`,
+};
+
 /** The sea-supply card's words (spec 12 D1/D2/D5); names reuse the existing counter and place vocabulary. No rules or DOM. */
 export const navalUnitName = (u: Unit): string => unitName(u, true);
 export const navalPlaceName = (ctx: GameContext, at: string): string => placeName(ctx.map, at);
