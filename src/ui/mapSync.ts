@@ -3,6 +3,7 @@ import { placementPlaces } from "../engine/placement";
 import type { ForceOwner } from "../engine/types";
 import type { Session, SetupView } from "./session";
 import type { MapView } from "./mapView";
+import { fleetNow } from "./fleetTap";
 import { airMarks } from "./airMove";
 import { airMoveNow, airYellow } from "./airMoveTap";
 import { fromMarks, moveMarksOf } from "./moveMarks";
@@ -19,6 +20,8 @@ import type { Action } from "../engine/actions";
 /** The hexes to outline: your own counters when taking back, else where the chosen counter may go. */
 function highlightedHexes(s: Session, setup: SetupView | null): string[] {
   if (!setup) {
+    const fleet = fleetNow(s);
+    if (fleet?.selected) return fleet.destinations.map(d => d.action.to);
     // Not setting up: where the stack chosen to move can go (step 6f), or the places a chosen build may go.
     if (s.moveChosen) return moveTargets(s);
     if (s.redeploy) return redeployTargets(s);
