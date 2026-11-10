@@ -2,6 +2,7 @@ import { legalActions, moveOnAction, type Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
 import { FIRST_STEP, LAST_STEP } from "../engine/sequence";
 import type { GameState } from "../engine/types";
+import { AI_USES_AIR, chooseAir } from "./air";
 import { chooseAdvance, chooseAttack } from "./assault";
 import { chooseExploitMove, choosePlace } from "./exploit";
 import { chooseBuild } from "./build";
@@ -30,10 +31,14 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
   if (state.phase === "player-turn" && state.position?.part === "russian-winter") return chooseWinter(legalActions(ctx, state)); // II.A: the Allies are asked about the Russian winter (ticket 14-11)
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn") return null;
   const step = state.position.step;
+  // TODO(verify) AER109: canonical input order only for the opt-in policy.
+  if (cfg.usesAir ?? AI_USES_AIR) state = { ...state, units: Object.fromEntries(Object.entries(state.units).sort(([a], [b]) => a.localeCompare(b))) };
   // At 6f the move list is the longest the engine builds (15-40 ms, 100+ on a phone), so the mover searches only the stacks it looks at and only the way on is listed.
-  // At 7b the computer commits no air yet, so the designations are not worked out either; nor are the redeployments at 9e (the policy asks `srDestinations` per unit, ticket 16-20).
-  const legal = step === "6f" || step === "7b" || step === "7k" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
+  // Default-off air skips enumeration at 7b; redeployments at 9e use per-unit queries (ticket 16-20).
+  const legal = step === "6f" || (step === "7b" && !(cfg.usesAir ?? AI_USES_AIR)) || step === "7k" || step === "7j" || step === "9e" ? moveOnAction(state) : legalActions(ctx, state);
   if (legal.length === 0) return null;
+  const air = chooseAir(ctx, state, cfg, legal);
+  if (air) return air;
   const picked =
     step === FIRST_STEP ? chooseDeclaration(ctx, state, legal)
     : step === "2" ? choosePlacement(legal) // 2: the computer sets up an attacked minor's army as the engine suggests it (spec 15 R16, ticket 15-3b)

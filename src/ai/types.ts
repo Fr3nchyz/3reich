@@ -9,6 +9,8 @@ import type { AiMemory } from "./memory";
 export interface AiConfig {
   /** Breaks ties between equally good actions, the same way every time for the same seed. */
   seed: number;
+  /** TODO(verify) AER104: opt into air policies; absent uses the default-off constant. */
+  usesAir?: boolean;
   /**
    * What the computer remembers during a game (the target each unit is heading for, where it has been lately), owned by the
    * caller and filled by the choosers. Without it every choice depends on the position alone, which is still legal and
