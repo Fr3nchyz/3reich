@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyAction, legalActions, replay, type Action } from "../src/engine/actions";
-import { airOf, markFlown } from "../src/engine/air-record";
+import { airOf, hasFlown, markFlown } from "../src/engine/air-record";
 import { setManualDas } from "../src/engine/air-defense-wire";
 import { AI_USES_AIR, chooseAir } from "../src/ai/air";
 import { chooseAirStage } from "../src/ai/air-stage";
@@ -128,7 +128,9 @@ describe("09-12 default-off computer air", () => {
   });
 
   it("AER107/AER108: committed attacks still happen when subsequent DAS lowers the odds", () => {
-    const s = setManualDas({ ...ground(), units: { ...ground().units, d: air("d", "M33", 3, "poland"), e: air("e", "M33", 2, "poland") } }, true);
+    // AER107: DAS reduces this accepted attack below even the ordinary chooser's 1-1 floor.
+    const s = setManualDas(start([inf("g", "germany", "M32", 9), inf("p", "poland", "M33", 3),
+      air("a", "J32", 3), air("d", "M33", 5, "poland"), air("e", "M35", 3, "poland"), air("f", "M35", 1, "poland")]), true);
     const done = throughCombat(b(s));
     expect(done.actions.some(a => a.type === "DESIGNATE_DAS")).toBe(true);
     expect(done.actions.some(a => a.type === "ATTACK" && a.target === "M33")).toBe(true);
@@ -169,6 +171,43 @@ describe("09-12 default-off computer air", () => {
       const s = markFlown(b(), ["a"], use);
       expect(pick(s).action).toMatchObject({ type: "END_STEP" });
     }
+  });
+
+  it("AER107: commits only the first whole counter needed to raise the column", () => {
+    const s = b(start([inf("g", "germany", "M32", 6), inf("p", "poland", "M33", 2),
+      air("a", "J32", 2), air("z", "J32", 3)]));
+    expect(pick(s).action).toMatchObject({ type: "DESIGNATE_AIR", mission: "ground-support", units: ["a"] });
+    expect(throughCombat(s).events.some(e => e.type === "GROUND_SUPPORT_LOST")).toBe(false);
+  });
+
+  it("AER106: exactly twice all based factors qualifies, including already-flown defenders", () => {
+    const position = (superior: boolean) => b(start([inf("g", "germany", "M32"), inf("p", "poland", "M33", 5),
+      air("a", "J32", superior ? 2 : 3), ...(superior ? [air("z", "J32", 2)] : []),
+      air("d", "M33", 1, "britain"), air("e", "M33", 1, "britain")]));
+    expect(pick(position(true)).action).toMatchObject({ type: "DESIGNATE_AIR", mission: "counter-air" });
+    const flown = markFlown(position(false), ["e"], "das");
+    expect(pick(flown).action.type).toBe("END_STEP");
+  });
+
+  it("AER106/AER107: ground support gets free planes before counter-air", () => {
+    const s = b(start([inf("g", "germany", "M32", 6), inf("p", "poland", "M33", 2),
+      air("a", "J32", 5), air("d", "M33", 2, "britain")]));
+    expect(pick(s).action).toMatchObject({ type: "DESIGNATE_AIR", mission: "ground-support" });
+    expect(throughCombat(s).actions.some(a => a.type === "RESOLVE_COUNTER_AIR")).toBe(false);
+  });
+
+  it("AER108: supports the greater threat first and retains a reserve across targets", () => {
+    const s = end(setManualDas(start([inf("g", "germany", "M32", 2), inf("p", "poland", "M33", 2),
+      inf("h", "germany", "N34", 6), inf("q", "poland", "N35", 1),
+      air("a", "M33", 3, "poland"), air("d", "M35", 3, "poland"), air("e", "N35", 3, "poland")]), true), "6f");
+    const first = pick(s);
+    expect(first.action).toMatchObject({ type: "DESIGNATE_DAS", hex: "N35" });
+    const second = pick(first.state);
+    expect(second.action).toMatchObject({ type: "DESIGNATE_DAS", hex: "M33" });
+    const last = pick(second.state);
+    expect(last.action).toMatchObject({ type: "END_STEP", step: "7d" });
+    const state = last.state;
+    expect(Object.values(state.units).filter(u => u.type === "air" && !hasFlown(state, u.id))).toHaveLength(1);
   });
 
   it("AER109/R15: same seed and reordered JSON units produce identical legal actions and results", () => {

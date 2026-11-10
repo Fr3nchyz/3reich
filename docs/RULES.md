@@ -332,5 +332,3 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 - **TODO(verify) AER107:** commit the smallest lexical prefix of whole counters that improves a column, to at most two disjoint ground attacks already accepted by the existing attack chooser, only if support improves the odds column. At 7h attack committed targets before ordinary attacks even if intervening DAS lowers the odds; never reuse their ground attackers for another commitment.
 - **TODO(verify) AER108:** on manual DAS turns support at most two threatened hexes, greatest attacking-to-basic-defending factor ratio first, at ratio at least one; retain one unused defending plane, use whole counters under the engine cap.
 - **TODO(verify) AER109:** stable lexical unit/target ordering breaks policy ties; enumerate staging and counter-air through existing engine queries and action validation (as the mover and air screen do), all state transitions through `applyAction`. Answer explicit resolution and DAS completion; add no interception, drop, split or Malta policy.
-
-
