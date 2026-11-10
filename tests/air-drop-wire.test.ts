@@ -47,7 +47,7 @@ describe("09-11b normal airdrop wiring", () => {
     expect(okOf(applyAction(CTX, s, end("7g"))).state.position).toMatchObject({ step: "7h" });
   });
 
-  it.each(["infantry", "armor", "airborne", "replacement", "air", "airbase", "fleet"] as const)(
+  it.each(["infantry", "armor", "airborne", "replacement", "air", "airbase", "fleet", "bridgehead"] as const)(
     "AER117: real flow refuses an enemy %s at the target, atomically", (type) => {
       const source = initial();
       source.units.p = { ...source.units.p!, type };
