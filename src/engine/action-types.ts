@@ -1,3 +1,4 @@
+import type { InterceptionEvent } from "./air-intercept-wire";
 import type { PortAttackResult } from "./air-port-attack";
 import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
@@ -78,6 +79,8 @@ export type Action =
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air" | "port-attack"; units: string[]; target: HexId }
   /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
+  /** Spec 09 R11 / AER92: explicit interception and resolution at 7e. */
+  | { type: "DESIGNATE_DAS_INTERCEPT"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R14, AER80: explicit resolution at 7i, only with assigned work. */
   | { type: "RESOLVE_PORT_ATTACKS"; side: Side }
   /** Ref 20.51: explicit Non-Phasing commitment at 7d. */
@@ -113,6 +116,7 @@ export type GameEvent =
   | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
+  | InterceptionEvent
   | CounterAirEvent
   /** Spec 12 R14/R21, AER83: per-factor dice and actual losses, including canceled missions. */
   | { type: "PORT_ATTACK_RESOLVED"; target: HexId; status: PortAttackResult["status"] | "no-air"; rolls: PortAttackResult["rolls"]; airLost: number; navalHits: number; navalLost: number; fleets: PortAttackResult["fleets"] }
