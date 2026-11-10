@@ -1,4 +1,5 @@
 import type { InterceptionEvent } from "./air-intercept-wire";
+import type { PortAttackResult } from "./air-port-attack";
 import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
@@ -74,12 +75,14 @@ export type Action =
   | { type: "COMBINE_AIR"; side: Side; units: string[] }
   /** Step 6e or 9f: fleets of one port carry supply to a port or island for units cut off from their sources (Ref 19.31); `from` is where the fleets stand. */
   | { type: "DESIGNATE_SEA_SUPPLY"; side: Side; fleets: string[]; to: HexId; units: string[] }
-  /** Step 7b: air units are committed to ground support of a hex that will be attacked (Ref 20.41). */
-  | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
+  /** Step 7b: designate ground support, Counter-Air or port attacks (Ref 20.41/20.42/20.45). */
+  | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air" | "port-attack"; units: string[]; target: HexId }
   /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
   /** Spec 09 R11 / AER92: explicit interception and resolution at 7e. */
   | { type: "DESIGNATE_DAS_INTERCEPT"; side: Side; units: string[]; hex: HexId }
+  /** Spec 12 R14, AER80: explicit resolution at 7i, only with assigned work. */
+  | { type: "RESOLVE_PORT_ATTACKS"; side: Side }
   /** Ref 20.51: explicit Non-Phasing commitment at 7d. */
   | { type: "DESIGNATE_DAS"; side: Side; units: string[]; hex: HexId }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
@@ -115,13 +118,15 @@ export type GameEvent =
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
   | InterceptionEvent
   | CounterAirEvent
+  /** Spec 12 R14/R21, AER83: per-factor dice and actual losses, including canceled missions. */
+  | { type: "PORT_ATTACK_RESOLVED"; target: HexId; status: PortAttackResult["status"] | "no-air"; rolls: PortAttackResult["rolls"]; airLost: number; navalHits: number; navalLost: number; fleets: PortAttackResult["fleets"] }
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent
   | { type: "UNIT_PLACED"; unitId: string; owner: ForceOwner; at: HexId | OffMapBox }
   | { type: "UNIT_REMOVED"; unitId: string; owner: ForceOwner }
   | { type: "AIRBASE_PLACED"; unitId: string; owner: PowerId; at: HexId }
-  /** Step 7b: air units were committed to ground support of a hex (Ref 20.41); they have flown their mission for the Game Turn. */
-  | { type: "AIR_MISSION_DESIGNATED"; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
+  /** Step 7b: designated air has used its Game Turn mission (Ref 20.3/20.41/20.42/20.45). */
+  | { type: "AIR_MISSION_DESIGNATED"; mission: "ground-support" | "counter-air" | "port-attack"; units: string[]; target: HexId }
   /** Step 7h ended and the hex was not attacked: its committed ground support is eliminated (Ref 20.41). Each unit also has a UNIT_ELIMINATED event. */
   | { type: "GROUND_SUPPORT_LOST"; hex: HexId; units: { id: string; owner: ForceOwner; strength: number }[] }
   /** Air counters were split or combined: the counters before and after, in one hex (Ref 20.6). */

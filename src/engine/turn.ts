@@ -22,6 +22,7 @@ import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
 import { legalDasIntercept } from "./air-intercept-wire";
+import { hasPortAttackWork } from "./air-port-wire";
 import { legalDas } from "./air-defense-wire";
 import { hasCounterAirWork } from "./air-counter-wire";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
@@ -213,6 +214,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return hasAttritionWork(ctx, state);
     case "7e": // spec 09 Wiring, 09-10b / AER92: manual DAS and eligible interceptors only
       return legalDasIntercept(ctx, state).length > 0;
+    case "7i":
+      return hasPortAttackWork(state); // spec 12 R14 / AER80: absent assignments preserve the skip
     case "7d": // spec 09 Wiring, 09-8b / AER76: absent manual flag preserves the old skip
       return legalDas(ctx, state).length > 0;
     case "7c":
