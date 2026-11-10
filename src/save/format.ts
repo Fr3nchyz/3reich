@@ -51,4 +51,10 @@ export const ACTION_FIELDS: Record<string, string> = {
   CHOOSE_ATTRITION_LOSSES: "side units", SELECT_ATTRITION_HEX: "side hex", END_ATTRITION: "side",
   RETREAT_UNIT: "side unit to", OCCUPY_ATTRITION_HEX: "side units", SETUP_PLACE: "owner unit at",
   SETUP_REMOVE: "owner unitId", SETUP_DONE: "owner",
+  // Spec 09 AER116: preserve manual envelopes for replay and snapshot continuations.
+  MOVE_FLEET: "side fleet to front path", DECLARE_INTERCEPT: "side target fleets meetingPoint breakOff",
+  PASS_INTERCEPT: "side", RESOLVE_INTERCEPTIONS: "side turnBack",
+  DESIGNATE_SEA_AIR: "side target point units", RESOLVE_SEA_AIR: "side",
+  DESIGNATE_DAS: "side units hex", DESIGNATE_DAS_INTERCEPT: "side units hex",
+  RESOLVE_COUNTER_AIR: "side", RESOLVE_PORT_ATTACKS: "side", AIRDROP: "side unit to",
 };

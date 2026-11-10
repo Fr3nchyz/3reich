@@ -14,6 +14,7 @@ import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
 import { chooseFleetMove, chooseFleetIntercept, chooseSeaSupply } from "./naval";
+import { chooseManualCompletion } from "./manual-completion";
 import { chooseMove } from "./move";
 import { chooseOverstack } from "./overstack";
 import { chooseRedeploy } from "./redeploy";
@@ -60,7 +61,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "7o" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7o: the Exploitation attacks, losses and advances go through the 7h chooser (ticket 16-13)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? choosePlace(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7h: after the advance it places its armor in the Breakthrough hex before the next attack (ticket 16-13)
     : undefined;
-  return picked ?? endTheStep(legal, step);
+  return picked ?? chooseManualCompletion(state, legal) ?? endTheStep(legal, step);
 }
 
 const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLAYER_TURN" }> => a.type === "END_STEP" || a.type === "END_PLAYER_TURN";

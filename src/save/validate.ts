@@ -190,7 +190,7 @@ export function snapshotHasFreshShape(snapshot: JsonObject, scenario: Scenario, 
 // Spec 11 H: unknown position/nation/unit fields never enter the returned save.
 function cleanSnapshot(value: JsonObject, scenario: Scenario): JsonObject {
   const fresh = newGame(scenario, 0);
-  const optional = "unsuppliedAtStart combat countries air airbasesPlaced airFlown naval grayFleets moves sr exploit exploited attrition conquests keptHexes winter siberian soviet victory vitalPaid result".split(" ");
+  const optional = "unsuppliedAtStart combat countries air airDrop airbasesPlaced airFlown naval grayFleets moves sr exploit exploited attrition conquests keptHexes winter siberian soviet victory vitalPaid result".split(" ");
   const result = Object.fromEntries(Object.entries(value).filter(([key]) => Object.hasOwn(fresh, key) || optional.includes(key)));
   if (object(result.units)) result.units = Object.fromEntries(Object.entries(result.units).map(([id, unit]) => [id,
     object(unit) ? Object.fromEntries(Object.entries(unit).filter(([k]) => ["id", "owner", "nationality", "type", "strength", "movement", "at"].includes(k))) : unit]));
