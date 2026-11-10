@@ -197,10 +197,10 @@ export function fight(ctx: GameContext, state: GameState, units: readonly Unit[]
   }
 
   const numbers = attackNumbers(ctx, state, units, defenders, target);
-  const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier }, state.rngState);
+  const res = resolveOffensiveCombat({ attackFactors: numbers.attackFactors, defenseBasicFactors: numbers.defenseFactors, defenseMultiplier: numbers.multiplier, defenseExtraFactors: numbers.dasFactors }, state.rngState);
   const marked: GameState = { ...stamp(state), rngState: res.rngState };
-  const applied = applyOutcome(ctx, marked, { outcome: res.outcome, side: state.activeSide, target, attackers: [...units], air: numbers.air, defenders, multiplier: numbers.multiplier });
-  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}), ...tag };
+  const applied = applyOutcome(ctx, marked, { outcome: res.outcome, side: state.activeSide, target, attackers: [...units], air: numbers.air, das: numbers.das, defenders, multiplier: numbers.multiplier });
+  const event = { type: "COMBAT_RESOLVED" as const, side: state.activeSide, target, attackers: [...ids], attackFactors: numbers.attackFactors, defenseFactors: numbers.defenseFactors, multiplier: numbers.multiplier, rounds: res.rounds, outcome: res.outcome.kind, ...(numbers.airFactors > 0 ? { airFactors: numbers.airFactors } : {}), ...(numbers.dasFactors > 0 ? { dasFactors: numbers.dasFactors } : {}), ...tag };
   return { ok: true, state: applied.state, events: [event, ...applied.events] };
 }
 

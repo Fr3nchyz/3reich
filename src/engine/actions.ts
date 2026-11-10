@@ -13,6 +13,8 @@ import { applyPlaceExploiters } from "./breakthrough";
 import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalExploitMoves } from "./exploit-step";
 import { combatOf } from "./combat-record";
 import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
+import { applyPortDesignation, applyResolvePortAttacks, legalPortAttacks, hasPortAttackWork } from "./air-port-wire";
+import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
 import { applyIntercept, hasInterceptWork, interceptMoveOn, legalInterceptActions, applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
@@ -56,6 +58,8 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (ATTRITION_STEPS.includes(step)) return legalAttrition(ctx, state);
   if (step === "7b" || step === EXPLOIT_AIR_STEP) return legalDesignations(ctx, state);
   if (step === "7c") return legalCounterAir(state);
+  if (step === "7i") return legalPortAttacks(state);
+  if (step === "7d") return legalDas(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
@@ -76,7 +80,7 @@ export function moveOnAction(state: GameState): Action[] {
   if (step === undefined) return [];
   const naval = interceptMoveOn(state);
   if (naval.length) return naval;
-  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step }];
+  return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step }];
 }
 
 /** All actions the active player may take now. Empty when the game is over. */
@@ -88,9 +92,10 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (occupationAsking(state)) return legalConcede(ctx, state); // step 6h or 9k: the Axis names the Objective it hands back; nothing else is legal
   const step = waitingStep(state);
   if (step === undefined) return [];
-  const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
+  const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step };
   if (hasInterceptWork(ctx, state, step)) return stepActions(ctx, state, step);
   if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
+  if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER80
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return stepActions(ctx, state, step);
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
@@ -211,9 +216,14 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return applySplitAir(state, action);
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
+    case "DESIGNATE_DAS":
+      return atStep(state, "7d", "Defensive air support is designated", () => applyDas(ctx, state, action));
     case "RESOLVE_COUNTER_AIR":
       return atStep(state, "7c", "Counter-air is resolved", () => applyResolveCounterAir(ctx, state, action));
+    case "RESOLVE_PORT_ATTACKS":
+      return atStep(state, "7i", "Port attacks are resolved", () => applyResolvePortAttacks(state, action));
     case "DESIGNATE_AIR":
+      if (action.mission === "port-attack") return atStep(state, "7b", "Port attacks are designated", () => applyPortDesignation(ctx, state, action));
       if (action.mission === "counter-air") return atStep(state, "7b", "Counter-air is designated", () => applyCounterAirDesignation(ctx, state, action));
       return atStep(state, waitingStep(state) === EXPLOIT_AIR_STEP ? EXPLOIT_AIR_STEP : "7b", "Air units are committed to ground support", () => applyDesignate(ctx, state, action));
     case "ATTACK": // at 7o only exploiting armor attacks (spec 16 R13)
@@ -277,7 +287,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   const step = waitingStep(state);
   if (winterAsking(state)) return { ok: false, error: "The game waits at step II.A for the Allies to say whether the Russian winter waits." };
   if (step === undefined) return { ok: false, error: "This game has no turn position (an old saved game?). Start a new game." };
-  if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
+  if (action.side !== (step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide)) return { ok: false, error: step === "7d" && manualDas(state) ? "Only the Non-Phasing side may end DAS." : `It is the ${state.activeSide} player turn, not ${action.side}.` };
   if (action.type === "END_PLAYER_TURN" && step !== LAST_STEP) {
     return { ok: false, error: `The Player Turn ends at step ${describeStep(LAST_STEP)}; the game is at step ${describeStep(step)}.` };
   }
@@ -286,6 +296,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   }
   if (hasInterceptWork(ctx, state, step)) return { ok: false, error: "Interception rounds/resolution must finish first (spec 12 R11/R12)." };
   if (step === "7c" && hasCounterAirWork(state)) return { ok: false, error: "Step 7c waits for assigned counter-air to resolve (spec 09 R12)." };
+  if (step === "7i" && hasPortAttackWork(state)) return { ok: false, error: "Step 7i waits for assigned port attacks to resolve (spec 12 R14 / AER80)." };
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };

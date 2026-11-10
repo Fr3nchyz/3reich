@@ -18,8 +18,14 @@ export interface AirState {
   controlAtStart: Record<HexId, ForceOwner | null>;
   /** Hex to be attacked -> the air units committed to Ground Support there, in the order they were designated (Ref 20.41, `air-missions.ts`). */
   groundSupport: Record<HexId, string[]>;
+  /** TODO(verify) AER76: manual DAS gate, absent in older saves and computer games. */
+  manualDas?: boolean;
+  /** Ref 20.51: defender air committed by target this Player Turn; absent means empty. */
+  das?: Record<HexId, string[]>;
   /** Spec 09 R12: counter-air assignments in designation order; absent in older states. */
   counterAir?: { target: HexId; units: string[] }[];
+  /** Spec 12 R14, AER80/AER81: optional queue; absent in old saves. */
+  portAttacks?: { target: HexId; units: string[]; counterAir?: "beaten" | "not-beaten" }[];
 }
 
 /** A record for the Player Turn that begins now, with control as it stands. */
@@ -38,7 +44,7 @@ export function airOf(state: GameState): AirState {
 export const airbasesInReserve = (state: GameState, owner: PowerId): number => Math.max(0, AIRBASES_PER_MAJOR_POWER - (state.airbasesPlaced?.[owner] ?? 0));
 
 /** The missions an air unit has flown in a Game Turn: "new" is a unit built in it, which may not fly one (Ref 20.3). More kinds come with later missions. */
-export type FlownKind = "ground-support" | "counter-air" | "new";
+export type FlownKind = "ground-support" | "counter-air" | "das" | "port-attack" | "new";
 
 /**
  * Air units that have used their mission in one Game Turn (both Player Turns share it, spec 09 R5 option a, `TODO(verify)`). It lives in

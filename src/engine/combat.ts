@@ -66,6 +66,8 @@ export interface CombatInput {
   defenseBasicFactors: number;
   /** Defender's terrain multiplier (see defenseMultiplier). */
   defenseMultiplier: number;
+  /** Ref 20.51 / spec 09 C4: DAS counts basic, including on counterattacks. */
+  defenseExtraFactors?: number;
 }
 
 export type CombatOutcome =
@@ -104,7 +106,7 @@ const MAX_ROUNDS = 200;
  */
 export function resolveOffensiveCombat(input: CombatInput, rngState: number): CombatResolution {
   const rounds: CombatRound[] = [];
-  const defenseTotal = input.defenseBasicFactors * input.defenseMultiplier;
+  const defenseTotal = input.defenseBasicFactors * input.defenseMultiplier + (input.defenseExtraFactors ?? 0);
   const originalColumn = oddsColumn(input.attackFactors, defenseTotal);
   let state = rngState;
 
@@ -127,7 +129,7 @@ export function resolveOffensiveCombat(input: CombatInput, rngState: number): Co
 
     // Defender counterattacks with basic factors on both sides.
     const column =
-      FORCED_COUNTERATTACK_COLUMN[result] ?? oddsColumn(input.defenseBasicFactors, input.attackFactors);
+      FORCED_COUNTERATTACK_COLUMN[result] ?? oddsColumn(input.defenseBasicFactors + (input.defenseExtraFactors ?? 0), input.attackFactors);
     if (column === null) {
       rounds.push({ by: "defender", column: null, roll: null, result: "auto-eliminated" });
       return { outcome: { kind: "defender-eliminated" }, rounds, rngState: state };

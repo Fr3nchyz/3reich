@@ -54,6 +54,7 @@ function sideOfUnits(ids: readonly string[], before: GameState | undefined): Sid
 export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side | null {
   switch (e.type) {
     case "NAVAL_COMBAT_RESOLVED": // spec 12 R12 / AER91: both forces
+    case "PORT_ATTACK_RESOLVED": // spec 12 R14: both forces
     case "AIR_COMBAT_RESOLVED": // spec 09 C3: this line describes both forces
     case "INITIATIVE_DETERMINED":
     case "SETUP_COMPLETE":
@@ -126,6 +127,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "EXPLOIT_MOVED":
     case "EXPLOITERS_PLACED": return e.side;
     case "VACANT_HEX_ATTACKED": return e.side;
+    case "DAS_COMMITTED": return e.side;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
     case "SEA_SUPPLY_LAPSED": return sideOfUnits(e.fleets, before) ?? actor;

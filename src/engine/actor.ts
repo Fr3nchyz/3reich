@@ -1,4 +1,5 @@
 import { interceptEnabled, interceptSide } from "./naval-intercept";
+import { dasSide, manualDas } from "./air-defense-wire";
 import { attritionOf } from "./attrition-record";
 import { combatOf } from "./combat-record";
 import type { GameState, Side } from "./types";
@@ -15,6 +16,8 @@ import { winterAsking } from "./winter-record";
 export function sideToAct(state: GameState): Side {
   // Spec 12 R11 / AER84: additive acting-side override only for opt-in interception rounds.
   if (state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "6c" && interceptEnabled(state)) return interceptSide(state);
+  // Ref 20.51 / AER76: the defender controls manual DAS, including passing.
+  if (state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "7d" && manualDas(state)) return dasSide(state);
   if (winterAsking(state)) return "allies";
   if (surrenderAsking(state)) return "axis"; // step 10a: the Allied Player Turn is the active one, but the Axis answers Russia's offer to surrender (spec 14 R7b)
   if (state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "2") { // step 2: the side that did not declare sets up the minor's army (spec 15 C5, R3)
