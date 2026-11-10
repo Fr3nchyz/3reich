@@ -156,10 +156,11 @@ export function applyOutcome(ctx: GameContext, state: GameState, b: Battle): { s
   }
   const { required, values } = cost;
   const choosing = cost.chooser === "defenders" ? defenders : fighters;
-  // TODO(verify) AER78: automatic whole-counter allocation only in DAS battles.
-  const candidates = b.das?.length ? ids(choosing).sort() : ids(choosing);
+  // TODO(verify) AER121 supersedes AER78: only the defender auto-allocates counted DAS battles.
+  const automaticDasLosses = cost.chooser === "defenders" && (b.das?.length ?? 0) > 0;
+  const candidates = automaticDasLosses ? ids(choosing).sort() : ids(choosing);
   const sets = minimalSets(candidates, values, required);
-  if (sets.length === 1 || b.das?.length) {
+  if (sets.length === 1 || automaticDasLosses) {
     const rest = eliminate(wholly.state, sets[0]!);
     const done = finishBattle(ctx, rest.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...rest.events, ...done.events] };
