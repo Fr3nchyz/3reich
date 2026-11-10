@@ -13,6 +13,7 @@ import { applyPlaceExploiters } from "./breakthrough";
 import { applyExploitAttack, applyExploitMoveAction, legalExploitCombat, legalExploitMoves } from "./exploit-step";
 import { combatOf } from "./combat-record";
 import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
+import { applyDrop, legalDrops } from "./air-drop-wire";
 import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
 import { applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
@@ -57,6 +58,7 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
   if (step === "7b" || step === EXPLOIT_AIR_STEP) return legalDesignations(ctx, state);
   if (step === "7c") return legalCounterAir(state);
   if (step === "7d") return legalDas(ctx, state);
+  if (step === "7g") return legalDrops(ctx, state);
   if (step === "7h") return legalCombatActions(ctx, state);
   if (step === "7j") return legalExploitMoves(ctx, state);
   if (step === "7o") return legalExploitCombat(ctx, state);
@@ -201,6 +203,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       return applySplitAir(state, action);
     case "COMBINE_AIR":
       return applyCombineAir(state, action);
+    case "AIRDROP":
+      return atStep(state, "7g", "Normal airdrops are conducted", () => applyDrop(ctx, state, action));
     case "DESIGNATE_DAS":
       return atStep(state, "7d", "Defensive air support is designated", () => applyDas(ctx, state, action));
     case "RESOLVE_COUNTER_AIR":

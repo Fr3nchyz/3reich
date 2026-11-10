@@ -21,6 +21,7 @@ import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { beginDropTurn, legalDrops } from "./air-drop-wire";
 import { legalDas } from "./air-defense-wire";
 import { hasCounterAirWork } from "./air-counter-wire";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
@@ -85,7 +86,7 @@ function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
   const refreshed = refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })));
   const declared = scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshed));
   // Spec 16 R31: report the refresh once, at the Player Turn boundary.
-  return { state: declared.state, events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
+  return { state: beginDropTurn(declared.state), events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */
@@ -212,6 +213,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return hasAttritionWork(ctx, state);
     case "7d": // spec 09 Wiring, 09-8b / AER76: absent manual flag preserves the old skip
       return legalDas(ctx, state).length > 0;
+    case "7g": // spec 09 Wiring, 09-11b / AER95: no opt-in or legal pair, no work
+      return legalDrops(ctx, state).length > 0;
     case "7c":
       return hasCounterAirWork(state); // spec 09 Wiring, 09-9b / AER73: no assignments, no work
     case "7b":

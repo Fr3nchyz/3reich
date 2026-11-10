@@ -155,4 +155,4 @@ export function describeStep(id: string): string {
  * The Year Start Sequence ("YSS") runs by itself when the game reaches it (yearstart.ts) and never
  * waits; the Russian-Winter roll ("II.A") waits only while the Allies are asked (CHOOSE_WINTER), and "10a" (the Russian surrender) only while the Axis is asked (SURRENDER_ANSWER); "6h" and "9k" (the Occupation Force) only while the Axis must name the Objective it hands back (OCCUPATION_CONCEDE).
  */
-export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "2", "3", "4", "6b", "6e", "6f", "6g", "6h", "7a", "7b", "7c", "7d", "7h", "7j", "7k", "7o", "7p", "8a", "8b", "9a", "9e", "9f", "9j", "9k", "10a", LAST_STEP]);
+export const IMPLEMENTED_STEPS: ReadonlySet<string> = new Set(["II.B", FIRST_STEP, "2", "3", "4", "6b", "6e", "6f", "6g", "6h", "7a", "7b", "7c", "7d", "7g", "7h", "7j", "7k", "7o", "7p", "8a", "8b", "9a", "9e", "9f", "9j", "9k", "10a", LAST_STEP]);

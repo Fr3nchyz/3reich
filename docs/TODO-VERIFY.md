@@ -335,6 +335,10 @@ Added 2026-10-23 from `docs/specs/17-rebuild-eliminated-units.md` (rows RB1 to R
 
 ### Air units (spec 09)
 
+- **TODO(verify) AER95 — spec 09, Wiring 09-11b:** `DROP_MANUAL_DEFAULT = false`; optional `airDrop.manual` gate, explicit AIRDROP at 7g only with legal unit/target pairs; optional END_STEP. No computer policy opts in.
+- **TODO(verify) AER96 — spec 09, Wiring 09-11b:** opt-in captures start after Player Turn initialization, excluding the drop state to avoid nesting. Missing/stale snapshots refuse work. Preserve the dropped Game Turn ledger; absent state stays absent.
+- **TODO(verify) AER97 — spec 09, Wiring 09-11b:** call the pure drop resolver unchanged and emit AIR_DROPPED (side, unit, from, to, supplied). No transport requirement or losses invented. On-top/mandatory combat, movement/advance restrictions, shared automatic supply and permanent-loss consumers remain deferred; reuse AER59/AER60.
+
 | ID | Where | Name | What is assumed | In RULES.md open questions? |
 |---|---|---|---|---|
 | AER61 | `air-defense.ts`; spec 09 R10, Ref 20.51 | `DAS_POTENTIAL_ATTACK_POLICY` | TODO(verify): `"caller-supplied"`; potential attack is undefined. Caller provides current targets including invasion/airdrop threats. No adjacency or Front Option default is chosen. | Listed ("Defensive air support pure slice"); ticket 09-8a. |

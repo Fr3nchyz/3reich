@@ -15,6 +15,8 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
+  /** Ref 23.1 / spec 09 AER95: optional normal drop at 7g. */
+  | { type: "AIRDROP"; side: Side; unit: string; to: HexId }
   /** Spec 12 R10 / AER75: opt-in base change at 6b. */
   | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
@@ -107,6 +109,8 @@ export type Action =
 export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
+  /** Spec 09 AER97: placement and the pure resolver's landing supply report. */
+  | { type: "AIR_DROPPED"; side: Side; unit: string; from: HexId; to: HexId; supplied: boolean }
   | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
