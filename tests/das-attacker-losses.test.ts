@@ -9,7 +9,7 @@ import { CTX, NO_AIRBASES_LEFT } from "./helpers";
 import { at6f, inf, okOf } from "./helpers-move";
 
 // Ref 12.2, spec 09 R10/C4, TODO(verify) AER121: use real 6f -> 7d -> 7h actions.
-function battle(side: Side, strengths = [12, 12], das = true) {
+function battle(side: Side, strengths = [12, 12], das = true, commit = das) {
   const defender: Side = side === "axis" ? "allies" : "axis";
   const attackingOwner = side === "axis" ? "germany" : "britain";
   const defendingOwner = side === "axis" ? "poland" : "germany";
@@ -24,7 +24,7 @@ function battle(side: Side, strengths = [12, 12], das = true) {
   send({ type: "END_STEP", step: "6f", side });
   if (das) {
     expect(state.position).toMatchObject({ step: "7d" });
-    send({ type: "DESIGNATE_DAS", side: defender, units: ["d"], hex: "M33" });
+    if (commit) send({ type: "DESIGNATE_DAS", side: defender, units: ["d"], hex: "M33" });
     send({ type: "END_STEP", step: "7d", side: defender });
   }
   expect(state.position).toMatchObject({ step: "7h" });
@@ -94,9 +94,11 @@ describe("AER121: DAS Exchange loss chooser", () => {
     expect(dasOf(state)).toEqual({});
   });
 
-  it("AER121/AER76: absent DAS gate retains ordinary attacker allocation and order", () => {
-    const { state } = battle("axis", [12, 12], false);
-    expect(state.air?.manualDas).toBeUndefined();
+  it.each([false, true])("AER121/AER76: no counted DAS retains ordinary allocation with gate %s", (gate) => {
+    const { state } = battle("axis", [12, 12], gate, false);
+    expect(state.air?.manualDas).toBe(gate ? true : undefined);
+    expect(dasOf(state)).toEqual({});
+    expect(hasFlown(state, "d")).toBe(false);
     expect(combatOf(state).pending).toMatchObject({ chooser: "axis", candidates: ["z", "a"], required: 6 });
     expect(legalActions(CTX, state)).toEqual([
       { type: "ALLOCATE_LOSSES", side: "axis", units: ["z"] },
