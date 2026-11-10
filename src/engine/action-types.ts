@@ -1,3 +1,4 @@
+import type { InterceptionEvent } from "./air-intercept-wire";
 import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
@@ -77,6 +78,8 @@ export type Action =
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
   /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
+  /** Spec 09 R11 / AER84: explicit interception and resolution at 7e. */
+  | { type: "DESIGNATE_DAS_INTERCEPT"; side: Side; units: string[]; hex: HexId }
   /** Ref 20.51: explicit Non-Phasing commitment at 7d. */
   | { type: "DESIGNATE_DAS"; side: Side; units: string[]; hex: HexId }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
@@ -110,6 +113,7 @@ export type GameEvent =
   | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
+  | InterceptionEvent
   | CounterAirEvent
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent

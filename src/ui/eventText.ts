@@ -72,6 +72,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} redeployed from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} (${POWER_NAMES[e.nation]} has ${e.left} left).`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
+    case "DAS_INTERCEPTED":
+      return `DAS interception at ${placeName(ctx.map, e.hex)}: rolls ${e.rolls.join(" and ")}${e.combat.tieRoll === null ? "" : `; tie die ${e.combat.tieRoll}`}; losses ${e.lost.interceptors} intercepting, ${e.lost.support} supporting; ${e.continuing.length ? "surviving DAS continues" : "DAS ends"}.`;
     case "AIR_COMBAT_RESOLVED":
       return `Counter-air on ${placeName(ctx.map, e.hex)}: ${e.combat.attacker.factors} against ${e.combat.defender.factors} air factors; rolls ${e.rolls[0]} (${e.combat.attacker.modifiedRoll} modified) and ${e.rolls[1]} (${e.combat.defender.modifiedRoll} modified)${e.combat.tieRoll === null ? "" : `; tie die ${e.combat.tieRoll}`}; losses ${e.lost.attacker} attacking, ${e.lost.defender} defending.`;
     case "DAS_COMMITTED":

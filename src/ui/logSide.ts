@@ -53,6 +53,7 @@ function sideOfUnits(ids: readonly string[], before: GameState | undefined): Sid
  */
 export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side | null {
   switch (e.type) {
+    case "DAS_INTERCEPTED": // spec 09 R11: both sides fight
     case "AIR_COMBAT_RESOLVED": // spec 09 C3: this line describes both forces
     case "INITIATIVE_DETERMINED":
     case "SETUP_COMPLETE":
