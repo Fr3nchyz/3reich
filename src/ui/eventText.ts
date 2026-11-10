@@ -57,7 +57,7 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return sweepLine(ctx, e);
     case "COMBAT_RESOLVED":
       if (e.sweep) return null; // the line of the sweep says it
-      return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
+      return `Attack on ${placeName(ctx.map, e.target)}: ${e.attackFactors} against ${e.defenseFactors} x${e.multiplier}${e.dasFactors ? ` + ${e.dasFactors} defensive air` : ""}; ${e.rounds.map((r) => `${r.column ?? "no"} column, ${r.roll ?? "no roll"}: ${r.result}`).join("; ")} (${e.outcome}).`;
     case "UNIT_ELIMINATED":
       if (swept.has(e.unitId) || routed.has(e.unitId)) return null; // the line of its fate says it (lossText.ts); a game saved before spec 17 has none, so keeps this one
       return `Eliminated${e.reason === "unsupplied" ? " (out of supply)" : ""}: ${before.units[e.unitId] ? unitName(before.units[e.unitId]!) : `${OWNER_NAMES[e.owner]} unit`} in ${placeName(ctx.map, e.at)}.`;
@@ -74,6 +74,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_COMBAT_RESOLVED":
       return `Counter-air on ${placeName(ctx.map, e.hex)}: ${e.combat.attacker.factors} against ${e.combat.defender.factors} air factors; rolls ${e.rolls[0]} (${e.combat.attacker.modifiedRoll} modified) and ${e.rolls[1]} (${e.combat.defender.modifiedRoll} modified)${e.combat.tieRoll === null ? "" : `; tie die ${e.combat.tieRoll}`}; losses ${e.lost.attacker} attacking, ${e.lost.defender} defending.`;
+    case "DAS_COMMITTED":
+      return `${stackSummary(unitsWithIds(before, e.units))} fly defensive air support to ${placeName(ctx.map, e.hex)}.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
     case "FLEET_MOVED": // spec 12 R10

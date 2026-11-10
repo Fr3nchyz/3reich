@@ -21,6 +21,7 @@ import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { legalDas } from "./air-defense-wire";
 import { hasCounterAirWork } from "./air-counter-wire";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
@@ -209,6 +210,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7a":
     case "7p":
       return hasAttritionWork(ctx, state);
+    case "7d": // spec 09 Wiring, 09-8b / AER76: absent manual flag preserves the old skip
+      return legalDas(ctx, state).length > 0;
     case "7c":
       return hasCounterAirWork(state); // spec 09 Wiring, 09-9b / AER73: no assignments, no work
     case "7b":

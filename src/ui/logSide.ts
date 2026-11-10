@@ -119,6 +119,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "EXPLOIT_MOVED":
     case "EXPLOITERS_PLACED": return e.side;
     case "VACANT_HEX_ATTACKED": return e.side;
+    case "DAS_COMMITTED": return e.side;
     case "AIR_MISSION_DESIGNATED": return sideOfUnits(e.units, before) ?? actor;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
     case "SEA_SUPPLY_LAPSED": return sideOfUnits(e.fleets, before) ?? actor;
