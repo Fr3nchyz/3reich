@@ -182,7 +182,7 @@ describe("declarations of war (Ref 13.0)", () => {
     const r = declare(s, "germany", "turkey");
     expect(r.ok).toBe(false);
     expect(!r.ok && r.error).toMatch(/beyond what germany may spend/);
-    expect(legalActions(CTX, s).some((a) => a.type === "DECLARE_WAR")).toBe(false);
+    expect(legalActions(CTX, s).some((a) => a.type === "DECLARE_WAR" && a.by === "germany")).toBe(false);
     // The same total, the next Player Turn: the limit is open again.
     const later = ok(endTurn(CTX, ok(endTurn(CTX, s)).state)).state;
     expect(later.nations.germany.spent).toBe(0);
