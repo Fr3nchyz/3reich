@@ -47,3 +47,35 @@ export const planeFrom = (place: string): string => `from ${place}`;
 export const airCounts = (n: number): string => `${factors(n)} count in this attack. They cannot be taken back; they win or are lost with the attackers.`;
 export const AIR_NONE_COUNT = "No committed air counts in this attack.";
 export const AIR_LEFT_OUT_NOTE = "The air in an attack counts up to three times the ground factors. The planes not counted stay committed and are not lost.";
+
+/** Spec 09 D3/D4 and spec 12 R14: mission cards and event results (09-15). */
+export const MISSION_TITLES = { "7c": "Counter-air", "7d": "Defend with air?", "7e": "Intercept defensive air support", "7i": "Air attacks on ports" };
+export const MISSION_NOTES = {
+  "7c": "Assigned planes fight the air at these bases. Resolve to roll the combats.",
+  "7d": "Choose planes for a threatened hex, then commit. Commitments cannot be taken back; each plane uses its mission for this Game Turn.",
+  "7e": "Choose interceptors for a defensive air support target. Intercept rolls the combat immediately and uses their missions for this Game Turn.",
+  "7i": "Resolve the assigned port attacks against the fleets still there.",
+};
+export const DAS_PASS = "Done with air defence, continue";
+export const INTERCEPT_PASS = "No more interceptions, continue";
+export const MISSION_CONTINUE = "Continue";
+export const MISSION_RESOLVE = "Resolve";
+export const MISSION_COMMIT = "Commit planes";
+export const MISSION_INTERCEPT = "Intercept";
+export const MISSION_RESULTS = "Air mission results";
+export const AIR_ATTACKER = "Attacker";
+export const AIR_DEFENDER = "Defender";
+export const AUTOMATIC_AIR_LOSSES = "Air losses are allocated automatically, including counter breakdown. No loss choice is pending.";
+export const missionPlane = (name: string, base: string) => `${name} from ${base}`;
+export const missionChosen = (n: number) => `${factors(n)} chosen`;
+export const missionCommitted = (names: readonly string[]) => `Already committed: ${names.join(", ")}`;
+export const missionResultTitle = (kind: string, place: string) => `${kind} at ${place}`;
+export const missionRoll = (role: string, die: number, f: number, advantage: number, nationality: number, total: number) =>
+  `${role}: ${f} factors; die ${die}, advantage ${advantage >= 0 ? "+" : ""}${advantage}, nationality ${nationality >= 0 ? "+" : ""}${nationality}; modified roll ${total}.`;
+export const missionTie = (n: number) => `Tie die: ${n}.`;
+export const missionLoss = (a: number, d: number) => `Actual losses: ${a} attacking air factors, ${d} defending air factors.`;
+export const missionContinuation = (n: number) => `${n} defensive air support plane${n === 1 ? "" : "s"} continue; all other support aborts.`;
+export const missionWinner = (winner: "attacker" | "defender" | null) => winner === null ? "Tie." : `${winner === "attacker" ? AIR_ATTACKER : AIR_DEFENDER} wins.`;
+export const PORT_STATUS = { resolved: "Resolved", "no-air": "No assigned planes remain", "no-fleets": "No enemy fleets remain", "counter-air-blocked": "Blocked: defending air was not beaten" };
+export const portRolls = (rolls: readonly number[]) => `Dice: ${rolls.length ? rolls.join(", ") : "none"}.`;
+export const portLosses = (air: number, hits: number, naval: number) => `Actual losses: ${air} air factors; ${hits} naval hits, ${naval} naval factors lost.`;
