@@ -35,4 +35,4 @@
 6. L'ordinateur a-t-il fait quelque chose de bête ou d'impossible ?
 7. La partie a-t-elle pu se terminer avec un résultat juste (score, capitale prise) ?
 8. Qu'est-ce qui te manque le plus par rapport au jeu DOS ?
-9. Un règle différente de ce que tu connais ? Cite le cas : on vérifie dans le manuel, jamais de mémoire.
+9. Une règle différente de ce que tu connais ? Cite le cas : on vérifie dans le manuel, jamais de mémoire.
