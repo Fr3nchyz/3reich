@@ -118,8 +118,9 @@ describe("steps without rules are passed, and the passing is recorded", () => {
     // Nobody has a counter on the map here, so ground movement (6f) found nothing to do; only the airbases still to place kept the step open.
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
     // Spec 12 Wiring, 12-11b / AER75: 6b is gated on the absent manualFleetMove flag.
+    // Spec 12 Wiring, 12-15b: 7i is gated on assigned port attacks, absent here.
     // Spec 09 Wiring, 09-9b / AER73: 7c needs assigned counter-air; 09-8b / AER76: 7d needs manual DAS. All absent here.
-    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "2", "3", "4", "6b", "6e", "6f", "6g", "6h", "7a", "7b", "7c", "7d", "7g", "7h", "7j", "7k", "7o", "7p", "8a", "8b", "9a", "9e", "9f", "9j", "9k", "10a"].includes(id)).toBe(true);
+    for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "2", "3", "4", "6b", "6e", "6f", "6g", "6h", "7a", "7b", "7c", "7d", "7g", "7h", "7i", "7j", "7k", "7o", "7p", "8a", "8b", "9a", "9e", "9f", "9j", "9k", "10a"].includes(id)).toBe(true);
   });
 
   it("records step 1 as passed when a side has nothing to declare", () => {
