@@ -224,6 +224,8 @@ A designation is valid only if all of these hold when it is made, and again at t
 
 A base change is the only fleet movement of the Movement Phase (step 6b). It moves the fleet from one port to another and it can be intercepted.
 
+**Wiring, 12-11b.** `MOVE_FLEET {side, fleet, to, front, path?}` is legal only at 6b for the active side, and is listed only for `movableFleets`, using `fleetMoveOptions`. It applies `moveFleet`, records `FLEET_MOVED`, and stores the course in the optional Player Turn `naval.moves` list for later interception (12-12); no interception is resolved here. **TODO(verify) AER75 (round-2 provisional decision):** 6b stops and offers movement only when the optional `naval.manualFleetMove` flag is true and a fleet can move. Absent/false (empty default, old saves, computer games and recordings) preserves the previous skip and action list exactly. `END_STEP` at 6b remains legal, including with movable fleets. A pure setter is provided for human starts; actual start wiring is deferred because the seeded save/replay start must also preserve this opt-in. Watched games retain the empty default. The computer opts in later (12-12).
+
 **Checks, all of which must pass**
 
 | Check | Rule |

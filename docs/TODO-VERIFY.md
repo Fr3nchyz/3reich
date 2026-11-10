@@ -134,6 +134,9 @@ Added 2026-10-16 from `docs/specs/12-fleets-naval.md` (rows N1 to N37; the spec'
 | N37 | spec 12 R9 | Which Front and which port (`displacementPort`, ticket 12-4) | A fleet in a two-Front port takes the nearest port on either of its Fronts (the manual lets its owner pick the Front); a French fleet goes only to a French-controlled port, on its Front or, if there is none, on any Front (the manual: "a French fleet with no French port on its Front"); a port that has an enemy ground unit in it is not excluded. | Listed ("Fleets and naval warfare open items"). |
 | N38 | spec 12 R10; Ref 4.7; ticket 12-10 manager clarification | `PORT_OPENING_HEXSIDES` (`src/engine/naval-routes.ts`) | Which sides do Brindisi and Plymouth open on? The table names permitted neighbouring hexes for entry and exit. Empty by the manager's instruction, meaning no restriction until verified; the mechanism is covered with test-only values. | Listed ("Fleets and naval warfare open items"). |
 
+
+- **TODO(verify) AER75 — spec 12, Wiring 12-11b:** provisional opt-in `naval.manualFleetMove === true` gates step 6b work and MOVE_FLEET. Empty defaults and old saves keep the previous skip/actions; END_STEP remains optional. Courses are stored for 12-12; computer opt-in waits for 12-12.
+
 ### Minor countries (spec 15, draft; not in `src/` yet, so not counted in the summary above)
 
 Added 2026-10-17 from `docs/specs/15-minor-countries.md` (rows MC1 to MC22; no id collides). The rule numbers are the spec's rules (R1 to R16); the rule text is the PC Reference Manual 9.2, 13.0 to 17.4, 24.0, 29.0 and Peele's errata, paraphrased. Each row has a matching bullet in `docs/RULES.md` ("Minor countries open items"). Related existing rows: O4 and O5 (minor forces and alliances), E3 (each Minor-Ally's value, now MC12), M3 (neutral land closed), D3.
