@@ -1,3 +1,5 @@
+import { otherSide } from "./game";
+import { INTERCEPT_PASSES, declareIntercept, interceptEnabled, interceptPasses, interceptProblem, interceptSide, interceptTargets, interceptionsOf, resolveInterceptions } from "./naval-intercept";
 import { fleetMoveOptions, movableFleets, moveFleet } from "./fleet-move";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
@@ -73,4 +75,54 @@ export function applyFleetMove(ctx: GameContext, state: GameState, action: Extra
   const course = { fleet: action.fleet, from: state.units[action.fleet]!.at, to: action.to, front: action.front, path: done.course };
   const rec = navalOf(done.state);
   return { ok: true, state: { ...done.state, naval: { ...rec, moves: [...(rec.moves ?? []), course] } }, events: [{ type: "FLEET_MOVED", side: action.side, ...course }] };
+}
+
+/** Spec 12 R11, TODO(verify) AER76–AER79: useful full-force proposals; arbitrary legal subsets accepted. */
+export function legalInterceptDeclarations(ctx: GameContext, state: GameState): Extract<Action, { type: "DECLARE_INTERCEPT" }>[] {
+  if (!interceptEnabled(state) || interceptPasses(state) >= INTERCEPT_PASSES) return [];
+  const side = interceptSide(state);
+  return interceptTargets(state).filter(t => t.side !== side).flatMap(target => [...new Set(target.path)].flatMap(meetingPoint => {
+    const fleets = Object.keys(state.units).sort().filter(id => interceptProblem(ctx, state, { side, target: target.id, fleets: [id], meetingPoint }) === null);
+    return fleets.length ? [{ type: "DECLARE_INTERCEPT" as const, side, target: target.id, fleets, meetingPoint }] : [];
+  }));
+}
+
+/** Spec 12 C5 / AER76/AER80: stay for both passes once a round starts, then for explicit resolution. */
+export function hasInterceptWork(ctx: GameContext, state: GameState, step: string): boolean {
+  if (!interceptEnabled(state)) return false;
+  const rec = navalOf(state);
+  if (step === "6d") return interceptionsOf(state).length > 0 && rec.interceptsResolved !== true;
+  return step === "6c" && interceptPasses(state) < INTERCEPT_PASSES && (rec.interceptSide !== undefined || interceptionsOf(state).length > 0 || legalInterceptDeclarations(ctx, state).length > 0);
+}
+
+/** TODO(verify) AER76/AER80: moving on requires a pass or resolution, never an END_STEP bypass. */
+export function interceptMoveOn(state: GameState): Action[] {
+  if (!interceptEnabled(state) || state.position?.part !== "player-turn") return [];
+  if (state.position.step === "6c" && interceptPasses(state) < INTERCEPT_PASSES) return [{ type: "PASS_INTERCEPT", side: interceptSide(state) }];
+  if (state.position.step === "6d" && interceptionsOf(state).length > 0 && navalOf(state).interceptsResolved !== true) return [{ type: "RESOLVE_INTERCEPTIONS", side: state.activeSide }];
+  return [];
+}
+
+export function legalInterceptActions(ctx: GameContext, state: GameState, step: string): Action[] {
+  return hasInterceptWork(ctx, state, step) ? [...(step === "6c" ? legalInterceptDeclarations(ctx, state) : []), ...interceptMoveOn(state)] : [];
+}
+
+/** Spec 12 R11/R12, TODO(verify) AER76–AER83: guards before writing state or rolling dice. */
+export function applyIntercept(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DECLARE_INTERCEPT" | "PASS_INTERCEPT" | "RESOLVE_INTERCEPTIONS" }>): ActionResult {
+  if (!interceptEnabled(state)) return { ok: false, error: "Interception needs the manual movement flag and a recorded course (AER77)." };
+  if (action.type === "RESOLVE_INTERCEPTIONS") {
+    if (action.side !== state.activeSide || interceptPasses(state) < INTERCEPT_PASSES || navalOf(state).interceptsResolved || !interceptionsOf(state).length) return { ok: false, error: "Only the phasing side resolves queued interceptions after two passes (AER80)." };
+    if (action.turnBack !== undefined && (!Array.isArray(action.turnBack) || Array.from(action.turnBack).some(id => typeof id !== "string" || !interceptTargets(state).some(t => t.id === id && id.startsWith("move:"))) || new Set(action.turnBack).size !== action.turnBack.length)) return { ok: false, error: "Turn-back choices must name distinct recorded moves (AER82)." };
+    return { ok: true, ...resolveInterceptions(ctx, state, action.turnBack) };
+  }
+  if (action.side !== interceptSide(state) || interceptPasses(state) >= INTERCEPT_PASSES) return { ok: false, error: "It is not this side's interception round (Ref 21.5)." };
+  if (action.type === "DECLARE_INTERCEPT") {
+    const error = interceptProblem(ctx, state, action);
+    if (error) return { ok: false, error };
+    const next = declareIntercept(ctx, state, action);
+    const item = interceptionsOf(next).find(i => i.target === action.target)!;
+    return { ok: true, state: next, events: [{ type: "INTERCEPTION_DECLARED", side: action.side, interception: item.id, target: item.target, fleets: [...action.fleets], meetingPoint: item.meetingPoint, breakOff: item.breakOff }] };
+  }
+  const rec = navalOf(state), consecutive = interceptPasses(state) + 1;
+  return { ok: true, state: { ...state, naval: { ...rec, interceptSide: otherSide(action.side), interceptPasses: consecutive } }, events: [{ type: "INTERCEPTION_PASSED", side: action.side, consecutive }] };
 }

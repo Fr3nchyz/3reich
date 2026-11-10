@@ -1,3 +1,5 @@
+import type { InterceptDeclaration } from "./naval-intercept";
+import type { NavalCombatResult } from "./naval-combat";
 import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
 import type { CombatRound } from "./combat";
@@ -16,6 +18,10 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  */
 export type Action =
   /** Spec 12 R10 / AER75: opt-in base change at 6b. */
+  /** Spec 12 R11/R12; TODO(verify) AER76–AER83: opt-in declarations and explicit resolution. */
+  | ({ type: "DECLARE_INTERCEPT" } & InterceptDeclaration)
+  | { type: "PASS_INTERCEPT"; side: Side }
+  | { type: "RESOLVE_INTERCEPTIONS"; side: Side; turnBack?: string[] }
   | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
   | { type: "END_PLAYER_TURN"; side: Side }
@@ -106,6 +112,14 @@ export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
+  /** Spec 12 R11/R12/R21; TODO(verify) AER83: full deterministic interception audit. */
+  | { type: "INTERCEPTION_DECLARED"; side: Side; interception: string; target: string; fleets: string[]; meetingPoint: HexId; breakOff: boolean }
+  | { type: "INTERCEPTION_PASSED"; side: Side; consecutive: number }
+  | { type: "INTERCEPTION_CANCELLED"; side: Side; interception: string }
+  | { type: "INTERCEPTION_ATTEMPTED"; side: Side; interception: string; fleets: string[]; base: HexId; distance: number | null; die: number | null; needed: number[] | "automatic"; success: boolean }
+  | { type: "NAVAL_COMBAT_RESOLVED"; interception: string; at: HexId; interceptor: string[]; intercepted: string[]; dice: { interceptor: number; intercepted: number }; result: NavalCombatResult }
+  | { type: "NAVAL_LOSSES_APPLIED"; side: Side; at: HexId; before: { id: string; strength: number }; after: { id: string; strength: number }[]; lost: number }
+  | { type: "FLEET_RETURNED"; side: Side; unit: string; from: HexId; to: HexId }
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
   | CounterAirEvent
   /** Attrition, steps 7a and 7p (spec 16 C4). */

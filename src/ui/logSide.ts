@@ -53,6 +53,7 @@ function sideOfUnits(ids: readonly string[], before: GameState | undefined): Sid
  */
 export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side | null {
   switch (e.type) {
+    case "NAVAL_COMBAT_RESOLVED": // spec 12 R12 / AER83: both forces
     case "AIR_COMBAT_RESOLVED": // spec 09 C3: this line describes both forces
     case "INITIATIVE_DETERMINED":
     case "SETUP_COMPLETE":
@@ -71,6 +72,12 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "MINOR_FORCES_PLACED": // the side that set the army up
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender
+    case "INTERCEPTION_DECLARED":
+    case "INTERCEPTION_PASSED":
+    case "INTERCEPTION_CANCELLED":
+    case "INTERCEPTION_ATTEMPTED":
+    case "NAVAL_LOSSES_APPLIED":
+    case "FLEET_RETURNED":
     case "FLEET_MOVED": return e.side; // spec 12 R10: the moving side
     case "COMBAT_RESOLVED": return e.side; // the attack is the attacker's
     case "COUNTRY_INCOME":

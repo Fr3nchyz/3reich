@@ -1,3 +1,4 @@
+import type { Interception } from "./naval-intercept";
 import type { Front } from "./map";
 import { airOf, gameTurnKey } from "./air-record";
 import { turnKey } from "./combat-record";
@@ -37,6 +38,11 @@ export interface NavalState {
   manualFleetMove?: boolean;
   /** Spec 12 R10: this Player Turn's courses, retained for interception in 12-12. */
   moves?: { fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }[];
+  /** Spec 12 R11/R12; TODO(verify) AER76/AER83: absent fields are empty current-turn defaults. */
+  interceptions?: Interception[];
+  interceptSide?: Side;
+  interceptPasses?: number;
+  interceptsResolved?: boolean;
   /** "year-season": the Game Turn the `used` record belongs to. */
   gameTurn: string;
   /** What each fleet has been used for in this Game Turn (R5), fleets built in it included. */
