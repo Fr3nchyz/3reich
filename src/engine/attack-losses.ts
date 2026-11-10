@@ -4,6 +4,7 @@ import type { GameContext } from "./context";
 import { afterHexTaken } from "./capture";
 import { combatOf, type CombatRecord, type PendingLosses } from "./combat-record";
 import type { HexId } from "./hex";
+import { clearDas } from "./air-defense-wire";
 import { clearGroundSupport } from "./air-support";
 import { eliminateUnits } from "./losses";
 import { ADVANCE_AFTER_COMBAT, lonersAt } from "./attack-rules";
@@ -51,7 +52,7 @@ function finishBattle(ctx: GameContext, state: GameState, attackers: readonly st
   const loners = lonersAt(state, by, target);
   const taken = afterHexTaken(ctx, state, target, loners); // fleets move to a friendly port; the rest is destroyed
   const swept = eliminate(taken.state, taken.destroy.map((u) => u.id));
-  const done = finishWithRecord(clearGroundSupport(swept.state, target), attackers, target, battle ? by : []);
+  const done = finishWithRecord(clearDas(clearGroundSupport(swept.state, target), target), attackers, target, battle ? by : []);
   const note: GameEvent[] = taken.destroy.length > 0 ? [{ type: "UNITS_SWEPT", hex: target, units: taken.destroy.map((u) => ({ id: u.id, owner: u.owner, type: u.type, strength: u.strength })) }] : [];
   return { state: done, events: [...note, ...swept.events, ...taken.events] };
 }
@@ -99,12 +100,12 @@ export interface ExchangeCost {
  */
 export function exchangeCost(attackers: readonly Unit[], defenders: readonly Unit[], multiple: number): ExchangeCost {
   const attackTotal = attackers.reduce((n, u) => n + u.strength, 0);
-  const defenseTotal = defenders.reduce((n, u) => n + u.strength * multiple, 0);
+  const defenseTotal = defenders.reduce((n, u) => n + u.strength * (u.type === "air" ? 1 : multiple), 0);
   const attackersLoseAll = attackTotal <= defenseTotal;
   const defendersLoseAll = defenseTotal <= attackTotal;
   if (attackersLoseAll && defendersLoseAll) return { attackTotal, defenseTotal, attackersLoseAll, defendersLoseAll, chooser: null, required: 0, values: {} };
   const choosing = attackersLoseAll ? defenders : attackers;
-  const values = Object.fromEntries(choosing.map((u) => [u.id, attackersLoseAll ? u.strength * multiple : u.strength]));
+  const values = Object.fromEntries(choosing.map((u) => [u.id, attackersLoseAll ? u.strength * (u.type === "air" ? 1 : multiple) : u.strength]));
   return { attackTotal, defenseTotal, attackersLoseAll, defendersLoseAll, chooser: attackersLoseAll ? "defenders" : "attackers", required: attackersLoseAll ? attackTotal : defenseTotal, values };
 }
 
@@ -116,6 +117,8 @@ export interface Battle {
   attackers: Unit[];
   /** The air units whose Ground Support counted in the attack (spec 09 R8): they fight and lose with the attackers but never advance. Default none. */
   air?: Unit[];
+  /** Ref 20.51 / spec 09 C4: counted DAS fights at basic strength. */
+  das?: Unit[];
   defenders: Unit[];
   multiplier: number;
 }
@@ -132,28 +135,31 @@ export function applyOutcome(ctx: GameContext, state: GameState, b: Battle): { s
   const attackerIds = ids(b.attackers);
   const fighters = [...b.attackers, ...(b.air ?? [])]; // everyone on the attacking side who can be lost (air counted in the attack included)
   const fighterIds = ids(fighters);
+  // Ref 20.51: committed defending planes share D and Exchange losses.
+  const defenders = [...b.defenders, ...(b.das ?? [])];
   if (b.outcome.kind === "attacker-eliminated") {
     const gone = eliminate(state, fighterIds);
     const done = finishBattle(ctx, gone.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...gone.events, ...done.events] };
   }
   if (b.outcome.kind === "defender-eliminated") {
-    const gone = eliminate(state, ids(b.defenders));
+    const gone = eliminate(state, ids(defenders));
     const done = finishBattle(ctx, gone.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...gone.events, ...done.events] };
   }
-  const cost = exchangeCost(fighters, b.defenders, b.outcome.multipliedDefense ? b.multiplier : 1);
-  const wholly = eliminate(state, [...(cost.attackersLoseAll ? fighterIds : []), ...(cost.defendersLoseAll ? ids(b.defenders) : [])]);
+  const cost = exchangeCost(fighters, defenders, b.outcome.multipliedDefense ? b.multiplier : 1);
+  const wholly = eliminate(state, [...(cost.attackersLoseAll ? fighterIds : []), ...(cost.defendersLoseAll ? ids(defenders) : [])]);
   // The larger side (both, if equal) removes at least as many factors as the smaller side has; with equal totals that is everything.
   if (cost.chooser === null) {
     const done = finishBattle(ctx, wholly.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...done.events] };
   }
   const { required, values } = cost;
-  const choosing = cost.chooser === "defenders" ? b.defenders : fighters;
-  const candidates = ids(choosing);
+  const choosing = cost.chooser === "defenders" ? defenders : fighters;
+  // TODO(verify) AER78: automatic whole-counter allocation only in DAS battles.
+  const candidates = b.das?.length ? ids(choosing).sort() : ids(choosing);
   const sets = minimalSets(candidates, values, required);
-  if (sets.length === 1) {
+  if (sets.length === 1 || b.das?.length) {
     const rest = eliminate(wholly.state, sets[0]!);
     const done = finishBattle(ctx, rest.state, attackerIds, b.target, b.attackers);
     return { state: done.state, events: [...wholly.events, ...rest.events, ...done.events] };

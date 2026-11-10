@@ -1,3 +1,4 @@
+import { countedDas } from "../engine/air-defense-wire";
 import { exploitAttackers, EXPLOIT_IGNORES_HEX_CAP } from "../engine/exploit-action";
 import { ADVANCE_AFTER_COMBAT, ONE_ATTACK_PER_HEX, attackNumbers, attackerPool, crossable, defendersAt, frontAllowsAttack, isEnemy, isGroundCombatUnit, lonersAt, neighborIds } from "../engine/attack-rules";
 import { ODDS_COLUMNS, type OddsColumn } from "../engine/combat";
@@ -210,7 +211,7 @@ export function defaultAttackers(ctx: GameContext, state: GameState, target: str
 
 function describeNumbers(ctx: GameContext, state: GameState, attackers: Unit[], defenders: Unit[], target: string): PreviewNumbers {
   const n = attackNumbers(ctx, state, attackers, defenders, target);
-  const defenseTotal = n.defenseFactors * n.multiplier;
+  const defenseTotal = n.defenseFactors * n.multiplier + n.dasFactors; // Ref 20.51: DAS is basic.
   const rounded = n.attackFactors < defenseTotal ? " A weaker attack is rounded against the attacker." : n.attackFactors >= 5 * defenseTotal ? " More than 5-1 counts as 5-1." : "";
   const committed = committedAt(state, target);
   const plane = (u: Unit): AirPlane => ({ name: unitName(u), from: placeName(ctx.map, u.at), strength: u.strength });
@@ -309,7 +310,7 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
   const emptyAfterWin = ADVANCE_AFTER_COMBAT && here.every((u) => defenders.includes(u) || lonersAt(without, chosen, target).includes(u));
   // The air that counts fights and can be lost with the attackers (attack-losses.ts), so the rows are worked out with it among them.
   const airUnits = numbers && numbers.air && numbers.air.factors > 0 ? attackNumbers(ctx, state, chosen, defenders, target).air : [];
-  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: [...chosen, ...airUnits], defenders, multiplier: numbers.multiplier, alsoDestroyed, alsoMoved, displacementText: captureMovementText(movingUnits(after)), emptyAfterWin }) : [];
+  const results = numbers?.column ? resultRows({ column: numbers.column, attackers: [...chosen, ...airUnits], defenders: [...defenders, ...countedDas(state, target, numbers.defenseFactors).units], multiplier: numbers.multiplier, alsoDestroyed, alsoMoved, displacementText: captureMovementText(movingUnits(after)), emptyAfterWin }) : [];
 
   const keys = new Map<string, number>();
   const nth = cands.map((c) => `${unitName(c.unit)}|${c.unit.at}`);
@@ -335,7 +336,7 @@ export function attackPreview(ctx: GameContext, state: GameState, target: string
     alsoMoved,
     riverWarnings: riverWarnings(ctx, state, cands, chosen, defenders, target),
     sweep,
-    modifiers: [],
+    modifiers: countedDas(state, target, numbers?.defenseFactors ?? 0).factors > 0 ? [{ label: "Defensive Air Support", kind: "factors", amount: countedDas(state, target, numbers?.defenseFactors ?? 0).factors }] : [],
     problems,
     button: buttonFor(place, chosen, numbers, sweep, loners, moving, problems),
     oneTry: ONE_ATTACK_PER_HEX && !exploiting(state) ? "One try: this hex cannot be attacked again this turn." : null,
