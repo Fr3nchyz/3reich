@@ -3,10 +3,11 @@ import { flightProblem, hexesWithin } from "./air-range";
 import { frontAllowsAttack } from "./attack-rules";
 import { turnKey } from "./combat-record";
 import type { GameContext } from "./context";
-import { sideInWar } from "./control";
+import { areEnemies, sideInWar } from "./control";
 import { turnIndex } from "./game";
 import type { HexId } from "./hex";
 import { hasMoved } from "./move-record";
+import { endProblem } from "./movement";
 import { supplyStatus } from "./supply";
 import type { GameState } from "./types";
 import { enemyZocFor } from "./zoc";
@@ -17,6 +18,9 @@ export const DROP_RANGE = 6;
 export const DROP_REQUIRE_START_ZOC_CLEAR = false;
 /** TODO(verify) AER60: Ref 23.1 grants automatic supply next Game Turn; use ordinary supply on landing. */
 export const DROP_IMMEDIATE_AUTO_SUPPLY = false;
+
+/** TODO(verify) AER117: refuse enemy occupation and illegal landings until on-top combat exists. */
+export const DROP_REQUIRE_LEGAL_LANDING = true;
 
 /** Caller-owned slice: no shared state fields or action wiring. Keep the true Player Turn start snapshot. */
 export interface DropRecord {
@@ -60,7 +64,7 @@ export function dropUnitProblem(ctx: GameContext, state: GameState, record: Drop
 export const dropUnits = (ctx: GameContext, state: GameState, record: DropRecord): string[] =>
   Object.keys(state.units).sort().filter((id) => dropUnitProblem(ctx, state, record, id) === null);
 
-/** Ref 23.1, 11.21, 11.41, 23.0: range, legal land and target Front; destination ZOC and stacking do not bar drops. */
+/** Ref 23.1, 11.21, 11.41, 23.0: range, legal land and target Front; AER117 restricts landing positions. */
 export function dropProblem(ctx: GameContext, state: GameState, record: DropRecord, id: string, to: HexId): string | null {
   const problem = dropUnitProblem(ctx, state, record, id);
   if (problem) return problem;
@@ -68,10 +72,19 @@ export function dropProblem(ctx: GameContext, state: GameState, record: DropReco
   if (!target?.land) return "The drop target must be a land hex on the map.";
   const u = state.units[id]!;
   if (!frontAllowsAttack(ctx, state, state.activeSide, target.front)) return "The target Front does not allow an Offensive mission.";
+  // spec 09 AER117: R13 on-top combat is future work; never leave a drop stacked with an enemy.
+  if (DROP_REQUIRE_LEGAL_LANDING) {
+    if (Object.values(state.units).some((other) => other.at === to && areEnemies(state, u.owner, other.owner))) {
+      return "Airdrops onto enemy-occupied hexes are unavailable until on-top combat is supported (AER117).";
+    }
+    // spec 09 AER117: reuse landing restrictions; airborne retain their Ref 23.0 stacking exemption.
+    const landing = endProblem(ctx, state, [u], to);
+    if (landing) return `The airdrop would end in an illegal position (AER117): ${landing}`;
+  }
   return flightProblem(ctx, state, u.owner, u.at, to, DROP_RANGE);
 }
 
-/** Ref 23.1: includes enemy-occupied hexes and the origin (any hex within six); sorted deterministically. */
+/** Ref 23.1: includes the origin; AER117 excludes enemy-occupied or otherwise illegal landings; sorted deterministically. */
 export function dropTargets(ctx: GameContext, state: GameState, record: DropRecord, id: string): HexId[] {
   if (dropUnitProblem(ctx, state, record, id)) return [];
   return hexesWithin(ctx, state.units[id]!.at, DROP_RANGE).filter((to) => dropProblem(ctx, state, record, id, to) === null);
@@ -85,7 +98,7 @@ export type DropResult = { ok: false; error: string } | {
 };
 
 /**
- * Ref 23.1, 23.0: place the counter, even on enemy units or an overstack; report its supply (AER60).
+ * Ref 23.1, 23.0: place the counter at an AER117-safe target; report its supply (AER60).
  * Combat, control transfer, advance/movement restrictions and permanent losses need later integration.
  */
 export function resolveDrop(ctx: GameContext, state: GameState, record: DropRecord, id: string, to: HexId): DropResult {
