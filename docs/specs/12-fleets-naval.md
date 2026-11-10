@@ -241,7 +241,9 @@ A base change is the only fleet movement of the Movement Phase (step 6b). It mov
 
 **Recording the course.** `MOVE_FLEET` carries a path, because interception may strike at the departure hex, the arrival hex or any hex between (R11) and because the Pass Option check looks at it. With no path given, the engine sails the shortest sea route (breadth-first, fixed neighbour order), like the "auto-move" of the PC game.
 
-**What counts as one force.** Each `MOVE_FLEET` action is one force for interception, so fleets that leave together form one target of their combined factors; fleets from different ports are separate forces even if they arrive in the same hex (Peele's PC difference for invasion fleets, applied by analogy; N21).
+**What counts as one force.** Fleets that leave together form one interception target of their combined factors; fleets from different ports remain separate even when they arrive in the same hex (Peele's PC difference for invasion fleets, applied by analogy; N21 remains TODO(verify)).
+
+**Grouping repair, 12-group-intercept (provisional).** **TODO(verify) AER119:** with the existing manual-fleet-move opt-in only, group this Player Turn's recorded base changes by equal origin, destination and Front, regardless of intervening moves; retain the first course index as the sole `move:<index>` target id and preserve individual move records/events. **TODO(verify) AER120:** use the ordered union of the group's recorded courses as its interception course, fight with all grouped surviving factors, and apply defeat or explicit turn-back to the entire group, including replacement counters after losses; expose the same grouped survivors to sea-air resolution. Different origins, destinations or Fronts remain separate; current-turn record expiry and absent/false opt-in preserve existing defaults. These implementation readings do not close N21.
 
 **Suez.** The canal's damage and repair clock (Ref 34.0) and the PC differences for 47.3 and 47.4 in Peele's errata are out of scope; for now the canal can be used only while all four hexes beside it are friendly (N22).
 
