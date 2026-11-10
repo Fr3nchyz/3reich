@@ -82,7 +82,9 @@ export function readSave(source: string, scenarios: readonly Scenario[]): ReadRe
     if (!text(input.fingerprint) || !/^[0-9a-f]{8}$/.test(input.fingerprint)) fail("fingerprint");
     if (!object(input.snapshot)) fail("snapshot");
     if (!object(input.start)) fail("start");
-    const start: SaveFile["start"] = input.start.kind === "new" ? { kind: "new" }
+    // Spec 09 AER116: only the explicit opt-in is accepted; omission remains unchanged.
+    if (input.start.kind === "new" && input.start.manual !== undefined && input.start.manual !== true) fail("start.manual");
+    const start: SaveFile["start"] = input.start.kind === "new" ? { kind: "new", ...(input.start.manual === true ? { manual: true } : {}) }
       : input.start.kind === "snapshot" && object(input.start.state)
         ? { kind: "snapshot", state: cleanSnapshot(input.start.state, scenario) } : fail("start");
     const save: SaveFile = {

@@ -519,3 +519,5 @@ For minor countries (spec 15, questions P1 to P8): whether the game places an at
 - **TODO(verify) AER113 — spec 12, Computer wiring 12-13 (spec 05):** Only listed full-force interceptions within one sea hexside for every base (including zero); combined committed/proposed factors at least equal; never break off. Engine table still determines success.
 - **TODO(verify) AER114 — spec 12, Computer wiring 12-13 (spec 05):** Deterministic lexical ties: move destination/fleet/Front/course; interception target/meeting point/fleets. Pure selection.
 - **TODO(verify) AER115 — spec 12, Computer wiring 12-13 (spec 05):** Pass if no qualifying declaration; follow legal acting side, including counters; resolve with default continuation; switch-off retains previous fallback.
+
+- **TODO(verify) AER116 — spec 09, Human session wiring 17-wire:** Enable all three manual gates for new human sessions only; persist the opt-in before new-start replay, keep absent-marker saves and watched games flags-off, and preserve snapshot/rescue flags without a version bump.

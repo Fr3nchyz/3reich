@@ -19,7 +19,7 @@ const MAX_SETUP_OWNERS = 20;
 
 /** A new watched game: the engine's automatic setup for every nation (the code the single-player computer's own setup uses), recorded, then play is ready to start. */
 export function newWatchSession(scenario: Scenario, seed: number, speed: Speed, turns: number | null): Session {
-  const s = newSession(scenario, "axis", seed);
+  const s = newSession(scenario, "axis", seed, false);
   resetLog(s, [`${scenario.name} started with seed ${seed}: the computer plays both sides and you watch.`]);
   for (let guard = 0; guard < MAX_SETUP_OWNERS && s.state.phase === "setup"; guard++) if (!placeTheRest(s)) break;
   s.watch = createWatchInfo(s.state, s.record.length, speed, turns);

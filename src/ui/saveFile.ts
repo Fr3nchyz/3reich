@@ -17,13 +17,20 @@ export function saveFileName(save: SaveFile): string {
   return `3reich-${safe(save.scenario)}-${safe(save.humanSide)}-${safe(save.snapshot.season)}${safe(save.snapshot.year)}.json`;
 }
 
+/** Spec 09 AER116: snapshot starts carry options themselves; old sessions stay flags-off. */
+export function sessionStart(session: Session, start: SaveFile["start"]): SaveFile["start"] {
+  return start.kind === "new" && session.state.naval?.manualFleetMove === true
+    && session.state.air?.manualDas === true && session.state.airDrop?.manual === true
+    ? { kind: "new", manual: true } : start;
+}
+
 /** Spec 11 B/G: single-player state and complete record; restored snapshot starts survive export. */
 export function sessionSave(session: Session, gameVersion: string, start: SaveFile["start"], now = new Date()): SaveFile {
   if (session.watch) throw new Error("Use Save game record for a watched game.");
   const snapshot = JSON.parse(JSON.stringify(session.state)) as JsonObject;
   return { format: SAVE_FORMAT, app: "3reich", title: "Saved game", savedAt: now.toISOString(), gameVersion,
     stateVersion: STATE_VERSION, scenario: session.ctx.scenario.id, seed: session.seed, humanSide: session.humanSide,
-    start: JSON.parse(JSON.stringify(start)) as SaveFile["start"],
+    start: JSON.parse(JSON.stringify(sessionStart(session, start))) as SaveFile["start"],
     actions: JSON.parse(JSON.stringify(session.record)) as JsonObject[],
     setupActions: session.record.filter(a => a.type.startsWith("SETUP_")).length,
     snapshot, fingerprint: fingerprint(snapshot), logTail: session.log.slice(-60).map(line => line.slice(0, MAX_STRING_LENGTH)) };

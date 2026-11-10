@@ -21,7 +21,8 @@ export interface SaveFile {
   scenario: string;
   seed: number;
   humanSide: "axis" | "allies";
-  start: { kind: "new" } | { kind: "snapshot"; state: JsonObject };
+  // Spec 09 AER116: omission retains the original flags-off replay start.
+  start: { kind: "new"; manual?: true } | { kind: "snapshot"; state: JsonObject };
   /** Untrusted action envelopes: only the engine can establish legality (Part H). */
   actions: JsonObject[];
   setupActions: number;

@@ -1,3 +1,6 @@
+import { setManualAirDrop } from "../engine/air-drop-wire";
+import { setManualDas } from "../engine/air-defense-wire";
+import { setManualFleetMove } from "../engine/naval-actions";
 import { applyAction } from "../engine/actions";
 import type { Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
@@ -59,6 +62,9 @@ export async function restore(source: string, context: GameContext, options: Res
   const started = options.now();
   let slice = started;
   let state = save.start.kind === "new" ? newGame(context.scenario, save.seed) : selected(save.start.state);
+  // Spec 09 AER116: absent markers replay exactly as old flags-off saves did.
+  if (state && save.start.kind === "new" && save.start.manual === true)
+    state = setManualAirDrop(setManualDas(setManualFleetMove(state, true), true), true);
   if (!state) return fallback("start", "This saved game's starting position cannot be opened.");
   options.progress?.(0, save.actions.length);
   for (let index = 0; index < save.actions.length; index++) {
