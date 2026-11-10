@@ -66,6 +66,13 @@ describe("AER121: DAS Exchange loss chooser", () => {
       expect(dasOf(done.state)).toEqual({});
       expect(hasFlown(done.state, "d")).toBe(true);
       expect(done.state.rngState).toBe(state.rngState);
+      // Ref 12.2 / AER121: only the selected attacker is eliminated; the survivor can advance.
+      expect(done.events.filter((e) => e.type === "UNIT_ELIMINATED").map((e) => e.unitId)).toEqual([lost]);
+      const advance: Action = { type: "ADVANCE", side, units: [survivor], to: "M33" };
+      expect(legalActions(CTX, done.state)).toContainEqual(advance);
+      const advanced = okOf(applyAction(CTX, done.state, advance));
+      expect(advanced.state.units[survivor]?.at).toBe("M33");
+      expect(combatOf(advanced.state).advances).toEqual([]);
     }
     expect(JSON.stringify(state)).toBe(snapshot);
   });
@@ -76,6 +83,7 @@ describe("AER121: DAS Exchange loss chooser", () => {
     expect(state.units.z).toBeUndefined();
     expect(state.units.d).toBeUndefined(); // d precedes p; its three basic factors suffice.
     expect(state.units.p).toBeDefined();
+    expect(hasFlown(state, "d")).toBe(true);
     expect(dasOf(state)).toEqual({});
     expect(legalActions(CTX, state).some((a) => a.type === "ALLOCATE_LOSSES")).toBe(false);
   });
