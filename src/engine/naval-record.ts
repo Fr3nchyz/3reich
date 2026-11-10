@@ -1,3 +1,4 @@
+import type { Front } from "./map";
 import { airOf, gameTurnKey } from "./air-record";
 import { turnKey } from "./combat-record";
 import type { GameContext } from "./context";
@@ -32,6 +33,10 @@ export interface SeaSupplyDesignation {
  * TODO(verify) (N7): the manual says one function in a "full Game Turn", so `used` is kept per Game Turn; the PC program may check per Player Turn.
  */
 export interface NavalState {
+  /** TODO(verify) AER75, spec 12 Wiring 12-11b: absent/false preserves old turn flow. */
+  manualFleetMove?: boolean;
+  /** Spec 12 R10: this Player Turn's courses, retained for interception in 12-12. */
+  moves?: { fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }[];
   /** "year-season": the Game Turn the `used` record belongs to. */
   gameTurn: string;
   /** What each fleet has been used for in this Game Turn (R5), fleets built in it included. */
@@ -56,7 +61,7 @@ export const FLEET_COUNTER_SIZES: readonly number[] = Object.freeze([1, 2, 6, 9]
 const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((e) => typeof e === "string");
 
 /** A record for the Player Turn that begins now, carrying over what the Game Turn has already used. */
-const freshTurn = (state: GameState, used: Record<string, NavalUse>): NavalState => ({ gameTurn: gameTurnKey(state), used, turn: turnKey(state), triedIntercept: [], moved: [], supply: [] });
+const freshTurn = (state: GameState, used: Record<string, NavalUse>): NavalState => ({ ...(state.naval?.manualFleetMove === undefined ? {} : { manualFleetMove: state.naval.manualFleetMove }), gameTurn: gameTurnKey(state), used, turn: turnKey(state), triedIntercept: [], moved: [], supply: [] });
 
 /**
  * The record for the Player Turn now being played: the stored one, or a new one. A stored record from an earlier Player Turn of the

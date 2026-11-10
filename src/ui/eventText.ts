@@ -78,6 +78,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} fly defensive air support to ${placeName(ctx.map, e.hex)}.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
+    case "FLEET_MOVED": // spec 12 R10
+      return `${stackSummary(unitsWithIds(before, [e.fleet]))} changes base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} on the ${cap(e.front)} Front.`;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":

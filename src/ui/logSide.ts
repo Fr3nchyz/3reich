@@ -71,6 +71,7 @@ export function eventSide(e: GameEvent, actor: Side, before?: GameState): Side |
     case "MINOR_FORCES_PLACED": // the side that set the army up
     case "FRONT_OPTION_SELECTED":
     case "LOSSES_CHOSEN": return e.side; // LOSSES_CHOSEN: the side that chose, who may be the defender
+    case "FLEET_MOVED": return e.side; // spec 12 R10: the moving side
     case "COMBAT_RESOLVED": return e.side; // the attack is the attacker's
     case "COUNTRY_INCOME":
     case "BRPS_CHANGED": return sideOfOwner(e.nation); // a nation's own treasury, whoever's action moved it (a Year Start, say)

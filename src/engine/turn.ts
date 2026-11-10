@@ -31,7 +31,7 @@ import { hasOverstackWork } from "./overstack-action";
 import { hasAttritionWork } from "./attrition-step";
 import { hasSrWork } from "./sr-action";
 import { hasMoveWork } from "./move-action";
-import { hasSeaSupplyWork, lapsedDesignations } from "./naval-actions";
+import { hasSeaSupplyWork, legalFleetMoves, lapsedDesignations } from "./naval-actions";
 import { settleVitalAreas } from "./vital-wire";
 import { recordCheckpoint, evaluateVictory } from "./victory";
 import { runYearStartSequence } from "./yearstart";
@@ -195,6 +195,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
       return legalDeclarations(ctx, state).length > 0;
     case "4":
       return hasMinorTurnWork(ctx, state);
+    case "6b": // spec 12 Wiring 12-11b / AER75: absent flag keeps the old skip
+      return legalFleetMoves(ctx, state).length > 0;
     case "6f":
       return hasMoveWork(ctx, state) || hasAirMoveWork(ctx, state);
     case "6e":

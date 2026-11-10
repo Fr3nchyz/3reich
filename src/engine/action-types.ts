@@ -15,6 +15,8 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
+  /** Spec 12 R10 / AER75: opt-in base change at 6b. */
+  | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
   | { type: "END_PLAYER_TURN"; side: Side }
   /** Done with a step that has rules built; `step` is the step being left, so a stale action is refused. */
@@ -106,6 +108,8 @@ export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
   | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
+  /** Spec 12 R10: a base change and its course, before later interception wiring. */
+  | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
   | CounterAirEvent
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent

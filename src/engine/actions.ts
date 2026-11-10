@@ -15,7 +15,7 @@ import { combatOf } from "./combat-record";
 import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
 import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
-import { applySeaSupply, legalSeaSupply } from "./naval-actions";
+import { applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
@@ -47,6 +47,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "6b") return legalFleetMoves(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
   if (step === "4") return [...legalMoves(ctx, state), ...legalCombatActions(ctx, state)]; // spec 15 R15: an attacked minor's own Movement Phase, then its combat (a Pass is END_STEP); no move once it has attacked
@@ -159,6 +160,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       const settled = settle(ctx, named.state);
       return { ok: true, state: settled.state, events: [...named.events, ...settled.events] };
     }
+    case "MOVE_FLEET":
+      return atStep(state, "6b", "Fleets change base", () => applyFleetMove(ctx, state, action));
     case "MOVE":
       return atSteps(state, ["6f", "4"], "Ground units are moved", () => applyMove(ctx, state, action));
     case "ELIMINATE_OVERSTACK": {
