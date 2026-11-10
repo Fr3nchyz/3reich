@@ -73,6 +73,10 @@ export function applyResolveCounterAir(ctx: GameContext, state: GameState, actio
     const losses = applyAirBreakDown(next, take, take.reduce((sum, t) => sum + t.factors, 0));
     if ("problem" in losses) return { ok: false, error: losses.problem };
     next = markFlown({ ...losses.state, rngState: result.rngState }, [...result.attacker.aborted, ...result.defender.aborted], "counter-air");
+    // Spec 12 R14 / TODO(verify) AER77: certify only queued ship attacks, preserving other states.
+    const portAttacks = airOf(next).portAttacks;
+    if (portAttacks?.some((m) => m.target === mission.target)) next = { ...next, air: { ...airOf(next),
+      portAttacks: portAttacks.map((m) => m.target === mission.target ? { ...m, counterAir: result.events[0]!.combat.winner === "attacker" ? "beaten" : "not-beaten" } : m) } };
     events.push(...result.events, ...losses.events);
   }
   // AER73: consuming the queue prevents a repeated action from rolling again.

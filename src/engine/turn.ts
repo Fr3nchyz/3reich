@@ -21,6 +21,7 @@ import { legalAllBuilds } from "./minors-rebuild-wire";
 import { legalSiberian } from "./victory-actions";
 import { atWarNow, resetFrontOptions } from "./frontoptions";
 import { legalGrants } from "./grants";
+import { hasPortAttackWork } from "./air-port-wire";
 import { hasCounterAirWork } from "./air-counter-wire";
 import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
@@ -207,6 +208,8 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7a":
     case "7p":
       return hasAttritionWork(ctx, state);
+    case "7i":
+      return hasPortAttackWork(state); // spec 12 R14 / AER76: absent assignments preserve the skip
     case "7c":
       return hasCounterAirWork(state); // spec 09 Wiring, 09-9b / AER73: no assignments, no work
     case "7b":

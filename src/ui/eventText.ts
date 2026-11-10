@@ -74,8 +74,12 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "AIR_COMBAT_RESOLVED":
       return `Counter-air on ${placeName(ctx.map, e.hex)}: ${e.combat.attacker.factors} against ${e.combat.defender.factors} air factors; rolls ${e.rolls[0]} (${e.combat.attacker.modifiedRoll} modified) and ${e.rolls[1]} (${e.combat.defender.modifiedRoll} modified)${e.combat.tieRoll === null ? "" : `; tie die ${e.combat.tieRoll}`}; losses ${e.lost.attacker} attacking, ${e.lost.defender} defending.`;
+    case "PORT_ATTACK_RESOLVED": { // spec 12 R14: report both forces and cancellations
+      const status = { resolved: "resolved", "no-fleets": "canceled, the fleets left the port", "counter-air-blocked": "blocked by defending air", "no-air": "canceled, no attacking planes remain" }[e.status];
+      return `Port attack on ${placeName(ctx.map, e.target)}: ${status}; rolls ${e.rolls.map((r) => r.roll).join(", ") || "none"}; losses ${e.airLost} air, ${e.navalLost} naval factors (${e.navalHits} hits).`;
+    }
     case "AIR_MISSION_DESIGNATED":
-      return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
+      return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : e.mission === "port-attack" ? "a port attack" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
       return `Supply by sea from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}, carried by ${stackSummary(unitsWithIds(before, e.fleets))}, for ${stackSummary(unitsWithIds(before, e.units))}.`;
     case "SEA_SUPPLY_LAPSED":
