@@ -16,6 +16,7 @@ import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, ha
 import { applyDrop, legalDrops } from "./air-drop-wire";
 import { applyDasIntercept, legalDasIntercept } from "./air-intercept-wire";
 import { applyPortDesignation, applyResolvePortAttacks, legalPortAttacks, hasPortAttackWork } from "./air-port-wire";
+import { applySeaAirDesignation, applyResolveSeaAir, hasSeaAirWork, legalSeaAir, legalSeaAirDesignations } from "./air-sea-wire";
 import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
 import { applyIntercept, hasInterceptWork, interceptMoveOn, legalInterceptActions, applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
@@ -50,7 +51,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
-  if (step === "6c" || step === "6d") return legalInterceptActions(ctx, state, step);
+  if (step === "6c" || step === "6d") return [...legalInterceptActions(ctx, state, step), ...(step === "6d" ? legalSeaAir(state) : legalSeaAirDesignations(ctx, state))];
   if (step === "6b") return legalFleetMoves(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
@@ -98,6 +99,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step };
   if (hasInterceptWork(ctx, state, step)) return stepActions(ctx, state, step);
+  if (step === "6d" && hasSeaAirWork(state)) return stepActions(ctx, state, step);
   if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
   if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER80
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
@@ -179,6 +181,10 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       const settled = settle(ctx, done.state);
       return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
     }
+    case "DESIGNATE_SEA_AIR":
+      return atStep(state, "6c", "Sea air is assigned", () => applySeaAirDesignation(ctx, state, action));
+    case "RESOLVE_SEA_AIR":
+      return atStep(state, "6d", "Sea air is resolved", () => applyResolveSeaAir(state, action));
     case "MOVE_FLEET":
       return atStep(state, "6b", "Fleets change base", () => applyFleetMove(ctx, state, action));
     case "MOVE":
@@ -302,6 +308,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (step === "6d" && hasSeaAirWork(state)) return { ok: false, error: "Assigned sea air must resolve first (AER99)." };
   if (hasInterceptWork(ctx, state, step)) return { ok: false, error: "Interception rounds/resolution must finish first (spec 12 R11/R12)." };
   if (step === "7c" && hasCounterAirWork(state)) return { ok: false, error: "Step 7c waits for assigned counter-air to resolve (spec 09 R12)." };
   if (step === "7i" && hasPortAttackWork(state)) return { ok: false, error: "Step 7i waits for assigned port attacks to resolve (spec 12 R14 / AER80)." };

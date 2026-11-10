@@ -333,6 +333,12 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 - **TODO(verify) AER108:** on manual DAS turns support at most two threatened hexes, greatest attacking-to-basic-defending factor ratio first, at ratio at least one; retain one unused defending plane, use whole counters under the engine cap.
 - **TODO(verify) AER109:** stable lexical unit/target ordering breaks policy ties; enumerate staging and counter-air through existing engine queries and action validation (as the mover and air screen do), all state transitions through `applyAction`. Answer explicit resolution and DAS completion; add no interception, drop, split or Malta policy.
 
+- **TODO(verify) AER98 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Manual sea-air opt-in and eligible 6c assignment proposals against recorded courses; computer never assigns.
+- **TODO(verify) AER99 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Immediate Game Turn mission consumption; explicit queued 6d resolution after naval combat, in assignment order.
+- **TODO(verify) AER100 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Current surviving participants only; failed/cancelled interception or returned move cancels without dice; retain replacement ids.
+- **TODO(verify) AER101 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Any Option (Ref 20.431); usable base, four-hex neutral-safe flight including endpoints; no Counter-Air at sea.
+- **TODO(verify) AER102 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** R15 rolls 1 hit/6 air loss; inherit AER69/N1/N2 breakdown, AER82 allocation, shared pool routing and ledger inheritance.
+- **TODO(verify) AER103 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Optional Player Turn queue/survivor mapping; missing air/ships consume without dice; result records and existing loss events; unchanged default state/actions/RNG.
 - **TODO(verify) AER110 — spec 12, Computer wiring 12-13 (spec 05):** Disabled AI switch; preserve the independent manualFleetMove gate and old saves.
 - **TODO(verify) AER111 — spec 12, Computer wiring 12-13 (spec 05):** Escape adjacent hostile ground first, else strictly approach an unsupplied friendly ground pocket by map hex distance; lowest nearest-pocket distance, lexical port if none.
 - **TODO(verify) AER112 — spec 12, Computer wiring 12-13 (spec 05):** Reject ports in sea-course reach of two distinct hostile fleet bases; escape destinations must have no adjacent hostile ground.

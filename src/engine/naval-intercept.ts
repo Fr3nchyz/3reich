@@ -126,6 +126,7 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
   const live = (id: string) => (forces.get(id) ?? []).filter(f => next.units[f]);
   const force = (ids: string[], mayBreakOff: boolean): NavalForce => ({ factors: ids.reduce((n, id) => n + next.units[id]!.strength, 0), nationalities: ids.map(id => (next.units[id]!.nationality ?? next.units[id]!.owner) as NavalNation), mayBreakOff });
   const returning = new Set<string>();
+  const seaForces = new Map<string, string[]>();
   for (const m of [...interceptionsOf(state)].reverse()) {
     if (cancelled.has(m.id) || cancelled.has(m.target) || !live(m.id).length || !live(m.target).length) {
       events.push({ type: "INTERCEPTION_CANCELLED", side: m.side, interception: m.id }); continue;
@@ -145,6 +146,7 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
     }
     let rec = navalOf(next);
     next = { ...next, naval: { ...rec, triedIntercept: [...new Set([...rec.triedIntercept, ...failed])], used: { ...rec.used, ...Object.fromEntries(participants.map(id => [id, "intercept" as const])) } } };
+    seaForces.set(m.id, participants);
     if (!participants.length) continue;
     const targetIds = live(m.target), a = rollD6(next.rngState), b = rollD6(a.state);
     const combat = resolveNavalCombat(force(participants, true), force(targetIds, false), { interceptor: a.roll, intercepted: b.roll }, { breakOff: m.breakOff, battleNorthOfRowN: parseHexId(m.meetingPoint)!.r < parseHexId("N1")!.r });
@@ -153,6 +155,8 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
     const lostA = lose(next, participants, combat.interceptor.loss); next = lostA.state; events.push(...lostA.events);
     const lostB = lose(next, targetIds, combat.intercepted.loss); next = lostB.state; events.push(...lostB.events);
     forces.set(m.id, [...live(m.id).filter(id => !participants.includes(id)), ...lostA.survivors]); forces.set(m.target, lostB.survivors);
+    seaForces.set(m.id, lostA.survivors);
+    if (seaForces.has(m.target)) seaForces.set(m.target, lostB.survivors);
     // Ref 21.51 / AER88: an interceptor defeated as a target never makes its earlier attempt.
     if (combat.winner === "interceptor") { cancelled.add(m.target); if (m.target.startsWith("move:")) returning.add(m.target); }
     // AER90: all interceptor survivors remain at base; intercepted moving winners continue unless told otherwise.
@@ -174,5 +178,9 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
       }
     }
   }
-  return { state: { ...next, naval: { ...navalOf(next), interceptsResolved: true } }, events };
+  return { state: { ...next, naval: { ...navalOf(next), interceptsResolved: true,
+    // TODO(verify) AER100: expose only sailed surviving forces to queued air attacks.
+    ...(navalOf(state).manualSeaAir === true ? { seaAirForces: Object.fromEntries(interceptTargets(state).map(t => [t.id,
+      cancelled.has(t.id) || returning.has(t.id) || turnBack.includes(t.id) ? [] : t.id.startsWith("move:") ? live(t.id) : seaForces.get(t.id) ?? []])) } : {}),
+  } }, events };
 }

@@ -5,6 +5,7 @@ import { airOf, markFlown } from "./air-record";
 import { frontAllowsAttack } from "./attack-rules";
 import type { GameContext } from "./context";
 import { sideInWar } from "./control";
+import { navalOf } from "./naval-record";
 import { eliminateUnits } from "./losses";
 import type { GameState } from "./types";
 
@@ -37,7 +38,7 @@ export function applyPortDesignation(ctx: GameContext, state: GameState, action:
 }
 
 /** TODO(verify) AER82 / N29: owner choice deferred; allocation itself remains explicit to the pure resolver. */
-const chooseFleetLosses: PortFleetLossChooser = (pool, owed) => {
+export const chooseFleetLosses: PortFleetLossChooser = (pool, owed) => {
   let left = owed;
   return [...pool].sort((a, b) => a.strength - b.strength || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).flatMap((u) => {
     const factors = Math.min(left, u.strength);
@@ -47,7 +48,7 @@ const chooseFleetLosses: PortFleetLossChooser = (pool, owed) => {
 };
 
 /** Spec 12 R14 / Ref 21.7; TODO(verify) AER83: preserve survivors, route whole sinks, discard partial factors (RB5). */
-function applyPortLosses(state: GameState, attacker: readonly string[], result: PortAttackResult): { state: GameState; events: GameEvent[] } | { problem: string } {
+export function applyPortLosses(state: GameState, attacker: readonly string[], result: PortAttackResult, inheritNaval = false): { state: GameState; events: GameEvent[] } | { problem: string } {
   const remaining = new Map(result.air.surviving.map((u) => [u.id, u.strength]));
   const take = attacker.flatMap((id) => {
     const factors = state.units[id]!.strength - (remaining.get(id) ?? 0);
@@ -68,10 +69,23 @@ function applyPortLosses(state: GameState, attacker: readonly string[], result: 
       const units = { ...next.units, [unit.id]: { ...unit, strength: fleet.counters[0]! } };
       let nextUnitId = next.nextUnitId;
       for (const strength of fleet.counters.slice(1)) {
-        const id = `u${nextUnitId++}`;
+        let id = `u${nextUnitId++}`;
+        if (inheritNaval) while (Object.hasOwn(units, id)) id = `u${nextUnitId++}`;
         units[id] = { ...unit, id, strength };
       }
+      const replacements = Object.keys(units).filter(id => !Object.hasOwn(next.units, id));
       next = { ...next, units, nextUnitId };
+      // TODO(verify) AER102: replacement ships retain sea-force membership and ledger marks.
+      if (inheritNaval) {
+        const rec = navalOf(next);
+        const ids = [unit.id, ...replacements];
+        next = { ...next, naval: { ...rec,
+          used: { ...rec.used, ...Object.fromEntries(ids.flatMap(id => rec.used[unit.id] ? [[id, rec.used[unit.id]!]] : [])) },
+          moved: [...new Set([...rec.moved, ...(rec.moved.includes(unit.id) ? ids : [])])],
+          triedIntercept: [...new Set([...rec.triedIntercept, ...(rec.triedIntercept.includes(unit.id) ? ids : [])])],
+          seaAirForces: Object.fromEntries(Object.entries(rec.seaAirForces ?? {}).map(([key, members]) => [key, members.flatMap(id => id === unit.id ? ids : [id])])),
+        } };
+      }
       events.push({ type: "UNIT_LOST_FOR_GOOD", unitId: unit.id, owner: unit.owner, unitType: "fleet", at: unit.at, strength: fleet.lost, reason: "partial-fleet" });
     }
   }
