@@ -347,4 +347,4 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 - **TODO(verify) AER115 — spec 12, Computer wiring 12-13 (spec 05):** Pass if no qualifying declaration; follow legal acting side, including counters; resolve with default continuation; switch-off retains previous fallback.
 
 - **TODO(verify) AER116 — spec 09, Human session wiring 17-wire:** Human starts enable fleet movement, DAS and sea air, carried across Player Turns; airdrops stay off. Optional save-start markers retain replay and rescue options without changing old saves or versions.
-- **TODO(verify) AER117 — spec 09, Human session wiring 17-wire:** Open the two-side 6c pass round for fleet or sea-air declarations, including when no fleet can intercept.
+- **TODO(verify) AER118 — spec 09, Human session wiring 17-wire:** Open the two-side 6c pass round for fleet or sea-air declarations, including when no fleet can intercept.

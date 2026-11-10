@@ -88,7 +88,7 @@ export function legalInterceptDeclarations(ctx: GameContext, state: GameState): 
   }));
 }
 
-/** Spec 12 C5 / AER84/AER88; TODO(verify) AER117: sea-air work opens the same two-pass round. */
+/** Spec 12 C5 / AER84/AER88; TODO(verify) AER118: sea-air work opens the same two-pass round. */
 export function hasInterceptWork(ctx: GameContext, state: GameState, step: string): boolean {
   if (!interceptEnabled(state)) return false;
   const rec = navalOf(state);

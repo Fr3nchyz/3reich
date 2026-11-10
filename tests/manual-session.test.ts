@@ -126,7 +126,7 @@ function moved(ships = true): GameState {
   return state;
 }
 
-it.each([true, false])("AER117: 6c actor, legal pass and computer agree with fleet interceptors=%s", ships => {
+it.each([true, false])("AER118: 6c actor, legal pass and computer agree with fleet interceptors=%s", ships => {
   let s = moved(ships);
   expect(s.position).toMatchObject({ step: "6c" });
   for (const side of ["axis", "allies"] as const) {
