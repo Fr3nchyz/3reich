@@ -84,6 +84,20 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} fly defensive air support to ${placeName(ctx.map, e.hex)}.`;
     case "AIR_MISSION_DESIGNATED":
       return `${stackSummary(unitsWithIds(before, e.units))} fly ${e.mission === "counter-air" ? "counter-air" : e.mission === "port-attack" ? "a port attack" : "ground support"} to ${placeName(ctx.map, e.target)}.`;
+    case "INTERCEPTION_DECLARED":
+      return `${sideName(e.side)} send ${stackSummary(unitsWithIds(before, e.fleets))} to intercept at ${placeName(ctx.map, e.meetingPoint)}${e.breakOff ? ", with orders to break off" : ""}.`;
+    case "INTERCEPTION_PASSED":
+      return `${sideName(e.side)} pass this interception round (${e.consecutive} consecutive passes).`;
+    case "INTERCEPTION_CANCELLED":
+      return `${sideName(e.side)} cancel an interception after counter-interception.`;
+    case "INTERCEPTION_ATTEMPTED":
+      return `${stackSummary(unitsWithIds(before, e.fleets))} from ${placeName(ctx.map, e.base)} attempt interception: ${e.distance ?? "no route"} hexes, ${e.needed === "automatic" ? "automatic" : `die ${e.die}, needs ${e.needed.join(" or ")}`}; ${e.success ? "success" : "failed"}.`;
+    case "NAVAL_COMBAT_RESOLVED":
+      return `Naval combat at ${placeName(ctx.map, e.at)}: ${stackSummary(unitsWithIds(before, e.interceptor))} against ${stackSummary(unitsWithIds(before, e.intercepted))}; dice ${e.dice.interceptor} and ${e.dice.intercepted}, modified ${e.result.interceptor.modifiedRoll} and ${e.result.intercepted.modifiedRoll}; ${e.result.winner === "interceptor" ? "interceptors win" : "intercepted force wins"}${e.result.breakOff ? " (interceptors break off)" : ""}; losses ${e.result.interceptor.loss} and ${e.result.intercepted.loss}.`;
+    case "NAVAL_LOSSES_APPLIED":
+      return `${before.units[e.before.id] ? unitName(before.units[e.before.id]!) : `${sideName(e.side)} fleet`} at ${placeName(ctx.map, e.at)} loses ${e.lost} naval factors; remaining counters: ${e.after.map(u => u.strength).join(" + ")}.`;
+    case "FLEET_RETURNED":
+      return `${stackSummary(unitsWithIds(before, [e.unit]))} returns from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "FLEET_MOVED": // spec 12 R10
       return `${stackSummary(unitsWithIds(before, [e.fleet]))} changes base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} on the ${cap(e.front)} Front.`;
     case "FLEET_DESIGNATED_FOR_SUPPLY":
