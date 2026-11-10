@@ -1,3 +1,4 @@
+import { bindAirMission } from "./airMissionView";
 import { bindExploit } from "./exploitBind";
 import type { Action } from "../engine/actions";
 import type { OffMapBox } from "../engine/types";
@@ -50,6 +51,7 @@ export function bindStatus(root: HTMLElement, s: Session, setup: SetupView | nul
   bindExploit(root, s, redraw);
   bindAttack(root, s, redraw);
   bindAir(root, s, redraw);
+  bindAirMission(root, s, redraw);
   bindAirMove(root, s, redraw);
   bindChoice(root, s, redraw);
   bindMove(root, s, redraw);

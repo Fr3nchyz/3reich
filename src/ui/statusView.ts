@@ -1,3 +1,4 @@
+import { airMissionHtml } from "./airMissionView";
 import type { SaveFile } from "../save/format";
 import { fingerprint } from "../save/fingerprint";
 import { exploitArmorHtml } from "./exploitBind";
@@ -99,7 +100,7 @@ function label(a: Action, ctx: GameContext, state: GameState): string {
 
 /** The buttons of a list of legal actions with their words, as shown: builds, moves and redeployments have their own panels (so does the Free Siberian Transfer: its card), identical actions appear once, and no two read alike. */
 export function buttonLabels(actions: Action[], ctx: GameContext, state: GameState) {
-  return labelled(actions.filter((a) => a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SR_UNITS" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
+  return labelled(actions.filter((a) => !["RESOLVE_COUNTER_AIR", "DESIGNATE_DAS", "DESIGNATE_DAS_INTERCEPT", "RESOLVE_PORT_ATTACKS"].includes(a.type) && a.type !== "BUILD" && a.type !== "MOVE" && a.type !== "SR_UNITS" && a.type !== "SIBERIAN_TRANSFER"), ctx, state, (a) => label(a, ctx, state));
 }
 
 /**
@@ -159,6 +160,7 @@ export function statusHtml(s: Session, setup: SetupView | null, actions: Action[
       ${saved ? `<p class="saved-hint" role="status">Saved.${remind ? " Save to a file now and then to keep a backup outside the browser." : ""}</p>` : ""}
       ${winterBannerHtml(s.state)}${winterCardHtml(s, winter)}${surrenderCardHtml(s, surrender)}${siberianCardHtml(s, actions, siberian)}
       ${scoreHtml(s)}${minorCardsHtml(s, actions)}
+      ${airMissionHtml(s)}
       ${attritionHtml(s)}${exploitArmorHtml(s)}
       ${lead ? `${bar}${toast}${attackHtml(s, actions)}${airHtml(s, actions)}${moveHtml(s, actions)}${redeployHtml(s, actions)}${airMoveHtml(s)}` : ""}
       ${s.watch ? panelHtml(s) : ""}

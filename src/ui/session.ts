@@ -1,3 +1,4 @@
+import { trackAirResults, type AirResults } from "./airResultModel";
 import { MAP } from "../data/map";
 import { applyAction, type Action } from "../engine/actions";
 import { AutoSetupError, autoSetupOwner } from "../engine/autosetup";
@@ -89,6 +90,8 @@ export interface Session {
   airbase?: AirbasePick | null;
   /** The ground-support card being put together at step 7b (spec 09, part D2): the hex and the planes chosen. Screen state, never saved. */
   airDraft?: AirDraft | null;
+  /** Event results for air missions this Player Turn; screen state, never saved. */
+  airResults?: AirResults;
   /** The units picked for the losses of an Exchange or an advance after a battle (spec 07, State 4). Screen state, never saved. */
   choice?: ChoiceDraft | null;
   /** Whether the "Victory and objectives" card is open (spec 14, part D1), and whether it has just opened (its heading then takes the focus). Screen state, never saved. */
@@ -150,6 +153,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
       return false;
     }
     s.state = result.state;
+    if (!s.watch) s.airResults = trackAirResults(s.airResults, s.ctx, before, result.state, result.events);
     s.record.push(action);
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const actor = actorSide(action);
