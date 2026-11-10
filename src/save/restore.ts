@@ -93,6 +93,8 @@ export async function restore(source: string, context: GameContext, options: Res
   if (options.cancelled()) return stopped();
   // Spec 11 H: account for the last (potentially slow) action, including empty records.
   if (options.now() - started >= RESTORE_BUDGET_MS) return fallback("budget", "Opening took too long and was stopped.", true);
+  // Spec 11 B / AER116: compare the same JSON snapshot representation saved on disk.
+  state = JSON.parse(JSON.stringify(state)) as GameState;
   if (fingerprint(state) !== save.fingerprint) return fallback("fingerprint", "This saved position no longer matches and cannot be opened by this version.");
   return { kind: "opened", via: "replay", state, save, message: "Game opened." };
 }

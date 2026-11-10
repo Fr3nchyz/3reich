@@ -131,7 +131,11 @@ export function snapshotHasFreshShape(snapshot: JsonObject, scenario: Scenario, 
   if (stateVersion !== STATE_VERSION || snapshot.scenarioId !== scenario.id) return false;
   const sameKeys = (a: JsonObject, b: object): boolean =>
     Object.keys(a).length === Object.keys(b).length && Object.keys(a).every(key => Object.hasOwn(b, key));
-  if (!sameKeys(snapshot, fresh) || !object(snapshot.nations) || !object(snapshot.units)) return false;
+  // Spec 09 AER116: optional play records are checked by the invariant validator.
+  const optional = "unsuppliedAtStart combat countries air airDrop airbasesPlaced airFlown naval grayFleets moves sr exploit exploited attrition conquests keptHexes winter siberian soviet victory vitalPaid result".split(" ");
+  const base = Object.fromEntries(Object.entries(snapshot).filter(([key]) => !optional.includes(key) || Object.hasOwn(fresh, key)));
+  if (!sameKeys(base, fresh) || ["air", "naval", "airDrop"].some(key => key in snapshot && !object(snapshot[key]))
+    || !object(snapshot.nations) || !object(snapshot.units)) return false;
   if (!sameKeys(snapshot.nations, fresh.nations)) return false;
   for (const [id, nation] of Object.entries(snapshot.nations)) {
     const template = fresh.nations[id as keyof typeof fresh.nations];
@@ -161,10 +165,18 @@ export function snapshotHasFreshShape(snapshot: JsonObject, scenario: Scenario, 
     return entries.length === 0 || (sameKeys(value, template)
       && entries.every(([k, v]) => resembles(value[k], v)));
   };
-  for (const key of ["lastTurn", "pools", "wars", "strategicWarfare", "minorAllies", "countries", "setup"]) {
+  for (const key of ["lastTurn", "wars", "strategicWarfare", "minorAllies", "setup"]) {
     if (key === "setup" && snapshot.setup === null) continue;
     if (key in fresh && !resembles(snapshot[key], (fresh as unknown as JsonObject)[key])) return false;
   }
+  // Spec 17 R3 / AER116: returned and partial counters need not match a fresh pool exemplar.
+  if (!object(snapshot.pools) || !Object.values(snapshot.pools).every(pool => object(pool)
+    && [pool.forcePool, pool.allowableBuilds].every(entries => Array.isArray(entries) && entries.every(e =>
+      object(e) && text(e.type) && integer(e.strength) && integer(e.count)
+      && (e.movement === undefined || integer(e.movement)))))) return false;
+  // Spec 15 / AER116: country records acquire optional fields during play.
+  if (snapshot.countries !== undefined && (!object(snapshot.countries)
+    || !Object.values(snapshot.countries).every(v => object(v) && text(v.status)))) return false;
   if (!object(snapshot.control) || !Object.values(snapshot.control).every(v => v === null || (text(v) && owners.includes(v)))) return false;
   if (!object(snapshot.fortresses) || !Object.values(snapshot.fortresses).every(v => typeof v === "boolean")) return false;
   for (const [key, template] of Object.entries(fresh)) {

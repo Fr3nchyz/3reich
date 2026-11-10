@@ -8,7 +8,7 @@ import { SCENARIOS, SCENARIO_KEYS } from "../scripts/selfplay/scenarios";
 import { newSession, run } from "../src/ui/session";
 
 it.fails.each(SCENARIO_KEYS)("TODO(verify) AER54 spec 11 Part I/E5: %s restored position continues with identical state hash", async key => {
-  const session = newSession(SCENARIOS[key], "axis", 1);
+  const session = newSession(SCENARIOS[key], "axis", 1, false);
   expect(run(session, ...autoSetup(session.ctx, session.state))).toBe(true);
   const memory = createMemory();
   for (let i = 0; i < 15; i++) {
@@ -26,7 +26,7 @@ it.fails.each(SCENARIO_KEYS)("TODO(verify) AER54 spec 11 Part I/E5: %s restored 
   const opened = await restore(source, session.ctx, { now: () => 0, yield: async () => {},
     cancelled: () => false, validateSnapshot: () => undefined });
   if (opened.kind !== "opened") throw Error(opened.message);
-  const resumed = newSession(SCENARIOS[key], "axis", 1);
+  const resumed = newSession(SCENARIOS[key], "axis", 1, false);
   resumed.state = opened.state;
   for (let i = 0; i < 200; i++) {
     const before = chooseAction(session.ctx, session.state, { seed: 1, memory });
