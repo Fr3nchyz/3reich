@@ -20,16 +20,19 @@ export const declaration: InterceptDeclaration = { side: "axis", target: "move:0
 const named = (s: GameState, d = declaration) => { expect(interceptProblem(CTX, s, d)).toBeNull(); return declareIntercept(CTX, s, d); };
 const resolve = (s: GameState) => resolveInterceptions(CTX, s);
 
-describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)", () => {
-  it("accepts departure, intermediate and arrival points, using a legal sea course (R11/N23/AER79)", () => {
+describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER84–91)", () => {
+  it("accepts departure, intermediate and arrival points, using a legal sea course (R11/N23/AER87)", () => {
     const s = interceptPosition();
     for (const meetingPoint of course) expect(interceptProblem(CTX, s, { ...declaration, meetingPoint })).toBeNull();
     const path = interceptionCourse(CTX, s, "axis", "western", "K28", "N18")!;
     expect(path[0]).toBe("K28"); expect(path.at(-1)).toBe("N18"); expect(path.length).toBeGreaterThan(2);
     expect(interceptionCourse(CTX, s, "axis", "western", "K28", "D44")).toBeNull();
     expect(interceptProblem(CTX, s, { ...declaration, meetingPoint: "A1" })).toMatch(/course/);
+    // Spec 12 R11: a reachable point outside the target's course is still illegal.
+    expect(interceptionCourse(CTX, s, "axis", "western", "K28", "K28")).not.toBeNull();
+    expect(interceptProblem(CTX, s, { ...declaration, meetingPoint: "K28" })).toMatch(/meeting point must lie on the target course/);
   });
-  it.each([undefined, false])("requires opt-in (%s), and a current recorded movement (AER75/AER77)", flag => {
+  it.each([undefined, false])("requires opt-in (%s), and a current recorded movement (AER75/AER85)", flag => {
     const s = interceptPosition();
     expect(interceptProblem(CTX, { ...s, naval: { ...s.naval!, manualFleetMove: flag } }, declaration)).toMatch(/recorded/);
     expect(interceptProblem(CTX, { ...s, naval: { ...s.naval!, moves: [] } }, declaration)).toMatch(/recorded/);
@@ -43,7 +46,7 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)"
     }
     expect(interceptProblem(CTX, { ...s, grayFleets: { g1: { year: s.year + 1, season: s.season } } }, declaration)).toMatch(/free/);
   });
-  it("refuses supply/escort targets, own targets, neutral fleets and the wrong Front (R11/AER77)", () => {
+  it("refuses supply/escort targets, own targets, neutral fleets and the wrong Front (R11/AER85)", () => {
     const s = interceptPosition();
     for (const used of ["supply", "escort"] as const) expect(interceptProblem(CTX, { ...s, naval: { ...s.naval!, used: { b1: used } } }, declaration)).toMatch(/cannot be intercepted/);
     expect(interceptProblem(CTX, s, { ...declaration, side: "allies" })).toMatch(/round/);
@@ -57,7 +60,7 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)"
     }
     expect(interceptProblem(CTX, s, { ...declaration, breakOff: 1 } as unknown as InterceptDeclaration)).toMatch(/boolean/);
   });
-  it("merges bases at one point, reserves fleets, and enforces one target per base (R11/R13/AER78)", () => {
+  it("merges bases at one point, reserves fleets, and enforces one target per base (R11/R13/AER86)", () => {
     const s = named(interceptPosition());
     expect(interceptProblem(CTX, s, declaration)).toMatch(/free/);
     expect(interceptProblem(CTX, s, { ...declaration, fleets: ["g2"], meetingPoint: "K21" })).toMatch(/One target/);
@@ -67,7 +70,7 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)"
     const extra = { ...s, naval: { ...s.naval!, moves: [...s.naval!.moves!, { ...s.naval!.moves![0]!, fleet: "b2" }] } };
     expect(interceptProblem(CTX, extra, { ...declaration, fleets: ["g2"], target: "move:1" })).toMatch(/one base/);
   });
-  it("counter-targets an earlier course and seals that force against later additions (R11/AER78)", () => {
+  it("counter-targets an earlier course and seals that force against later additions (R11/AER86)", () => {
     const first = named(interceptPosition());
     const s = { ...first, naval: { ...first.naval!, interceptSide: "allies" as const } };
     const second = named(s, { side: "allies", target: "intercept:0", fleets: ["b2"], meetingPoint: "N18" });
@@ -84,7 +87,7 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)"
     expect(done).toEqual(resolve(structuredClone(s)));
     expect(s).toEqual(before);
   });
-  it("automatic same-base attempts consume only the two combat dice (R11/AER79)", () => {
+  it("automatic same-base attempts consume only the two combat dice (R11/AER87)", () => {
     const s = interceptPosition(); s.units.g1 = { ...s.units.g1!, at: "N18" };
     const done = resolve(named(s));
     const attempt = done.events.find(e => e.type === "INTERCEPTION_ATTEMPTED")!;
@@ -100,7 +103,7 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)"
     expect(done.state.naval!.used.g1).toBeUndefined();
     expect(navalOf({ ...done.state, activeSide: "axis" }).triedIntercept).toEqual([]);
   });
-  it("a winning counter cancels its earlier target with no additional dice (R11/R12/AER80)", () => {
+  it("a winning counter cancels its earlier target with no additional dice (R11/R12/AER88)", () => {
     const start = interceptPosition();
     start.units.g1 = { ...start.units.g1!, at: "N18", strength: 1 };
     start.units.b2 = { ...start.units.b2!, at: "N18", strength: 36 };

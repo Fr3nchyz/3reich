@@ -39,8 +39,8 @@ function at6d() {
   return apply(s, passAllies).state;
 }
 
-describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)", () => {
-  it("enters 6c after MOVE_FLEET, starts with Non-Phasing declarations and offers valid deterministic proposals (R11/AER76)", () => {
+describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER84–91)", () => {
+  it("enters 6c after MOVE_FLEET, starts with Non-Phasing declarations and offers valid deterministic proposals (R11/AER84)", () => {
     const s = at6c(), before = structuredClone(s);
     expect(step(s)).toBe("6c");
     expect(sideToAct(s)).toBe("axis");
@@ -54,7 +54,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(s).toEqual(before);
   });
 
-  it("declarations keep the round; passes hand over, declarations reset passes, two passes end it (R11/AER76)", () => {
+  it("declarations keep the round; passes hand over, declarations reset passes, two passes end it (R11/AER84)", () => {
     const first = apply(at6c(), declaration);
     expect(sideToAct(first.state)).toBe("axis");
     expect(first.events).toEqual([{ type: "INTERCEPTION_DECLARED", side: "axis", interception: "intercept:0", target: "move:0", fleets: ["g1"], meetingPoint: "N18", breakOff: false }]);
@@ -72,7 +72,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(moveOnAction(two)).toEqual([resolution]);
   });
 
-  it("two passes without declarations skip empty 6d without rolling (R11/AER76/AER80)", () => {
+  it("two passes without declarations skip empty 6d without rolling (R11/AER84/AER88)", () => {
     const s = at6c();
     const one = apply(s, passAxis).state;
     expect(step(one)).toBe("6c");
@@ -83,7 +83,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(two.state.rngState).toBe(s.rngState);
   });
 
-  it("holds rounds and queued combat against END_STEP and direct advance (AER76/AER80)", () => {
+  it("holds rounds and queued combat against END_STEP and direct advance (AER84/AER88)", () => {
     for (const s of [at6c(), at6d()]) {
       expect(applyAction(CTX, s, { type: "END_STEP", side: "allies", step: step(s)! }).ok).toBe(false);
       expect(() => advance(CTX, s)).toThrow(/interceptions/i);
@@ -91,7 +91,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     }
   });
 
-  it.each([undefined, false])("flag %s preserves old 6c/6d skipping and refuses every interception action (AER75/AER77/AER83)", flag => {
+  it.each([undefined, false])("flag %s preserves old 6c/6d skipping and refuses every interception action (AER75/AER85/AER91)", flag => {
     for (const id of ["6c", "6d"]) {
       const base = id === "6c" ? at6c() : at6d();
       const s = { ...base, naval: { ...base.naval!, manualFleetMove: flag }, position: { part: "player-turn" as const, turn: 1 as const, step: id } };
@@ -104,7 +104,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     }
   });
 
-  it("requires a current course and correct step/side; rejects setup and malformed resolution (AER77/AER80/AER82)", () => {
+  it("requires a current course and correct step/side; rejects setup and malformed resolution (AER85/AER88/AER90)", () => {
     const base = at6c();
     for (const s of [{ ...base, naval: { ...base.naval!, moves: [] } }, { ...base, year: base.year + 1 }, { ...base, phase: "setup" as const }, position()]) {
       for (const a of [declaration, passAxis, resolution]) expect(applyAction(CTX, s, a).ok).toBe(false);
@@ -119,7 +119,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     }
   });
 
-  it("resolves once with combat/loss events and deterministic replay, preserving input (R12/AER80/AER81)", () => {
+  it("resolves once with combat/loss events and deterministic replay, preserving input (R12/AER88/AER89)", () => {
     const s = at6d(), before = structuredClone(s);
     const result = apply(s, resolution);
     expect(result.events.some(e => e.type === "INTERCEPTION_ATTEMPTED")).toBe(true);
@@ -134,9 +134,9 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(s).toEqual(before);
   });
 
-  it("splits losses into counters, inherits ledger marks and returns every defeated mover remainder (R12/AER81/AER82)", () => {
+  it("splits losses into counters, inherits ledger marks and returns every defeated mover remainder (R12/AER89/AER90)", () => {
     const base = at6d();
-    const s = { ...base, units: { ...base.units, g1: { ...base.units.g1!, at: "N18" } }, rngState: 1 };
+    const s: GameState = { ...base, units: { ...base.units, g1: { ...base.units.g1!, at: "N18" } }, rngState: 1 };
     const before = structuredClone(s), done = apply(s, resolution);
     const combat = done.events.find(e => e.type === "NAVAL_COMBAT_RESOLVED")!;
     expect(combat.result).toMatchObject({ winner: "interceptor", interceptor: { loss: 2 }, intercepted: { loss: 4 } });
@@ -158,7 +158,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(s).toEqual(before);
   });
 
-  it("allocates smaller counters first and routes sunk partials as permanent losses (R12/RB5/AER81)", () => {
+  it("allocates smaller counters first and routes sunk partials as permanent losses (R12/RB5/AER89)", () => {
     const base = at6c();
     const s = { ...base, units: { ...base.units, g1: { ...base.units.g1!, strength: 2, at: "N18" }, g2: { ...base.units.g2!, at: "N18" } } };
     let next = apply(s, { ...declaration, fleets: ["g2", "g1"] }).state;
@@ -170,7 +170,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(done.events).toContainEqual(expect.objectContaining({ type: "UNIT_LOST_FOR_GOOD", unitId: "g1", reason: "partial-fleet" }));
   });
 
-  it("break-off defaults to continue for a victorious mover, with explicit turn-back supported (R12/AER82)", () => {
+  it("break-off defaults to continue for a victorious mover, with explicit turn-back supported (R12/AER90)", () => {
     const base = at6c();
     const s = { ...base, units: { ...base.units, g1: { ...base.units.g1!, at: "N18" } } };
     const named = apply(s, { ...declaration, breakOff: true }).state;
@@ -184,7 +184,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(returned.state.units.g1!.at).toBe("N18");
   });
 
-  it("expires interception fields with the Player Turn and keeps old JSON defaults empty (AER83)", () => {
+  it("expires interception fields with the Player Turn and keeps old JSON defaults empty (AER91)", () => {
     const s = at6d();
     for (const change of [{ activeSide: "axis" as const }, { year: s.year + 1 }]) {
       const rec = navalOf({ ...s, ...change });
@@ -200,7 +200,7 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER76–83)
     expect(loaded).toEqual(before);
   });
 
-  it("logs declaration/pass, attempts, combat and losses with the correct side (AER83)", () => {
+  it("logs declaration/pass, attempts, combat and losses with the correct side (AER91)", () => {
     const s = at6c();
     const events: GameEvent[] = [...apply(s, declaration).events, ...apply(s, passAxis).events, ...apply(at6d(), resolution).events];
     expect(actorSide(declaration)).toBe("axis");

@@ -114,7 +114,7 @@ export function advance(ctx: GameContext, state: GameState): Transition {
       };
     }
     case "player-turn": {
-      // Spec 12 R11/R12 / AER76/AER80: round passes and explicit resolution hold these steps.
+      // Spec 12 R11/R12 / AER84/AER88: round passes and explicit resolution hold these steps.
       if (hasInterceptWork(ctx, state, pos.step)) throw new Error("advance: interceptions must finish first (Ref 21.5/21.51).");
       // 10a waits only while the Axis is asked about Russia's offer to surrender (SURRENDER_ANSWER); `settle` stops there, so this is reached once they have answered.
       if (surrenderAsking(state)) throw new Error("advance: the Axis have not answered Russia's offer to surrender (step 10a).");

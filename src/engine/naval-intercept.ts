@@ -16,10 +16,10 @@ import { interceptionRolls, type NavalNation } from "./tables";
 import type { Front } from "./map";
 import type { GameState, Side } from "./types";
 
-/** TODO(verify) AER76/AER79, spec 12 Wiring 12-12, R11 (Ref 21.5). */
+/** TODO(verify) AER84/AER87, spec 12 Wiring 12-12, R11 (Ref 21.5). */
 export const INTERCEPT_PASSES = 2;
 export const INTERCEPT_DISTANCE = "shortest-legal-sea-route";
-/** TODO(verify) AER81/AER82: deterministic losses; omitted withdrawal choices fight/continue. */
+/** TODO(verify) AER89/AER90: deterministic losses; omitted withdrawal choices fight/continue. */
 export const INTERCEPT_LOSS_ORDER = "strength-then-id";
 export const INTERCEPT_BREAK_OFF = false;
 export const INTERCEPT_TURN_BACK: readonly string[] = [];
@@ -37,36 +37,36 @@ export interface Interception {
 export interface InterceptDeclaration { side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
 interface Target { id: string; side: Side; fleets: string[]; front: Front; path: HexId[] }
 
-/** Spec 12 R11 / AER75/AER77: no new work without opt-in and a current MOVE_FLEET course. */
+/** Spec 12 R11 / AER75/AER85: no new work without opt-in and a current MOVE_FLEET course. */
 export const interceptEnabled = (state: GameState): boolean => state.naval?.manualFleetMove === true && (navalOf(state).moves ?? []).some(m => m.path.length > 0);
 export const interceptionsOf = (state: GameState): Interception[] => navalOf(state).interceptions ?? [];
 export const interceptSide = (state: GameState): Side => navalOf(state).interceptSide ?? otherSide(state.activeSide);
 export const interceptPasses = (state: GameState): number => navalOf(state).interceptPasses ?? 0;
 
-/** TODO(verify) AER78: stable indices, one combined force per target, courses include endpoints. */
+/** TODO(verify) AER86: stable indices, one combined force per target, courses include endpoints. */
 export function interceptTargets(state: GameState): Target[] {
   return [...(navalOf(state).moves ?? []).map((m, i) => ({ id: `move:${i}`, side: state.activeSide, fleets: [m.fleet], front: m.front, path: m.path })),
     ...interceptionsOf(state).map(m => ({ id: m.id, side: m.side, fleets: m.fleets, front: m.front, path: m.path }))];
 }
 
-/** Spec 12 R11, N23/N24; TODO(verify) AER79: distance in hexsides, including state-aware straits. */
+/** Spec 12 R11, N23/N24; TODO(verify) AER87: distance in hexsides, including state-aware straits. */
 export function interceptionCourse(ctx: GameContext, state: GameState, side: Side, front: Front, base: HexId, point: HexId): HexId[] | null {
   return baseChangeRoute(ctx, state, side, front, base, point);
 }
 
-/** Spec 12 R5/R11 (Ref 21.3/21.5); TODO(verify) AER77/AER78: validate before any dice or mutation. */
+/** Spec 12 R5/R11 (Ref 21.3/21.5); TODO(verify) AER85/AER86: validate before any dice or mutation. */
 export function interceptProblem(ctx: GameContext, state: GameState, d: InterceptDeclaration): string | null {
-  if (!interceptEnabled(state)) return "Interception needs manual fleet movement and a recorded course (AER77).";
+  if (!interceptEnabled(state)) return "Interception needs manual fleet movement and a recorded course (AER85).";
   if (d.side !== interceptSide(state) || interceptPasses(state) >= INTERCEPT_PASSES) return "It is not this side's interception round (Ref 21.5).";
   const target = interceptTargets(state).find(t => t.id === d.target);
   if (!target || target.side === d.side) return "Interception needs an opposing move or earlier interception (Ref 21.5).";
   if (!Array.isArray(d.fleets) || !d.fleets.length || Array.from(d.fleets).some(id => typeof id !== "string" || !Object.hasOwn(state.units, id)) || new Set(d.fleets).size !== d.fleets.length) return "Name distinct fleets on the map (Ref 21.5).";
   if (typeof d.meetingPoint !== "string" || !target.path.includes(d.meetingPoint)) return "The meeting point must lie on the target course (Ref 21.5).";
-  if (d.breakOff !== undefined && typeof d.breakOff !== "boolean") return "Break-off must be a boolean (AER82).";
+  if (d.breakOff !== undefined && typeof d.breakOff !== "boolean") return "Break-off must be a boolean (AER90).";
   const rec = navalOf(state), declarations = interceptionsOf(state);
   const previous = declarations.find(i => i.target === d.target);
-  if (previous && (previous.meetingPoint !== d.meetingPoint || previous.breakOff !== (d.breakOff ?? INTERCEPT_BREAK_OFF))) return "One target has one meeting point and break-off choice (Ref 21.5; AER78/AER82).";
-  if (previous && declarations.some(i => i.target === previous.id)) return "A counter-targeted force is sealed (AER78).";
+  if (previous && (previous.meetingPoint !== d.meetingPoint || previous.breakOff !== (d.breakOff ?? INTERCEPT_BREAK_OFF))) return "One target has one meeting point and break-off choice (Ref 21.5; AER86/AER90).";
+  if (previous && declarations.some(i => i.target === previous.id)) return "A counter-targeted force is sealed (AER86).";
   const victims = target.fleets.map(id => state.units[id]);
   if (victims.some(u => !u || u.type !== "fleet" || ["supply", "escort"].includes(rec.used[u.id] ?? "") || rec.supply.some(s => s.fleets.includes(u.id)))) return "Supply and escort fleets cannot be intercepted (Ref 21.5).";
   for (const id of d.fleets) {
@@ -79,7 +79,7 @@ export function interceptProblem(ctx: GameContext, state: GameState, d: Intercep
   return null;
 }
 
-/** Spec 12 R11/R13 / AER78: append into a combined force without aliasing action arrays. */
+/** Spec 12 R11/R13 / AER86: append into a combined force without aliasing action arrays. */
 export function declareIntercept(ctx: GameContext, state: GameState, d: InterceptDeclaration): GameState {
   const rec = navalOf(state), list = interceptionsOf(state), target = interceptTargets(state).find(t => t.id === d.target)!;
   const previous = list.find(i => i.target === d.target);
@@ -89,7 +89,7 @@ export function declareIntercept(ctx: GameContext, state: GameState, d: Intercep
   return { ...state, naval: { ...rec, interceptions: previous ? list.map(i => i === previous ? item : i) : [...list, item], interceptPasses: 0 } };
 }
 
-/** TODO(verify) AER81: deterministic smaller-strength then id allocation; R1/R12.6 break-down. */
+/** TODO(verify) AER89: deterministic smaller-strength then id allocation; R1/R12.6 break-down. */
 function lose(state: GameState, ids: readonly string[], owed: number): { state: GameState; events: GameEvent[]; survivors: string[] } {
   let next = { ...state }, left = owed;
   const events: GameEvent[] = [], survivors: string[] = [];
@@ -118,7 +118,7 @@ function lose(state: GameState, ids: readonly string[], owed: number): { state: 
   return { state: next, events, survivors };
 }
 
-/** Spec 12 R11/R12/R21 / AER79/AER80: last declared first, base dice then combat dice. */
+/** Spec 12 R11/R12/R21 / AER87/AER88: last declared first, base dice then combat dice. */
 export function resolveInterceptions(ctx: GameContext, state: GameState, turnBack: readonly string[] = INTERCEPT_TURN_BACK): { state: GameState; events: GameEvent[] } {
   let next = { ...state };
   const events: GameEvent[] = [], cancelled = new Set<string>();
@@ -153,9 +153,9 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
     const lostA = lose(next, participants, combat.interceptor.loss); next = lostA.state; events.push(...lostA.events);
     const lostB = lose(next, targetIds, combat.intercepted.loss); next = lostB.state; events.push(...lostB.events);
     forces.set(m.id, [...live(m.id).filter(id => !participants.includes(id)), ...lostA.survivors]); forces.set(m.target, lostB.survivors);
-    // Ref 21.51 / AER80: an interceptor defeated as a target never makes its earlier attempt.
+    // Ref 21.51 / AER88: an interceptor defeated as a target never makes its earlier attempt.
     if (combat.winner === "interceptor") { cancelled.add(m.target); if (m.target.startsWith("move:")) returning.add(m.target); }
-    // AER82: all interceptor survivors remain at base; intercepted moving winners continue unless told otherwise.
+    // AER90: all interceptor survivors remain at base; intercepted moving winners continue unless told otherwise.
     rec = navalOf(next);
     next = { ...next, naval: { ...rec, used: { ...rec.used, ...Object.fromEntries(lostA.survivors.map(id => [id, "intercept" as const])) } } };
   }

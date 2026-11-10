@@ -38,7 +38,7 @@ export interface NavalState {
   manualFleetMove?: boolean;
   /** Spec 12 R10: this Player Turn's courses, retained for interception in 12-12. */
   moves?: { fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }[];
-  /** Spec 12 R11/R12; TODO(verify) AER76/AER83: absent fields are empty current-turn defaults. */
+  /** Spec 12 R11/R12; TODO(verify) AER84/AER91: absent fields are empty current-turn defaults. */
   interceptions?: Interception[];
   interceptSide?: Side;
   interceptPasses?: number;

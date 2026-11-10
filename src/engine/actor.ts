@@ -13,7 +13,7 @@ import { winterAsking } from "./winter-record";
  * add their own cases (the non-active side at 7d and 6c) here when they are built.
  */
 export function sideToAct(state: GameState): Side {
-  // Spec 12 R11 / AER76: additive acting-side override only for opt-in interception rounds.
+  // Spec 12 R11 / AER84: additive acting-side override only for opt-in interception rounds.
   if (state.phase === "player-turn" && state.position?.part === "player-turn" && state.position.step === "6c" && interceptEnabled(state)) return interceptSide(state);
   if (winterAsking(state)) return "allies";
   if (surrenderAsking(state)) return "axis"; // step 10a: the Allied Player Turn is the active one, but the Axis answers Russia's offer to surrender (spec 14 R7b)

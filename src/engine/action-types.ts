@@ -16,7 +16,7 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
-  /** Spec 12 R11/R12; TODO(verify) AER76–AER83: opt-in declarations and explicit resolution. */
+  /** Spec 12 R11/R12; TODO(verify) AER84–AER91: opt-in declarations and explicit resolution. */
   | { type: "DECLARE_INTERCEPT"; side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
   | { type: "PASS_INTERCEPT"; side: Side }
   | { type: "RESOLVE_INTERCEPTIONS"; side: Side; turnBack?: string[] }
@@ -111,7 +111,7 @@ export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
-  /** Spec 12 R11/R12/R21; TODO(verify) AER83: full deterministic interception audit. */
+  /** Spec 12 R11/R12/R21; TODO(verify) AER91: full deterministic interception audit. */
   | { type: "INTERCEPTION_DECLARED"; side: Side; interception: string; target: string; fleets: string[]; meetingPoint: HexId; breakOff: boolean }
   | { type: "INTERCEPTION_PASSED"; side: Side; consecutive: number }
   | { type: "INTERCEPTION_CANCELLED"; side: Side; interception: string }

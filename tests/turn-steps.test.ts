@@ -117,7 +117,7 @@ describe("steps without rules are passed, and the passing is recorded", () => {
     expect(passed).toEqual([...without(["3", "6f", "8b"]), ...without(["3", "6f", "8b", "9a"]), "II.A"]);
     // Nobody has a counter on the map here, so ground movement (6f) found nothing to do; only the airbases still to place kept the step open.
     // A step is only ever passed if it has no rules yet, or its rules found nothing to do (the gated steps).
-    // Spec 12 Wiring, 12-11b/12-12 / AER75/AER77: 6b/6c/6d require manualFleetMove; interception also needs a course.
+    // Spec 12 Wiring, 12-11b/12-12 / AER75/AER85: 6b/6c/6d require manualFleetMove; interception also needs a course.
     // Spec 09 Wiring, 09-9b / AER73: 7c is gated on assigned counter-air, absent in this empty position.
     for (const id of passed) expect(!IMPLEMENTED_STEPS.has(id) || ["1", "2", "3", "4", "6b", "6c", "6d", "6e", "6f", "6g", "6h", "7a", "7b", "7c", "7h", "7j", "7k", "7o", "7p", "8a", "8b", "9a", "9e", "9f", "9j", "9k", "10a"].includes(id)).toBe(true);
   });
