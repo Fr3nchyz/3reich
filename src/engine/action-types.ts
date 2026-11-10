@@ -18,6 +18,8 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
+  /** Ref 23.1 / spec 09 AER95: optional normal drop at 7g. */
+  | { type: "AIRDROP"; side: Side; unit: string; to: HexId }
   /** Spec 12 R11/R12; TODO(verify) AER84–AER91: opt-in declarations and explicit resolution. */
   | { type: "DECLARE_INTERCEPT"; side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
   | { type: "PASS_INTERCEPT"; side: Side }
@@ -118,6 +120,8 @@ export type Action =
 export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
+  /** Spec 09 AER97: placement and the pure resolver's landing supply report. */
+  | { type: "AIR_DROPPED"; side: Side; unit: string; from: HexId; to: HexId; supplied: boolean }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   /** Spec 12 R11/R12/R21; TODO(verify) AER91: full deterministic interception audit. */
   | { type: "INTERCEPTION_DECLARED"; side: Side; interception: string; target: string; fleets: string[]; meetingPoint: HexId; breakOff: boolean }

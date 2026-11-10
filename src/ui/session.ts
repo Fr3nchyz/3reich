@@ -18,6 +18,7 @@ import type { MoveChoice } from "./moveDraft";
 import type { MoveUndo } from "./moveUndo";
 import type { SrChoice } from "./redeployTap";
 import type { SrUndo } from "./redeployUndo";
+import { fleetResultsModel, type FleetResults } from "./fleetResultsModel";
 import { trackBattle, type BattleResult } from "./resultModel";
 import type { WatchInfo } from "./watchController";
 
@@ -47,6 +48,8 @@ export interface BuildPick {
 export type PoolSpec = UnitSpec & { movement?: number; count: number };
 
 export interface Session {
+  /** Spec 12 D3: transient results of actual naval events, never saved. */
+  fleetResults?: FleetResults | null;
   ctx: GameContext;
   state: GameState;
   humanSide: Side;
@@ -155,6 +158,7 @@ export function run(s: Session, ...actions: Action[]): boolean {
     s.state = result.state;
     if (!s.watch) s.airResults = trackAirResults(s.airResults, s.ctx, before, result.state, result.events);
     s.record.push(action);
+    if (!s.watch && action.type === "RESOLVE_INTERCEPTIONS") s.fleetResults = fleetResultsModel(s.ctx, before, result.events);
     if (!s.watch) s.battle = trackBattle(s.battle ?? null, result.events, before, s.humanSide);
     const actor = actorSide(action);
     const swept = new Set(result.events.flatMap((e) => (e.type === "UNITS_SWEPT" ? e.units.map((u) => u.id) : [])));

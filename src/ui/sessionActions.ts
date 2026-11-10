@@ -5,6 +5,7 @@ import { currentSetupOwner, sideOfOwner } from "../engine/setup";
 import type { ForceOwner, OffMapBox } from "../engine/types";
 import { winterKey } from "../engine/winter-record";
 import { computerToMove } from "./computerPlay";
+import { tapFleet } from "./fleetTap";
 import { normaliseAirMove, tapToAirMove } from "./airMoveTap";
 import { normaliseAir, tapToAir } from "./airTap";
 import { normaliseAttack, tapToAttack } from "./attackTap";
@@ -93,7 +94,7 @@ export function tapHex(s: Session, h: MapHex): void {
   s.toast = "";
   lookAt(s, h.id);
   if (s.state.phase === "player-turn") {
-    if (!computerToMove(s) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToRedeploy(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) { if (s.siberian) takeSiberian(s, h.id); else tapToBuild(s, h); }
+    if (!computerToMove(s) && !tapFleet(s, h.id) && !tapToAirMove(s, h) && !tapToMove(s, h) && !tapToRedeploy(s, h) && !tapToAttack(s, h) && !tapToAir(s, h)) { if (s.siberian) takeSiberian(s, h.id); else tapToBuild(s, h); }
     return;
   }
   const owner = currentSetupOwner(s.state);

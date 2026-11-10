@@ -6,6 +6,7 @@ import type { SrRecord } from "./sr-record";
 import type { ExploitRecord } from "./exploit-record";
 import type { AttritionRecord } from "./attrition-record";
 import type { AirFlown, AirState } from "./air-record";
+import type { AirDropState } from "./air-drop-wire";
 import type { NavalState } from "./naval-record";
 import type { Conquest, KeptHex } from "./conquest-record";
 import type { CountryId, CountryRecord } from "./minors-record";
@@ -322,6 +323,8 @@ export interface GameState {
   countries?: Partial<Record<CountryId, CountryRecord>>;
   /** What the air rules have recorded this Player Turn (spec 09); absent in an older saved game. */
   air?: AirState;
+  /** Spec 09 Wiring, 09-11b / AER95-AER97: optional manual drops; absent in old saves. */
+  airDrop?: AirDropState;
   /** How many movable airbases each Major Power has set down in the whole game, destroyed ones included (Ref 20.1: three each); absent means none. */
   airbasesPlaced?: Partial<Record<PowerId, number>>;
   /** The air units that have used their mission this Game Turn (spec 09 R5); absent in an older saved game. */

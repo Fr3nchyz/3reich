@@ -70,6 +70,8 @@ export function describeEvent(e: GameEvent, ctx: GameContext, swept: ReadonlySet
       return `${stackSummary(unitsWithIds(before, e.units))} move from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "UNITS_REDEPLOYED":
       return `${stackSummary(unitsWithIds(before, e.units))} redeployed from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} (${POWER_NAMES[e.nation]} has ${e.left} left).`;
+    case "AIR_DROPPED": // spec 09 AER97: report the landing without implying control changed
+      return `${stackSummary(unitsWithIds(before, [e.unit]))} drops from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)} (${e.supplied ? "in supply" : "out of supply"}).`;
     case "AIR_STAGED":
       return `${stackSummary(unitsWithIds(before, e.units))} changed base from ${placeName(ctx.map, e.from)} to ${placeName(ctx.map, e.to)}.`;
     case "DAS_INTERCEPTED":
