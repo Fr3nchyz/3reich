@@ -1,3 +1,4 @@
+import type { PortAttackResult } from "./air-port-attack";
 import type { Interception } from "./naval-intercept";
 import type { Front } from "./map";
 import { airOf, gameTurnKey } from "./air-record";
@@ -36,6 +37,11 @@ export interface SeaSupplyDesignation {
 export interface NavalState {
   /** TODO(verify) AER75, spec 12 Wiring 12-11b: absent/false preserves old turn flow. */
   manualFleetMove?: boolean;
+  /** TODO(verify) AER98–AER103, spec 12 Wiring 12-16: opt-in Player Turn work. */
+  manualSeaAir?: boolean;
+  seaAir?: { side: Side; target: string; point: HexId; units: string[] }[];
+  seaAirResults?: { side: Side; target: string; point: HexId; result: PortAttackResult | null }[];
+  seaAirForces?: Record<string, string[]>;
   /** Spec 12 R10: this Player Turn's courses, retained for interception in 12-12. */
   moves?: { fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }[];
   /** Spec 12 R11/R12; TODO(verify) AER84/AER91: absent fields are empty current-turn defaults. */

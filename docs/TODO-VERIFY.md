@@ -500,3 +500,10 @@ For minor countries (spec 15, questions P1 to P8): whether the game places an at
 - **TODO(verify) AER92 — spec 09, Wiring 09-10b:** explicit optional interception action at 7e, gated by manual DAS and eligible unused interceptors; immediate exchange against all committed DAS at the target. Default games and old saves keep their skip and dice.
 - **TODO(verify) AER93 — spec 09, Wiring 09-10b:** deterministic automatic losses for both forces via autoAirLosses and shared pool returns; all interceptors consume their Game Turn mission. Owner choice deferred.
 - **TODO(verify) AER94 — spec 09, Wiring 09-10b:** automatically continue larger-winning DAS survivors only (AER63/AER64); replace the fought commitment and record the target once per Player Turn. Optional empty record expires with the Player Turn. Owner continuation choice deferred.
+
+- **TODO(verify) AER98 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Manual sea-air opt-in and eligible 6c assignment proposals against recorded courses; computer never assigns.
+- **TODO(verify) AER99 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Immediate Game Turn mission consumption; explicit queued 6d resolution after naval combat, in assignment order.
+- **TODO(verify) AER100 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Current surviving participants only; failed/cancelled interception or returned move cancels without dice; retain replacement ids.
+- **TODO(verify) AER101 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Any Option (Ref 20.431); usable base, four-hex neutral-safe flight including endpoints; no Counter-Air at sea.
+- **TODO(verify) AER102 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** R15 rolls 1 hit/6 air loss; inherit AER69/N1/N2 breakdown, AER82 allocation, shared pool routing and ledger inheritance.
+- **TODO(verify) AER103 — spec 12 Wiring 12-16 (Ref 20.431, 20.45, 20.52):** Optional Player Turn queue/survivor mapping; missing air/ships consume without dice; result records and existing loss events; unchanged default state/actions/RNG.

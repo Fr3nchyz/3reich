@@ -22,6 +22,9 @@ export type Action =
   | { type: "AIRDROP"; side: Side; unit: string; to: HexId }
   /** Spec 12 R11/R12; TODO(verify) AER84–AER91: opt-in declarations and explicit resolution. */
   | { type: "DECLARE_INTERCEPT"; side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
+  /** Spec 12 R15; TODO(verify) AER98/AER99: explicit manual work only. */
+  | { type: "DESIGNATE_SEA_AIR"; side: Side; target: string; point: HexId; units: string[] }
+  | { type: "RESOLVE_SEA_AIR"; side: Side }
   | { type: "PASS_INTERCEPT"; side: Side }
   | { type: "RESOLVE_INTERCEPTIONS"; side: Side; turnBack?: string[] }
   /** Spec 12 R10 / AER75: opt-in base change at 6b. */
