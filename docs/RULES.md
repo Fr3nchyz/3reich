@@ -326,3 +326,10 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 - **TODO(verify) AER92 — spec 09, Wiring 09-10b:** explicit optional interception action at 7e, gated by manual DAS and eligible unused interceptors; immediate exchange against all committed DAS at the target. Default games and old saves keep their skip and dice.
 - **TODO(verify) AER93 — spec 09, Wiring 09-10b:** deterministic automatic losses for both forces via autoAirLosses and shared pool returns; all interceptors consume their Game Turn mission. Owner choice deferred.
 - **TODO(verify) AER94 — spec 09, Wiring 09-10b:** automatically continue larger-winning DAS survivors only (AER63/AER64); replace the fought commitment and record the target once per Player Turn. Optional empty record expires with the Player Turn. Owner continuation choice deferred.
+
+- **TODO(verify) AER110 — spec 12, Computer wiring 12-13 (spec 05):** Disabled AI switch; preserve the independent manualFleetMove gate and old saves.
+- **TODO(verify) AER111 — spec 12, Computer wiring 12-13 (spec 05):** Escape adjacent hostile ground first, else strictly approach an unsupplied friendly ground pocket by map hex distance; lowest nearest-pocket distance, lexical port if none.
+- **TODO(verify) AER112 — spec 12, Computer wiring 12-13 (spec 05):** Reject ports in sea-course reach of two distinct hostile fleet bases; escape destinations must have no adjacent hostile ground.
+- **TODO(verify) AER113 — spec 12, Computer wiring 12-13 (spec 05):** Only listed full-force interceptions within one sea hexside for every base (including zero); combined committed/proposed factors at least equal; never break off. Engine table still determines success.
+- **TODO(verify) AER114 — spec 12, Computer wiring 12-13 (spec 05):** Deterministic lexical ties: move destination/fleet/Front/course; interception target/meeting point/fleets. Pure selection.
+- **TODO(verify) AER115 — spec 12, Computer wiring 12-13 (spec 05):** Pass if no qualifying declaration; follow legal acting side, including counters; resolve with default continuation; switch-off retains previous fallback.

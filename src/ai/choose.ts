@@ -12,7 +12,7 @@ import { choosePlacement } from "./place";
 import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
-import { chooseSeaSupply } from "./naval";
+import { chooseFleetMove, chooseFleetIntercept, chooseSeaSupply } from "./naval";
 import { chooseMove } from "./move";
 import { chooseOverstack } from "./overstack";
 import { chooseRedeploy } from "./redeploy";
@@ -40,6 +40,8 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "8a" ? chooseSiberian(ctx, state, legal, cfg) // 8a: the Allies may take units in the Free Siberian Transfer (tickets 14-18 and 14-19; the policy is SIBERIAN_TAKE_ALL in policies.ts)
     : step === "8b" ? chooseBuild(ctx, state, legal, cfg)
     : step === "9a" ? chooseGrant(state, legal, cfg)
+    : step === "6b" ? chooseFleetMove(ctx, state, legal) // spec 12 Part E, AER110–AER115: independently gated fleet policy
+    : step === "6c" || step === "6d" ? chooseFleetIntercept(ctx, state, legal)
     : step === "6e" || step === "9f" ? chooseSeaSupply(ctx, state, legal)
     : step === "3" ? chooseOptions(ctx, state, legal, cfg) // 3: the Front Options, per Front by the policy constants in options.ts (ticket 16-1)
     : step === "4" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseMove(ctx, state, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 4: an attacked minor's own turn: its normal mover, then its normal attacker, then a Pass (spec 15 R15, ticket 15-18)
