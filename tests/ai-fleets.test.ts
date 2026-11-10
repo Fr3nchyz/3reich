@@ -41,6 +41,20 @@ describe("spec 12 Part E / spec 05 fleet policy (AER110–AER115)", () => {
     expect(policies.AI_USES_FLEETS).toBe(false);
     expect(decide(position())?.action.type).toBe("END_STEP");
     expect(decide(at6c())).toBeNull();
+    let s = at6c();
+    const declaration = legalActions(CTX, s).find(a => a.type === "DECLARE_INTERCEPT")!;
+    s = apply(s, declaration);
+    s = apply(s, { type: "PASS_INTERCEPT", side: "axis" });
+    s = apply(s, { type: "PASS_INTERCEPT", side: "allies" });
+    expect(step(s)).toBe("6d");
+    expect(decide(s)).toBeNull();
+  });
+  it("AER110 leaves old saves without a naval record unchanged", () => {
+    enable(); const s = position(); delete s.naval;
+    const before = structuredClone(s);
+    expect(decide(s)?.action.type).toBe("END_STEP");
+    expect(s).toEqual(before);
+    expect(s).not.toHaveProperty("naval");
   });
   it.each([undefined, false])("AER110 keeps the independent human gate %s at 6b–6d", flag => {
     enable();
