@@ -1,3 +1,4 @@
+import type { NavalCombatResult } from "./naval-combat";
 import type { InterceptionEvent } from "./air-intercept-wire";
 import type { PortAttackResult } from "./air-port-attack";
 import type { CounterAirEvent } from "./air-counter";
@@ -19,6 +20,10 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
 export type Action =
   /** Ref 23.1 / spec 09 AER95: optional normal drop at 7g. */
   | { type: "AIRDROP"; side: Side; unit: string; to: HexId }
+  /** Spec 12 R11/R12; TODO(verify) AER84–AER91: opt-in declarations and explicit resolution. */
+  | { type: "DECLARE_INTERCEPT"; side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
+  | { type: "PASS_INTERCEPT"; side: Side }
+  | { type: "RESOLVE_INTERCEPTIONS"; side: Side; turnBack?: string[] }
   /** Spec 12 R10 / AER75: opt-in base change at 6b. */
   | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
@@ -117,6 +122,15 @@ export interface IncomeLine { name: string; value: number; reason: string }
 export type GameEvent =
   /** Spec 09 AER97: placement and the pure resolver's landing supply report. */
   | { type: "AIR_DROPPED"; side: Side; unit: string; from: HexId; to: HexId; supplied: boolean }
+  /** Spec 12 R10: a base change and its course, before later interception wiring. */
+  /** Spec 12 R11/R12/R21; TODO(verify) AER91: full deterministic interception audit. */
+  | { type: "INTERCEPTION_DECLARED"; side: Side; interception: string; target: string; fleets: string[]; meetingPoint: HexId; breakOff: boolean }
+  | { type: "INTERCEPTION_PASSED"; side: Side; consecutive: number }
+  | { type: "INTERCEPTION_CANCELLED"; side: Side; interception: string }
+  | { type: "INTERCEPTION_ATTEMPTED"; side: Side; interception: string; fleets: string[]; base: HexId; distance: number | null; die: number | null; needed: number[] | "automatic"; success: boolean }
+  | { type: "NAVAL_COMBAT_RESOLVED"; interception: string; at: HexId; interceptor: string[]; intercepted: string[]; dice: { interceptor: number; intercepted: number }; result: NavalCombatResult }
+  | { type: "NAVAL_LOSSES_APPLIED"; side: Side; at: HexId; before: { id: string; strength: number }; after: { id: string; strength: number }[]; lost: number }
+  | { type: "FLEET_RETURNED"; side: Side; unit: string; from: HexId; to: HexId }
   | { type: "DAS_COMMITTED"; side: Side; units: string[]; hex: HexId }
   /** Spec 12 R10: a base change and its course, before later interception wiring. */
   | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
