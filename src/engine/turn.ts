@@ -211,7 +211,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7a":
     case "7p":
       return hasAttritionWork(ctx, state);
-    case "7e": // spec 09 Wiring, 09-10b / AER84: manual DAS and eligible interceptors only
+    case "7e": // spec 09 Wiring, 09-10b / AER92: manual DAS and eligible interceptors only
       return legalDasIntercept(ctx, state).length > 0;
     case "7d": // spec 09 Wiring, 09-8b / AER76: absent manual flag preserves the old skip
       return legalDas(ctx, state).length > 0;

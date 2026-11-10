@@ -308,6 +308,6 @@ Also noticed: the printed Ref 11.62 says Turkey, Spain, Vichy France, Sweden and
 
 - **TODO(verify) AER75 — spec 12, Wiring 12-11b:** provisional opt-in `naval.manualFleetMove === true` gates step 6b work and MOVE_FLEET. Empty defaults and old saves keep the previous skip/actions; END_STEP remains optional. Courses are stored for 12-12; computer opt-in waits for 12-12.
 
-- **TODO(verify) AER84 — spec 09, Wiring 09-10b:** explicit optional interception action at 7e, gated by manual DAS and eligible unused interceptors; immediate exchange against all committed DAS at the target. Default games and old saves keep their skip and dice.
-- **TODO(verify) AER85 — spec 09, Wiring 09-10b:** deterministic automatic losses for both forces via autoAirLosses and shared pool returns; all interceptors consume their Game Turn mission. Owner choice deferred.
-- **TODO(verify) AER86 — spec 09, Wiring 09-10b:** automatically continue larger-winning DAS survivors only (AER63/AER64); replace the fought commitment and record the target once per Player Turn. Optional empty record expires with the Player Turn. Owner continuation choice deferred.
+- **TODO(verify) AER92 — spec 09, Wiring 09-10b:** explicit optional interception action at 7e, gated by manual DAS and eligible unused interceptors; immediate exchange against all committed DAS at the target. Default games and old saves keep their skip and dice.
+- **TODO(verify) AER93 — spec 09, Wiring 09-10b:** deterministic automatic losses for both forces via autoAirLosses and shared pool returns; all interceptors consume their Game Turn mission. Owner choice deferred.
+- **TODO(verify) AER94 — spec 09, Wiring 09-10b:** automatically continue larger-winning DAS survivors only (AER63/AER64); replace the fought commitment and record the target once per Player Turn. Optional empty record expires with the Player Turn. Owner continuation choice deferred.

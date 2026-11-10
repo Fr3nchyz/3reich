@@ -78,7 +78,7 @@ export type Action =
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air"; units: string[]; target: HexId }
   /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
-  /** Spec 09 R11 / AER84: explicit interception and resolution at 7e. */
+  /** Spec 09 R11 / AER92: explicit interception and resolution at 7e. */
   | { type: "DESIGNATE_DAS_INTERCEPT"; side: Side; units: string[]; hex: HexId }
   /** Ref 20.51: explicit Non-Phasing commitment at 7d. */
   | { type: "DESIGNATE_DAS"; side: Side; units: string[]; hex: HexId }

@@ -20,7 +20,7 @@ export interface AirState {
   groundSupport: Record<HexId, string[]>;
   /** TODO(verify) AER76: manual DAS gate, absent in older saves and computer games. */
   manualDas?: boolean;
-  /** TODO(verify) AER86: one interception per DAS target this Player Turn; absent means empty. */
+  /** TODO(verify) AER94: one interception per DAS target this Player Turn; absent means empty. */
   interceptedDas?: HexId[];
   /** Ref 20.51: defender air committed by target this Player Turn; absent means empty. */
   das?: Record<HexId, string[]>;

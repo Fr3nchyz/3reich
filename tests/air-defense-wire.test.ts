@@ -32,7 +32,7 @@ const at7d = (s = start()) => okOf(applyAction(CTX, at7b(setManualDas(s, true)),
 const committed = (s = start()) => okOf(applyAction(CTX, at7d(s), designate)).state;
 const battle = (s = start()) => {
   const next = okOf(applyAction(CTX, committed(s), end("7d", "allies"))).state;
-  // AER84: pass optional interception before testing the DAS ground battle.
+  // AER92: pass optional interception before testing the DAS ground battle.
   return next.position?.part === "player-turn" && next.position.step === "7e" ? okOf(applyAction(CTX, next, end("7e"))).state : next;
 };
 const attack: Action = { type: "ATTACK", side: "axis", units: ["g"], target: "M33" };

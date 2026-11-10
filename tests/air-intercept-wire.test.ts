@@ -30,7 +30,7 @@ const position = (s = start()) => {
 const apply = (s: GameState, a: Action = intercept) => okOf(applyAction(CTX, s, a));
 
 describe("09-10b: interception through real turn flow", () => {
-  it("AER84/R11: waits at 7e only with current manual DAS and reachable unused air", () => {
+  it("AER92/R11: waits at 7e only with current manual DAS and reachable unused air", () => {
     const s = position();
     expect(s.position).toMatchObject({ step: "7e" });
     expect(sideToAct(s)).toBe("axis");
@@ -53,7 +53,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(JSON.stringify(s)).toBe(before);
   });
 
-  it("AER84/C1: rejects wrong side, setup, game over, missing position and absent/false gate", () => {
+  it("AER92/C1: rejects wrong side, setup, game over, missing position and absent/false gate", () => {
     const s = position();
     expect(applyAction(CTX, s, { ...intercept, side: "allies" }).ok).toBe(false);
     for (const invalid of [{ ...s, phase: "setup" as const }, { ...s, phase: "game-over" as const },
@@ -97,7 +97,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(apply(extra).state.units.bystander).toEqual(extra.units.bystander);
   });
 
-  it("R15/AER85: seeded losses, pool returns, bases and mission use are deterministic", () => {
+  it("R15/AER93: seeded losses, pool returns, bases and mission use are deterministic", () => {
     // Ref 20.44/20.6: seed 13 rolls 4 vs 3; five owes one and breaks to three on each side.
     const s = position(), before = JSON.stringify(s);
     const result = apply(s);
@@ -116,7 +116,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(applyAction(CTX, result.state, intercept).ok).toBe(false);
   });
 
-  it("AER86/Ref 20.44: larger winning DAS continues once, others abort", () => {
+  it("AER94/Ref 20.44: larger winning DAS continues once, others abort", () => {
     const s = position(start(11, 3, 5));
     const result = apply(s);
     expect(result.events[0]).toMatchObject({ combat: { winner: "defender", defenderSurvivorsFree: true }, continuing: ["d"] });
@@ -130,7 +130,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(dasOf(apply(position(start(45, 3, 3))).state)).toEqual({});
   });
 
-  it("AER85/Ref 20.6: complete destruction returns counters without leaving DAS references", () => {
+  it("AER93/Ref 20.6: complete destruction returns counters without leaving DAS references", () => {
     const s = position(start(44, 5, 1));
     const result = apply(s);
     expect(result.state.units.d).toBeUndefined();
@@ -138,7 +138,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(result.events).toContainEqual(expect.objectContaining({ type: "UNIT_ELIMINATED", unitId: "d" }));
   });
 
-  it("AER84/R15: listing is sorted, immutable and accepts legal selected subsets", () => {
+  it("AER92/R15: listing is sorted, immutable and accepts legal selected subsets", () => {
     const s = position();
     const extra = { ...s, units: { z: air("z", 1, "germany", "J32"), ...s.units } };
     const before = JSON.stringify(extra);
@@ -150,7 +150,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(legalActions(CTX, reversed)).toEqual(legalActions(CTX, extra));
   });
 
-  it("R11/AER84: Allied Phasing planes intercept Axis DAS through the same flow", () => {
+  it("R11/AER92: Allied Phasing planes intercept Axis DAS through the same flow", () => {
     const initial = at6f([inf("g", "britain", "M32"), inf("p", "germany", "M33"),
       air("a", 3, "britain", "M32"), air("d", 5, "germany", "M33")], "allies", undefined,
     { rngState: 11, airbasesPlaced: NO_AIRBASES_LEFT, control: { M32: "britain", M33: "germany" } });
@@ -162,7 +162,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(apply(s, { ...intercept, side: "allies" }).state.airFlown?.units.a).toBe("das-intercept");
   });
 
-  it("AER86: preserves other targets and consumes only the selected interceptors", () => {
+  it("AER94: preserves other targets and consumes only the selected interceptors", () => {
     const s = position();
     const other = { ...s, units: { ...s.units, extra: air("extra", 1, "britain", "M33") },
       air: { ...airOf(s), das: { ...dasOf(s), M32: ["extra"] } } };
@@ -180,7 +180,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(describeEvent(done.events[0]!, CTX, new Set(), new Map(), s)).toContain("tie die 4");
   });
 
-  it("R11/AER86: aborted DAS survives at base but adds nothing to the ground battle", () => {
+  it("R11/AER94: aborted DAS survives at base but adds nothing to the ground battle", () => {
     const s = position();
     const done = apply(s).state;
     const h = apply(done, end("7e")).state;
@@ -201,7 +201,7 @@ describe("09-10b: interception through real turn flow", () => {
     expect(describeEvent(c, CTX, new Set(), new Map(), s)).toContain("surviving DAS continues");
   });
 
-  it("C1/AER84: old JSON state, fingerprints, actions and computer path stay unchanged", () => {
+  it("C1/AER92: old JSON state, fingerprints, actions and computer path stay unchanged", () => {
     const initial = start(), before = JSON.stringify(initial), hash = fingerprint(initial);
     const loaded = JSON.parse(before) as GameState;
     expect(airOf(loaded).interceptedDas).toBeUndefined();

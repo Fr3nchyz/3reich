@@ -7,11 +7,11 @@ import { airOf, markFlown } from "./air-record";
 import type { GameContext } from "./context";
 import type { GameState } from "./types";
 
-/** TODO(verify) AER84: explicit optional exchange at 7e, with manual DAS only. */
+/** TODO(verify) AER92: explicit optional exchange at 7e, with manual DAS only. */
 export const DAS_INTERCEPT_STEP = "7e";
-/** TODO(verify) AER85: automatic deterministic allocation, following counter-air. */
+/** TODO(verify) AER93: automatic deterministic allocation, following counter-air. */
 export const DAS_INTERCEPT_LOSSES = autoAirLosses;
-/** TODO(verify) AER86: larger-winning DAS automatically continues; owner choice deferred. */
+/** TODO(verify) AER94: larger-winning DAS automatically continues; owner choice deferred. */
 export const DAS_CONTINUES = true;
 
 /** Spec 09 C3/R11: both forces' actual losses and the remaining commitment. */
@@ -29,7 +29,7 @@ const intercepted = (state: GameState, hex: string) => (airOf(state).intercepted
 const atInterception = (state: GameState) => manualDas(state) && state.phase === "player-turn" &&
   state.position?.part === "player-turn" && state.position.step === DAS_INTERCEPT_STEP;
 
-/** Ref 20.43 / AER84: useful targets then eligible counters, both in lexical order. */
+/** Ref 20.43 / AER92: useful targets then eligible counters, both in lexical order. */
 export function legalDasIntercept(ctx: GameContext, state: GameState): Action[] {
   if (!atInterception(state)) return [];
   return Object.keys(dasOf(state)).sort().flatMap((hex): Action[] => {
@@ -41,7 +41,7 @@ export function legalDasIntercept(ctx: GameContext, state: GameState): Action[] 
 
 /** Ref 20.43/20.44, spec 09 R11/R15: validate atomically, then resolve the selected force. */
 export function applyDasIntercept(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DESIGNATE_DAS_INTERCEPT" }>): ActionResult {
-  if (!atInterception(state)) return { ok: false, error: "Manual DAS interception requires step 7e (AER84)." };
+  if (!atInterception(state)) return { ok: false, error: "Manual DAS interception requires step 7e (AER92)." };
   if (action.side !== state.activeSide) return { ok: false, error: "Only the Phasing side intercepts DAS." };
   if (typeof action.hex !== "string" || !Object.hasOwn(ctx.map.hexes, action.hex) || intercepted(state, action.hex)) return { ok: false, error: "Interception needs a current, unintercepted DAS target." };
   if (!Array.isArray(action.units) || action.units.length === 0 || action.units.length > 100 ||
@@ -66,7 +66,7 @@ export function applyDasIntercept(ctx: GameContext, state: GameState, action: Ex
   const flown = markFlown({ ...losses.state, rngState: result.rngState }, action.units, "das-intercept");
   const rec = airOf(flown);
   const { [action.hex]: _gone, ...otherDas } = dasOf(flown);
-  // AER86: continuing survivors count at 7h, but cannot be intercepted a second time.
+  // AER94: continuing survivors count at 7h, but cannot be intercepted a second time.
   const das = result.continuing.length ? { ...otherDas, [action.hex]: [...result.continuing] } : otherDas;
   return { ok: true, state: { ...flown, air: { ...rec, das, interceptedDas: [...(rec.interceptedDas ?? []), action.hex] } },
     events: [{ type: "DAS_INTERCEPTED", hex: action.hex, rolls: result.rolls, combat: result.combat,
