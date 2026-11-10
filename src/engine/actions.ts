@@ -17,7 +17,7 @@ import { applyDasIntercept, legalDasIntercept } from "./air-intercept-wire";
 import { applyPortDesignation, applyResolvePortAttacks, legalPortAttacks, hasPortAttackWork } from "./air-port-wire";
 import { applyDas, legalDas, dasSide, manualDas } from "./air-defense-wire";
 import { applyPlaceAirbase } from "./air-actions";
-import { applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
+import { applyIntercept, hasInterceptWork, interceptMoveOn, legalInterceptActions, applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
@@ -49,6 +49,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "6c" || step === "6d") return legalInterceptActions(ctx, state, step);
   if (step === "6b") return legalFleetMoves(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
@@ -79,6 +80,8 @@ function stepActions(ctx: GameContext, state: GameState, step: string): Action[]
 export function moveOnAction(state: GameState): Action[] {
   const step = state.phase === "player-turn" ? waitingStep(state) : undefined;
   if (step === undefined) return [];
+  const naval = interceptMoveOn(state);
+  if (naval.length) return naval;
   return [step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step }];
 }
 
@@ -92,6 +95,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   const step = waitingStep(state);
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: step === "7d" && manualDas(state) ? dasSide(state) : state.activeSide, step };
+  if (hasInterceptWork(ctx, state, step)) return stepActions(ctx, state, step);
   if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
   if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER80
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
@@ -164,6 +168,14 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       if (!named.ok) return named;
       const settled = settle(ctx, named.state);
       return { ok: true, state: settled.state, events: [...named.events, ...settled.events] };
+    }
+    case "DECLARE_INTERCEPT":
+    case "PASS_INTERCEPT":
+    case "RESOLVE_INTERCEPTIONS": {
+      const done = atStep(state, action.type === "RESOLVE_INTERCEPTIONS" ? "6d" : "6c", "Interceptions are declared/resolved", () => applyIntercept(ctx, state, action));
+      if (!done.ok) return done;
+      const settled = settle(ctx, done.state);
+      return { ok: true, state: settled.state, events: [...done.events, ...settled.events] };
     }
     case "MOVE_FLEET":
       return atStep(state, "6b", "Fleets change base", () => applyFleetMove(ctx, state, action));
@@ -286,6 +298,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
   if (action.type === "END_STEP" && step === LAST_STEP) {
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
+  if (hasInterceptWork(ctx, state, step)) return { ok: false, error: "Interception rounds/resolution must finish first (spec 12 R11/R12)." };
   if (step === "7c" && hasCounterAirWork(state)) return { ok: false, error: "Step 7c waits for assigned counter-air to resolve (spec 09 R12)." };
   if (step === "7i" && hasPortAttackWork(state)) return { ok: false, error: "Step 7i waits for assigned port attacks to resolve (spec 12 R14 / AER80)." };
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
