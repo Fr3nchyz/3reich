@@ -97,7 +97,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(applyAction(ctx, markFlown(s, ["p"], "new"), designate()).ok).toBe(false);
     expect(applyAction(ctx, position([plane("p", 3, "A5", "britain"), fleet()]), designate()).ok).toBe(false);
     // Spec 12 R19: reuse the permissive ordinary-attack hook, without tightening Options.
-    expect(applyAction(ctx, { ...s, frontOptions: { western: { option: "pass" } } }, designate()).ok).toBe(true);
+    expect(applyAction(ctx, { ...s, frontOptions: { western: { option: "defensive" } } }, designate()).ok).toBe(true);
     expect(applyAction(ctx, { ...s, units: { p: s.units.p! } }, designate()).ok).toBe(false);
     expect(applyAction(ctx, at7i(), { ...resolve, side: "allies" }).ok).toBe(false);
     expect(s).toEqual(before);
@@ -193,7 +193,24 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     const missing = { ...i, units: { f: i.units.f! } };
     expect(portEvent(missing)).toMatchObject({ status: "no-air", rolls: [], airLost: 0 });
     expect(portAttacksOf(apply(missing, resolve).state)).toEqual([]);
+    expect(apply(missing, resolve).state.rngState).toBe(i.rngState);
     expect(hasFlown(apply(moved, resolve).state, "p")).toBe(true);
+  });
+
+  it("R14/AER79: missing planes are omitted while surviving assigned planes still attack", () => {
+    const s = position([plane(), plane("q", 2), fleet()]);
+    const b = apply(s, designate(["p", "q"])).state;
+    const i = apply(b, end("7b")).state;
+    const { p: removed, ...units } = i.units;
+    expect(removed).toBeDefined();
+    const missing = { ...i, units };
+    const before = structuredClone(missing);
+    const done = apply(missing, resolve);
+    const event = done.events.find(e => e.type === "PORT_ATTACK_RESOLVED")!;
+    expect(event.status).toBe("resolved");
+    expect(event.rolls.map(r => r.id)).toEqual(["q", "q"]);
+    expect(portAttacksOf(done.state)).toEqual([]);
+    expect(missing).toEqual(before);
   });
 
   it("R14/R21/AER78: determinism, immutable JSON replay and automatic fleet strength/id allocation", () => {
@@ -210,7 +227,8 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(event.navalHits).toBeGreaterThan(0);
     expect(event.fleets.find(f => f.id === "b")!.lost).toBe(Math.min(2, event.navalHits));
     expect(event.fleets.find(f => f.id === "a")!.lost).toBe(Math.max(0, event.navalHits - 4));
-    expect(portCapacity(ctx, done.state, "A5")).toBe(portCapacity(ctx, s, "A5"));
+    // Spec 12 R2/R14 (Ref 21.1/20.45): ship losses do not damage this ordinary port.
+    expect(portCapacity(ctx, "A5")).toBe(36);
   });
 
   it("R14/AER79: partial fleet breakdown preserves nationality/base and uses deterministic replacement ids", () => {
