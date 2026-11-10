@@ -29,7 +29,7 @@ function designationProblem(ctx: GameContext, state: GameState, a: Designation):
   for (const id of a.units) {
     const u = state.units[id]!;
     if (u.type !== "air" || !Number.isInteger(u.strength) || u.strength <= 0 || sideInWar(state, u.owner) !== a.side || hasFlown(state, id)) return "Only this side's unused air may attack ships (Ref 20.3).";
-    if (!ctx.map.hexes[u.at]?.land || target.fleets.some(f => !state.units[f] || !areEnemies(state, u.owner, state.units[f]!.owner))) return "Air needs an on-map base and hostile ships.";
+    if (!ctx.map.hexes[u.at]?.land || target.fleets.some(f => !state.units[f] || !areEnemies(state, u.owner, state.units[f].owner))) return "Air needs an on-map base and hostile ships.";
     const error = baseProblem(ctx, state, u, u.at) ?? flightProblem(ctx, state, u.owner, u.at, a.point, MISSION_RANGE);
     if (error) return error;
   }
@@ -56,14 +56,16 @@ export function applySeaAirDesignation(ctx: GameContext, state: GameState, a: De
 /** Ref 20.52, spec 12 R15/R21; AER99–AER103: after naval dice, current participants only. */
 export function applyResolveSeaAir(state: GameState, a: Extract<Action, { type: "RESOLVE_SEA_AIR" }>): ActionResult {
   if (a.side !== state.activeSide || !legalSeaAir(state).length) return { ok: false, error: "Resolve assigned sea air after naval interceptions (AER99)." };
-  let next = state;
+  // AER100/AER102: initialize unopposed courses too, so replacements remain in later missions.
+  let next: GameState = { ...state, naval: { ...navalOf(state), seaAirForces: navalOf(state).seaAirForces ??
+    Object.fromEntries(interceptTargets(state).map(t => [t.id, [...t.fleets]])) } };
   const events: GameEvent[] = [];
   const results: NonNullable<ReturnType<typeof navalOf>["seaAirResults"]> = [];
   for (const mission of seaAirOf(state)) {
     const target = interceptTargets(next).find(t => t.id === mission.target);
     const ids = navalOf(next).seaAirForces?.[mission.target] ?? target?.fleets ?? [];
-    const fleets = ids.flatMap(id => next.units[id]?.type === "fleet" ? [next.units[id]!] : []);
-    const attacker = mission.units.flatMap(id => next.units[id]?.type === "air" ? [next.units[id]!] : []);
+    const fleets = ids.flatMap(id => next.units[id]?.type === "fleet" ? [next.units[id]] : []);
+    const attacker = mission.units.flatMap(id => next.units[id]?.type === "air" ? [next.units[id]] : []);
     if (!attacker.length) {
       results.push({ side: mission.side, target: mission.target, point: mission.point, result: null });
       continue;

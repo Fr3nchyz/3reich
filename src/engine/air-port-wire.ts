@@ -73,10 +73,11 @@ export function applyPortLosses(state: GameState, attacker: readonly string[], r
         if (inheritNaval) while (Object.hasOwn(units, id)) id = `u${nextUnitId++}`;
         units[id] = { ...unit, id, strength };
       }
+      const replacements = Object.keys(units).filter(id => !Object.hasOwn(next.units, id));
       next = { ...next, units, nextUnitId };
       // TODO(verify) AER102: replacement ships retain sea-force membership and ledger marks.
       if (inheritNaval) {
-        const rec = navalOf(next), replacements = Object.keys(units).filter(id => !Object.hasOwn(next.units, id));
+        const rec = navalOf(next);
         const ids = [unit.id, ...replacements];
         next = { ...next, naval: { ...rec,
           used: { ...rec.used, ...Object.fromEntries(ids.flatMap(id => rec.used[unit.id] ? [[id, rec.used[unit.id]!]] : [])) },
