@@ -1,4 +1,3 @@
-import type { InterceptDeclaration } from "./naval-intercept";
 import type { NavalCombatResult } from "./naval-combat";
 import type { CounterAirEvent } from "./air-counter";
 import type { HexId } from "./hex";
@@ -17,11 +16,11 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
-  /** Spec 12 R10 / AER75: opt-in base change at 6b. */
   /** Spec 12 R11/R12; TODO(verify) AER76–AER83: opt-in declarations and explicit resolution. */
-  | ({ type: "DECLARE_INTERCEPT" } & InterceptDeclaration)
+  | { type: "DECLARE_INTERCEPT"; side: Side; target: string; fleets: string[]; meetingPoint: HexId; breakOff?: boolean }
   | { type: "PASS_INTERCEPT"; side: Side }
   | { type: "RESOLVE_INTERCEPTIONS"; side: Side; turnBack?: string[] }
+  /** Spec 12 R10 / AER75: opt-in base change at 6b. */
   | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
   | { type: "END_PLAYER_TURN"; side: Side }
