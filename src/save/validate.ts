@@ -84,7 +84,8 @@ export function readSave(source: string, scenarios: readonly Scenario[]): ReadRe
     if (!object(input.start)) fail("start");
     // Spec 09 AER116: only the explicit opt-in is accepted; omission remains unchanged.
     if (input.start.kind === "new" && input.start.manual !== undefined && input.start.manual !== true) fail("start.manual");
-    const start: SaveFile["start"] = input.start.kind === "new" ? { kind: "new", ...(input.start.manual === true ? { manual: true } : {}) }
+    if (input.start.kind === "new" && input.start.manualAirDrop !== undefined && input.start.manualAirDrop !== true) fail("start.manualAirDrop");
+    const start: SaveFile["start"] = input.start.kind === "new" ? { kind: "new", ...(input.start.manual === true ? { manual: true } : {}), ...(input.start.manualAirDrop === true ? { manualAirDrop: true } : {}) }
       : input.start.kind === "snapshot" && object(input.start.state)
         ? { kind: "snapshot", state: cleanSnapshot(input.start.state, scenario) } : fail("start");
     const save: SaveFile = {

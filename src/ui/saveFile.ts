@@ -19,9 +19,11 @@ export function saveFileName(save: SaveFile): string {
 
 /** Spec 09 AER116: snapshot starts carry options themselves; old sessions stay flags-off. */
 export function sessionStart(session: Session, start: SaveFile["start"]): SaveFile["start"] {
-  return start.kind === "new" && session.state.naval?.manualFleetMove === true
-    && session.state.air?.manualDas === true && session.state.airDrop?.manual === true
-    ? { kind: "new", manual: true } : start;
+  if (start.kind !== "new") return start;
+  return { ...start,
+    ...(session.state.naval?.manualFleetMove === true && session.state.air?.manualDas === true
+      && session.state.naval?.manualSeaAir === true ? { manual: true as const } : {}),
+    ...(session.state.airDrop?.manual === true ? { manualAirDrop: true as const } : {}) };
 }
 
 /** Spec 11 B/G: single-player state and complete record; restored snapshot starts survive export. */

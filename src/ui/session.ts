@@ -1,4 +1,4 @@
-import { setManualAirDrop } from "../engine/air-drop-wire";
+import { navalOf } from "../engine/naval-record";
 import { setManualDas } from "../engine/air-defense-wire";
 import { setManualFleetMove } from "../engine/naval-actions";
 import { trackAirResults, type AirResults } from "./airResultModel";
@@ -130,7 +130,7 @@ export function newSession(scenario: Scenario, side: Side, seed: number, manual 
   const state = newGame(scenario, seed);
   return {
     ctx: { map: MAP, scenario },
-    state: manual ? setManualAirDrop(setManualDas(setManualFleetMove(state, true), true), true) : state,
+    state: manual ? setManualDas({ ...state, naval: { ...navalOf(setManualFleetMove(state, true)), manualSeaAir: true } }, true) : state,
     humanSide: side,
     seed,
     log: [`${scenario.name} started. You play the ${sideName(side)} side; the computer sets up the other.`],

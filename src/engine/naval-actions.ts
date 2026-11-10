@@ -1,3 +1,4 @@
+import { legalSeaAirDesignations } from "./air-sea-wire";
 import { otherSide } from "./game";
 import { INTERCEPT_PASSES, declareIntercept, interceptEnabled, interceptPasses, interceptProblem, interceptSide, interceptTargets, interceptionsOf, resolveInterceptions } from "./naval-intercept";
 import { fleetMoveOptions, movableFleets, moveFleet } from "./fleet-move";
@@ -87,12 +88,12 @@ export function legalInterceptDeclarations(ctx: GameContext, state: GameState): 
   }));
 }
 
-/** Spec 12 C5 / AER84/AER88: stay for both passes once a round starts, then for explicit resolution. */
+/** Spec 12 C5 / AER84/AER88; TODO(verify) AER117: sea-air work opens the same two-pass round. */
 export function hasInterceptWork(ctx: GameContext, state: GameState, step: string): boolean {
   if (!interceptEnabled(state)) return false;
   const rec = navalOf(state);
   if (step === "6d") return interceptionsOf(state).length > 0 && rec.interceptsResolved !== true;
-  return step === "6c" && interceptPasses(state) < INTERCEPT_PASSES && (rec.interceptSide !== undefined || interceptionsOf(state).length > 0 || legalInterceptDeclarations(ctx, state).length > 0);
+  return step === "6c" && interceptPasses(state) < INTERCEPT_PASSES && (rec.interceptSide !== undefined || interceptionsOf(state).length > 0 || legalInterceptDeclarations(ctx, state).length > 0 || legalSeaAirDesignations(ctx, state).length > 0);
 }
 
 /** TODO(verify) AER84/AER88: moving on requires a pass or resolution, never an END_STEP bypass. */

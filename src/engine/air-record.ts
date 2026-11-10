@@ -30,8 +30,8 @@ export interface AirState {
   portAttacks?: { target: HexId; units: string[]; counterAir?: "beaten" | "not-beaten" }[];
 }
 
-/** A record for the Player Turn that begins now, with control as it stands. */
-export const newAirTurn = (state: GameState): AirState => ({ turn: turnKey(state), placed: [], staged: [], controlAtStart: { ...state.control }, groundSupport: {} });
+/** Spec 09 AER116: carry the session gate; reset turn-local work and control. */
+export const newAirTurn = (state: GameState): AirState => ({ ...(state.air?.manualDas === undefined ? {} : { manualDas: state.air.manualDas }), turn: turnKey(state), placed: [], staged: [], controlAtStart: { ...state.control }, groundSupport: {} });
 
 /** The record for the Player Turn now being played: the stored one, or a new one with control as it stands (a state built by hand, or one that began before the record existed). */
 export function airOf(state: GameState): AirState {
