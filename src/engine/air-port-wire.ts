@@ -8,15 +8,15 @@ import { sideInWar } from "./control";
 import { eliminateUnits } from "./losses";
 import type { GameState } from "./types";
 
-/** TODO(verify) AER76: explicit queued work only, spec 12 Wiring, 12-15b / R14. */
+/** TODO(verify) AER80: explicit queued work only, spec 12 Wiring, 12-15b / R14. */
 export const PORT_ATTACK_STEP = "7i";
-/** TODO(verify) AER78: automatic nominal fleet losses, smallest strength then lexical id. */
+/** TODO(verify) AER82: automatic nominal fleet losses, smallest strength then lexical id. */
 export const PORT_FLEET_LOSS_ORDER = "strength-id";
 export const portAttacksOf = (state: GameState) => airOf(state).portAttacks ?? [];
 export const hasPortAttackWork = (state: GameState): boolean => portAttacksOf(state).some((m) => m.units.length > 0);
 export const legalPortAttacks = (state: GameState): Action[] => hasPortAttackWork(state) ? [{ type: "RESOLVE_PORT_ATTACKS", side: state.activeSide }] : [];
 
-/** Spec 12 R14/R19, AER76: validate direct designation; never enumerate for the computer. */
+/** Spec 12 R14/R19, AER80: validate direct designation; never enumerate for the computer. */
 export function applyPortDesignation(ctx: GameContext, state: GameState, action: Extract<Action, { type: "DESIGNATE_AIR" }>): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: "Only the phasing side designates port attacks." };
   if (typeof action.target !== "string" || !Object.hasOwn(ctx.map.hexes, action.target)) return { ok: false, error: "A port attack needs a target on the map." };
@@ -36,7 +36,7 @@ export function applyPortDesignation(ctx: GameContext, state: GameState, action:
     events: [{ type: "AIR_MISSION_DESIGNATED", mission: "port-attack", units: [...action.units], target: action.target }] };
 }
 
-/** TODO(verify) AER78 / N29: owner choice deferred; allocation itself remains explicit to the pure resolver. */
+/** TODO(verify) AER82 / N29: owner choice deferred; allocation itself remains explicit to the pure resolver. */
 const chooseFleetLosses: PortFleetLossChooser = (pool, owed) => {
   let left = owed;
   return [...pool].sort((a, b) => a.strength - b.strength || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).flatMap((u) => {
@@ -46,7 +46,7 @@ const chooseFleetLosses: PortFleetLossChooser = (pool, owed) => {
   });
 };
 
-/** Spec 12 R14 / Ref 21.7; TODO(verify) AER79: preserve survivors, route whole sinks, discard partial factors (RB5). */
+/** Spec 12 R14 / Ref 21.7; TODO(verify) AER83: preserve survivors, route whole sinks, discard partial factors (RB5). */
 function applyPortLosses(state: GameState, attacker: readonly string[], result: PortAttackResult): { state: GameState; events: GameEvent[] } | { problem: string } {
   const remaining = new Map(result.air.surviving.map((u) => [u.id, u.strength]));
   const take = attacker.flatMap((id) => {
@@ -78,7 +78,7 @@ function applyPortLosses(state: GameState, attacker: readonly string[], result: 
   return { state: next, events };
 }
 
-/** Spec 12 R14/R21, AER76–79: resolve current targets once, in designation order, after ground combat. */
+/** Spec 12 R14/R21, AER80–79: resolve current targets once, in designation order, after ground combat. */
 export function applyResolvePortAttacks(state: GameState, action: Extract<Action, { type: "RESOLVE_PORT_ATTACKS" }>): ActionResult {
   if (action.side !== state.activeSide) return { ok: false, error: "Only the phasing side resolves port attacks." };
   if (!hasPortAttackWork(state)) return { ok: false, error: "No port attack is assigned." };
@@ -91,7 +91,7 @@ export function applyResolvePortAttacks(state: GameState, action: Extract<Action
       events.push({ type: "PORT_ATTACK_RESOLVED", target: mission.target, status: "no-air", rolls: [], airLost: 0, navalHits: 0, navalLost: 0, fleets: [] });
       continue;
     }
-    // AER77: recorded Counter-Air failure remains blocking after the defenders use their mission.
+    // AER81: recorded Counter-Air failure remains blocking after the defenders use their mission.
     const counterAir = mission.counterAir ?? (portCounterAirDefenders(next, mission.target).length > 0 ? "not-beaten" : "not-needed");
     const fleets = Object.values(next.units).filter((u) => u.type === "fleet" && u.strength > 0 && u.at === mission.target && sideInWar(next, u.owner) === (state.activeSide === "axis" ? "allies" : "axis"))
       .sort((a, b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);

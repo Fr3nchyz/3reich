@@ -40,8 +40,8 @@ const assigned = (s = position()) => apply(s, designate()).state;
 const at7i = (s = position()) => apply(assigned(s), end("7b")).state;
 const portEvent = (s: GameState) => apply(s, resolve).events.find((e) => e.type === "PORT_ATTACK_RESOLVED")!;
 
-describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–79)", () => {
-  it("AER76: leaving 7b stops at 7i only for assigned work; explicit resolution rolls once", () => {
+describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER80–79)", () => {
+  it("AER80: leaving 7b stops at 7i only for assigned work; explicit resolution rolls once", () => {
     expect(PORT_ATTACK_STEP).toBe("7i");
     const b = assigned();
     const i = apply(b, end("7b"));
@@ -60,7 +60,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(apply(done.state, end("7i")).state.position).not.toMatchObject({ step: "7i" });
   });
 
-  it("AER76: no queue never lists designation or resolution and keeps computer choice and RNG unchanged", () => {
+  it("AER80: no queue never lists designation or resolution and keeps computer choice and RNG unchanged", () => {
     const b = position();
     const before = structuredClone(b);
     expect(legalActions(ctx, b)).toEqual([end("7b")]);
@@ -103,7 +103,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(s).toEqual(before);
   });
 
-  it("R14/AER68/AER79: designation consumes mission, aggregates in order, forbids reuse and reshaping", () => {
+  it("R14/AER68/AER83: designation consumes mission, aggregates in order, forbids reuse and reshaping", () => {
     const s = position([plane(), plane("q", 2), fleet()]);
     const first = assigned(s);
     expect(hasFlown(first, "p")).toBe(true);
@@ -122,7 +122,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(hasFlown(nextTurn, "p")).toBe(true);
   });
 
-  it("R14/AER77: unused based air blocks ships without dice; nearby or previously used air does not defend", () => {
+  it("R14/AER81: unused based air blocks ships without dice; nearby or previously used air does not defend", () => {
     const s = position([plane(), fleet(), plane("d", 3, "A5", "britain")]);
     expect(portEvent(at7i(s))).toMatchObject({ status: "counter-air-blocked", rolls: [], navalLost: 0, airLost: 0 });
     expect(apply(at7i(s), resolve).state.rngState).toBe(s.rngState);
@@ -132,7 +132,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     }
   });
 
-  it.each([1, 3, 13, 14, 20, 45])("R14/AER77: separate Counter-Air participants resolve at 7c before ships, seed %s", seed => {
+  it.each([1, 3, 13, 14, 20, 45])("R14/AER81: separate Counter-Air participants resolve at 7c before ships, seed %s", seed => {
     const s = position([plane(), plane("c", 3), fleet(), plane("d", 3, "A5", "britain")], seed);
     const b = apply(assigned(s), { ...designate(["c"]), mission: "counter-air" }).state;
     const c = apply(b, end("7b")).state;
@@ -170,7 +170,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(hasFlown(done.state, "p")).toBe(true);
   });
 
-  it("R14/AER77: Malta uses the same required Counter-Air before ships", () => {
+  it("R14/AER81: Malta uses the same required Counter-Air before ships", () => {
     // Ref 20.45 / Peele: Malta does not bypass Counter-Air.
     const maltaCtx = { ...ctx, map: { ...ctx.map, hexes: { ...ctx.map.hexes,
       GG18: { ...hexes.A1!, id: "GG18", country: "germany" }, GG19: { ...hexes.A5!, id: "GG19", name: "Malta" } } } };
@@ -184,7 +184,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(done.state.rngState).toBe(s.rngState);
   });
 
-  it("R14/AER79: displaced fleets and missing attackers consume assignments without dice", () => {
+  it("R14/AER83: displaced fleets and missing attackers consume assignments without dice", () => {
     const i = at7i();
     const moved = { ...i, units: { ...i.units, f: { ...i.units.f!, at: "A6" } } };
     expect(portEvent(moved)).toMatchObject({ status: "no-fleets", rolls: [], navalLost: 0 });
@@ -197,7 +197,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(hasFlown(apply(moved, resolve).state, "p")).toBe(true);
   });
 
-  it("R14/AER79: missing planes are omitted while surviving assigned planes still attack", () => {
+  it("R14/AER83: missing planes are omitted while surviving assigned planes still attack", () => {
     const s = position([plane(), plane("q", 2), fleet()]);
     const b = apply(s, designate(["p", "q"])).state;
     const i = apply(b, end("7b")).state;
@@ -213,7 +213,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(missing).toEqual(before);
   });
 
-  it("R14/R21/AER78: determinism, immutable JSON replay and automatic fleet strength/id allocation", () => {
+  it("R14/R21/AER82: determinism, immutable JSON replay and automatic fleet strength/id allocation", () => {
     expect(PORT_FLEET_LOSS_ORDER).toBe("strength-id");
     const s = position([plane("p", 5), fleet("z", 2), fleet("b", 2), fleet("a", 9)], 14);
     const before = JSON.stringify(s);
@@ -231,7 +231,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(portCapacity(ctx, "A5")).toBe(36);
   });
 
-  it("R14/AER79: partial fleet breakdown preserves nationality/base and uses deterministic replacement ids", () => {
+  it("R14/AER83: partial fleet breakdown preserves nationality/base and uses deterministic replacement ids", () => {
     // Seed 7: a single factor hits; 9 -> 6+2, the lost factor stays lost for good (RB5).
     const s = position([plane("p", 1), { ...fleet(), nationality: "france" }], 7);
     const i = at7i(s);
@@ -244,7 +244,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(result.events).toContainEqual(expect.objectContaining({ type: "UNIT_LOST_FOR_GOOD", unitId: "f", strength: 1, reason: "partial-fleet" }));
   });
 
-  it("R14/AER69/AER79: pure dice match real air losses and full fleet sinks use pool routing", () => {
+  it("R14/AER69/AER83: pure dice match real air losses and full fleet sinks use pool routing", () => {
     const s = position([plane("p", 5), fleet("f", 1)], 1);
     const i = at7i(s);
     const pure = resolvePortAttack({ target: "A5", attacker: [s.units.p!], fleets: [s.units.f!], counterAir: "not-needed", rngState: 1 }, () => [{ id: "f", factors: 1 }]);
@@ -257,7 +257,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(done.events).toContainEqual(expect.objectContaining({ type: "UNIT_LOST_FOR_GOOD", unitId: "f", reason: "partial-fleet" }));
   });
 
-  it("R21/AER76: targets and factor rolls follow designation order with one advancing RNG stream", () => {
+  it("R21/AER80: targets and factor rolls follow designation order with one advancing RNG stream", () => {
     const s = position([plane(), plane("q"), fleet(), fleet("g", 9, "A4")], 1);
     const b = apply(assigned(s), designate(["q"], "A4")).state;
     const i = apply(b, end("7b")).state;
@@ -270,7 +270,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(portAttacksOf(done.state)).toEqual([]);
   });
 
-  it("R14/AER79: whole air losses return once to their pool and a whole sunk fleet returns for rebuilding (RB5)", () => {
+  it("R14/AER83: whole air losses return once to their pool and a whole sunk fleet returns for rebuilding (RB5)", () => {
     const airLoss = apply(at7i(position([plane("p", 1), fleet()], 2)), resolve);
     expect(airLoss.state.units.p).toBeUndefined();
     expect(airLoss.events.filter(e => e.type === "UNIT_RETURNED_TO_POOL" && e.unitId === "p")).toHaveLength(1);
@@ -293,7 +293,7 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER76–7
     expect(eventSide(event, "axis", i)).toBeNull();
   });
 
-  it("C1/AER76: old saves restore byte-identically, absent queue defaults empty without state changes", async () => {
+  it("C1/AER80: old saves restore byte-identically, absent queue defaults empty without state changes", async () => {
     const old = newGame(CTX.scenario, 13);
     const snapshot = JSON.stringify(old);
     const saved = JSON.parse(snapshot) as JsonObject;

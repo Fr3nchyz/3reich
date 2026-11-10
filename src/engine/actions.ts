@@ -15,7 +15,7 @@ import { combatOf } from "./combat-record";
 import { applyCounterAirDesignation, applyResolveCounterAir, legalCounterAir, hasCounterAirWork } from "./air-counter-wire";
 import { applyPortDesignation, applyResolvePortAttacks, legalPortAttacks, hasPortAttackWork } from "./air-port-wire";
 import { applyPlaceAirbase } from "./air-actions";
-import { applySeaSupply, legalSeaSupply } from "./naval-actions";
+import { applyFleetMove, legalFleetMoves, applySeaSupply, legalSeaSupply } from "./naval-actions";
 import { EXPLOIT_AIR_STEP, applyDesignate, legalDesignations } from "./air-missions";
 import { applyStageAir } from "./air-stage";
 import { applyCombineAir, applySplitAir } from "./air-units";
@@ -47,6 +47,7 @@ function waitingStep(state: GameState): string | undefined {
 /** The actions that belong to the step the game waits at, besides moving on. */
 function stepActions(ctx: GameContext, state: GameState, step: string): Action[] {
   if (step === FIRST_STEP) return legalDeclarations(ctx, state);
+  if (step === "6b") return legalFleetMoves(ctx, state);
   if (step === "6e" || step === "9f") return legalSeaSupply(ctx, state);
   if (step === "6f") return legalMoves(ctx, state);
   if (step === "4") return [...legalMoves(ctx, state), ...legalCombatActions(ctx, state)]; // spec 15 R15: an attacked minor's own Movement Phase, then its combat (a Pass is END_STEP); no move once it has attacked
@@ -88,7 +89,7 @@ export function legalActions(ctx: GameContext, state: GameState): Action[] {
   if (step === undefined) return [];
   const moveOn: Action = step === LAST_STEP ? { type: "END_PLAYER_TURN", side: state.activeSide } : { type: "END_STEP", side: state.activeSide, step };
   if (step === "7c" && hasCounterAirWork(state)) return stepActions(ctx, state, step); // spec 09 R12 / AER73: assigned combat resolves before DAS
-  if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER76
+  if (step === "7i" && hasPortAttackWork(state)) return stepActions(ctx, state, step); // spec 12 R14 / AER80
   // An army waiting to be set up holds step 2: a minor's army is not optional (spec 15 C2).
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return stepActions(ctx, state, step);
   // An Exchange waiting for its losses to be chosen holds the step: nothing else, not even moving on, is legal.
@@ -160,6 +161,8 @@ function applyOne(ctx: GameContext, state: GameState, action: Action): ActionRes
       const settled = settle(ctx, named.state);
       return { ok: true, state: settled.state, events: [...named.events, ...settled.events] };
     }
+    case "MOVE_FLEET":
+      return atStep(state, "6b", "Fleets change base", () => applyFleetMove(ctx, state, action));
     case "MOVE":
       return atSteps(state, ["6f", "4"], "Ground units are moved", () => applyMove(ctx, state, action));
     case "ELIMINATE_OVERSTACK": {
@@ -276,7 +279,7 @@ function applyMoveOn(ctx: GameContext, state: GameState, action: Extract<Action,
     return { ok: false, error: `Step ${describeStep(step)} is the last of the Player Turn: end the turn instead.` };
   }
   if (step === "7c" && hasCounterAirWork(state)) return { ok: false, error: "Step 7c waits for assigned counter-air to resolve (spec 09 R12)." };
-  if (step === "7i" && hasPortAttackWork(state)) return { ok: false, error: "Step 7i waits for assigned port attacks to resolve (spec 12 R14 / AER76)." };
+  if (step === "7i" && hasPortAttackWork(state)) return { ok: false, error: "Step 7i waits for assigned port attacks to resolve (spec 12 R14 / AER80)." };
   if (step === "2" && hasMinorPlaceWork(ctx, state)) return { ok: false, error: "Step 2 waits: a minor country's army must be set up first." };
   if (OVERSTACK_STEPS.includes(step) && hasOverstackWork(ctx, state)) return { ok: false, error: `Step ${describeStep(step)} waits: a hex of this side is overstacked and its units must be eliminated first.` };
   if (ATTRITION_STEPS.includes(step) && attritionRun(state)) return { ok: false, error: `Step ${describeStep(step)} waits: an Attrition run is open and must be finished first.` };

@@ -20,7 +20,7 @@ export interface AirState {
   groundSupport: Record<HexId, string[]>;
   /** Spec 09 R12: counter-air assignments in designation order; absent in older states. */
   counterAir?: { target: HexId; units: string[] }[];
-  /** Spec 12 R14, AER76/AER77: optional queue; absent in old saves. */
+  /** Spec 12 R14, AER80/AER81: optional queue; absent in old saves. */
   portAttacks?: { target: HexId; units: string[]; counterAir?: "beaten" | "not-beaten" }[];
 }
 

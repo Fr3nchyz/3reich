@@ -64,7 +64,7 @@ function reshapeProblem(state: GameState, u: Unit): string | null {
   if (u.type !== "air") return `${u.id} is not an air unit.`;
   if (sideInWar(state, u.owner) !== state.activeSide) return `${u.id} does not belong to the ${state.activeSide} side now.`;
   if (!isMajorPower(u.owner)) return `${u.id} is not a Major Power's air: only a Major Power's air is split or combined.`;
-  // Spec 12 Wiring, 12-15b / AER79: committed port attackers retain their assigned ids.
+  // Spec 12 Wiring, 12-15b / AER83: committed port attackers retain their assigned ids.
   if (flownOf(state).units[u.id] === "port-attack") return `${u.id} is committed to a port attack: it cannot be split or combined now.`;
   if (flownOf(state).units[u.id] === "ground-support") return `${u.id} is committed to ground support: it cannot be split or combined now.`;
   return null;

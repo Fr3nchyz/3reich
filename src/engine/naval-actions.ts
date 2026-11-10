@@ -1,3 +1,4 @@
+import { fleetMoveOptions, movableFleets, moveFleet } from "./fleet-move";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { markUsed, navalOf, type SeaSupplyDesignation } from "./naval-record";
@@ -50,4 +51,26 @@ export function lapsedDesignations(ctx: GameContext, state: GameState): GameEven
   return checkDesignations(ctx, state, supplyNetwork(ctx, state, state.activeSide)).flatMap((c) =>
     c.problem === null ? [] : [{ type: "SEA_SUPPLY_LAPSED" as const, fleets: [...c.designation.fleets], from: c.designation.from, to: c.designation.to, units: [...c.designation.units], reason: c.problem }],
   );
+}
+
+/** TODO(verify) AER75, spec 12 Wiring 12-11b: pure opt-in; engine defaults stay empty. */
+export function setManualFleetMove(state: GameState, enabled: boolean): GameState {
+  return { ...state, naval: { ...navalOf(state), manualFleetMove: enabled } };
+}
+
+/** Spec 12 R10 / AER75: legal courses only for movable fleets of the active side. */
+export function legalFleetMoves(ctx: GameContext, state: GameState): Extract<Action, { type: "MOVE_FLEET" }>[] {
+  if (state.naval?.manualFleetMove !== true) return [];
+  return movableFleets(ctx, state).flatMap((id) => fleetMoveOptions(ctx, state, id).map((move) => ({ type: "MOVE_FLEET", side: state.activeSide, ...move, path: move.path ? [...move.path] : undefined })));
+}
+
+/** Spec 12 R10 / AER75: record a validated move, leaving interception to 12-12. */
+export function applyFleetMove(ctx: GameContext, state: GameState, action: Extract<Action, { type: "MOVE_FLEET" }>): ActionResult {
+  if (state.naval?.manualFleetMove !== true) return { ok: false, error: "Manual fleet movement is not enabled (AER75)." };
+  if (action.side !== state.activeSide) return { ok: false, error: `It is the ${state.activeSide} player turn, not ${action.side}.` };
+  const done = moveFleet(ctx, state, action);
+  if (!done.ok) return done;
+  const course = { fleet: action.fleet, from: state.units[action.fleet]!.at, to: action.to, front: action.front, path: done.course };
+  const rec = navalOf(done.state);
+  return { ok: true, state: { ...done.state, naval: { ...rec, moves: [...(rec.moves ?? []), course] } }, events: [{ type: "FLEET_MOVED", side: action.side, ...course }] };
 }

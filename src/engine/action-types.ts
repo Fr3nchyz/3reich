@@ -16,6 +16,8 @@ import type { Combatant, ForceOwner, FrontOption, GameState, GameTurn, MinorCoun
  * (map and scenario) and the list of actions applied to it.
  */
 export type Action =
+  /** Spec 12 R10 / AER75: opt-in base change at 6b. */
+  | { type: "MOVE_FLEET"; side: Side; fleet: string; to: HexId; front: Front; path?: HexId[] }
   /** Done with the Player Turn; legal only at its last step (10b). */
   | { type: "END_PLAYER_TURN"; side: Side }
   /** Done with a step that has rules built; `step` is the step being left, so a stale action is refused. */
@@ -76,7 +78,7 @@ export type Action =
   | { type: "DESIGNATE_AIR"; side: Side; mission: "ground-support" | "counter-air" | "port-attack"; units: string[]; target: HexId }
   /** Spec 09 Wiring, 09-9b (AER73/AER74): explicit resolution with automatic losses at 7c. */
   | { type: "RESOLVE_COUNTER_AIR"; side: Side }
-  /** Spec 12 R14, AER76: explicit resolution at 7i, only with assigned work. */
+  /** Spec 12 R14, AER80: explicit resolution at 7i, only with assigned work. */
   | { type: "RESOLVE_PORT_ATTACKS"; side: Side }
   /** Step 6g or 9j: the side settles every overstacked hex of its own, choosing the units to eliminate hex by hex, no more than needed (spec 16 R15; Ops 5.45g, 5.48j). */
   | { type: "ELIMINATE_OVERSTACK"; side: Side; choices: Record<HexId, string[]> }
@@ -106,8 +108,10 @@ export type Action =
 export interface IncomeLine { name: string; value: number; reason: string }
 
 export type GameEvent =
+  /** Spec 12 R10: a base change and its course, before later interception wiring. */
+  | { type: "FLEET_MOVED"; side: Side; fleet: string; from: HexId; to: HexId; front: Front; path: HexId[] }
   | CounterAirEvent
-  /** Spec 12 R14/R21, AER79: per-factor dice and actual losses, including canceled missions. */
+  /** Spec 12 R14/R21, AER83: per-factor dice and actual losses, including canceled missions. */
   | { type: "PORT_ATTACK_RESOLVED"; target: HexId; status: PortAttackResult["status"] | "no-air"; rolls: PortAttackResult["rolls"]; airLost: number; navalHits: number; navalLost: number; fleets: PortAttackResult["fleets"] }
   /** Attrition, steps 7a and 7p (spec 16 C4). */
   | AttritionEvent
