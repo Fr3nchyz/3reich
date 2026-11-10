@@ -125,13 +125,13 @@ describe("pure normal airdrops (Ref 23.1; Ops 5.46g)", () => {
     } finally { hook.mockRestore(); }
   });
 
-  it("places on enemy units and in destination ZOC, ignoring stacking (Ref 23.0, 23.1)", () => {
+  it("AER117: refuses enemy occupation but permits destination ZOC and airborne stacking (Ref 23.0, 23.1)", () => {
     const s = position([para(), para("enemy", "A3", "britain", "armor"), ...[1, 2, 3].map((n) => para(`friend${n}`, "A2", "germany", "infantry"))], { control: { A3: "britain" } });
-    const out = resolve(s, "A3");
-    expect(out.state.units.p).toEqual({ ...s.units.p, at: "A3" });
+    expect(resolveDrop(ctx, s, rec(s), "p", "A3")).toEqual({ ok: false, error: expect.stringMatching(/enemy-occupied.*AER117/) });
+    const out = resolve(s, "A2");
+    expect(out.state.units.p).toEqual({ ...s.units.p, at: "A2" });
     expect(out.state.units.enemy).toEqual(s.units.enemy);
-    expect(out.supplied).toBe(false);
-    expect(resolve(s, "A2").state.units.p!.at).toBe("A2");
+    expect(out.supplied).toBe(true);
     expect(out.state.control).toEqual(s.control);
     expect(out.record.dropped.p).toBe(turnIndex(s));
   });
