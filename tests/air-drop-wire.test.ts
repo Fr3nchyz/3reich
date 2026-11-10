@@ -5,6 +5,7 @@ import { dropTargets, resolveDrop } from "../src/engine/air-drop";
 import { turnKey } from "../src/engine/combat-record";
 import { newGame, turnIndex } from "../src/engine/game";
 import { beginPlay } from "../src/engine/turn";
+import { enemyZocFor } from "../src/engine/zoc";
 import type { GameState } from "../src/engine/types";
 import { chooseAction } from "../src/ai/choose";
 import { fingerprint } from "../src/save/fingerprint";
@@ -44,6 +45,72 @@ describe("09-11b normal airdrop wiring", () => {
     expect(expected).toContainEqual(drop());
     expect(legalActions(CTX, s)).toEqual([...expected, end("7g")]);
     expect(okOf(applyAction(CTX, s, end("7g"))).state.position).toMatchObject({ step: "7h" });
+  });
+
+  it.each(["infantry", "armor", "airborne", "replacement", "air", "airbase", "fleet"] as const)(
+    "AER117: real flow refuses an enemy %s at the target, atomically", (type) => {
+      const source = initial();
+      source.units.p = { ...source.units.p!, type };
+      const s = atDrop(source), before = structuredClone(s);
+      expect(s.position).toMatchObject({ step: "7g" });
+      expect(legalActions(CTX, s)).not.toContainEqual(drop("M33"));
+      expect(applyAction(CTX, s, drop("M33"))).toEqual({
+        ok: false, error: "Airdrops onto enemy-occupied hexes are unavailable until on-top combat is supported (AER117).",
+      });
+      expect(s).toEqual(before);
+    },
+  );
+
+  it("AER117/AER60: real flow still drops on empty enemy-controlled land without changing control", () => {
+    const source = initial();
+    delete source.units.p;
+    const s = atDrop(source);
+    expect(legalActions(CTX, s)).toContainEqual(drop("M33"));
+    const done = okOf(applyAction(CTX, s, drop("M33")));
+    expect(done.state.units.para!.at).toBe("M33");
+    expect(done.state.control).toEqual(s.control);
+    expect(done.events[0]).toMatchObject({ type: "AIR_DROPPED", to: "M33" });
+  });
+
+  it("AER117/R13: real flow allows an empty target when enemy armor only occupies a neighbour", () => {
+    const source = initial();
+    source.units.p = { ...source.units.p!, type: "armor" };
+    const s = atDrop(source);
+    expect(enemyZocFor(CTX, s, "axis").has("M34")).toBe(true);
+    expect(Object.values(s.units).some((u) => u.at === "M34")).toBe(false);
+    expect(legalActions(CTX, s)).toContainEqual(drop("M34"));
+    const done = okOf(applyAction(CTX, s, drop("M34")));
+    expect(done.state.units.para!.at).toBe("M34");
+    expect(done.state.units.p).toEqual(s.units.p);
+  });
+
+  it("AER117/Ref 26.0: real flow refuses an otherwise illegal landing on empty Paris", () => {
+    const source = at6f([inf("para", "britain", "K23", 3, 3, "airborne")], "allies", undefined,
+      { airbasesPlaced: NO_AIRBASES_LEFT, airDrop: { manual: true } });
+    const s = reach(beginPlay(CTX, source).state, "7g");
+    const action = { ...drop("O22"), side: "allies" as const };
+    expect(legalActions(CTX, s)).not.toContainEqual(action);
+    expect(applyAction(CTX, s, action)).toEqual({ ok: false,
+      error: expect.stringMatching(/illegal position \(AER117\).*British units may not stop/),
+    });
+  });
+
+  it("AER117/Ref 26.0: refuses British/French sharing while still allowing friendly British stacks", () => {
+    for (const owner of ["france", "britain"] as const) {
+      const source = at6f([inf("para", "britain", "K23", 3, 3, "airborne"), inf("friend", owner, "K24")],
+        "allies", undefined, { airbasesPlaced: NO_AIRBASES_LEFT, airDrop: { manual: true } });
+      const s = reach(beginPlay(CTX, source).state, "7g");
+      const action = { ...drop("K24"), side: "allies" as const };
+      if (owner === "france") {
+        expect(legalActions(CTX, s)).not.toContainEqual(action);
+        expect(applyAction(CTX, s, action)).toEqual({ ok: false,
+          error: expect.stringMatching(/illegal position \(AER117\).*British and French units/),
+        });
+      } else {
+        expect(legalActions(CTX, s)).toContainEqual(action);
+        expect(okOf(applyAction(CTX, s, action)).state.units.para!.at).toBe("K24");
+      }
+    }
   });
 
   it("AER95: absent/false gate skips 7g even with eligible airborne; computer path is unchanged", () => {
@@ -128,7 +195,9 @@ describe("09-11b normal airdrop wiring", () => {
   });
 
   it("AER97: logs readable airborne names, origin/destination and both supply outcomes", () => {
-    const s = atDrop();
+    const source = initial();
+    delete source.units.p; // AER117: the unsupplied enemy-controlled target must be empty.
+    const s = atDrop(source);
     for (const to of ["L32", "M33"]) {
       const done = okOf(applyAction(CTX, s, drop(to)));
       const e = done.events[0]!;
