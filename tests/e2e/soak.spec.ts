@@ -32,7 +32,7 @@ async function visibleHighlight(page: Page, rnd: () => number): Promise<[number,
 
 test("random play at phone size: every scenario, both sides, new games between", async ({ page, hasTouch }) => {
   // Eight games, each with three human turns and the intervening computer turns.
-  // Each computer wait still has the helper's 30 s stall / 150 s total bounds.
+  // Each wait has a 300 s total cap; the 30 s stall clock resets while the computer is busy.
   test.setTimeout(1_800_000);
   await page.setViewportSize({ width: 420, height: 900 });
   const rnd = random(777);

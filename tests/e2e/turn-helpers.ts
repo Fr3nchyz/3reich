@@ -25,8 +25,8 @@ export async function passOptionalStep(page: Page): Promise<boolean> {
  * sit outside .actions (notably the Free Siberian Transfer at 8a).
  */
 async function turnControl(page: Page) {
-  // Round 7: later scenarios can need over 15 seconds for a computer turn.
-  const totalWaitMs = 150_000;
+  // Round 9: later scenarios can spend over 30 seconds on one computer step.
+  const totalWaitMs = 300_000;
   const stallMs = 30_000;
   // Leave room for setup and assertions around the bounded wait.
   test.setTimeout(Math.max(test.info().timeout, totalWaitMs + 30_000));
@@ -42,7 +42,10 @@ async function turnControl(page: Page) {
     // Spec 11 D / Ops 5.49b: autosave does not answer 10b. Human turns
     // use the ordinary End turn action below; computer turns expose no buttons.
     // Give the computer time to finish its work without spending a walk iteration.
-    if (await page.locator(".computer-status").count()) return false;
+    if (await page.locator(".computer-status").count()) {
+      lastProgressAt = Date.now();
+      return false;
+    }
     // Spec 07 State 4 / Ref 12.2: the human can owe Exchange losses during the
     // computer's turn. legalActions withholds END_STEP until they are settled.
     // choiceView omits quick picks when there is only one group; the list in
