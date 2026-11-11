@@ -112,7 +112,7 @@ export function applyIntercept(ctx: GameContext, state: GameState, action: Extra
   if (!interceptEnabled(state)) return { ok: false, error: "Interception needs the manual movement flag and a recorded course (AER85)." };
   if (action.type === "RESOLVE_INTERCEPTIONS") {
     if (action.side !== state.activeSide || interceptPasses(state) < INTERCEPT_PASSES || navalOf(state).interceptsResolved || !interceptionsOf(state).length) return { ok: false, error: "Only the phasing side resolves queued interceptions after two passes (AER88)." };
-    if (action.turnBack !== undefined && (!Array.isArray(action.turnBack) || Array.from(action.turnBack).some(id => typeof id !== "string" || !interceptTargets(state).some(t => t.id === id && id.startsWith("move:"))) || new Set(action.turnBack).size !== action.turnBack.length)) return { ok: false, error: "Turn-back choices must name distinct recorded moves (AER90)." };
+    if (action.turnBack !== undefined && (!Array.isArray(action.turnBack) || Array.from(action.turnBack).some(id => typeof id !== "string" || !interceptTargets(state).some(t => t.id === id && id.startsWith("move:"))) || new Set(action.turnBack).size !== action.turnBack.length)) return { ok: false, error: "Turn-back choices must name distinct grouped move targets (AER90/AER119/AER120)." };
     return { ok: true, ...resolveInterceptions(ctx, state, action.turnBack) };
   }
   if (action.side !== interceptSide(state) || interceptPasses(state) >= INTERCEPT_PASSES) return { ok: false, error: "It is not this side's interception round (Ref 21.5)." };
