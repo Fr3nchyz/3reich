@@ -1,4 +1,6 @@
 import { attackables } from "./attack";
+import { applyCounterAirDesignation } from "./air-counter-wire";
+import { applyPortDesignation } from "./air-port-wire";
 import { exploitAttackers, exploitTargets } from "./exploit-action";
 import { defendersAt } from "./attack-rules";
 import { airOf, hasFlown, markFlown } from "./air-record";
@@ -7,7 +9,7 @@ import { GS_CAP_MULTIPLE, AIR_MISSIONS_ENABLED } from "./air-rules";
 import { missionHexes } from "./air-range";
 import type { Action, ActionResult, GameEvent } from "./action-types";
 import type { GameContext } from "./context";
-import { sideInWar } from "./control";
+import { areEnemies, sideInWar } from "./control";
 import type { HexId } from "./hex";
 import { eliminateUnits } from "./losses";
 import type { GameState, Unit } from "./types";
@@ -58,6 +60,21 @@ export const commitCap = (ground: readonly Unit[]): number => GS_CAP_MULTIPLE * 
 
 /** Whether step 7b or 7k has anything to wait for: some designation is possible (a free air unit within reach of a hex that can be attacked, and room under the cap). */
 export const hasAirWork = (ctx: GameContext, state: GameState): boolean => designations(ctx, state).length > 0;
+
+/** TODO(verify) AER122 (spec 09): human air opt-in also holds 7b for direct missions.
+ * Reuse the pure designation validators so work obeys the same target, flight and Option checks.
+ * Discard their returned states: this preview neither commits planes nor changes the input. */
+export function hasManualAirWork(ctx: GameContext, state: GameState): boolean {
+  if (airOf(state).manualDas !== true || state.position?.part !== "player-turn" || state.position.step !== "7b") return false;
+  const planes = freeAir(ctx, state);
+  return planes.some((plane) => Object.values(state.units).some((target) => {
+    if (!areEnemies(state, plane.owner, target.owner)) return false;
+    const action: Designate = { type: "DESIGNATE_AIR", side: state.activeSide,
+      mission: target.type === "air" ? "counter-air" : "port-attack", units: [plane.id], target: target.at };
+    if (target.type === "air") return applyCounterAirDesignation(ctx, state, action).ok;
+    return target.type === "fleet" && applyPortDesignation(ctx, state, action).ok;
+  }));
+}
 
 /** The first reason these air units may not all be committed to ground support at `target`, or null. */
 export function designateProblem(ctx: GameContext, state: GameState, units: readonly Unit[], target: HexId, targets: ReadonlyMap<HexId, Unit[]> = groundSupportTargets(ctx, state)): string | null {

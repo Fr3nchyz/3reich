@@ -14,6 +14,7 @@ import { chooseOptions } from "./options";
 import { chooseGrant } from "./grant";
 import { chooseSiberian } from "./siberian";
 import { chooseFleetMove, chooseFleetIntercept, chooseSeaSupply } from "./naval";
+import { chooseManualCompletion } from "./manual-completion";
 import { chooseMove } from "./move";
 import { chooseOverstack } from "./overstack";
 import { chooseRedeploy } from "./redeploy";
@@ -60,7 +61,7 @@ export function chooseAction(ctx: GameContext, state: GameState, cfg: AiConfig):
     : step === "7o" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7o: the Exploitation attacks, losses and advances go through the 7h chooser (ticket 16-13)
     : step === "7h" ? chooseLosses(ctx, state, legal, cfg) ?? chooseAdvance(legal, cfg) ?? choosePlace(legal, cfg) ?? chooseAttack(ctx, state, legal, cfg) // 7h: after the advance it places its armor in the Breakthrough hex before the next attack (ticket 16-13)
     : undefined;
-  return picked ?? endTheStep(legal, step);
+  return picked ?? chooseManualCompletion(state, legal) ?? endTheStep(state, legal, step);
 }
 
 const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLAYER_TURN" }> => a.type === "END_STEP" || a.type === "END_PLAYER_TURN";
@@ -72,8 +73,10 @@ const isMoveOn = (a: Action): a is Extract<Action, { type: "END_STEP" | "END_PLA
  * kind of action at a step never leaves the computer stuck. If the engine ever lists none, the
  * caller gets null and stops (the browser loop does not retry from the same place).
  */
-function endTheStep(legal: readonly Action[], step: string): Decision | null {
-  const action = legal.find((a) => isMoveOn(a) && (a.type === "END_PLAYER_TURN" || a.step === step));
+function endTheStep(state: GameState, legal: readonly Action[], step: string): Decision | null {
+  // Spec 09 AER116: manual procedures can require a pass or resolution instead.
+  const action = legal.find((a) => isMoveOn(a) && (a.type === "END_PLAYER_TURN" || a.step === step))
+    ?? moveOnAction(state).find(a => legal.some(candidate => JSON.stringify(candidate) === JSON.stringify(a)));
   if (!action) return null;
   const why: Record<string, string> = {
     "2": "No minor country's army is left to set up.",

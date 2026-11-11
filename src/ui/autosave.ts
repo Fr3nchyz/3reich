@@ -1,3 +1,4 @@
+import { sessionStart } from "./saveFile";
 import type { Session } from "./session";
 import { actorSide } from "./logSide";
 import { fingerprint } from "../save/fingerprint";
@@ -34,7 +35,7 @@ function saveOf(s: Session, options: AutosaveOptions, start: SaveFile["start"]):
     format: SAVE_FORMAT, app: "3reich", title: "Autosave",
     savedAt: (options.now?.() ?? new Date()).toISOString(), gameVersion: options.gameVersion,
     stateVersion: STATE_VERSION, scenario: s.ctx.scenario.id, seed: s.seed,
-    humanSide: s.humanSide, start: JSON.parse(JSON.stringify(start)) as SaveFile["start"],
+    humanSide: s.humanSide, start: JSON.parse(JSON.stringify(sessionStart(s, start))) as SaveFile["start"],
     actions: JSON.parse(JSON.stringify(s.record)) as JsonObject[],
     setupActions: s.record.filter(a => a.type.startsWith("SETUP_")).length,
     fingerprint: fingerprint(snapshot), snapshot, logTail: s.log.slice(-60).map(line => line.slice(0, MAX_STRING_LENGTH)),

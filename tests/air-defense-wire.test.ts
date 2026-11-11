@@ -199,7 +199,7 @@ describe("09-8b DAS through the real turn flow", () => {
     expect(hasFlown(done, "d")).toBe(true);
     const next = { ...done, activeSide: "allies" as const };
     expect(dasOf(next)).toEqual({});
-    expect(airOf(next).manualDas).toBeUndefined();
+    expect(airOf(next).manualDas).toBe(true);
     expect(hasFlown(next, "d")).toBe(true);
   });
 

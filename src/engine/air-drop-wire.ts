@@ -11,6 +11,10 @@ export interface AirDropState {
   record?: DropRecord;
 }
 
+/** Spec 09 AER116: session-start opt-in; retain any existing drop record. */
+export const setManualAirDrop = (state: GameState, enabled: boolean): GameState =>
+  ({ ...state, airDrop: { ...state.airDrop, manual: enabled } });
+
 /** TODO(verify) AER96: take the true start, without nesting earlier drop snapshots. */
 export function beginDropTurn(state: GameState, ctx: GameContext): GameState {
   if ((state.airDrop?.manual ?? DROP_MANUAL_DEFAULT) !== true) return state;

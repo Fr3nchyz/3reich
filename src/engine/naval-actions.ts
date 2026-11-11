@@ -1,3 +1,4 @@
+import { legalSeaAirDesignations } from "./air-sea-wire";
 import { otherSide } from "./game";
 import { INTERCEPT_PASSES, declareIntercept, interceptEnabled, interceptPasses, interceptProblem, interceptSide, interceptTargets, interceptionsOf, resolveInterceptions } from "./naval-intercept";
 import { fleetMoveOptions, movableFleets, moveFleet } from "./fleet-move";
@@ -87,12 +88,12 @@ export function legalInterceptDeclarations(ctx: GameContext, state: GameState): 
   }));
 }
 
-/** Spec 12 C5 / AER84/AER88: stay for both passes once a round starts, then for explicit resolution. */
+/** Spec 12 C5 / AER84/AER88; TODO(verify) AER118: sea-air work opens the same two-pass round. */
 export function hasInterceptWork(ctx: GameContext, state: GameState, step: string): boolean {
   if (!interceptEnabled(state)) return false;
   const rec = navalOf(state);
   if (step === "6d") return interceptionsOf(state).length > 0 && rec.interceptsResolved !== true;
-  return step === "6c" && interceptPasses(state) < INTERCEPT_PASSES && (rec.interceptSide !== undefined || interceptionsOf(state).length > 0 || legalInterceptDeclarations(ctx, state).length > 0);
+  return step === "6c" && interceptPasses(state) < INTERCEPT_PASSES && (rec.interceptSide !== undefined || interceptionsOf(state).length > 0 || legalInterceptDeclarations(ctx, state).length > 0 || legalSeaAirDesignations(ctx, state).length > 0);
 }
 
 /** TODO(verify) AER84/AER88: moving on requires a pass or resolution, never an END_STEP bypass. */
@@ -112,7 +113,7 @@ export function applyIntercept(ctx: GameContext, state: GameState, action: Extra
   if (!interceptEnabled(state)) return { ok: false, error: "Interception needs the manual movement flag and a recorded course (AER85)." };
   if (action.type === "RESOLVE_INTERCEPTIONS") {
     if (action.side !== state.activeSide || interceptPasses(state) < INTERCEPT_PASSES || navalOf(state).interceptsResolved || !interceptionsOf(state).length) return { ok: false, error: "Only the phasing side resolves queued interceptions after two passes (AER88)." };
-    if (action.turnBack !== undefined && (!Array.isArray(action.turnBack) || Array.from(action.turnBack).some(id => typeof id !== "string" || !interceptTargets(state).some(t => t.id === id && id.startsWith("move:"))) || new Set(action.turnBack).size !== action.turnBack.length)) return { ok: false, error: "Turn-back choices must name distinct recorded moves (AER90)." };
+    if (action.turnBack !== undefined && (!Array.isArray(action.turnBack) || Array.from(action.turnBack).some(id => typeof id !== "string" || !interceptTargets(state).some(t => t.id === id && id.startsWith("move:"))) || new Set(action.turnBack).size !== action.turnBack.length)) return { ok: false, error: "Turn-back choices must name distinct grouped move targets (AER90/AER119/AER120)." };
     return { ok: true, ...resolveInterceptions(ctx, state, action.turnBack) };
   }
   if (action.side !== interceptSide(state) || interceptPasses(state) >= INTERCEPT_PASSES) return { ok: false, error: "It is not this side's interception round (Ref 21.5)." };

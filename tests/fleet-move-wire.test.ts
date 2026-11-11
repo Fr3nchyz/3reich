@@ -124,7 +124,7 @@ describe("fleet movement wiring (spec 12 R10, Wiring 12-11b; TODO(verify) AER75)
     expect(loaded).toEqual(state);
     expect(navalOf(loaded).manualFleetMove).toBeUndefined();
     expect(navalOf(newGame(SCENARIO_1939, 1)).moves).toBeUndefined();
-    expect(newSession(SCENARIO_1939, "axis", 1).state.naval).toBeUndefined();
+    expect(newSession(SCENARIO_1939, "axis", 1, false).state.naval).toBeUndefined();
     expect(legalActions(CTX, loaded)).toEqual([end]);
     expect(apply(loaded, end)).toEqual(apply(state, end));
   });

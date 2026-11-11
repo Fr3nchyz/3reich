@@ -9,7 +9,7 @@ import { bindSaveFiles, downloadSave, exportSave, FILE_URL_LIFETIME_MS, readSave
 import { CTX } from "./helpers";
 
 const scenarios = [CTX.scenario];
-const fixture = (): SaveFile => sessionSave(newSession(CTX.scenario, "axis", 1), "test", { kind: "new" }, new Date("2026-11-01T00:00:00.000Z"));
+const fixture = (): SaveFile => sessionSave(newSession(CTX.scenario, "axis", 1, false), "test", { kind: "new" }, new Date("2026-11-01T00:00:00.000Z"));
 function harness() {
   const store = createMemoryStore(), adopt = vi.fn(), loading = vi.fn();
   const games = createSavedGames({ store: Promise.resolve(store), scenarios, adopt, loading,
