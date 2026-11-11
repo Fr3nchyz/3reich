@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { passFleetMovement } from "./turn-helpers";
 import type { SaveFile } from "../../src/save/format";
 
 // Spec 11 Parts D/I: use real browser storage; observe committed transactions, not fixed sleeps.
@@ -58,6 +59,7 @@ async function atMovement(page: Page): Promise<void> {
   await page.locator("summary", { hasText: "Choose a Front Option" }).click();
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await page.locator(".actions button[data-action]").last().click();
+  await passFleetMovement(page);
   await expect(page.locator(".turn")).toContainText("step 6f");
 }
 

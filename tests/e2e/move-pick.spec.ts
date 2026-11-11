@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { passFleetMovement } from "./turn-helpers";
 
 /**
  * Choosing which units of a stack move (spec 10, tickets 10-3 and 10-4) in a real browser, with a mouse and with a finger. The game is loaded at
@@ -356,6 +357,7 @@ async function arriveAt6f(page: Page, size: Pt): Promise<void> {
   await page.locator("summary", { hasText: "Choose a Front Option" }).click();
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await page.locator(".actions button[data-action]").last().click();
+  await passFleetMovement(page);
   await expect(page.locator(".turn")).toContainText("step 6f");
   await expect(page.locator("button.stack-row")).toHaveCount(7);
   expect(await stackHexes(page)).toEqual(["D41", "J36", "K33", "L31", "M27", "N26", "O32"]);

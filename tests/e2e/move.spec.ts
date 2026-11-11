@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { passFleetMovement } from "./turn-helpers";
 
 /** Step 6f in a real browser: tap a stack of yours, tap a yellow hex, and the stack has moved; refusals and letting go. */
 
@@ -51,6 +52,7 @@ test("1939, Axis: step 6f, tap a stack then a yellow hex to move it; a refused t
   await page.locator("summary", { hasText: "Choose a Front Option" }).click();
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await page.locator(".actions button[data-action]").last().click();
+  await passFleetMovement(page);
   await expect(page.locator(".turn")).toContainText("step 6f");
   await expect(page.locator(".note").filter({ hasText: "Ground movement (step 6f)" })).toContainText("Done with step 6f");
 

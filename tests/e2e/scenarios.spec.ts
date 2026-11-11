@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { passOptionalStep } from "./turn-helpers";
 
 /**
  * A basic usability pass over every scenario and both sides: start, put one counter down the way a
@@ -58,7 +59,7 @@ for (const [id, label] of SCENARIOS) {
       await expect(page.locator(".turn")).toContainText("player turn");
       expect(await page.locator("g.units > g").count()).toBeGreaterThanOrEqual(before);
 
-      // Play into the next Game Turn: always the last button, which moves the game on.
+      // Play into the next Game Turn, passing the optional stops enabled by #351.
       const turn = async () => (await page.locator(".turn").innerText()).split("—")[0]!.trim();
       const start = await turn();
       for (let i = 0; i < 14 && (await turn()) === start; i++) {
@@ -68,6 +69,7 @@ for (const [id, label] of SCENARIOS) {
           await expect(page.locator("#minor-done")).toBeEnabled();
           await page.locator("#minor-done").click();
         }
+        if (await passOptionalStep(page)) continue;
         await page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last().click(); // the Free Siberian Transfer card (step 8a) has its own closing button
       }
       expect(await turn()).not.toBe(start);
