@@ -73,7 +73,18 @@ describe("the status area in play", () => {
 
   it("shows only the move-on button once the steps with something to do are done", () => {
     const s = inPlay();
-    for (const step of ["1", "3", "6f", "8b"]) takeAction(s, { type: "END_STEP", side: "axis", step });
+    // Spec 09 AER116: human starts now wait for optional fleet movement at 6b.
+    for (const step of ["1", "3", "6b", "6f"]) {
+      takeAction(s, { type: "END_STEP", side: "axis", step });
+      expect(s.toast).toBe("");
+    }
+    // The defender may pass its manual DAS opportunity before construction.
+    if (s.state.position?.part === "player-turn" && s.state.position.step === "7d") {
+      takeAction(s, { type: "END_STEP", side: "allies", step: "7d" });
+      expect(s.toast).toBe("");
+    }
+    takeAction(s, { type: "END_STEP", side: "axis", step: "8b" });
+    expect(s.toast).toBe("");
     // Step 9e waits while a unit can be redeployed (ticket 16-17); its redeployments are not buttons (the panel is ticket 16-19) but the move-on button is there.
     expect(s.state.position).toMatchObject({ step: "9e" });
     const at9e = statusHtml(s, null, legalActions(s.ctx, s.state));

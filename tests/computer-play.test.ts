@@ -52,6 +52,24 @@ describe("the computer's turns in the browser", () => {
     });
   }
 
+  it("AER116: yields to the human DAS defender and resumes after the human passes", () => {
+    const s = inPlay("allies");
+    for (let i = 0; i < 20 && computerToMove(s); i++) {
+      expect(computerTick(s, 1e9)).toBe("done");
+    }
+    expect(s.state.position).toMatchObject({ step: "7d" });
+    expect(s.state.activeSide).toBe("axis");
+    expect(s.state.air?.manualDas).toBe(true);
+    const before = s.state;
+    expect(computerTick(s, 1e9)).toBe("stuck");
+    expect(s.state).toBe(before);
+    const pass = { type: "END_STEP", side: "allies", step: "7d" } as const;
+    expect(legalActions(s.ctx, s.state)).toContainEqual(pass);
+    s.state = applied(s, pass);
+    expect(computerToMove(s)).toBe(true);
+    expect(computerTick(s, 1e9)).toBe("done");
+  });
+
   it("a tap on the map during the computer's turn builds nothing, even with a build chosen", () => {
     const s = inPlay("allies");
     expect(computerToMove(s)).toBe(true);
@@ -100,10 +118,17 @@ describe("the computer's turns in the browser", () => {
   });
 });
 
-/** Ticks the computer through the steps before construction, each of which must finish in one tick, until it waits at 8b. */
+/** Advance to construction, answering the human defender's manual DAS prompt (spec 09 AER116). */
 function toConstruction(s: Session, now?: () => number): void {
-  for (let i = 0; i < 5 && !(s.state.position?.part === "player-turn" && s.state.position.step === "8b"); i++) {
-    expect(computerTick(s, 1e9, now)).toBe("done");
+  for (let i = 0; i < 20 && !(s.state.position?.part === "player-turn" && s.state.position.step === "8b"); i++) {
+    if (!computerToMove(s)) {
+      expect(s.state.position).toMatchObject({ step: "7d" });
+      const pass = { type: "END_STEP", side: s.humanSide, step: "7d" } as const;
+      expect(legalActions(s.ctx, s.state)).toContainEqual(pass);
+      s.state = applied(s, pass);
+    } else {
+      expect(computerTick(s, 1e9, now)).toBe("done");
+    }
   }
   expect(s.state.position).toMatchObject({ step: "8b" });
 }
