@@ -67,7 +67,8 @@ describe("pure naval interception (spec 12 R11/R12, Ref 21.5/21.51; AER84–91)"
     const combined = named(s, { ...declaration, fleets: ["g2", "g3"] });
     expect(combined.naval!.interceptions).toHaveLength(1);
     expect(combined.naval!.interceptions![0]!.fleets).toEqual(["g1", "g2", "g3"]);
-    const extra = { ...s, naval: { ...s.naval!, moves: [...s.naval!.moves!, { ...s.naval!.moves![0]!, fleet: "b2" }] } };
+    // AER119: use a different destination so this remains a distinct target for the one-base restriction.
+    const extra = { ...s, naval: { ...s.naval!, moves: [...s.naval!.moves!, { ...s.naval!.moves![0]!, fleet: "b2", to: "K21" }] } };
     expect(interceptProblem(CTX, extra, { ...declaration, fleets: ["g2"], target: "move:1" })).toMatch(/one base/);
   });
   it("counter-targets an earlier course and seals that force against later additions (R11/AER86)", () => {

@@ -2,6 +2,7 @@ import type { GameEvent } from "./action-types";
 import type { GameContext } from "./context";
 import { areEnemies, sideInWar } from "./control";
 import { otherSide } from "./game";
+import { fleetMoveGroups } from "./fleet-move";
 import { parseHexId, type HexId } from "./hex";
 import { eliminateUnits } from "./losses";
 import { resolveNavalCombat, type NavalForce } from "./naval-combat";
@@ -43,9 +44,9 @@ export const interceptionsOf = (state: GameState): Interception[] => navalOf(sta
 export const interceptSide = (state: GameState): Side => navalOf(state).interceptSide ?? otherSide(state.activeSide);
 export const interceptPasses = (state: GameState): number => navalOf(state).interceptPasses ?? 0;
 
-/** TODO(verify) AER86: stable indices, one combined force per target, courses include endpoints. */
+/** TODO(verify) AER86/AER119–AER120: first move index identifies the combined force and course. */
 export function interceptTargets(state: GameState): Target[] {
-  return [...(navalOf(state).moves ?? []).map((m, i) => ({ id: `move:${i}`, side: state.activeSide, fleets: [m.fleet], front: m.front, path: m.path })),
+  return [...fleetMoveGroups(state).map(m => ({ id: m.id, side: state.activeSide, fleets: m.fleets, front: m.front, path: m.path })),
     ...interceptionsOf(state).map(m => ({ id: m.id, side: m.side, fleets: m.fleets, front: m.front, path: m.path }))];
 }
 
@@ -163,8 +164,9 @@ export function resolveInterceptions(ctx: GameContext, state: GameState, turnBac
     rec = navalOf(next);
     next = { ...next, naval: { ...rec, used: { ...rec.used, ...Object.fromEntries(lostA.survivors.map(id => [id, "intercept" as const])) } } };
   }
-  for (const [i, move] of (navalOf(state).moves ?? []).entries()) {
-    const target = `move:${i}`;
+  // TODO(verify) AER120, spec 12 R10/R12: return the entire grouped force, including replacement counters.
+  for (const move of fleetMoveGroups(state)) {
+    const target = move.id;
     if (!returning.has(target) && !turnBack.includes(target)) continue;
     for (const id of live(target)) {
       const u = next.units[id]!;
