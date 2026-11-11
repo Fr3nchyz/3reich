@@ -3,6 +3,7 @@ import { applyAction, legalActions, replay, type Action } from "../src/engine/ac
 import { airOf, hasFlown, markFlown, newAirTurn } from "../src/engine/air-record";
 import { portAttacksOf, PORT_ATTACK_STEP, PORT_FLEET_LOSS_ORDER } from "../src/engine/air-port-wire";
 import { resolvePortAttack } from "../src/engine/air-port-attack";
+import { setManualDas } from "../src/engine/air-defense-wire";
 import { portCapacity } from "../src/engine/naval-ports";
 import { settle } from "../src/engine/turn";
 import { newGame } from "../src/engine/game";
@@ -58,6 +59,31 @@ describe("12-15b port attacks through real turn flow (spec 12 R14/R21, AER80–7
     expect(legalActions(ctx, done.state)).toEqual([end("7i")]);
     expect(applyAction(ctx, done.state, resolve).ok).toBe(false);
     expect(apply(done.state, end("7i")).state.position).not.toMatchObject({ step: "7i" });
+  });
+
+  it("AER124: real DAS flight exposes its port at 7i without a counter-air result", () => {
+    const local = { ...CTX, map: { ...CTX.map, hexes: { ...CTX.map.hexes,
+      M33: { ...CTX.map.hexes.M33!, features: ["port" as const] },
+    } } };
+    const act = (s: GameState, a: Action) => okOf(applyAction(local, s, a));
+    const event = (s: GameState) => act(s, resolve).events.find(e => e.type === "PORT_ATTACK_RESOLVED");
+    const s = setManualDas(board([plane("p", 3, "L31"), fleet("f", 9, "M33", "poland"),
+      plane("d", 2, "M33", "poland"), counter("g", "germany", "infantry", 3, "M32"),
+      counter("b", "poland", "infantry", 2, "M33")], undefined,
+      { activeSide: "axis", position: { part: "player-turn", turn: 1, step: "7b" }, airbasesPlaced: NO_AIRBASES_LEFT }), true);
+    const d = act(act(s, designate(["p"], "M33")).state, end("7b")).state;
+    expect(d.position).toMatchObject({ step: "7d" });
+    const fly = act(d, { type: "DESIGNATE_DAS", side: "allies", units: ["d"], hex: "M33" }).state;
+    const after = (s: GameState) => {
+      let h = act(s, { type: "END_STEP", side: "allies", step: "7d" }).state;
+      if (h.position?.part === "player-turn" && h.position.step === "7e") h = act(h, end("7e")).state;
+      expect(h.position).toMatchObject({ step: "7h" });
+      const i = act(h, end("7h")).state;
+      expect(i.position).toMatchObject({ step: "7i" });
+      return i;
+    };
+    expect(event(after(fly))).toMatchObject({ status: "resolved" });
+    expect(event(after(d))).toMatchObject({ status: "counter-air-blocked" });
   });
 
   it("AER80: no queue never lists designation or resolution and keeps computer choice and RNG unchanged", () => {

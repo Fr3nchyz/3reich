@@ -1,5 +1,8 @@
 # 12. Fleets and naval warfare: ports, sea supply, displacement, movement, interception and naval missions
 
+- **TODO(verify) AER124 — ticket 09-air-cleanup (spec 12 R14; audit 9):** Without a recorded counter-air result, port blocking is read at 7i from currently unflown defending planes. Flying DAS at 7d can expose their port. Keep this provisional current reading rather than add designation-time state; recorded counter-air failure still blocks.
+- **TODO(verify) AER126 — ticket 09-air-cleanup (spec 12 R12.6; audit 11):** Clamp remaining naval loss debt to zero after whole-counter breakdown; excess loss must not cause a negative debt for the next fleet. This is inert with the current counter sizes, which include one factor.
+
 Status: **draft for review, 2026-10-16; DF-1 to DF-3 accepted as recommended on 2026-10-17. Only Release I is in the Beta milestone (docs/PLAN.md). Tickets 12-0 (port facts and sea distance), 12-1 (naval record), 12-2 (sea supply rules, pure), 12-3 (designate sea supply at 6e and 9f) and 12-4 (fleets displaced on capture, Malta cap) are built (see "As built"); the rest is not, and nothing more is built until you say "let's go".** Words and sketches only; the build plan is part G. Builds on spec 03 (supply tracing), spec 04 (naval section), spec 05 (computer), spec 07 (tap to attack), spec 09 (air units, and its decision D1 on captured bases) and spec 13 (zones of control). Comes from the audit of 2026-10-16 (docs/PC-MANUAL-AUDIT.md, mismatch 8), from the supply switch that had to stay off (`SUPPLY_EFFECTS_ENABLED = false`) and from spec 09 leaving "everything at sea" to this spec.
 
 ## Decisions already taken, and decisions needed

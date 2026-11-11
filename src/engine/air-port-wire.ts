@@ -105,6 +105,7 @@ export function applyResolvePortAttacks(state: GameState, action: Extract<Action
       events.push({ type: "PORT_ATTACK_RESOLVED", target: mission.target, status: "no-air", rolls: [], airLost: 0, navalHits: 0, navalLost: 0, fleets: [] });
       continue;
     }
+    // TODO(verify) AER124: absent a result, currently unflown planes block at 7i; DAS can expose the port.
     // AER81: recorded Counter-Air failure remains blocking after the defenders use their mission.
     const counterAir = mission.counterAir ?? (portCounterAirDefenders(next, mission.target).length > 0 ? "not-beaten" : "not-needed");
     const fleets = Object.values(next.units).filter((u) => u.type === "fleet" && u.strength > 0 && u.at === mission.target && sideInWar(next, u.owner) === (state.activeSide === "axis" ? "allies" : "axis"))

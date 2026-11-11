@@ -147,8 +147,8 @@ describe("09-11b normal airdrop wiring", () => {
   it("AER96: captures actual start before movement and never reconstructs missing/stale snapshots", () => {
     const m = movement();
     const start = m.airDrop!.record!.start;
-    expect(start.position).toMatchObject({ step: "1" });
-    expect(start.airDrop).toBeUndefined();
+    expect("facts" in start).toBe(true);
+    expect("airDrop" in start).toBe(false);
     expect(turnKey(start)).toBe(turnKey(m));
     for (const airDrop of [{ manual: true }, { manual: true, record: { start: { ...start, year: start.year - 1 }, dropped: {} } }]) {
       const s = { ...atDrop(), airDrop };
@@ -157,6 +157,27 @@ describe("09-11b normal airdrop wiring", () => {
     }
     const m2 = { ...m, airDrop: { manual: true } };
     expect(okOf(applyAction(CTX, m2, end("6f"))).state.position).toMatchObject({ step: "7h" });
+  });
+
+  it("AER125: compact starts freeze eligibility, omit unrelated state and agree with legacy saves", () => {
+    const m = movement(), start = m.airDrop!.record!.start;
+    expect(Object.keys(start).sort()).toEqual(["activeSide", "facts", "season", "units", "year"]);
+    expect(Object.keys(start.units)).toEqual(["para"]);
+    expect(start.units.para).toEqual({ at: "L31", owner: "germany", type: "airborne" });
+    expect("facts" in start && start.facts.para).toEqual({ base: true, supplied: true, zoc: false });
+    // Reconstruct the same true start in the legacy representation, then replay both from 6f.
+    const legacy = { ...m, position: { part: "player-turn" as const, turn: 1 as const, step: "1" } };
+    delete legacy.airDrop;
+    const old = { ...m, airDrop: { manual: true, record: { start: legacy, dropped: {} } } };
+    const saved = JSON.parse(JSON.stringify(old)) as GameState;
+    expect(legalActions(CTX, atDrop())).toEqual(legalActions(CTX, okOf(applyAction(CTX, saved, end("6f"))).state));
+    expect(replay(CTX, saved, [end("6f"), drop()]).events).toEqual(replay(CTX, m, [end("6f"), drop()]).events);
+    expect(saved.airDrop!.record!.start).toEqual(legacy);
+    for (const fact of ["base", "supplied"] as const) {
+      if (!("facts" in start)) throw Error("compact start expected");
+      const blocked = { ...m, airDrop: { manual: true, record: { start: { ...start, facts: { para: { ...start.facts.para!, [fact]: false } } }, dropped: {} } } };
+      expect(okOf(applyAction(CTX, blocked, end("6f"))).state.position).toMatchObject({ step: "7h" });
+    }
   });
 
   it("R13/AER95: rejects wrong step, side, unit, range and malformed targets atomically", () => {
@@ -228,12 +249,12 @@ describe("09-11b normal airdrop wiring", () => {
     const record = next.airDrop!.record!;
     expect(turnKey(record.start)).toBe(turnKey(next));
     expect(record.start.activeSide).toBe("allies");
-    expect(record.start.airDrop).toBeUndefined();
+    expect("airDrop" in record.start).toBe(false);
     expect(record.dropped).toEqual(done.airDrop!.record!.dropped);
     expect(record.dropped).not.toBe(done.airDrop!.record!.dropped);
     expect(record.start.units.para!.at).toBe("L32");
     const nextDrop = { ...next, activeSide: "axis" as const, position: { part: "player-turn" as const, turn: 1 as const, step: "7g" } };
-    expect(legalDrops(CTX, beginDropTurn(nextDrop))).toEqual([]); // same Game Turn, even with a fresh snapshot
+    expect(legalDrops(CTX, beginDropTurn(nextDrop, CTX))).toEqual([]); // same Game Turn, even with a fresh snapshot
   });
 
   it("R15/C1: deterministic JSON replay, stable action order and immutable inputs", () => {
@@ -257,7 +278,7 @@ describe("09-11b normal airdrop wiring", () => {
     if (opened.kind !== "opened") throw Error(opened.message);
     expect(JSON.stringify(opened.state)).toBe(before);
     expect(opened.state.airDrop).toBeUndefined();
-    expect(beginDropTurn(opened.state)).toBe(opened.state);
+    expect(beginDropTurn(opened.state, CTX)).toBe(opened.state);
     expect(legalDrops(CTX, opened.state)).toEqual([]);
     expect(fingerprint(opened.state)).toBe(save.fingerprint);
   });

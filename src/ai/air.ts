@@ -1,5 +1,7 @@
 import { applyAction, legalActions, type Action } from "../engine/actions";
 import { groundSupportTargets, freeAir } from "../engine/air-missions";
+import { flightProblem } from "../engine/air-range";
+import { MISSION_RANGE } from "../engine/air-rules";
 import { airOf, hasFlown } from "../engine/air-record";
 import { dasSide } from "../engine/air-defense-wire";
 import { defensiveGroundFactors } from "../engine/air-defense";
@@ -83,7 +85,9 @@ function defense(ctx: GameContext, state: GameState, legal: readonly Action[]): 
   const choices = legal.filter((a): a is Extract<Action, { type: "DESIGNATE_DAS" }> => a.type === "DESIGNATE_DAS" && ratio(a.hex) >= DAS_THREAT_RATIO)
     .sort((a, b) => ratio(b.hex) - ratio(a.hex) || a.hex.localeCompare(b.hex));
   for (const a of choices) {
-    const units = [...a.units].sort().slice(0, Math.max(0, available.length - DAS_RESERVE_PLANES));
+    // TODO(verify) AER127: reserve must be able to reach this threatened hex.
+    const nearby = available.filter(u => flightProblem(ctx, state, u.owner, u.at, a.hex, MISSION_RANGE) === null);
+    const units = [...a.units].sort().slice(0, Math.max(0, nearby.length - DAS_RESERVE_PLANES));
     if (units.length) return decision({ ...a, units }, "Defends a threatened hex while keeping a plane in reserve.");
   }
   return undefined;

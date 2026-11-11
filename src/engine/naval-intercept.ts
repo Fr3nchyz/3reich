@@ -97,7 +97,8 @@ function lose(state: GameState, ids: readonly string[], owed: number): { state: 
     const debt = Math.min(left, u.strength);
     if (!debt) { survivors.push(u.id); continue; }
     const parts = breakDownFleet(u.strength, debt);
-    left -= parts.lost;
+    // TODO(verify) AER126: whole-counter excess loss cannot create negative debt.
+    left = Math.max(0, left - parts.lost);
     if (!parts.counters.length) {
       const gone = eliminateUnits(next, [u.id]); next = gone.state; events.push(...gone.events); continue;
     }
