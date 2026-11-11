@@ -170,8 +170,10 @@ describe("09-11b normal airdrop wiring", () => {
     delete legacy.airDrop;
     const old = { ...m, airDrop: { manual: true, record: { start: legacy, dropped: {} } } };
     const saved = JSON.parse(JSON.stringify(old)) as GameState;
+    const compact = JSON.parse(JSON.stringify(m)) as GameState;
     expect(legalActions(CTX, atDrop())).toEqual(legalActions(CTX, okOf(applyAction(CTX, saved, end("6f"))).state));
     expect(replay(CTX, saved, [end("6f"), drop()]).events).toEqual(replay(CTX, m, [end("6f"), drop()]).events);
+    expect(replay(CTX, compact, [end("6f"), drop()])).toEqual(replay(CTX, m, [end("6f"), drop()]));
     expect(saved.airDrop!.record!.start).toEqual(legacy);
     for (const fact of ["base", "supplied"] as const) {
       if (!("facts" in start)) throw Error("compact start expected");
