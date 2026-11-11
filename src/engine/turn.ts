@@ -27,7 +27,7 @@ import { hasSeaAirWork, legalSeaAirDesignations } from "./air-sea-wire";
 import { hasPortAttackWork } from "./air-port-wire";
 import { legalDas } from "./air-defense-wire";
 import { hasCounterAirWork } from "./air-counter-wire";
-import { hasAirWork, loseUnusedGroundSupport } from "./air-missions";
+import { hasAirWork, hasManualAirWork, loseUnusedGroundSupport } from "./air-missions";
 import { newAirTurn } from "./air-record";
 import { AIR_MISSIONS_ENABLED } from "./air-rules";
 import { hasAirMoveWork } from "./air-work";
@@ -231,6 +231,7 @@ function hasWork(ctx: GameContext, state: GameState, id: string): boolean {
     case "7c":
       return hasCounterAirWork(state); // spec 09 Wiring, 09-9b / AER73: no assignments, no work
     case "7b":
+      return AIR_MISSIONS_ENABLED && (hasAirWork(ctx, state) || hasManualAirWork(ctx, state)); // spec 09 AER122: human opt-in only
     case "7k":
       return AIR_MISSIONS_ENABLED && hasAirWork(ctx, state);
     case "7h":
