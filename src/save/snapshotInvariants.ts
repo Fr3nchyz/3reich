@@ -71,6 +71,15 @@ export function validateSnapshotInvariants(snapshot: unknown, ctx: GameContext):
   const nation = fields({ id: power, status: one("axis", "allied", "neutral", "vichy", "out", "conquered"),
     brpBase: num, brpTotal: whole(Number.MIN_SAFE_INTEGER), growthRate: num, spendLimit: num, spent: num }, { grantedThisYear: num });
   const unit = fields({ id, owner, type: unitType, strength: num, at: place }, { nationality: owner, movement: num });
+  // Spec 09 AER125 / Ref 23.1: compact starts freeze only airborne eligibility facts.
+  // Historical airborne ids may no longer be live; facts must cover exactly those ids.
+  const dropStart: Check = v => fields({
+    year: whole(ctx.scenario.start.year, ctx.scenario.end.year), season, activeSide: side,
+    units: record(id, fields({ at: place, owner, type: one("airborne") })),
+    facts: record(id, fields({ base: bool, supplied: bool, zoc: bool })),
+  })(v) && obj(v) && obj(v.units) && obj(v.facts) &&
+    Object.keys(v.units).length === Object.keys(v.facts).length &&
+    Object.keys(v.units).every(key => Object.hasOwn(v.facts as object, key));
   const steps = PLAYER_TURN_STEPS.flatMap(step => [step.id, ...(step.steps?.map(x => x.id) ?? [])]);
   // Spec 11 A/E; Ops 5.0: only representable turn positions and complete major records.
   const required: Record<string, Check> = {
@@ -102,9 +111,10 @@ export function validateSnapshotInvariants(snapshot: unknown, ctx: GameContext):
       counterAir: list(fields({ target: hex, units: airIds })),
       portAttacks: list(fields({ target: hex, units: airIds }, { counterAir: one("beaten", "not-beaten") })),
     }),
-    // Spec 09 AER116/AER96: optional drops retain a non-nested, validated turn start.
+    // Spec 09 AER125/AER116/AER96: accept compact starts and legacy non-nested full states.
     airDrop: fields({}, { manual: bool, record: fields({
-      start: v => obj(v) && !Object.hasOwn(v, "airDrop") && validateSnapshotInvariants(v, ctx).ok,
+      start: v => obj(v) && !Object.hasOwn(v, "airDrop") &&
+        (Object.hasOwn(v, "facts") ? dropStart(v) : validateSnapshotInvariants(v, ctx).ok),
       dropped: record(id, num),
     }) }),
     airFlown: fields({ turn: turnKey, units: record(idFor("air"), one("ground-support", "counter-air", "das", "das-intercept", "port-attack", "sea-attack", "new")) }),

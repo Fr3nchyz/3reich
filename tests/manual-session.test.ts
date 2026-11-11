@@ -213,3 +213,10 @@ it("AER116/AER96: rescue rejects malformed and nested drop records, retaining va
     expect(validateSnapshotInvariants({ ...start, airDrop }, CTX).ok).toBe(false);
   }
 });
+
+it("AER125: legacy full-state drop starts survive save/load and snapshot rescue unchanged", async () => {
+  const s = newSession(CTX.scenario, "axis", 1, false);
+  const start = JSON.parse(JSON.stringify(s.state)) as GameState;
+  s.state = { ...s.state, airDrop: { manual: true, record: { start, dropped: {} } } };
+  await roundTrip(s, { kind: "snapshot", state: JSON.parse(JSON.stringify(s.state)) as JsonObject });
+});

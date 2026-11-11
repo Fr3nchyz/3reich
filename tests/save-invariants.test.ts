@@ -115,4 +115,27 @@ describe("spec 11 Parts A/E, AER55 snapshot invariants", () => {
     result!.units.u1!.strength = 99; expect(input).toEqual(before);
     expect(validate({}, CTX)).toBeUndefined();
   });
+
+  it("AER125: compact drop starts validate historical airborne ids and exact eligibility facts", () => {
+    const s = placed();
+    delete s.units.u1; // Allocated airborne ids can outlive their counters.
+    const start = { year: s.year, season: s.season, activeSide: s.activeSide,
+      units: { u1: { at: "K21", owner: "germany", type: "airborne" } },
+      facts: { u1: { base: true, supplied: false, zoc: false } } };
+    const snapshot = { ...s, airDrop: { manual: true, record: { start, dropped: {} } } };
+    expect(validateSnapshotInvariants(snapshot, CTX)).toEqual({ ok: true });
+    const validate = createSnapshotValidator();
+    expect(validate(copy(snapshot) as unknown as JsonObject, CTX)).toEqual(snapshot);
+    for (const damaged of [
+      { ...start, year: 0 }, { ...start, season: "unknown" }, { ...start, activeSide: "unknown" },
+      { ...start, units: { u2: start.units.u1 } },
+      { ...start, units: { u1: { ...start.units.u1, at: "missing" } } },
+      { ...start, units: { u1: { ...start.units.u1, owner: "unknown" } } },
+      { ...start, units: { u1: { ...start.units.u1, type: "air" } } },
+      { ...start, facts: {} }, { ...start, facts: { ...start.facts, u2: start.facts.u1 } },
+      { ...start, facts: { u1: { ...start.facts.u1, supplied: "false" } } },
+      { ...start, facts: { u1: { base: true, supplied: false } } },
+      { ...start, airDrop: {} }, { ...start, extra: true },
+    ]) reject({ ...snapshot, airDrop: { record: { start: damaged, dropped: {} } } }, "airDrop");
+  });
 });
