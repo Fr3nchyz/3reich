@@ -1,3 +1,7 @@
+import { navalOf } from "../engine/naval-record";
+import { setManualAirDrop } from "../engine/air-drop-wire";
+import { setManualDas } from "../engine/air-defense-wire";
+import { setManualFleetMove } from "../engine/naval-actions";
 import { applyAction } from "../engine/actions";
 import type { Action } from "../engine/actions";
 import type { GameContext } from "../engine/context";
@@ -59,6 +63,10 @@ export async function restore(source: string, context: GameContext, options: Res
   const started = options.now();
   let slice = started;
   let state = save.start.kind === "new" ? newGame(context.scenario, save.seed) : selected(save.start.state);
+  // Spec 09 AER116: absent markers replay exactly as old flags-off saves did.
+  if (state && save.start.kind === "new" && save.start.manual === true)
+    state = setManualDas({ ...state, naval: { ...navalOf(setManualFleetMove(state, true)), manualSeaAir: true } }, true);
+  if (state && save.start.kind === "new" && save.start.manualAirDrop === true) state = setManualAirDrop(state, true);
   if (!state) return fallback("start", "This saved game's starting position cannot be opened.");
   options.progress?.(0, save.actions.length);
   for (let index = 0; index < save.actions.length; index++) {
@@ -85,6 +93,8 @@ export async function restore(source: string, context: GameContext, options: Res
   if (options.cancelled()) return stopped();
   // Spec 11 H: account for the last (potentially slow) action, including empty records.
   if (options.now() - started >= RESTORE_BUDGET_MS) return fallback("budget", "Opening took too long and was stopped.", true);
+  // Spec 11 B / AER116: compare the same JSON snapshot representation saved on disk.
+  state = JSON.parse(JSON.stringify(state)) as GameState;
   if (fingerprint(state) !== save.fingerprint) return fallback("fingerprint", "This saved position no longer matches and cannot be opened by this version.");
   return { kind: "opened", via: "replay", state, save, message: "Game opened." };
 }

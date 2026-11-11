@@ -72,8 +72,8 @@ export const FLEET_COUNTER_SIZES: readonly number[] = Object.freeze([1, 2, 6, 9]
 
 const isStrings = (x: unknown): x is string[] => Array.isArray(x) && x.every((e) => typeof e === "string");
 
-/** A record for the Player Turn that begins now, carrying over what the Game Turn has already used. */
-const freshTurn = (state: GameState, used: Record<string, NavalUse>): NavalState => ({ ...(state.naval?.manualFleetMove === undefined ? {} : { manualFleetMove: state.naval.manualFleetMove }), gameTurn: gameTurnKey(state), used, turn: turnKey(state), triedIntercept: [], moved: [], supply: [] });
+/** Spec 09 AER116: carry session gates and Game Turn use, resetting Player Turn work. */
+const freshTurn = (state: GameState, used: Record<string, NavalUse>): NavalState => ({ ...(state.naval?.manualFleetMove === undefined ? {} : { manualFleetMove: state.naval.manualFleetMove }), ...(state.naval?.manualSeaAir === undefined ? {} : { manualSeaAir: state.naval.manualSeaAir }), gameTurn: gameTurnKey(state), used, turn: turnKey(state), triedIntercept: [], moved: [], supply: [] });
 
 /**
  * The record for the Player Turn now being played: the stored one, or a new one. A stored record from an earlier Player Turn of the

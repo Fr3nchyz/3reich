@@ -21,7 +21,7 @@ export interface E2eLoad {
 
 /** A session of `scenario` for the player on `side` after these actions, from a new game with this seed. */
 export function sessionFromRecord(scenario: Scenario, side: Side, seed: number, actions: readonly Action[]): Session {
-  const s = newSession(scenario, side, seed);
+  const s = newSession(scenario, side, seed, false); // Spec 09 AER116: recordings predate human opt-in.
   // A record made before lost units came back to the pool passed steps 8a and 8b that may now wait for them: those steps are ended for it (spec 17 R7).
   let played: readonly Action[];
   try {

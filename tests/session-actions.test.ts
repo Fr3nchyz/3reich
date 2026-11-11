@@ -4,10 +4,14 @@ import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { placementPlaces } from "../src/engine/placement";
 import { currentSetupOwner, sideOfOwner } from "../src/engine/setup";
 import type { ForceOwner } from "../src/engine/types";
-import { createSession, currentSpec, setupView, type Session } from "../src/ui/session";
+import { newSession as startSession, computerSetup, createSession, currentSpec, setupView, type Session } from "../src/ui/session";
 import { fillRest, finishOwner, normaliseMode, pickSpec, setMode, tapHex, undoLast } from "../src/ui/sessionActions";
 
-const newSession = () => createSession(SCENARIO_1939, "axis", 1);
+const newSession = () => {
+  const s = startSession(SCENARIO_1939, "axis", 1, false);
+  computerSetup(s);
+  return s;
+};
 const mine = (s: Session, owner: ForceOwner) => Object.values(s.state.units).filter((u) => u.owner === owner);
 const hexAt = (id: string) => MAP.hexes[id]!;
 

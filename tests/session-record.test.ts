@@ -3,7 +3,7 @@ import { createMemory, exportMemory, importMemory } from "../src/ai/memory";
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import { legalActions, replay } from "../src/engine/actions";
 import { newGame } from "../src/engine/game";
-import { createSession, newSession, placeTheRest, run } from "../src/ui/session";
+import { computerSetup, newSession, placeTheRest, run } from "../src/ui/session";
 import { newWatchSession, takeOver, watchSlice } from "../src/ui/watchPlay";
 
 const memoryFixture = () => {
@@ -21,15 +21,16 @@ const memoryFixture = () => {
 
 describe("record every game (spec 11 ticket 11-3, parts B/G)", () => {
   it("starts with an independent empty record before setup (spec 11 ticket 11-3)", () => {
-    const s = newSession(SCENARIO_1939, "axis", 7);
+    const s = newSession(SCENARIO_1939, "axis", 7, false);
     expect(s.record).toEqual([]);
-    expect(s.record).not.toBe(newSession(SCENARIO_1939, "axis", 7).record);
+    expect(s.record).not.toBe(newSession(SCENARIO_1939, "axis", 7, false).record);
     expect(placeTheRest(s)).toBe(true);
     expect(s.record.length).toBeGreaterThan(0);
     expect(replay(s.ctx, newGame(SCENARIO_1939, 7), s.record).state).toEqual(s.state);
   });
   it("records automatic computer setup (spec 11 part B)", () => {
-    const s = createSession(SCENARIO_1939, "axis", 7);
+    const s = newSession(SCENARIO_1939, "axis", 7, false);
+    computerSetup(s);
     expect(s.record.length).toBeGreaterThan(0);
     expect(replay(s.ctx, newGame(SCENARIO_1939, 7), s.record).state).toEqual(s.state);
   });

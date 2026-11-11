@@ -19,7 +19,7 @@ function harness(persistent = true) {
   const onError = vi.fn();
   const autosave = createAutosave({ store, gameVersion: "0.1.0", onError,
     now: () => new Date("2026-01-01T00:00:00.000Z"), timers: { setTimeout, clearTimeout } });
-  const s = newSession(SCENARIO_1939, "axis", 1);
+  const s = newSession(SCENARIO_1939, "axis", 1, false);
   autosave.observe(s);
   return { autosave, s, store, onError };
 }
@@ -50,7 +50,7 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
     const onError = vi.fn();
     const autosave = createAutosave({ store, gameVersion: "test", onError });
     try {
-      const s = newSession(SCENARIO_1939, "axis", 1);
+      const s = newSession(SCENARIO_1939, "axis", 1, false);
       autosave.observe(s);
       action(s); autosave.observe(s);
       await vi.advanceTimersByTimeAsync(500);
@@ -133,7 +133,7 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
     const { autosave, s, store } = harness();
     action(s); autosave.observe(s); await autosave.flush();
     const old = await entry(store);
-    const next = newSession(SCENARIO_1939, "axis", 2); autosave.observe(next);
+    const next = newSession(SCENARIO_1939, "axis", 2, false); autosave.observe(next);
     await autosave.flush(); expect(await entry(store)).toEqual(old);
     action(next); autosave.observe(next); await autosave.flush();
     expect(await entry(store, EARLIER_GAME_SLOT)).toEqual(old);
@@ -206,10 +206,10 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
     let open!: (store: SaveStore) => void;
     const pending = new Promise<SaveStore>(resolve => { open = resolve; });
     const autosave = createAutosave({ store: pending, gameVersion: "test", onError: vi.fn() });
-    const first = newSession(SCENARIO_1939, "axis", 1); autosave.observe(first);
+    const first = newSession(SCENARIO_1939, "axis", 1, false); autosave.observe(first);
     action(first); autosave.observe(first); const write1 = autosave.flush();
     action(first); autosave.observe(first); const write2 = autosave.flush();
-    const second = newSession(SCENARIO_1939, "allies", 2); autosave.observe(second);
+    const second = newSession(SCENARIO_1939, "allies", 2, false); autosave.observe(second);
     action(second); autosave.observe(second); const write3 = autosave.flush();
     first.state.year++;
     open(store); await Promise.all([write1, write2, write3]);
@@ -223,7 +223,7 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
     const { autosave, s, store, onError } = harness();
     action(s); autosave.observe(s); await autosave.flush();
     const old = await entry(store);
-    const next = newSession(SCENARIO_1939, "axis", 2); autosave.observe(next);
+    const next = newSession(SCENARIO_1939, "axis", 2, false); autosave.observe(next);
     vi.mocked(store.put).mockResolvedValueOnce({ ok: false, code: "quota" });
     action(next); autosave.observe(next); await autosave.flush();
     expect(await entry(store)).toEqual(old);
@@ -234,7 +234,7 @@ describe("autosave policy, spec 11 Parts B/C/D/G/H", () => {
   it("Part D: switching games flushes pending progress; repeated redraws add no writes", async () => {
     const { autosave, s, store } = harness();
     action(s); autosave.observe(s);
-    autosave.observe(newSession(SCENARIO_1939, "axis", 2));
+    autosave.observe(newSession(SCENARIO_1939, "axis", 2, false));
     await autosave.flush();
     expect((await entry(store))!.seed).toBe(1);
     await vi.advanceTimersByTimeAsync(6000);
@@ -263,7 +263,7 @@ it("Spec 11 A/B/D: resumed sessions retain a detached snapshot start and shorten
   action(s); autosave.observe(s); await autosave.flush();
   const saved = (await entry(store))!;
   expect(saved.start).toEqual({ kind: "snapshot", state: original }); expect(saved.actions).toHaveLength(1);
-  const next = newSession(SCENARIO_1939, "axis", 2); autosave.observe(next);
+  const next = newSession(SCENARIO_1939, "axis", 2, false); autosave.observe(next);
   action(next); autosave.observe(next); await autosave.flush();
   expect((await entry(store))!.start).toEqual({ kind: "new" });
 });

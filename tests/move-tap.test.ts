@@ -6,14 +6,16 @@ import type { MapView } from "../src/ui/mapView";
 import { syncMap } from "../src/ui/mapSync";
 import { at6f, inf } from "./helpers-move";
 import { moveTargets, movesNow, toggleTick } from "../src/ui/moveTap";
-import { createSession, setupView, type Session } from "../src/ui/session";
+import { computerSetup, newSession, setupView, type Session } from "../src/ui/session";
 import { fillRest, finishOwner, tapHex, takeAction } from "../src/ui/sessionActions";
 import { statusHtml } from "../src/ui/statusView";
 
 // The tap flow at step 6f: tap a stack, its destinations are outlined, tap one. Every move is a legal MOVE of the engine.
 
 function atMovement(): Session {
-  const s = createSession(SCENARIO_1939, "axis", 1);
+  // Spec 09 AER116: this ground-movement fixture retains the old flags-off start.
+  const s = newSession(SCENARIO_1939, "axis", 1, false);
+  computerSetup(s);
   for (let i = 0; i < 20 && s.state.phase === "setup"; i++) {
     fillRest(s);
     const v = setupView(s);
