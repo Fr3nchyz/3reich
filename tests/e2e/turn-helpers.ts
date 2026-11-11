@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 /** #351, spec 12 AER75: human starts enable manual fleet movement; decline it before ground movement. */
 export async function passFleetMovement(page: Page): Promise<void> {
@@ -25,8 +25,15 @@ export async function passOptionalStep(page: Page): Promise<boolean> {
  * sit outside .actions (notably the Free Siberian Transfer at 8a).
  */
 export async function advanceTurnStep(page: Page): Promise<void> {
+  // Round 7: later scenarios can need over 15 seconds for a computer turn.
+  const totalWaitMs = 150_000;
+  const stallMs = 30_000;
+  // Leave room for setup and assertions around the bounded wait.
+  test.setTimeout(Math.max(test.info().timeout, totalWaitMs + 30_000));
   let next = page.locator(".actions button").last();
   const turn = await page.locator(".turn").innerText();
+  let lastTurn = turn;
+  let lastProgressAt = Date.now();
   const lossChoices = page.locator("details.declarations").filter({
     has: page.locator("summary", { hasText: /^All ways to lose, as a list/ }),
   });
@@ -63,7 +70,18 @@ export async function advanceTurnStep(page: Page): Promise<void> {
     return false;
   };
   try {
-    await expect.poll(ready, { message: `A control to continue from ${turn}`, timeout: 15_000 }).toBe(true);
+    let stalled = false;
+    await expect.poll(async () => {
+      const current = await page.locator(".turn").innerText();
+      if (current !== lastTurn) {
+        lastTurn = current;
+        lastProgressAt = Date.now();
+      }
+      if (await ready()) return true;
+      stalled = Date.now() - lastProgressAt >= stallMs;
+      return stalled;
+    }, { message: `A control to continue from ${turn}`, timeout: totalWaitMs }).toBe(true);
+    expect(stalled, `No turn progress for ${stallMs} ms`).toBe(false);
   } catch (cause) {
     // The computer may have crossed several steps since this call began.
     const current = await page.locator(".turn").innerText();
