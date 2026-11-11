@@ -18,7 +18,7 @@ it.fails.each(SCENARIO_KEYS)("TODO(verify) AER54 spec 11 Parts B/I E3/E4: %s two
     const game = runGame({ scenario: key, seed, turns: 1, verify: false });
     expect(game.actions.length).toBeGreaterThan(game.setupActions);
     for (const cut of [game.setupActions, game.setupActions + 5, game.actions.length]) {
-      const session = newSession(scenario, "axis", seed);
+      const session = newSession(scenario, "axis", seed, false);
       expect(run(session, ...game.actions.slice(0, cut))).toBe(true);
       const state = session.state;
       const save: SaveFile = { format: 2, app: "3reich", title: key,
@@ -52,7 +52,7 @@ it("spec 11 Parts D/H: real session record autosaves after debounce and hidden f
   const put = vi.fn<typeof memory.put>((id, save) => memory.put(id, save));
   const store = { ...memory, persistent: true, put };
   const autosave = createAutosave({ store, gameVersion: "test", onError: error => { throw Error(error.code); } });
-  const session = newSession(SCENARIOS["1939"], "allies", 1);
+  const session = newSession(SCENARIOS["1939"], "allies", 1, false);
   const doc = Object.assign(new EventTarget(), { visibilityState: "hidden" as const });
   const unbind = bindAutosaveLifecycle(autosave, doc, new EventTarget());
   try {

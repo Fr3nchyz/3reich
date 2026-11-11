@@ -37,17 +37,34 @@ function at6c(extra = true): GameState {
 const decide = (s: GameState) => chooseAction(CTX, s, { seed: 1 });
 
 describe("spec 12 Part E / spec 05 fleet policy (AER110–AER115)", () => {
-  it("AER110 ships disabled and retains the old fallback even in human opted-in states", () => {
+  it("AER110/AER116 keeps fleet policy disabled while completing human opted-in steps", () => {
     expect(policies.AI_USES_FLEETS).toBe(false);
-    expect(decide(position())?.action.type).toBe("END_STEP");
-    expect(decide(at6c())).toBeNull();
+    const moving = position();
+    expect(legalActions(CTX, moving).some(a => a.type === "MOVE_FLEET")).toBe(true);
+    expect(chooseFleetMove(CTX, moving, legalActions(CTX, moving))).toBeUndefined();
+    expect(decide(moving)?.action).toEqual({ type: "END_STEP", side: "allies", step: "6b" });
+    let passing = at6c();
+    expect(legalActions(CTX, passing).some(a => a.type === "DECLARE_INTERCEPT")).toBe(true);
+    expect(chooseFleetIntercept(CTX, passing, legalActions(CTX, passing))).toBeUndefined();
+    for (const side of ["axis", "allies"] as const) {
+      const choice = decide(passing)!;
+      expect(choice.action).toEqual({ type: "PASS_INTERCEPT", side });
+      expect(legalActions(CTX, passing)).toContainEqual(choice.action);
+      passing = apply(passing, choice.action);
+    }
+    expect(step(passing)).not.toMatch(/^6[cd]$/);
+    // A human declaration still requires the computer to complete resolution (spec 09 AER116).
     let s = at6c();
     const declaration = legalActions(CTX, s).find(a => a.type === "DECLARE_INTERCEPT")!;
     s = apply(s, declaration);
     s = apply(s, { type: "PASS_INTERCEPT", side: "axis" });
     s = apply(s, { type: "PASS_INTERCEPT", side: "allies" });
     expect(step(s)).toBe("6d");
-    expect(decide(s)).toBeNull();
+    const resolve = decide(s)!;
+    expect(resolve.action).toEqual({ type: "RESOLVE_INTERCEPTIONS", side: "allies" });
+    expect(legalActions(CTX, s)).toContainEqual(resolve.action);
+    expect(apply(s, resolve.action).naval?.interceptsResolved).toBe(true);
+    expect(policies.AI_USES_FLEETS).toBe(false);
   });
   it("AER110 leaves old saves without a naval record unchanged", () => {
     enable(); const s = position(); delete s.naval;

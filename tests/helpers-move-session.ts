@@ -1,12 +1,13 @@
 import { SCENARIO_1939 } from "../src/data/scenario-1939";
 import type { Unit } from "../src/engine/types";
-import { createSession, setupView, type Session } from "../src/ui/session";
+import { newSession, computerSetup, setupView, type Session } from "../src/ui/session";
 import { fillRest, finishOwner, takeAction } from "../src/ui/sessionActions";
 import { at6f, inf } from "./helpers-move";
 
 /** A real 1939 game as Axis, set up and standing at step 6f of the first Player Turn. */
 export function atMovement(): Session {
-  const s = createSession(SCENARIO_1939, "axis", 1);
+  const s = newSession(SCENARIO_1939, "axis", 1, false);
+  computerSetup(s);
   for (let i = 0; i < 20 && s.state.phase === "setup"; i++) {
     fillRest(s);
     const v = setupView(s);

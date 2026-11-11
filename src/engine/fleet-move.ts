@@ -68,3 +68,16 @@ export function moveFleet(ctx: GameContext, state: GameState, move: FleetMove): 
     course: [...course],
   };
 }
+
+/** TODO(verify) AER119–AER120, spec 12 R10: one current-turn force per origin/destination/Front. */
+export function fleetMoveGroups(state: GameState) {
+  const groups: { id: string; from: HexId; to: HexId; front: Front; fleets: string[]; path: HexId[] }[] = [];
+  for (const [i, move] of (navalOf(state).moves ?? []).entries()) {
+    const group = state.naval?.manualFleetMove === true && groups.find(g => g.from === move.from && g.to === move.to && g.front === move.front);
+    if (group) {
+      group.fleets.push(move.fleet);
+      group.path = [...new Set([...group.path, ...move.path])];
+    } else groups.push({ id: `move:${i}`, from: move.from, to: move.to, front: move.front, fleets: [move.fleet], path: [...move.path] });
+  }
+  return groups;
+}

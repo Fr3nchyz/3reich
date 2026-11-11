@@ -1,3 +1,6 @@
+import { navalOf } from "../engine/naval-record";
+import { setManualDas } from "../engine/air-defense-wire";
+import { setManualFleetMove } from "../engine/naval-actions";
 import { trackAirResults, type AirResults } from "./airResultModel";
 import { MAP } from "../data/map";
 import { applyAction, type Action } from "../engine/actions";
@@ -122,10 +125,12 @@ export interface Session {
 }
 
 /** A new game in `scenario` with the human on `side`, with nothing set up yet. */
-export function newSession(scenario: Scenario, side: Side, seed: number): Session {
+export function newSession(scenario: Scenario, side: Side, seed: number, manual = true): Session {
+  // Spec 09 AER116: watched games explicitly retain the engine defaults.
+  const state = newGame(scenario, seed);
   return {
     ctx: { map: MAP, scenario },
-    state: newGame(scenario, seed),
+    state: manual ? setManualDas({ ...state, naval: { ...navalOf(setManualFleetMove(state, true)), manualSeaAir: true } }, true) : state,
     humanSide: side,
     seed,
     log: [`${scenario.name} started. You play the ${sideName(side)} side; the computer sets up the other.`],
