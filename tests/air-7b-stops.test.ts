@@ -37,7 +37,9 @@ describe.each(["air", "fleet"] as const)("AER122: 7b for %s targets through the 
     const b = enter(s);
     expect(waits(b)).toBe(true);
     expect(hasAirWork(ctx, b)).toBe(false);
+    const previewBefore = JSON.stringify(b);
     expect(hasManualAirWork(ctx, b)).toBe(true);
+    expect(JSON.stringify(b)).toBe(previewBefore);
     expect(b.rngState).toBe(s.rngState);
     expect(b.units).toEqual(s.units);
     expect(JSON.stringify(s)).toBe(before);
@@ -74,6 +76,16 @@ describe.each(["air", "fleet"] as const)("AER122: 7b for %s targets through the 
     for (const units of [[plane(), target(type, "A6")], [plane(), target(type, "A5", "germany")], [plane()]]) {
       expect(waits(enter(start(type, true, units)))).toBe(false);
     }
+  });
+
+  it("finds a later free plane and enemy target after ineligible candidates", () => {
+    const units = [{ ...plane("a0"), strength: 1 }, plane(),
+      { ...target(type, "force-pool", "germany"), id: "friendly" }, target(type)];
+    const s = markFlown(start(type, true, units), ["a0"], "ground-support");
+    const b = enter(s);
+    expect(waits(b)).toBe(true);
+    expect(okOf(applyAction(ctx, b, { type: "DESIGNATE_AIR", side: "axis",
+      mission: type === "air" ? "counter-air" : "port-attack", units: ["a"], target: "A5" })).ok).toBe(true);
   });
 
   it("neutral flight barriers and targets without the required base/port do not hold 7b", () => {
