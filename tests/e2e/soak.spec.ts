@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { advanceTurnStep, waitForTurnStep } from "./turn-helpers";
 
 /**
  * A seeded random play-through at phone size, over every scenario and both sides, with new games started
@@ -30,7 +31,9 @@ async function visibleHighlight(page: Page, rnd: () => number): Promise<[number,
 }
 
 test("random play at phone size: every scenario, both sides, new games between", async ({ page, hasTouch }) => {
-  test.setTimeout(300_000);
+  // Eight games, each with three human turns and the intervening computer turns.
+  // Each wait has a 300 s total cap; the 30 s stall clock resets while the computer is busy.
+  test.setTimeout(1_800_000);
   await page.setViewportSize({ width: 420, height: 900 });
   const rnd = random(777);
   const problems: string[] = [];
@@ -73,9 +76,10 @@ test("random play at phone size: every scenario, both sides, new games between",
 
       // Turns with random choices at the steps that have any.
       let played = 0;
-      for (let guard = 0; guard < TURNS * 12 && played < TURNS; guard++) {
-        // The computer plays the other side's turns by itself: wait until it is the player's turn again.
-        await expect(page.locator(".computer-status")).toHaveCount(0, { timeout: 60_000 });
+      for (let guard = 0; guard < TURNS * 40 && played < TURNS; guard++) {
+        // #351/#354: wait for a human control, including defensive answers,
+        // while the computer advances through its own optional steps.
+        await waitForTurnStep(page);
         const turn = await turnLine();
         if (/undefined|NaN|\[object/.test(await page.locator("body").innerText())) problems.push(`${tag}: odd text on the page at "${turn}"`);
         const step = /step (\S+)/.exec(turn)?.[1];
@@ -96,32 +100,10 @@ test("random play at phone size: every scenario, both sides, new games between",
           if (await toast()) problems.push(`${tag}: toast after a build tap: ${await toast()}`);
           if ((await page.locator("g.units > g").count()) > before) builds++;
         }
-        // Ticket 15-15b (#287), spec 15 R3/D2: newly declared minors must place their forces at step 2.
-        while (await page.locator("#minor-auto").count()) {
-          await page.locator("#minor-auto").click();
-          await expect(page.locator("#minor-done")).toBeEnabled();
-          await page.locator("#minor-done").click();
-        }
-        // The computer's attacks can leave the player an Attrition loss to choose (step 7p) before play goes on.
-        const choose = page.getByRole("button", { name: "Choose for me", exact: true });
-        if (await choose.count()) {
-          await choose.first().click();
-          const confirm = page.getByRole("button", { name: "Confirm losses" });
-          if (await confirm.count()) await confirm.first().click();
-        }
-        const last = page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last(); // step 8a: the Free Siberian Transfer card's closing button
-        // The computer may still be finishing its own step: look again before calling the page stuck.
-        if (!(await last.count())) {
-          if (guard >= TURNS * 12 - 2) { problems.push(`${tag}: no move-on button at "${turn}"`); break; }
-          await page.waitForTimeout(1500);
-          continue;
-        }
-        const label = (await last.innerText()).trim();
-        await last.click();
-        // Ticket 15-16b (#295), spec 15 D3: confirm ending combat with an unmet declaration duty.
-        if (await page.locator("#minor-end-combat").count()) await page.locator("#minor-end-combat").click();
+        // #351/#354: use the same optional fleet/air, combat and card controls as the scenario walk.
+        const label = await advanceTurnStep(page);
         if (await toast()) problems.push(`${tag}: toast after "${label}" at "${turn}": ${await toast()}`);
-        if (/^End /.test(label)) { played++; turnsPlayed++; }
+        if (/^End (Axis|Allied) turn$/.test(label)) { played++; turnsPlayed++; }
       }
       if (played < TURNS) problems.push(`${tag}: only ${played} of ${TURNS} turns played`);
     }

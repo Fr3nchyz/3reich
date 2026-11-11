@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { passFleetMovement } from "./turn-helpers";
 
 /**
  * The hex card (spec 07, part A) in a real browser, with a mouse and with a finger: tap any hex from the first Player Turn on and the card
@@ -46,6 +47,7 @@ async function toMovement(page: Page): Promise<void> {
   await page.locator("summary", { hasText: "Choose a Front Option" }).click();
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await page.locator(".actions button[data-action]").last().click();
+  await passFleetMovement(page);
   await expect(page.locator(".turn")).toContainText("step 6f");
 }
 

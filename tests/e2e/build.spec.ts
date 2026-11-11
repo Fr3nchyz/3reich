@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { passFleetMovement } from "./turn-helpers";
 
 /** Step 8b in a real browser: choose a counter to build, tap one of the yellow hexes, and the counter stands there. */
 
@@ -20,6 +21,7 @@ test("1939, Axis: get to construction, pick a counter, tap a yellow hex, the cou
   await page.getByRole("button", { name: "Eastern Front: Offensive Option", exact: true }).click();
   await expect(page.locator(".log li").first()).toContainText("Axis choose the Offensive Option on the Eastern Front.");
   await page.locator(".actions button[data-action]").last().click();
+  await passFleetMovement(page);
   // Step 6f (ground movement): move nothing.
   await expect(page.locator(".turn")).toContainText("step 6f");
   await page.locator(".actions button[data-action]").last().click();

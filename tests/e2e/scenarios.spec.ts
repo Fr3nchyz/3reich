@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { advanceTurnStep } from "./turn-helpers";
 
 /**
  * A basic usability pass over every scenario and both sides: start, put one counter down the way a
@@ -58,17 +59,11 @@ for (const [id, label] of SCENARIOS) {
       await expect(page.locator(".turn")).toContainText("player turn");
       expect(await page.locator("g.units > g").count()).toBeGreaterThanOrEqual(before);
 
-      // Play into the next Game Turn: always the last button, which moves the game on.
+      // #351/#354: play the displayed steps, including optional fleet/air stops.
       const turn = async () => (await page.locator(".turn").innerText()).split("—")[0]!.trim();
       const start = await turn();
-      for (let i = 0; i < 14 && (await turn()) === start; i++) {
-        // Ticket 15-14-2 (#304): the computer may declare on a minor country; its army must be placed before play goes on.
-        while (await page.locator("#minor-auto").count()) {
-          await page.locator("#minor-auto").click();
-          await expect(page.locator("#minor-done")).toBeEnabled();
-          await page.locator("#minor-done").click();
-        }
-        await page.locator(".actions button[data-action], .siberian-buttons button[data-action]").last().click(); // the Free Siberian Transfer card (step 8a) has its own closing button
+      for (let i = 0; i < 40 && (await turn()) === start; i++) {
+        await advanceTurnStep(page);
       }
       expect(await turn()).not.toBe(start);
 
