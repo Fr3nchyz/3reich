@@ -166,6 +166,28 @@ describe("09-12 default-off computer air", () => {
     expect(pick(atDas(2, false)).action.type).toBe("END_STEP");
   });
 
+  it("AER127: a distant free plane cannot serve as the threatened hex reserve", () => {
+    const atDas = (at: string) => end(setManualDas(start([
+      inf("g", "germany", "M32", 6), inf("p", "poland", "M33", 2),
+      air("d", "M33", 2, "poland"), air("e", at, 1, "poland"),
+    ]), true), "6f");
+    expect(pick(atDas("A1")).action).toMatchObject({ type: "END_STEP", step: "7d" });
+    expect(pick(atDas("M33")).action).toMatchObject({ type: "DESIGNATE_DAS", units: ["d"] });
+    expect(pick(markFlown(atDas("M33"), ["e"], "das")).action.type).toBe("END_STEP");
+  });
+
+  it("AER127/AER107: committed support wins over a tempting unsupported attack", () => {
+    const s = b(start([inf("g", "germany", "M32", 6), inf("p", "poland", "M33", 2),
+      inf("h", "germany", "N34", 20), inf("q", "poland", "N35", 1), air("a", "J32", 5)]));
+    const assigned = okOf(applyAction(CTX, s, { type: "DESIGNATE_AIR", side: "axis", mission: "ground-support", units: ["a"], target: "M33" })).state;
+    const h = end(assigned, "7b");
+    expect(h.position).toMatchObject({ step: "7h" });
+    expect(chooseAction(CTX, h, { seed: 1, usesAir: false })?.action).toMatchObject({ type: "ATTACK", target: "N35" });
+    const chosen = pick(h);
+    expect(chosen.action).toMatchObject({ type: "ATTACK", target: "M33" });
+    expect(chosen.events.some(e => e.type === "COMBAT_RESOLVED")).toBe(true);
+  });
+
   it("AER109/R5: used and newly built planes cannot be assigned", () => {
     for (const use of ["new", "counter-air", "das"] as const) {
       const s = markFlown(b(), ["a"], use);

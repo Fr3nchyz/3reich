@@ -89,7 +89,7 @@ function beginPlayerTurn(ctx: GameContext, state: GameState): Transition {
   const refreshed = refreshFortresses(ctx, resetFrontOptions(resetSpending({ ...state, air: newAirTurn(state) })));
   const declared = scheduledDeclarations(ctx, recordUnsupplied(ctx, refreshed));
   // Spec 16 R31: report the refresh once, at the Player Turn boundary.
-  return { state: beginDropTurn(declared.state), events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
+  return { state: beginDropTurn(declared.state, ctx), events: [...fortressChanges(ctx, state, refreshed), ...declared.events] };
 }
 
 /** Moves one position on, doing what leaving the current one does (the Initiative at II.B, the Game Turn changing after the second Player Turn). */

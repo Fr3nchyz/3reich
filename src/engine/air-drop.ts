@@ -9,7 +9,7 @@ import type { HexId } from "./hex";
 import { hasMoved } from "./move-record";
 import { endProblem } from "./movement";
 import { supplyStatus } from "./supply";
-import type { GameState } from "./types";
+import type { GameState, Unit } from "./types";
 import { enemyZocFor } from "./zoc";
 
 /** Ref 23.1: maximum outbound flight, avoiding neutral land. */
@@ -22,9 +22,15 @@ export const DROP_IMMEDIATE_AUTO_SUPPLY = false;
 /** TODO(verify) AER117: refuse enemy occupation and illegal landings until on-top combat exists. */
 export const DROP_REQUIRE_LEGAL_LANDING = true;
 
+/** TODO(verify) AER125: eligibility facts, without a nested game state. */
+export interface DropStart extends Pick<GameState, "year" | "season" | "activeSide"> {
+  units: Record<string, Pick<Unit, "at" | "owner" | "type">>;
+  facts: Record<string, { base: boolean; supplied: boolean; zoc: boolean }>;
+}
+
 /** Caller-owned slice: no shared state fields or action wiring. Keep the true Player Turn start snapshot. */
 export interface DropRecord {
-  start: GameState;
+  start: GameState | DropStart;
   /** Ref 23.1: retain drop Game Turn indices across Player Turns for supply and future loss handling. */
   dropped: Record<string, number>;
 }
@@ -40,6 +46,17 @@ export function dropSupplied(ctx: GameContext, state: GameState, record: DropRec
   return side !== null && supplyStatus(ctx, state, side).supplied.some((line) => line.unitId === id);
 }
 
+/** TODO(verify) AER125 / Ref 23.1: freeze only facts consumed by drop eligibility. */
+export function dropStart(ctx: GameContext, state: GameState, dropped: Record<string, number>): DropStart {
+  const units: DropStart["units"] = {}, facts: DropStart["facts"] = {};
+  const zoc = enemyZocFor(ctx, state, state.activeSide);
+  for (const u of Object.values(state.units).filter(u => u.type === "airborne")) {
+    units[u.id] = { at: u.at, owner: u.owner, type: u.type };
+    facts[u.id] = { base: isAirBase(ctx, state, u.at), supplied: dropSupplied(ctx, state, { start: state, dropped }, u.id), zoc: zoc.has(u.at) };
+  }
+  return { year: state.year, season: state.season, activeSide: state.activeSide, units, facts };
+}
+
 /** Eligibility at normal-combat step 7g (Ref 23.1; Ops 5.46g). No exploitation drops here. */
 export function dropUnitProblem(ctx: GameContext, state: GameState, record: DropRecord, id: string): string | null {
   if (state.phase !== "player-turn" || state.position?.part !== "player-turn" || state.position.step !== "7g") return "Airdrops require step 7g.";
@@ -50,11 +67,16 @@ export function dropUnitProblem(ctx: GameContext, state: GameState, record: Drop
   if (sideInWar(state, u.owner) !== state.activeSide) return "The airborne unit must belong to the Phasing side.";
   // Ref 23.1: present on a supplied base at turn start, and has not moved, even if it returned.
   if (!start || start.type !== "airborne" || start.owner !== u.owner || start.at !== u.at || hasMoved(state, id)) return "The airborne unit did not remain at its starting base.";
-  if (!ctx.map.hexes[u.at]?.land || !isAirBase(ctx, record.start, start.at)) return "The airborne unit must begin on an airbase or city.";
-  if (!dropSupplied(ctx, record.start, record, id)) return "The airborne unit began out of supply.";
+  // TODO(verify) AER125: legacy full snapshots retain their original eligibility path.
+  const facts = "facts" in record.start ? record.start.facts[id] : {
+    base: isAirBase(ctx, record.start, start.at), supplied: dropSupplied(ctx, record.start, record, id),
+    zoc: DROP_REQUIRE_START_ZOC_CLEAR && enemyZocFor(ctx, record.start, state.activeSide).has(start.at),
+  };
+  if (!ctx.map.hexes[u.at]?.land || !facts?.base) return "The airborne unit must begin on an airbase or city.";
+  if (!facts.supplied) return "The airborne unit began out of supply.";
   // Ref 23.1; errata 31.1 (AER59): origin ZOC now, with the provisional start test separately named.
   if (enemyZocFor(ctx, state, state.activeSide).has(u.at) ||
-    (DROP_REQUIRE_START_ZOC_CLEAR && enemyZocFor(ctx, record.start, state.activeSide).has(start.at))) return "The departure base is in an enemy ZOC.";
+    (DROP_REQUIRE_START_ZOC_CLEAR && facts.zoc)) return "The departure base is in an enemy ZOC.";
   // Ref 23.1: no independent movement again until the next Game Turn.
   if (record.dropped[id] === turnIndex(state)) return "The airborne unit has already dropped this Game Turn.";
   return null;

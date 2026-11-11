@@ -1,5 +1,5 @@
 import type { Action, ActionResult } from "./action-types";
-import { dropTargets, dropUnits, resolveDrop, type DropRecord } from "./air-drop";
+import { dropStart, dropTargets, dropUnits, resolveDrop, type DropRecord } from "./air-drop";
 import { turnKey } from "./combat-record";
 import type { GameContext } from "./context";
 import type { GameState } from "./types";
@@ -16,9 +16,11 @@ export const setManualAirDrop = (state: GameState, enabled: boolean): GameState 
   ({ ...state, airDrop: { ...state.airDrop, manual: enabled } });
 
 /** TODO(verify) AER96: take the true start, without nesting earlier drop snapshots. */
-export function beginDropTurn(state: GameState): GameState {
+export function beginDropTurn(state: GameState, ctx: GameContext): GameState {
   if ((state.airDrop?.manual ?? DROP_MANUAL_DEFAULT) !== true) return state;
-  const { airDrop, ...start } = state;
+  const { airDrop } = state;
+  // TODO(verify) AER125: no full-state snapshot; legacy records remain readable.
+  const start = dropStart(ctx, state, airDrop?.record?.dropped ?? {});
   return { ...state, airDrop: { ...airDrop, record: { start, dropped: { ...airDrop?.record?.dropped } } } };
 }
 
