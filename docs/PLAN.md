@@ -70,7 +70,7 @@ In the tables below, everything is Beta except those Release 1 items. Decided by
 | 09-13 UI 1: planes on the map | select a plane, see range and bases, rebase, place an airbase, split and join from the screen | M | Done |
 | 09-16 Layout and browser pass | phone and iPad sizes, an air browser test | M | Done |
 | 09-0 Check constants against the game | ranges, caps, sizes, Malta | S | Waits: needs your game folder |
-| 09-5 Capture of a base | planes in a captured hex fly to the nearest friendly base within 8 hexes, and are lost only if there is none; airbases go to their Capital (decision D1, taken 2026-10-15) | M | In progress (Codex, #177) |
+| 09-5 Capture of a base | planes in a captured hex fly to the nearest friendly base within 8 hexes, and are lost only if there is none; airbases go to their Capital (decision D1, taken 2026-10-15) | M | Done (#177) |
 | 09-9 Counter-air | planes fight planes before the ground attack | M | Done (#335) |
 | 09-8 Defensive air support | the defender's planes help at step 7d | M | Done (#337) |
 | 09-10 DAS interception | the attacker's planes meet them (step 7e) | M | Done (#339) |
@@ -79,7 +79,7 @@ In the tables below, everything is Beta except those Release 1 items. Decided by
 | 09-15 UI 3 | cards for counter-air, interception, airdrop, loss choice | M | Done (#343) |
 | 09-17 Docs | "As built" and the open questions | S | Last |
 
-3 tickets left: 2 S, 1 M.
+2 tickets left: 09-0 (waits for your game folder) and 09-17 (docs), both S.
 
 ## B. Fleets and naval warfare (spec 12)
 
@@ -93,13 +93,13 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | 12-2 Sea supply rules (pure) | which units a fleet can supply | M | Done |
 | 12-3 Designate sea supply (steps 6e, 9f) | the player picks what the fleet supplies | M | Done |
 | 12-4 Fleets displaced on capture | the fleet in a captured port moves away; Malta holds 9 | M | Done |
-| 12-5 Computer: sea supply | the computer answers the prompts | S | In progress (Codex, #146) |
-| 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | In progress (Codex, #147) |
-| 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | In progress (Codex, #145) |
+| 12-5 Computer: sea supply | the computer answers the prompts | S | Done (#146) |
+| 12-6 UI 1 | the cut-off card, map marks, port capacity on the hex card | M | Done (#147) |
+| 12-8 Supply chains | Gibraltar, Kiel, Istanbul | S | Done (#145) |
 | 12-7 Gate and switch | 30 seeds each scenario; if the numbers are inside the agreed bounds, supply penalties go on | S | Waits: the computer must keep its supply lines (done in part by the supply-aware computer) and Berlin must be defended; the [supply gate measurement](measurements/12-7-supply-gate.md) finds a 1939 Axis Objective loss above the bound in the available reports and recommends keeping penalties off. |
 | **Release II: fleets move and fight** | | | |
-| 12-9 Naval combat resolver (pure) | every branch of the naval table | S | In progress (Codex, #132) |
-| 12-10 Base-change rules (pure) | straits, Suez, which side of Italy | M | In progress (Codex, #176) |
+| 12-9 Naval combat resolver (pure) | every branch of the naval table | S | Done (#132) |
+| 12-10 Base-change rules (pure) | straits, Suez, which side of Italy | M | Done (#176) |
 | 12-11 Move a fleet (step 6b) | once a turn, to another port | M | Done (#333, #336) |
 | 12-12 Interception (6c, 6d) | the other side's fleets try to catch yours | L | Done (#341) |
 | 12-13 Computer: base change and interception | | M | Done (#344, gated off by default) |
@@ -107,7 +107,7 @@ Release I is the only one needed to switch supply penalties on. Releases II to I
 | **Release III: air against ships** | | | |
 | 12-15 Air attacks on ports (7i) | | M | Done (#338) |
 | 12-16 Air against fleets at sea | | M | Done (#346) |
-| 12-17 UI 3 | | M | PR open (#347) |
+| 12-17 UI 3 | | M | Done (#347) |
 | **Release IV: amphibious** (outline only) | | | |
 | 12-18 Shore bombardment | | M | Later |
 | 12-19 Sea transport and step 7f | | L | Later |
