@@ -27,9 +27,21 @@ export async function passOptionalStep(page: Page): Promise<boolean> {
 export async function advanceTurnStep(page: Page): Promise<void> {
   let next = page.locator(".actions button").last();
   const turn = await page.locator(".turn").innerText();
-  await expect.poll(async () => {
+  const lossChoices = page.locator("details.declarations").filter({
+    has: page.locator("summary", { hasText: /^All ways to lose, as a list/ }),
+  });
+  let chooseLosses = false;
+  const ready = async () => {
     // Give the computer time to finish its work without spending a walk iteration.
     if (await page.locator(".computer-status").count()) return false;
+    // Spec 07 State 4 / Ref 12.2: the human can owe Exchange losses during the
+    // computer's turn. legalActions withholds END_STEP until they are settled.
+    // choiceView omits quick picks when there is only one group; the list in
+    // statusView always offers the legal sets, including that single-group case.
+    if (await page.locator(".losscard").isVisible() && await lossChoices.count()) {
+      chooseLosses = true;
+      return true;
+    }
     const step = /step (\S+)/.exec(await page.locator(".turn").innerText())?.[1];
     const selectors = [
       "#minor-auto", "#minor-end-combat",
@@ -49,8 +61,25 @@ export async function advanceTurnStep(page: Page): Promise<void> {
       }
     }
     return false;
-  }, { message: `A control to continue from ${turn}`, timeout: 15_000 }).toBe(true);
-  await next.click();
+  };
+  try {
+    await expect.poll(ready, { message: `A control to continue from ${turn}`, timeout: 15_000 }).toBe(true);
+  } catch (cause) {
+    // The computer may have crossed several steps since this call began.
+    const current = await page.locator(".turn").innerText();
+    const status = await page.locator(".computer-status, .toast, .next-text").allTextContents();
+    throw new Error(`Walk started at ${turn}; now at ${current}. Status: ${status.join("; ")}`, { cause });
+  }
+  if (chooseLosses) {
+    if (await lossChoices.getAttribute("open") === null) await lossChoices.locator("summary").click();
+    const loss = lossChoices.locator("button[data-action]").first();
+    await expect(loss).toBeVisible();
+    await expect(loss).toBeEnabled();
+    await loss.click();
+    await expect(page.locator(".toast")).toBeEmpty();
+  } else {
+    await next.click();
+  }
   // Ticket 15-14-2 (#304): automatic minor placement is a draft until Done.
   if (await page.locator("#minor-done").count()) {
     await expect(page.locator("#minor-done")).toBeEnabled();
