@@ -101,6 +101,30 @@ export async function waitForTurnStep(page: Page): Promise<void> {
   await turnControl(page);
 }
 
+/** Ticket 15-14-2 (#304), spec 15 R3/R9: fill the draft before confirming it. */
+async function finishMinorPlacement(page: Page): Promise<void> {
+  const done = page.locator("#minor-done");
+  if (!await done.count()) return;
+  if (!await done.isEnabled()) await page.locator("#minor-auto").click();
+  if (!await done.isEnabled()) {
+    const card = page.locator('.minor-card[aria-labelledby="minor-place-title"]');
+    const problem = (await card.locator('[role="status"]').allTextContents()).join("; ");
+    // Use the card's per-chip legal destinations, which reserve the other draft counters.
+    const chips = card.locator("[data-minor-chip]");
+    const count = await chips.count();
+    for (let i = 0; i < count && !await done.isEnabled(); i++) {
+      await chips.nth(i).click();
+      const hex = card.locator("[data-minor-hex]").first();
+      expect(await hex.count(), `Minor placement: ${problem}; chip ${i} has no legal hex`).toBe(1);
+      await hex.click();
+    }
+    const remaining = (await card.locator('[role="status"]').allTextContents()).join("; ");
+    await expect(done, `Minor placement: ${problem}; after hex picks: ${remaining}`).toBeEnabled();
+  }
+  await expect(done).toBeEnabled();
+  await done.click();
+}
+
 export async function advanceTurnStep(page: Page): Promise<string> {
   const { next, chooseLosses, lossChoices } = await turnControl(page);
   let label: string;
@@ -116,10 +140,6 @@ export async function advanceTurnStep(page: Page): Promise<string> {
     label = (await next.innerText()).trim();
     await next.click();
   }
-  // Ticket 15-14-2 (#304): automatic minor placement is a draft until Done.
-  if (await page.locator("#minor-done").count()) {
-    await expect(page.locator("#minor-done")).toBeEnabled();
-    await page.locator("#minor-done").click();
-  }
+  await finishMinorPlacement(page);
   return label;
 }
