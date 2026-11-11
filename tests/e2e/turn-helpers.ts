@@ -24,7 +24,7 @@ export async function passOptionalStep(page: Page): Promise<boolean> {
  * #351 adds fleet/DAS answers; #354 adds 7b stops. Card-owned closing buttons also
  * sit outside .actions (notably the Free Siberian Transfer at 8a).
  */
-export async function advanceTurnStep(page: Page): Promise<void> {
+async function turnControl(page: Page) {
   // Round 7: later scenarios can need over 15 seconds for a computer turn.
   const totalWaitMs = 150_000;
   const stallMs = 30_000;
@@ -39,6 +39,8 @@ export async function advanceTurnStep(page: Page): Promise<void> {
   });
   let chooseLosses = false;
   const ready = async () => {
+    // Spec 11 D / Ops 5.49b: autosave does not answer 10b. Human turns
+    // use the ordinary End turn action below; computer turns expose no buttons.
     // Give the computer time to finish its work without spending a walk iteration.
     if (await page.locator(".computer-status").count()) return false;
     // Spec 07 State 4 / Ref 12.2: the human can owe Exchange losses during the
@@ -85,17 +87,30 @@ export async function advanceTurnStep(page: Page): Promise<void> {
   } catch (cause) {
     // The computer may have crossed several steps since this call began.
     const current = await page.locator(".turn").innerText();
-    const status = await page.locator(".computer-status, .toast, .next-text").allTextContents();
+    const status = await page.locator(".computer-status, .toast, .next-text, .saved-hint, #save-notice").allTextContents();
     throw new Error(`Walk started at ${turn}; now at ${current}. Status: ${status.join("; ")}`, { cause });
   }
+  return { next, chooseLosses, lossChoices };
+}
+
+/** Wait for a human answer, including answers owed during the computer's turn. */
+export async function waitForTurnStep(page: Page): Promise<void> {
+  await turnControl(page);
+}
+
+export async function advanceTurnStep(page: Page): Promise<string> {
+  const { next, chooseLosses, lossChoices } = await turnControl(page);
+  let label: string;
   if (chooseLosses) {
     if (await lossChoices.getAttribute("open") === null) await lossChoices.locator("summary").click();
     const loss = lossChoices.locator("button[data-action]").first();
     await expect(loss).toBeVisible();
     await expect(loss).toBeEnabled();
+    label = (await loss.innerText()).trim();
     await loss.click();
     await expect(page.locator(".toast")).toBeEmpty();
   } else {
+    label = (await next.innerText()).trim();
     await next.click();
   }
   // Ticket 15-14-2 (#304): automatic minor placement is a draft until Done.
@@ -103,4 +118,5 @@ export async function advanceTurnStep(page: Page): Promise<void> {
     await expect(page.locator("#minor-done")).toBeEnabled();
     await page.locator("#minor-done").click();
   }
+  return label;
 }
