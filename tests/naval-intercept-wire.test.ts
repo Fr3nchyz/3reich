@@ -44,12 +44,18 @@ describe("interception turn wiring (spec 12 R11/R12, Ref 21.5/21.51; AER84–91)
   it("AER126: excess breakdown loss leaves later fleet counters untouched", () => {
     let s = apply(at6c(), { ...declaration, fleets: ["g1", "g2"] }).state;
     s = apply(apply(s, passAxis).state, passAllies).state;
+    // Seed 7 owes two factors on the first interceptor: a 9-only sheet loses nine.
+    s = { ...s, rngState: 7 };
     const original = fleetLosses.breakDownFleet;
     // A hypothetical counter sheet without partial fleets forces excess whole-counter loss.
-    const mock = vi.spyOn(fleetLosses, "breakDownFleet").mockImplementation((strength, owed) => original(strength, owed, [9]));
+    const mock = vi.spyOn(fleetLosses, "breakDownFleet").mockImplementation((strength, owed) => {
+      expect(owed).toBeGreaterThanOrEqual(0);
+      return original(strength, owed, [9]);
+    });
     try {
       const done = apply(s, resolution);
-      expect(mock).toHaveBeenCalled();
+      expect(mock.mock.calls).toEqual([[9, 2], [9, 1]]);
+      expect(done.state.units.g1).toBeUndefined();
       expect(done.state.units.g2).toEqual(s.units.g2);
       expect(done.events.some(e => e.type === "NAVAL_COMBAT_RESOLVED")).toBe(true);
     } finally { mock.mockRestore(); }
