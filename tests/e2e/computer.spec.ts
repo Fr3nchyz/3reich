@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { passOptionalStep } from "./turn-helpers";
+import { advanceTurnStep } from "./turn-helpers";
 
 /**
  * The player picks a side and the computer plays the other: start a 1939 game on each side, let the
@@ -23,14 +23,11 @@ for (const side of ["axis", "allies"] as const) {
     const start = await turn();
     const seen = new Set<string>();
     let sawStatus = false;
-    // End your turns, including the optional stops enabled by #351; the computer plays in between.
+    // #351/#354: end the displayed step, including optional stops; the computer plays in between.
     for (let i = 0; i < 80 && seen.size < 3; i++) {
       seen.add(await turn());
       if (await page.locator(".computer-status").count()) sawStatus = true;
-      if (await passOptionalStep(page)) continue;
-      const buttons = page.locator(".actions button[data-action]");
-      if (await buttons.count()) await buttons.last().click();
-      else await page.waitForTimeout(100);
+      await advanceTurnStep(page);
     }
     expect(seen.size, `Game Turns seen: ${[...seen].join(", ")}`).toBeGreaterThanOrEqual(3);
     expect(await turn()).not.toBe(start);
